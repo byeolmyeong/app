@@ -45,7 +45,7 @@ export function DataTable({ columns, rows, header = true }: DataTableProps) {
                 {cell}
               </Txt>
             ) : (
-              <View key={c.key} style={cellStyle(c)}>
+              <View key={c.key} style={{ flex: c.flex ?? 1 }}>
                 {cell}
               </View>
             );

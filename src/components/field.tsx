@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, LineWidth, Sizes, Spacing, Typography } from '@/constants/theme';
 
 export type FieldProps = {
   label: string;
@@ -39,7 +39,13 @@ export function Field({ label, hint, error, first = false, children }: FieldProp
   );
 }
 
+/** Field 안에 넣는 글 입력. 글자와 색을 테마에서 가져온다. */
+export function FieldInput({ style, ...rest }: TextInputProps) {
+  return <TextInput placeholderTextColor={Colors.gray} style={[styles.input, style]} {...rest} />;
+}
+
 const styles = StyleSheet.create({
+  input: { ...Typography.body, color: Colors.ink, padding: 0, minWidth: 0 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

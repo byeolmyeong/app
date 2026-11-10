@@ -68,6 +68,8 @@ export const Sizes = {
   seal: 48,
   sealSmall: 36,
   checkbox: 16,
+  /** 차트 휠의 최대 지름 */
+  wheel: 300,
   /** 웹 넓은 화면에서 본문이 퍼지지 않게 하는 최대 폭 */
   maxContentWidth: 480,
 } as const;

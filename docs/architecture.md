@@ -22,7 +22,7 @@ flowchart LR
 
 ## 저장소 구조
 - 앱 저장소(이 저장소) — Expo 앱(웹·iOS·Android)과 기획 문서. Expo 규칙은 `AGENTS.md`.
-- 서버 저장소(별도, 같은 GitHub 조직) — Spring Boot 서버. AI 해석을 붙이는 시점에 만든다. 결정: docs/decisions/004-spring-backend.md
+- 서버 저장소 `byeolmyeong-api`(로컬 `../byeolmyeong-api`) — Spring Boot 서버. API 계약의 원본은 그 저장소의 `docs/architecture.md` 다. 결정: docs/decisions/004-spring-backend.md
 - 두 저장소는 서로의 코드를 import 하지 않고 HTTP API 로만 만난다.
 
 ## 모듈 경계 (src/features/)

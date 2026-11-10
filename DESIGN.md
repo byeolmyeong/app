@@ -30,7 +30,8 @@ last_reviewed: 2026-11-10
 - 글꼴: Pretendard 하나. 파일과 라이선스(SIL OFL 1.1)는 `assets/fonts/`, 적재는 `src/app/_layout.tsx` 의 `useFonts`(굵기 400·500·600·700·800). 굵기는 `fontWeight` 로 고른다.
 
 ## 컴포넌트·레이아웃
-- 공용 부품은 `src/components/` 에만 둔다: `Txt`(글자 단계·색), `Button`(주 `primary`·선 `line`·빨강 `danger`), `Field`(라벨·값·도움말 한 줄), `DataTable`(머리줄 먹 선, 줄마다 옅은 선), `Seal`(도장), `Sheet`(아래에서 올라오는 시트), `SectionLabel`(작은 회색 라벨).
+- 공용 부품은 `src/components/` 에만 둔다: `Txt`(글자 단계·색), `Button`(주 `primary`·선 `line`·빨강 `danger`), `Field`(라벨·값·도움말 한 줄), `DataTable`(머리줄 먹 선, 줄마다 옅은 선), `Seal`(도장), `Sheet`(아래에서 올라오는 시트), `SectionLabel`(작은 회색 라벨). 화면 뼈대: `Screen`(종이 바탕·좌우 여백·가운데 한 단), `NavBar`(뒤로 가기·제목), `Tabs`, `Checkbox`, `TextLink`, `FieldInput`(입력 줄 안의 글 입력).
+- 차트 전용 부품은 `src/features/chart/`: `ChartWheel`(SVG 휠, 좌표는 `wheel-layout.ts`), `KeyThree`(핵심 3요소), `BodyCell`(표의 천체 이름 칸).
 - 화면 좌우 여백 24, 왼쪽 정렬이 기본. 웹 넓은 화면에서는 `Sizes.maxContentWidth` 로 가운데 한 단.
 - 굵은 선 1px 먹: 구역의 시작. 옅은 선 1px: 표의 줄.
 - 애니메이션: 시트가 올라오는 것만. 그 외 없음.

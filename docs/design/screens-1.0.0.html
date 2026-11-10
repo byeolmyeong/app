@@ -115,6 +115,8 @@
   .phone .seal { width: 34px; height: 34px; font-size: 12.5px; }
   .phone .seal.sm { width: 26px; height: 26px; font-size: 9.5px; border-radius: 2px; }
   .wheel { align-self: center; flex: none; }
+  @page { size: 420mm 297mm; margin: 10mm; }
+  @media print { body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } nav.toc { position: static; } .wrap { break-inside: avoid; } section { break-inside: auto; } header { padding-top: 10px; } }
 </style>
 </head>
 <body>

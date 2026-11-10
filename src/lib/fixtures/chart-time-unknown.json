@@ -1,0 +1,149 @@
+{
+  "timeKnown": false,
+  "positions": [
+    {
+      "body": "SUN",
+      "sign": "GEMINI",
+      "degree": 24,
+      "minute": 41,
+      "retrograde": false
+    },
+    {
+      "body": "MOON",
+      "sign": "SAGITTARIUS",
+      "degree": 8,
+      "minute": 54,
+      "retrograde": false
+    },
+    {
+      "body": "MERCURY",
+      "sign": "CANCER",
+      "degree": 17,
+      "minute": 38,
+      "retrograde": false
+    },
+    {
+      "body": "VENUS",
+      "sign": "GEMINI",
+      "degree": 25,
+      "minute": 47,
+      "retrograde": false
+    },
+    {
+      "body": "MARS",
+      "sign": "GEMINI",
+      "degree": 29,
+      "minute": 19,
+      "retrograde": false
+    },
+    {
+      "body": "JUPITER",
+      "sign": "TAURUS",
+      "degree": 26,
+      "minute": 48,
+      "retrograde": false
+    },
+    {
+      "body": "SATURN",
+      "sign": "TAURUS",
+      "degree": 24,
+      "minute": 54,
+      "retrograde": false
+    },
+    {
+      "body": "URANUS",
+      "sign": "AQUARIUS",
+      "degree": 20,
+      "minute": 39,
+      "retrograde": true
+    },
+    {
+      "body": "NEPTUNE",
+      "sign": "AQUARIUS",
+      "degree": 6,
+      "minute": 12,
+      "retrograde": true
+    },
+    {
+      "body": "PLUTO",
+      "sign": "SAGITTARIUS",
+      "degree": 11,
+      "minute": 10,
+      "retrograde": true
+    }
+  ],
+  "points": [
+    {
+      "body": "NORTH_NODE",
+      "sign": "CANCER",
+      "degree": 26,
+      "minute": 2,
+      "retrograde": true
+    },
+    {
+      "body": "LILITH",
+      "sign": "SAGITTARIUS",
+      "degree": 19,
+      "minute": 44,
+      "retrograde": false
+    }
+  ],
+  "aspects": [
+    {
+      "a": "SUN",
+      "b": "VENUS",
+      "type": "CONJUNCTION",
+      "orb": 1.11,
+      "applying": false
+    },
+    {
+      "a": "SUN",
+      "b": "MARS",
+      "type": "CONJUNCTION",
+      "orb": 4.63,
+      "applying": true
+    },
+    {
+      "a": "SUN",
+      "b": "URANUS",
+      "type": "TRINE",
+      "orb": 4.03,
+      "applying": false
+    },
+    {
+      "a": "MOON",
+      "b": "NEPTUNE",
+      "type": "SEXTILE",
+      "orb": 2.7,
+      "applying": false
+    },
+    {
+      "a": "MOON",
+      "b": "PLUTO",
+      "type": "CONJUNCTION",
+      "orb": 2.27,
+      "applying": true
+    },
+    {
+      "a": "VENUS",
+      "b": "MARS",
+      "type": "CONJUNCTION",
+      "orb": 3.52,
+      "applying": false
+    },
+    {
+      "a": "JUPITER",
+      "b": "SATURN",
+      "type": "CONJUNCTION",
+      "orb": 1.89,
+      "applying": false
+    },
+    {
+      "a": "SATURN",
+      "b": "URANUS",
+      "type": "SQUARE",
+      "orb": 4.26,
+      "applying": false
+    }
+  ]
+}

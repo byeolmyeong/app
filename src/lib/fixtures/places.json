@@ -1,0 +1,12 @@
+[
+  { "id": "seoul-mapo", "name": "서울 마포구", "lat": 37.5663, "lon": 126.9019 },
+  { "id": "seoul-jongno", "name": "서울 종로구", "lat": 37.5735, "lon": 126.979 },
+  { "id": "seoul-gangnam", "name": "서울 강남구", "lat": 37.5172, "lon": 127.0473 },
+  { "id": "busan-haeundae", "name": "부산 해운대구", "lat": 35.1631, "lon": 129.1636 },
+  { "id": "daegu-suseong", "name": "대구 수성구", "lat": 35.8581, "lon": 128.6306 },
+  { "id": "incheon-namdong", "name": "인천 남동구", "lat": 37.4473, "lon": 126.7314 },
+  { "id": "gwangju-buk", "name": "광주 북구", "lat": 35.1741, "lon": 126.912 },
+  { "id": "daejeon-yuseong", "name": "대전 유성구", "lat": 36.3624, "lon": 127.3562 },
+  { "id": "gangwon-gangneung", "name": "강원 강릉시", "lat": 37.7519, "lon": 128.8761 },
+  { "id": "jeju-jeju", "name": "제주 제주시", "lat": 33.4996, "lon": 126.5312 }
+]

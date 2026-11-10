@@ -11,20 +11,20 @@
 - 제품 방향·버전별 범위·지표를 판단할 때 → docs/product.md
 - 1.0.0 에 무엇이 들어가는지(기능·화면·출시 기준) → docs/release-1.0.0.md
 - 모듈 경계·데이터 흐름·비즈니스 룰(시각 보정·소유자 검사)을 바꿀 때 → docs/architecture.md
-- 지금 할 일 → docs/plans/2026-11-10-mvp.md
-- 화면을 만들 때 → DESIGN.md (MVP 태스크 5 에서 만든다)
+- 지금 할 일 → docs/plans/2026-11-10-app-1.0.0.md
+- 화면을 만들 때 → docs/design/screens-1.0.0.html (시안). DESIGN.md 는 계획 태스크 1 에서 만든다
 - 코드 어디서 시작할지 모를 때 → docs/codebase-map.md (`/agent-codebase bootstrap` 이 만든다)
 - "왜 이렇게 됐나"가 궁금할 때 → docs/decisions/ ADR 번호순. 바뀌면 새 번호로 대체. 종합된 답은 docs/synthesis/.
 
 ## 디렉터리 (이름이 곧 지시)
-- `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 비즈니스 로직(chart·birth·reading·synastry) · `src/components/` 공용 UI
+- `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 화면 로직(chart·auth·reading·report·synastry) · `src/components/` 공용 부품 · `src/content/` 문구 · `src/lib/` 서버 호출
 - 서버(Spring Boot)는 별도 저장소다. 앱과는 HTTP API 로만 만난다. 근거: docs/decisions/004-spring-backend.md
 - `docs/` agent가 참고할 문서 · `docs/raw/` 원본(던지는 곳, 고치지 않음) · `.claude/` 설정·규칙·스킬·에이전트·훅
 - `dist/`·`ios/`·`android/` 는 생성물이다(커밋 안 함, 손으로 고치지 않음).
 
 ## 스택
 - 앱: Expo SDK 58 · React Native 0.88 · Expo Router · TypeScript · Node 22(`.nvmrc`). 버전 문서: https://docs.expo.dev/llms.txt
-- 서버(별도 저장소, 예정): Spring Boot · PostgreSQL · OpenAI API. 결제(보류): RevenueCat.
+- 서버(별도 저장소 `../byeolmyeong-api`): Spring Boot(Kotlin) · PostgreSQL · OpenAI API. 차트 계산도 서버가 한다. 결제(1.1.0): RevenueCat.
 
 ## 명령어 (Node 22)
 - 개발: `npx expo start --web` · 빌드: `npx expo export --platform web` · 테스트: `npm test` · 린트/타입: `npx tsc --noEmit && npx expo lint`
@@ -40,10 +40,10 @@
 - 문서 큐레이션 담당: 저장소 소유자 한 명.
 
 ## 규칙
-- 차트 계산은 `src/features/chart/` 의 순수 함수에서만 한다. 화면·서버에서 다시 계산하지 않는다. 근거: docs/architecture.md
-- 출생 시각은 `birthToUtc` 로만 UTC 변환한다. 고정 +9시간 금지. 근거: docs/architecture.md
-- API 키와 프롬프트는 서버에만 둔다. 서버는 소유자를 토큰에서만 얻는다.
-- 해석·문구에 점성술 용어(본문)와 건강·투자·미래 사건의 단정 표현을 쓰지 않는다. 근거: docs/product.md
+- 차트·별자리·하우스·연도를 앱에서 계산하지 않는다. 서버가 준 값만 그린다. 근거: docs/decisions/006-server-side-chart.md
+- 색·글자·간격은 `src/constants/theme.ts`, 문구는 `src/content/strings.ts` 에서만 가져온다.
+- 세션 토큰은 기기 보안 저장소에만 둔다. API 키와 프롬프트는 서버에만 있다.
+- 문구에 건강·투자·미래 사건의 단정 표현과 궁합 점수를 쓰지 않는다. 근거: docs/release-1.0.0.md
 - 결정이 바뀌면 코드보다 먼저 docs/decisions/에 새 ADR. 원본은 docs/raw/, 종합은 docs/synthesis/.
 - 커밋: 한국어 + Conventional Commits. 한 커밋 = 한 관심사. 작업 브랜치에서 한다.
 - 한 커밋을 넘는 일은 /plan-feature 로 계획을 승인받고 실행한다. 완료라고 말하기 전에 /verify 를 이번에 돌린다.

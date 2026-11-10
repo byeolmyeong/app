@@ -1,13 +1,13 @@
 ---
 type: decision
 tags: [차트 계산, astronomy-engine, Swiss Ephemeris, 라이선스]
-status: active
+status: superseded
 last_reviewed: 2026-11-10
-superseded_by:
+superseded_by: docs/decisions/006-server-side-chart.md
 ---
 # 003. 차트 계산은 astronomy-engine 위에 직접 구현한다
 
-> 상태: 활성 · 결정일 2026-11-10
+> 상태: 대체됨 → docs/decisions/006-server-side-chart.md · 결정일 2026-11-10
 
 ## 맥락
 출생 차트에는 행성의 황경, 상승점·중천, 하우스 경계, 애스펙트가 필요하다. 업계 표준 라이브러리인 Swiss Ephemeris 는 AGPL 이라, 소스를 공개하지 않으려면 유료 상용 라이선스를 사야 한다.

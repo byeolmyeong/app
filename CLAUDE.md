@@ -26,7 +26,7 @@
 - 서버(별도 저장소, 예정): Spring Boot · PostgreSQL · OpenAI API. 결제(보류): RevenueCat.
 
 ## 명령어 (Node 22)
-- 개발: `npx expo start --web` · 빌드: `npx expo export --platform web` · 테스트: `npm test`(MVP 태스크 1 이후) · 린트/타입: `npx tsc --noEmit && npx expo lint`
+- 개발: `npx expo start --web` · 빌드: `npx expo export --platform web` · 테스트: `npm test` · 린트/타입: `npx tsc --noEmit && npx expo lint`
 - 패키지 설치: `npx expo install <패키지>` 만. 환경 변수 이름은 루트 `.env.example`
 
 ## 도구 (.claude/)

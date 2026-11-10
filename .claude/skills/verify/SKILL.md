@@ -10,7 +10,7 @@ description: 이 프로젝트의 완료 기준(타입체크·테스트·빌드·
 | # | 기준 | 명령 | 통과 조건 |
 |---|---|---|---|
 | 1 | 타입·린트 | `npx tsc --noEmit && npx expo lint` | exit 0 |
-| 2 | 테스트 | `npm test` | exit 0, 실패 0 (MVP 태스크 1 에서 Jest 를 넣기 전까지는 "해당 없음: 테스트 러너 미설치") |
+| 2 | 테스트 | `npm test` | exit 0, 실패 0 |
 | 3 | 빌드 | `npx expo export --platform web` | exit 0 |
 | 4 | 커버리지 | 해당 없음 | 해당 없음: MVP 는 차트 엔진·시각 보정의 기준값 테스트(오차 한도)가 기준이다 |
 | 5 | 의존성 진단 | `npx expo-doctor` | 모든 검사 통과 |

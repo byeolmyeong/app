@@ -1,3 +1,4 @@
+import { CONSTELLATIONS } from '@/features/chart/constellations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -78,10 +79,11 @@ describe('요약 해석 화면', () => {
     expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
-  it('누를 수 있는 것은 뒤로 가기와 "내 차트 보기" 뿐이다(다시 생성·공유·리포트 없음)', async () => {
+  it('누를 수 있는 것은 뒤로 가기, 차트로 가는 그림과 "내 차트 보기" 뿐이다(다시 생성·공유·리포트 없음)', async () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
-    expect(screen.queryAllByRole('button')).toHaveLength(1);
+    // 버튼은 뒤로 가기와 하늘 그림(차트로 간다) 둘이다
+    expect(screen.queryAllByRole('button')).toHaveLength(2);
     expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
     expect(screen.queryAllByRole('link')).toHaveLength(1);
   });
@@ -168,5 +170,28 @@ describe('요약 해석 화면', () => {
     // 받아 둔 글이 없다는 것을 확인한 뒤에야 "짓는 중" 이 나온다
     expect(await screen.findByText(R.generating)).toBeTruthy();
     await view.unmount();
+  });
+  it('글 위에 내 별자리의 별 모양을 보여 준다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(screen.getByTestId('chart-picture')).toBeTruthy();
+    // 그림은 내 별자리(태양 자리)의 별 모양이고, 그 아래에 이름을 적는다
+    expect(screen.getAllByTestId('picture-star')).toHaveLength(CONSTELLATIONS.GEMINI.stars.length);
+    expect(screen.getAllByTestId('picture-star-line')).toHaveLength(CONSTELLATIONS.GEMINI.lines.length);
+    expect(screen.getByTestId('picture-sign-name')).toBeTruthy();
+    expect(screen.getByTestId('chart-picture').props.accessibilityLabel).toBe(
+      strings.signs.GEMINI + strings.chart.signSuffix,
+    );
+    // 차트의 번호나 천체 이름 같은 글자는 없다
+    expect(screen.queryAllByTestId('wheel-house-number')).toHaveLength(0);
+    expect(screen.queryByText(strings.bodiesShort.SUN)).toBeNull();
+    // 그림 아래에는 중심 · 마음 · 첫인상을 글로 적는다
+    expect(screen.getByText(strings.chart.keySun)).toBeTruthy();
+    expect(screen.getByText(strings.signs.GEMINI + strings.chart.signSuffix)).toBeTruthy();
+    // 누르면 차트로 간다
+    await fireEvent.press(screen.getByTestId('chart-picture'));
+    expect(router.push).toHaveBeenCalledWith('/chart');
   });
 });

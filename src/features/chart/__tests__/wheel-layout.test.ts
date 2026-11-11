@@ -112,4 +112,5 @@ describe('wheelLayout: 시각 모름 차트', () => {
     const leaked = { ...fixtures.chart, timeKnown: false };
     expect(wheelLayout(leaked).houseLines).toHaveLength(0);
   });
+
 });

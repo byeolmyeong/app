@@ -127,6 +127,8 @@ export const strings = {
     keySunCaption: '힘을 내는 방식',
     keyMoonCaption: '편안함을 느끼는 방식',
     keyAscCaption: '처음 보이는 모습',
+    /** 별자리 이름 뒤에 붙이는 말: 전갈 → 전갈자리 */
+    signSuffix: '자리',
     keySun: '나의 중심',
     keyMoon: '나의 마음',
     keyAsc: '나의 첫인상',

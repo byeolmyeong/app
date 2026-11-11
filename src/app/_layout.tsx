@@ -4,10 +4,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { Colors, FontFamily } from '@/constants/theme';
+import { useSession } from '@/features/auth/use-session';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
+  useSession();
   // 한 가족 이름 아래 굵기별 파일을 올린다. 굵기는 fontWeight 로 고른다.
   const [loaded, error] = useFonts([
     {

@@ -46,7 +46,7 @@ export const strings = {
       경상남도: '경남',
       제주특별자치도: '제주',
     } as Record<string, string>,
-    submit: '내 하늘 보기',
+    submit: '내 별명 읽기',
     submitting: '하늘을 계산하는 중',
     placeLoadFailed: '출생지 목록을 불러오지 못했어요.',
     placeRetry: '다시 불러오기',
@@ -83,6 +83,26 @@ export const strings = {
     empty: '출생 정보를 먼저 넣어 주세요.',
     goHome: '출생 정보 넣기',
     timeUnknownNote: '태어난 시각을 몰라 하우스와 상승점은 보여 드리지 않아요.',
+  },
+  reading: {
+    title: '내 별명',
+    generating: '별명을 짓는 중이에요',
+    generatingNote: '태어난 순간의 하늘을 글로 옮기고 있어요. 길면 1분쯤 걸려요.',
+    /** 문단 머리의 근거 줄: "근거 · 태양 · 쌍둥이 · 6하우스". 뒤의 낱말들은 서버가 준다 */
+    basisLabel: '근거',
+    basisSeparator: ' · ',
+    strengths: '강점',
+    cautions: '보완점',
+    bullet: '·',
+    seeChart: '내 차트 보기',
+    /** 앞날·건강·투자를 단정하지 않는다(golden-rules "프로젝트 규칙") */
+    disclaimer: '오락과 자기 성찰을 위한 내용이에요. 앞날을 알려 주거나 전문가의 조언을 대신하지 않습니다.',
+    failed: {
+      NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+      LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+      OTHER: '글을 받아 오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+    },
+    retry: '다시 시도',
   },
   detail: {
     title: '차트 자세히',

@@ -6,6 +6,7 @@ import ChartDetailScreen from '@/app/chart/detail';
 import ChartScreen from '@/app/chart/index';
 import HomeScreen from '@/app/index';
 import { strings } from '@/content/strings';
+import { getSession } from '@/features/auth/use-session';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -18,10 +19,14 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { listPlaces: jest.fn(), createChart: jest.fn() },
+  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn() },
+}));
+jest.mock('@/features/auth/use-session', () => ({
+  getSession: jest.fn(() => ({ token: null, ready: true })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
+const mockGetSession = getSession as jest.MockedFunction<typeof getSession>;
 const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 const H = strings.home;
 
@@ -30,6 +35,8 @@ beforeEach(async () => {
   jest.clearAllMocks();
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
+  mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
+  mockGetSession.mockReturnValue({ token: null, ready: true });
 });
 
 /** 시트가 닫혀 화면에서 사라질 때까지 기다린다(닫히는 움직임이 끝나야 사라진다) */
@@ -77,8 +84,11 @@ describe('출생 정보 입력(홈)', () => {
 
   it('태어난 시각은 아래에서 올라오는 시트의 드럼롤에서 고르고, 확인을 눌러야 정해진다', async () => {
     await render(<HomeScreen />);
+    expect(screen.getByTestId('time-field').props.accessibilityState.expanded).toBe(false);
     await fireEvent.press(screen.getByTestId('time-field'));
     expect(await screen.findByText(H.timeConfirm)).toBeTruthy();
+    // 시트가 열려 있는 동안 칸의 화살표는 위를 향한다
+    expect(screen.getByTestId('time-field').props.accessibilityState.expanded).toBe(true);
     await fireEvent.press(screen.getByTestId('time-period-AM'));
     await fireEvent.press(screen.getByTestId('time-hour-7'));
     await fireEvent.press(screen.getByTestId('time-minute-5'));
@@ -142,14 +152,39 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
   });
 
-  it('날짜·시각·출생지를 넣고 누르면 차트를 받아 보관하고 /chart 로 간다', async () => {
+  it('날짜·시각·출생지를 넣고 누르면 차트를 받아 보관하고 풀이 글(/reading)로 간다', async () => {
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 1841277 });
     expect(await loadBirth()).toEqual({ profile, chart: fixtures.chart });
+    // 세션이 없으면 서버에 출생 정보를 저장하지 않는다
+    expect(mockApi.saveProfile).not.toHaveBeenCalled();
+  });
+
+  it('세션이 있으면 차트를 받은 뒤 출생 정보를 서버에도 저장한다(PUT /profile)', async () => {
+    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    await render(<HomeScreen />);
+    await fillDateAndTime('2000-06-15', '21:00');
+    await fillPlace();
+    await fireEvent.press(screen.getByText(H.submit));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
+    expect(mockApi.saveProfile).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 1841277 });
+    expect(await loadBirth()).toEqual({ profile, chart: fixtures.chart });
+  });
+
+  it('서버에 출생 정보를 저장하지 못하면 안내를 보여 주고 보관도 이동도 하지 않는다', async () => {
+    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await render(<HomeScreen />);
+    await fillDateAndTime('2000-06-15', '21:00');
+    await fillPlace();
+    await fireEvent.press(screen.getByText(H.submit));
+    expect(await screen.findByText(H.requestErrors.NETWORK)).toBeTruthy();
+    expect(router.push).not.toHaveBeenCalled();
+    expect(await loadBirth()).toBeNull();
   });
 
   it('"모름" 을 고르면 time 을 null 로 보낸다', async () => {
@@ -158,7 +193,7 @@ describe('출생 정보 입력(홈)', () => {
     await fillDateAndTime('2000-06-15', null);
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: 1841277 });
   });
 
@@ -212,7 +247,7 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.getByText('오후 9:00')).toBeTruthy();
     expect(await screen.findByText('서울특별시 마포구')).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).not.toHaveBeenCalled();
   });
 });
@@ -265,6 +300,19 @@ describe('차트', () => {
     await render(<ChartScreen />);
     await fireEvent.press(await screen.findByText(strings.chart.seeAll));
     expect(router.push).toHaveBeenCalledWith('/chart/detail');
+  });
+});
+
+describe('차트에서 다음 화면으로', () => {
+  it('"내 별명 읽기" 를 누르면 /reading 으로 가고, "궁합 보기" 는 아직 누를 수 없다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<ChartScreen />);
+    const read = await screen.findByRole('button', { name: strings.chart.readReading });
+    expect(read.props.accessibilityState.disabled).toBe(false);
+    await fireEvent.press(read);
+    expect(router.push).toHaveBeenCalledWith('/reading');
+    const synastry = screen.getByRole('button', { name: strings.chart.seeSynastry });
+    expect(synastry.props.accessibilityState.disabled).toBe(true);
   });
 });
 

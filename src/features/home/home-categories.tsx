@@ -12,7 +12,7 @@ const PER_ROW = 4;
 type Category = (typeof M.categories)[number];
 
 /** 홈에서 갈 수 있는 화면. 아직 없는 기능의 항목은 path 가 null 이다 */
-export type HomePath = '/reading' | '/chart';
+export type HomePath = '/reading' | '/chart' | '/report' | '/report?area=RELATIONSHIP';
 
 export type HomeCategoriesProps = {
   onOpen: (path: HomePath) => void;

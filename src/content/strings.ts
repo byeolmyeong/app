@@ -29,14 +29,14 @@ export const strings = {
         items: [
           { label: '요약 풀이', path: '/reading' },
           { label: '내 차트', path: '/chart' },
-          { label: '심층 리포트', path: null },
+          { label: '심층 리포트', path: '/report' },
         ],
       },
       {
         key: 'relation',
         title: '관계',
         items: [
-          { label: '사람을 대하는 성향', path: null },
+          { label: '사람을 대하는 성향', path: '/report?area=RELATIONSHIP' },
           { label: '연애에서 해 볼 만한 것', path: null },
         ],
       },

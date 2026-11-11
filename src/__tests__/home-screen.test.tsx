@@ -87,23 +87,45 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
+  it('"나" 의 심층 리포트는 /report 로 간다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findAllByTestId('home-category');
+    await fireEvent.press(screen.getAllByTestId('home-category')[0]);
+    await fireEvent.press(await screen.findByText('심층 리포트'));
+    expect(router.push).toHaveBeenCalledWith('/report');
+  });
+
+  it('"관계" 타일이 열리고, 사람을 대하는 성향은 리포트의 관계 영역(/report?area=RELATIONSHIP)으로 간다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findAllByTestId('home-category');
+    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
+    await fireEvent.press(await screen.findByText('사람을 대하는 성향'));
+    expect(router.push).toHaveBeenCalledWith('/report?area=RELATIONSHIP');
+    expect(router.push).toHaveBeenCalledTimes(1);
+  });
+
   it('아직 없는 기능은 "준비 중" 으로 보이고 눌러도 아무 데도 가지 않는다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
-    // 관계 · 궁합 · 시기 세 타일은 통째로 준비 중이라 흐리게 보이고 눌러도 열리지 않는다
+    // 궁합 · 시기 두 타일은 통째로 준비 중이라 흐리게 보이고 눌러도 열리지 않는다
     expect(screen.getAllByTestId('home-category').map((t) => t.props.accessibilityState.disabled)).toEqual([
       false,
-      true,
+      false,
       true,
       true,
     ]);
     // 타일은 순서로 고른다: 나 · 관계 · 궁합 · 시기
     await fireEvent.press(screen.getAllByTestId('home-category')[2]);
     expect(screen.queryByTestId('sheet-dim')).toBeNull();
-    // "나" 안의 아직 없는 항목도 준비 중이다
-    await fireEvent.press(screen.getAllByTestId('home-category')[0]);
-    await fireEvent.press(await screen.findByText('심층 리포트'));
+    await fireEvent.press(screen.getAllByTestId('home-category')[3]);
+    expect(screen.queryByTestId('sheet-dim')).toBeNull();
+    // "관계" 안의 아직 없는 항목은 준비 중이다
+    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
+    await fireEvent.press(await screen.findByText('연애에서 해 볼 만한 것'));
+    expect(screen.getByText(M.soon)).toBeTruthy();
     expect(router.push).not.toHaveBeenCalled();
   });
 

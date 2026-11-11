@@ -1,3 +1,4 @@
+import { CONSTELLATIONS } from '@/features/chart/constellations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -170,24 +171,22 @@ describe('요약 해석 화면', () => {
     expect(await screen.findByText(R.generating)).toBeTruthy();
     await view.unmount();
   });
-  it('글 위에 그 사람의 하늘 그림을 보여 준다(글자와 번호 없이 점과 선만)', async () => {
+  it('글 위에 내 별자리의 별 모양을 보여 준다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     expect(screen.getByTestId('chart-picture')).toBeTruthy();
-    expect(screen.getAllByTestId('wheel-body-dot')).toHaveLength(10);
-    // 그림에는 하우스 번호나 천체 이름 같은 글자가 없다
-    expect(screen.queryAllByTestId('wheel-house-number')).toHaveLength(0);
-    expect(screen.queryByText(strings.bodiesShort.SUN)).toBeNull();
-    // 그림 한가운데에 내 별자리(태양 자리)의 모양과 이름이 크게 있고, 그 자리 칸만 칠한다
-    expect(screen.getByTestId('picture-sign-figure')).toBeTruthy();
-    expect(JSON.stringify(screen.toJSON())).toContain(strings.signFigures.GEMINI);
+    // 그림은 내 별자리(태양 자리)의 별 모양이고, 그 아래에 이름을 적는다
+    expect(screen.getAllByTestId('picture-star')).toHaveLength(CONSTELLATIONS.GEMINI.stars.length);
+    expect(screen.getAllByTestId('picture-star-line')).toHaveLength(CONSTELLATIONS.GEMINI.lines.length);
     expect(screen.getByTestId('picture-sign-name')).toBeTruthy();
     expect(screen.getByTestId('chart-picture').props.accessibilityLabel).toBe(
       strings.signs.GEMINI + strings.chart.signSuffix,
     );
-    expect(screen.getAllByTestId('picture-sign-cell')).toHaveLength(1);
+    // 차트의 번호나 천체 이름 같은 글자는 없다
+    expect(screen.queryAllByTestId('wheel-house-number')).toHaveLength(0);
+    expect(screen.queryByText(strings.bodiesShort.SUN)).toBeNull();
     // 그림 아래에는 중심 · 마음 · 첫인상을 글로 적는다
     expect(screen.getByText(strings.chart.keySun)).toBeTruthy();
     expect(screen.getByText(strings.signs.GEMINI + strings.chart.signSuffix)).toBeTruthy();

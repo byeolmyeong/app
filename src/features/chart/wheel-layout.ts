@@ -42,8 +42,7 @@ export type WheelLayout = {
   labelFontSize: number;
   signFontSize: number;
   houseFontSize: number;
-  /** `cell` 은 그 별자리 칸(바깥 고리와 안쪽 고리 사이)을 칠하는 SVG 경로다 */
-  signs: { sign: string; line: Line; label: Pt; cell: string }[];
+  signs: { sign: string; line: Line; label: Pt }[];
   ticks: Line[];
   houseLines: (Line & { main: boolean })[];
   houseNumbers: (Pt & { n: number })[];
@@ -70,15 +69,10 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
     return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
   };
 
-  const cell = (deg: number): string => {
-    const [o0, o1, i1, i0] = [at(deg, rOuter), at(deg + 30, rOuter), at(deg + 30, rSign), at(deg, rSign)];
-    return `M ${o0.x} ${o0.y} A ${rOuter} ${rOuter} 0 0 0 ${o1.x} ${o1.y} L ${i1.x} ${i1.y} A ${rSign} ${rSign} 0 0 1 ${i0.x} ${i0.y} Z`;
-  };
   const signs = SIGN_ORDER.map((sign, i) => ({
     sign,
     line: line(i * 30, rSign, rOuter),
     label: at(i * 30 + 15, (rOuter + rSign) / 2),
-    cell: cell(i * 30),
   }));
 
   const ticks: Line[] = [];

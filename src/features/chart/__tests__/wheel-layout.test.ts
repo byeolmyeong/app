@@ -113,12 +113,4 @@ describe('wheelLayout: 시각 모름 차트', () => {
     expect(wheelLayout(leaked).houseLines).toHaveLength(0);
   });
 
-  it('별자리 칸마다 칠할 수 있는 칸 모양(바깥 고리와 안쪽 고리 사이)을 준다', () => {
-    const layout = wheelLayout(fixtures.chart);
-    expect(layout.signs).toHaveLength(12);
-    for (const s of layout.signs) {
-      expect(s.cell.startsWith(`M ${s.line.x2} ${s.line.y2} A ${layout.rOuter}`)).toBe(true);
-      expect(s.cell.endsWith('Z')).toBe(true);
-    }
-  });
 });

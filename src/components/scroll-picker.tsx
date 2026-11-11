@@ -19,7 +19,11 @@ export type ScrollPickerProps<V extends string | number> = {
   items: ScrollPickerItem<V>[];
   value: V;
   onChange: (value: V) => void;
-  /** 줄마다 `${testID}-${value}` 로 붙는다 */
+  /** 끝에서 처음으로 이어지게 한다(시·분처럼 한 바퀴 도는 값). 목록을 앞뒤로 한 벌씩 더 그린다 */
+  loop?: boolean;
+  /** 열의 너비. 기본은 `Sizes.pickerWidth` */
+  width?: number;
+  /** 줄마다 `${testID}-${value}`, 굴리는 영역에 `${testID}-scroll` 로 붙는다. loop 이면 가운데 벌의 줄에만 붙는다 */
   testID?: string;
 };
 
@@ -42,19 +46,44 @@ type MouseLike = { clientY: number; preventDefault?: () => void };
  * 드럼롤 선택 한 열. 위아래로 굴리면 가운데 줄이 골라지고, 줄을 눌러도 골라진다.
  * 웹에서는 마우스 휠로 굴리거나 마우스로 잡고 끌어도 된다.
  */
-export function ScrollPicker<V extends string | number>({ items, value, onChange, testID }: ScrollPickerProps<V>) {
+export function ScrollPicker<V extends string | number>({
+  items,
+  value,
+  onChange,
+  loop = false,
+  width = Sizes.pickerWidth,
+  testID,
+}: ScrollPickerProps<V>) {
   const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
   const offset = useRef(0);
   /** 마우스로 끄는 중의 시작 위치. 끌고 있지 않으면 null */
   const mouse = useRef<{ y: number; offset: number; moved: boolean } | null>(null);
   const [dragging, setDragging] = useState(false);
-  const selected = Math.max(
-    0,
-    items.findIndex((item) => item.value === value),
-  );
+  const count = items.length;
+  /** 그리는 줄. loop 이면 같은 목록 세 벌이고 가운데 벌에서 시작한다 */
+  const rows = loop ? [...items, ...items, ...items] : items;
+  const base = loop ? count : 0;
+  /** 가운데 벌에서 고른 값이 놓인 줄 */
+  const selected =
+    base +
+    Math.max(
+      0,
+      items.findIndex((item) => item.value === value),
+    );
   const [center, setCenter] = useState(selected);
-  const clamp = (index: number) => Math.min(items.length - 1, Math.max(0, index));
+  const clamp = (index: number) => Math.min(rows.length - 1, Math.max(0, index));
+  const valueAt = (index: number) => items[index % count].value;
+
+  /** loop: 앞뒤 벌에 멈췄으면 같은 값의 가운데 벌 줄로 소리 없이 옮겨, 어느 쪽으로든 계속 굴릴 수 있게 한다 */
+  function recenter(index: number) {
+    if (!loop) return;
+    const middle = count + (index % count);
+    if (middle === index) return;
+    ref.current?.scrollTo({ y: middle * ROW, animated: false });
+    offset.current = middle * ROW;
+    setCenter(middle);
+  }
 
   // 처음 열릴 때 고른 줄이 가운데에 오게 한다.
   useEffect(() => {
@@ -74,14 +103,15 @@ export function ScrollPicker<V extends string | number>({ items, value, onChange
     if (settle.current) clearTimeout(settle.current);
     if (mouse.current) return; // 끄는 동안은 정하지 않는다. 놓을 때 정한다
     settle.current = setTimeout(() => {
-      if (items[index].value !== value) onChange(items[index].value);
+      if (valueAt(index) !== value) onChange(valueAt(index));
+      recenter(index);
     }, SETTLE_MS);
   }
 
   function select(index: number) {
     ref.current?.scrollTo({ y: index * ROW, animated: true });
     setCenter(index);
-    onChange(items[index].value);
+    onChange(valueAt(index));
   }
 
   function onPressRow(index: number) {
@@ -129,10 +159,11 @@ export function ScrollPicker<V extends string | number>({ items, value, onChange
   }
 
   return (
-    <View style={[styles.column, webGrab]} {...mouseHandlers}>
+    <View style={[styles.column, { width }, webGrab]} {...mouseHandlers}>
       <View pointerEvents="none" style={styles.band} />
       <ScrollView
         ref={ref}
+        testID={testID ? `${testID}-scroll` : undefined}
         showsVerticalScrollIndicator={false}
         snapToInterval={ROW}
         decelerationRate="fast"
@@ -142,15 +173,15 @@ export function ScrollPicker<V extends string | number>({ items, value, onChange
         contentContainerStyle={styles.content}
         // 끄는 동안은 줄 맞춤을 꺼야 마우스를 그대로 따라온다
         style={dragging ? undefined : webSnap}>
-        {items.map((item, index) => (
+        {rows.map((item, index) => (
           <Pressable
-            key={item.value}
-            testID={testID ? `${testID}-${item.value}` : undefined}
+            key={`${Math.floor(index / count)}-${item.value}`}
+            testID={testID && index >= base && index < base + count ? `${testID}-${item.value}` : undefined}
             accessibilityRole="button"
             accessibilityState={{ selected: index === center }}
             onPress={() => onPressRow(index)}
             style={[styles.row, webSnapRow]}>
-            <Txt variant="picker" color={index === center ? 'ink' : 'muted'}>
+            <Txt variant="picker" numberOfLines={1} color={index === center ? 'ink' : 'muted'}>
               {item.label}
             </Txt>
           </Pressable>
@@ -161,7 +192,7 @@ export function ScrollPicker<V extends string | number>({ items, value, onChange
 }
 
 const styles = StyleSheet.create({
-  column: { width: Sizes.pickerWidth, height: ROW * Sizes.pickerRows },
+  column: { height: ROW * Sizes.pickerRows },
   /** 가운데 줄 뒤의 옅은 띠 */
   band: {
     position: 'absolute',

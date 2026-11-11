@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { Txt } from '@/components/txt';
 import { ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
@@ -19,7 +19,13 @@ export function NavBar({ title, onBack, left }: NavBarProps) {
     <View style={styles.bar}>
       <View style={styles.side}>
         {onBack ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={strings.common.backLabel} hitSlop={Spacing.sm} onPress={onBack}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={strings.common.backLabel}
+            hitSlop={Spacing.sm}
+            onPress={onBack}
+            style={noOutline}
+          >
             <Txt variant="body" color="gray">
               {strings.common.back}
             </Txt>
@@ -37,6 +43,9 @@ export function NavBar({ title, onBack, left }: NavBarProps) {
     </View>
   );
 }
+
+// 웹 브라우저가 그리는 파란 포커스 테두리는 끈다(가득 찬 고르기 화면이 열리면 이 버튼이 포커스를 받는다).
+const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as ViewStyle;
 
 const styles = StyleSheet.create({
   bar: {

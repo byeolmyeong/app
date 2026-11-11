@@ -5,7 +5,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
 import { createSessionStore, type Session } from '@/features/auth/session-store';
-import { loadToken, saveToken } from '@/features/auth/token-storage';
+import { deleteToken, loadToken, saveToken } from '@/features/auth/token-storage';
 import { api, setSessionRefresher, setSessionToken } from '@/lib/api';
 
 const store = createSessionStore({
@@ -13,6 +13,7 @@ const store = createSessionStore({
   createDevSession: () => api.createDevSession(),
   loadToken,
   saveToken,
+  deleteToken,
   setApiToken: setSessionToken,
 });
 
@@ -21,6 +22,9 @@ setSessionRefresher(() => store.refresh());
 
 /** 훅 밖에서 지금의 세션을 본다(요청 직전에 세션이 있는지 확인할 때) */
 export const getSession = (): Session => store.getSnapshot();
+
+/** 세션을 비운다(계정을 지웠을 때). 보관된 토큰도 지운다 */
+export const clearSession = (): Promise<void> => store.clear();
 
 /** 세션 토큰과 준비 여부. 처음 쓰일 때(앱이 켜질 때) 세션을 시작한다 */
 export function useSession(): Session {

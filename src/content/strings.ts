@@ -19,6 +19,7 @@ export const strings = {
     soon: '준비 중',
     categories: [
       {
+        key: 'me',
         title: '나',
         caption: '내가 어떤 사람인지',
         items: [
@@ -28,6 +29,7 @@ export const strings = {
         ],
       },
       {
+        key: 'relation',
         title: '관계',
         caption: '사람을 대하는 방식과 연애',
         items: [
@@ -36,6 +38,7 @@ export const strings = {
         ],
       },
       {
+        key: 'synastry',
         title: '궁합',
         caption: '누군가와 나 사이',
         items: [
@@ -44,6 +47,7 @@ export const strings = {
         ],
       },
       {
+        key: 'timing',
         title: '시기',
         caption: '지금과 앞으로의 흐름',
         items: [

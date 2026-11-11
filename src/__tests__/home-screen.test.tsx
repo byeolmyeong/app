@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
 import BirthScreen from '@/app/birth';
@@ -52,12 +53,29 @@ describe('홈', () => {
     expect(screen.getByText('2000. 6. 15. 오후 9:00 · 서울특별시 마포구')).toBeTruthy();
   });
 
-  it('"나" 에서 풀이 글과 차트로 간다', async () => {
+  it('카테고리는 아이콘 타일이고 한 줄에 둘씩 놓인다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
+    await screen.findByText(M.categories[0].caption);
+    expect(screen.getAllByTestId('home-category-icon')).toHaveLength(4);
+    for (const cell of screen.getAllByTestId('home-category-cell')) {
+      expect(StyleSheet.flatten(cell.props.style).width).toBe('50%');
+    }
+  });
+
+  it('"나" 타일을 누르면 그 칸의 항목이 시트로 올라오고, 거기서 풀이 글과 차트로 간다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    // 타일을 누르기 전에는 항목이 보이지 않는다
+    await screen.findByText(M.categories[0].caption);
+    expect(screen.queryByText('요약 풀이')).toBeNull();
+    await fireEvent.press(screen.getByLabelText('나'));
     await fireEvent.press(await screen.findByText('요약 풀이'));
     expect(router.push).toHaveBeenCalledWith('/reading');
-    await fireEvent.press(screen.getByText('내 차트'));
+    // 고르면 시트가 닫힌다
+    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
+    await fireEvent.press(screen.getByLabelText('나'));
+    await fireEvent.press(await screen.findByText('내 차트'));
     expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
@@ -65,10 +83,13 @@ describe('홈', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findByText(M.categories[0].caption);
-    // 관계 · 궁합 · 시기 세 칸은 통째로 준비 중이다
+    // 관계 · 궁합 · 시기 세 타일은 통째로 준비 중이라 눌러도 열리지 않는다
     expect(screen.getAllByTestId('home-category-soon')).toHaveLength(3);
-    await fireEvent.press(screen.getByText('상대와 궁합 보기'));
-    await fireEvent.press(screen.getByText('심층 리포트'));
+    await fireEvent.press(screen.getByLabelText('궁합'));
+    expect(screen.queryByTestId('sheet-dim')).toBeNull();
+    // "나" 안의 아직 없는 항목도 준비 중이다
+    await fireEvent.press(screen.getByLabelText('나'));
+    await fireEvent.press(await screen.findByText('심층 리포트'));
     expect(router.push).not.toHaveBeenCalled();
   });
 

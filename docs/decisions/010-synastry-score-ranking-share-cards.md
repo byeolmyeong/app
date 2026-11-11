@@ -3,7 +3,7 @@ type: decision
 tags: [궁합, 궁합 점수, 랭킹, 공유 카드, 인스타 스토리]
 status: active
 last_reviewed: 2026-11-11
-superseded_by:
+superseded_by: 020-family-relation-and-place-optional.md (관계 유형에 가족을 더한 부분만. 나머지는 유효)
 ---
 # 010. 궁합에 나 기준 점수와 랭킹을 보여 주고, 공유 카드를 넓힌다
 

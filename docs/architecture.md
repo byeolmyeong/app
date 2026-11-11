@@ -48,6 +48,8 @@ content/strings.ts   문구의 단일 출처
 lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타입 · lib/fixtures/ 응답 예시
 ```
 - 기능 폴더 안에서 훅은 `use-<이름>.ts`, 부품은 `<이름>.tsx`, 테스트는 `__tests__/`.
+- 화면을 렌더하는 테스트는 `src/__tests__/` 에 둔다. `app/` 안에 두면 라우트가 되고, `features/` 에 두면 `app` 을 import 해 의존 규칙에 걸린다.
+- 다른 기능이 가져다 써도 되는 파일은 `eslint.config.js` 의 `SHARED_FEATURE_FILES` 에 적는다(지금: `chart/ChartWheel.tsx`, `auth/use-session.ts`).
 
 ## 의존 규칙 (ESLint `import/no-restricted-paths` 가 강제한다, 결정 017)
 | 규칙 | 이유 |

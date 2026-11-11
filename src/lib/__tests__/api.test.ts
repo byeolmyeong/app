@@ -381,13 +381,91 @@ describe('api: 심층 리포트', () => {
     for (const v of broken) expect(isReport(v)).toBe(false);
   });
 
-  it('계약에 아직 없는 필드(나중에 올 timing)는 무시한다', () => {
-    expect(isReport({ ...report, timing: { anything: 1 } })).toBe(true);
-    expect(isReportState({ status: 'DONE', report: { ...report, timing: [] }, extra: 1 })).toBe(true);
+  it('시기(timing)가 없거나 계약의 모양이 아니면 리포트로 받지 않는다', () => {
+    const { timing } = report;
+    const [m1, m2, m3, m4] = timing.milestones;
+    const [i1] = timing.intervals;
+    const change = timing.intervals.find((i) => i.kind === 'CHANGE')!;
+    const broken: unknown[] = [
+      { sections: report.sections },
+      { ...report, timing: null },
+      { ...report, timing: [] },
+      { ...report, timing: { ...timing, timeKnown: 'yes' } },
+      { ...report, timing: { ...timing, milestones: [m1, m2, m3] } },
+      { ...report, timing: { ...timing, milestones: [m2, m1, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, year: '2022' }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, age: null }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, date: '2022-04' }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, size: undefined }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, intervals: 'x' } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, id: 1 }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, kind: 'OTHER' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, area: 'HEALTH' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, from: '2003' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, to: 20030328 }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, title: undefined }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, body: 1 }] } },
+      // 크기는 변화 구간에만 있고, 변화 구간에는 꼭 있다
+      { ...report, timing: { ...timing, intervals: [{ ...change, size: undefined }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...change, size: 'HUGE' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, kind: 'OPPORTUNITY', size: 'BIG' }] } },
+      { ...report, timing: { ...timing, current: undefined } },
+      { ...report, timing: { ...timing, current: { ...timing.current, date: 1 } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, intervals: null } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, intervals: [{}] } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, milestone: null } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nextInterval: null } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nextMilestone: {} } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nearestMilestone: undefined } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nearestMilestone: 'CHIRON_RETURN' } } },
+    ];
+    for (const v of broken) expect(isReport(v)).toBe(false);
+    expect(isReportState({ status: 'DONE', report: { sections: report.sections } })).toBe(false);
   });
 
-  it('예시 리포트는 계약의 모양이다: 네 영역, 영역마다 문단 4~6개, 계약의 필드만', () => {
-    expect(Object.keys(report)).toEqual(['sections']);
+  it('시기의 없어도 되는 값(지금의 변곡점 · 다음 구간 · 다음 변곡점)은 키가 없어도 받는다', () => {
+    const { date, nearestMilestone } = report.timing.current;
+    const current = { date, intervals: [], nearestMilestone };
+    expect(isReport({ ...report, timing: { ...report.timing, current } })).toBe(true);
+    expect(isReport({ ...report, timing: { ...report.timing, intervals: [], current } })).toBe(true);
+    expect(
+      isReport({
+        ...report,
+        timing: { ...report.timing, current: { ...current, milestone: report.timing.milestones[0] } },
+      }),
+    ).toBe(true);
+  });
+
+  it('예시 시기는 계약의 모양이다: 변곡점 넷, 시작 순서의 구간, 오늘에 걸친 구간과 다음 구간', () => {
+    const { timing } = report;
+    expect(timing.timeKnown).toBe(true);
+    expect(timing.milestones.map((m) => m.kind)).toEqual([
+      'SATURN_SQUARE',
+      'SATURN_RETURN',
+      'URANUS_OPPOSITION',
+      'SECOND_SATURN_RETURN',
+    ]);
+    expect(timing.intervals.length).toBeGreaterThanOrEqual(20);
+    expect(timing.intervals.map((i) => i.from)).toEqual(timing.intervals.map((i) => i.from).sort());
+    for (const i of timing.intervals) expect('size' in i).toBe(i.kind === 'CHANGE');
+    const { current } = timing;
+    expect(current.intervals).toEqual(timing.intervals.filter((i) => i.from <= current.date && current.date <= i.to));
+    expect(current.intervals.length).toBeGreaterThan(0);
+    expect(current.nextInterval).toEqual(timing.intervals.find((i) => i.from > current.date));
+    expect(current.nextMilestone).toEqual(timing.milestones.find((m) => m.date > current.date));
+    expect('milestone' in current).toBe(false);
+  });
+
+  it('시각 모름 예시 리포트에는 운명적 만남 구간과 돈 영역이 없다', () => {
+    const { timing } = fixtures.reportTimeUnknown;
+    expect(isReport(fixtures.reportTimeUnknown)).toBe(true);
+    expect(timing.timeKnown).toBe(false);
+    expect(timing.intervals.length).toBeGreaterThan(0);
+    expect(timing.intervals.filter((i) => i.kind === 'FATED' || i.area === 'MONEY')).toEqual([]);
+  });
+
+  it('예시 리포트는 계약의 모양이다: 네 영역과 시기, 영역마다 문단 4~6개, 계약의 필드만', () => {
+    expect(Object.keys(report)).toEqual(['sections', 'timing']);
     expect(report.sections.map((s) => s.area)).toEqual(['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION']);
     for (const section of report.sections) {
       expect(Object.keys(section).sort()).toEqual(['area', 'paragraphs', 'title']);

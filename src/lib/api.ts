@@ -73,7 +73,7 @@ export type Reading = {
 
 export type ReportStatus = 'NONE' | 'WRITING' | 'DONE';
 
-/** 심층 리포트의 영역. 서버는 이 순서로 네 영역을 모두 준다. 시기(타임라인)는 아직 계약에 없다 */
+/** 심층 리포트의 글 영역. 서버는 이 순서로 네 영역을 모두 준다. 다섯째 영역인 시기는 `Report.timing` 으로 따로 온다 */
 export const REPORT_AREAS = ['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
 export type ReportArea = (typeof REPORT_AREAS)[number];
 
@@ -83,7 +83,59 @@ export type ReportSection = {
   paragraphs: { title: string; body: string; basis: string[] }[];
 };
 
-export type Report = { sections: ReportSection[] };
+/** 시기의 날짜는 모두 한국 달력의 YYYY-MM-DD 글자다. 글자를 그대로 비교해 거르고 정렬한다(앱은 날짜를 계산하지 않는다) */
+export const MILESTONE_KINDS = ['SATURN_SQUARE', 'SATURN_RETURN', 'URANUS_OPPOSITION', 'SECOND_SATURN_RETURN'] as const;
+export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
+export type TimingSize = 'BIG' | 'SMALL';
+
+/** 누구에게나 오는 변곡점(마디). date 는 처음 정확히 겹치는 날, year·age 는 그날의 해와 만 나이(서버가 계산한 값) */
+export type TimingMilestone = {
+  kind: MilestoneKind;
+  date: string;
+  year: number;
+  age: number;
+  from: string;
+  to: string;
+  size: TimingSize;
+  title: string;
+  body: string;
+};
+
+/** 나에게만 오는 구간. CHANGE 변화 · OPPORTUNITY 기회 · FATED 운명적 만남(시각을 알 때만). size 는 CHANGE 에만 있다 */
+export type TimingInterval = {
+  id: string;
+  kind: 'CHANGE' | 'OPPORTUNITY' | 'FATED';
+  from: string;
+  to: string;
+  area: 'PEOPLE' | 'WORK' | 'MONEY' | 'SELF';
+  size?: TimingSize;
+  title: string;
+  body: string;
+};
+
+/** 지금 나의 구간. 서버가 `GET /reports/me` 때마다 그날(date)로 만든다. 없는 값은 키가 없다 */
+export type TimingCurrent = {
+  date: string;
+  /** 오늘에 걸쳐 있는 구간. 없으면 빈 배열 */
+  intervals: TimingInterval[];
+  /** 오늘이 그 기간 안인 변곡점 */
+  milestone?: TimingMilestone;
+  nextInterval?: TimingInterval;
+  nextMilestone?: TimingMilestone;
+  /** 오늘에서 가장 가까운 변곡점(지났든 아니든). 화면에서 강조한다 */
+  nearestMilestone: MilestoneKind;
+};
+
+/** 심층 리포트의 시기 영역. milestones 는 언제나 넷이 시간 순서로, intervals 는 시작 순서로 온다(서로 겹칠 수 있다) */
+export type ReportTiming = {
+  /** false 면 상승점 구간과 운명적 만남 구간이 빠져 있다 */
+  timeKnown: boolean;
+  milestones: TimingMilestone[];
+  intervals: TimingInterval[];
+  current: TimingCurrent;
+};
+
+export type Report = { sections: ReportSection[]; timing: ReportTiming };
 
 /** `GET /reports/me`. 글은 DONE 일 때만 온다 */
 export type ReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: Report };
@@ -190,10 +242,62 @@ export function isReading(v: unknown): v is Reading {
   );
 }
 
-/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 계약에 없는 필드는 보지 않는다 */
+const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+const isSize = (v: unknown) => v === 'BIG' || v === 'SMALL';
+
+const isMilestone = (v: unknown): v is TimingMilestone =>
+  isObject(v) &&
+  MILESTONE_KINDS.some((kind) => kind === v.kind) &&
+  isDate(v.date) &&
+  typeof v.year === 'number' &&
+  typeof v.age === 'number' &&
+  isDate(v.from) &&
+  isDate(v.to) &&
+  isSize(v.size) &&
+  typeof v.title === 'string' &&
+  typeof v.body === 'string';
+
+/** 크기는 변화 구간에만 있고 다른 종류에는 키가 없다 */
+const isInterval = (v: unknown): v is TimingInterval =>
+  isObject(v) &&
+  typeof v.id === 'string' &&
+  (v.kind === 'CHANGE' ? isSize(v.size) : (v.kind === 'OPPORTUNITY' || v.kind === 'FATED') && v.size === undefined) &&
+  isDate(v.from) &&
+  isDate(v.to) &&
+  ['PEOPLE', 'WORK', 'MONEY', 'SELF'].includes(v.area as string) &&
+  typeof v.title === 'string' &&
+  typeof v.body === 'string';
+
+const isTimingCurrent = (v: unknown): v is TimingCurrent =>
+  isObject(v) &&
+  isDate(v.date) &&
+  Array.isArray(v.intervals) &&
+  v.intervals.every(isInterval) &&
+  (v.milestone === undefined || isMilestone(v.milestone)) &&
+  (v.nextInterval === undefined || isInterval(v.nextInterval)) &&
+  (v.nextMilestone === undefined || isMilestone(v.nextMilestone)) &&
+  MILESTONE_KINDS.some((kind) => kind === v.nearestMilestone);
+
+/** 변곡점은 계약의 순서대로 넷이 모두 있어야 한다(화면이 그 순서를 믿고 "첫 번째~네 번째" 로 그린다) */
+const isTiming = (v: unknown): v is ReportTiming =>
+  isObject(v) &&
+  typeof v.timeKnown === 'boolean' &&
+  Array.isArray(v.milestones) &&
+  v.milestones.length === MILESTONE_KINDS.length &&
+  v.milestones.every((m, i) => isMilestone(m) && m.kind === MILESTONE_KINDS[i]) &&
+  Array.isArray(v.intervals) &&
+  v.intervals.every(isInterval) &&
+  isTimingCurrent(v.current);
+
+/**
+ * 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 시기(timing)도 계약의 모양이어야 한다.
+ * 시기가 생기기 전에 받아 기기에 둔 리포트는 여기서 걸러진다. 그 밖의 계약에 없는 필드는 보지 않는다.
+ */
 export function isReport(v: unknown): v is Report {
   return (
     isObject(v) &&
+    isTiming(v.timing) &&
     Array.isArray(v.sections) &&
     v.sections.length === REPORT_AREAS.length &&
     v.sections.every(

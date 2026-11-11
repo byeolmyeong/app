@@ -31,7 +31,7 @@ export function ChartMark() {
             strokeWidth={0.8}
           />
         ))}
-        <Circle testID="chart-mark-dot" cx={round(c - r * 0.42)} cy={round(c - r * 0.46)} r={2.2} fill={Colors.gold} />
+        <Circle testID="chart-mark-dot" cx={round(c - r * 0.42)} cy={round(c - r * 0.46)} r={2.2} fill={Colors.primary} />
       </Svg>
     </View>
   );

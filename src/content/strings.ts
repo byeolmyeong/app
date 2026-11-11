@@ -159,6 +159,14 @@ export const strings = {
     },
     retry: '다시 시도',
   },
+  /** 궁합(직접 입력). 점수와 그 옆의 말은 서버가 준 것을 그대로 보여 준다(결정 010, 서버 결정 008) */
+  synastry: {
+    /** 겹친 휠: 내 점과 상대 점을 한 고리에 그린 그림 */
+    overlay: {
+      wheelLabel: '두 사람의 하늘을 겹친 그림',
+      mine: '나',
+    },
+  },
   detail: {
     title: '차트 자세히',
     helpLabel: '이 표 읽는 법',

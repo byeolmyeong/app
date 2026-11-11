@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
 import { DataTable, type DataTableColumn } from '@/components/data-table';
+import { InfoButton } from '@/components/info-button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
+import { SectionHead } from '@/components/section-head';
 import { Tabs } from '@/components/tabs';
 import { Txt } from '@/components/txt';
 import { strings } from '@/content/strings';
@@ -32,40 +34,55 @@ export default function ChartDetailScreen() {
   const withHouses = showsHouses(chart);
   const tabKeys: TabKey[] = withHouses ? ['planets', 'houses', 'aspects'] : ['planets', 'aspects'];
   const right = 'right' as const;
+  // 시각을 모르면 하우스 탭이 없으니 그때 고른 탭이 하우스일 수 없다
+  const shownTab = tab === 'houses' && !withHouses ? 'planets' : tab;
+  const help = strings.help[shownTab];
 
   let columns: DataTableColumn[];
   let rows;
   if (tab === 'houses' && withHouses) {
     columns = [
-      { key: 'house', title: C.house, bold: true },
+      { key: 'houseCell', title: C.house },
       { key: 'sign', title: C.sign },
       { key: 'degree', title: C.degree, align: right },
     ];
-    rows = houseRows(chart);
+    rows = houseRows(chart).map((r) => ({
+      ...r,
+      houseCell: <BodyCell name={String(r.house)} meaning={String(r.meaning)} />,
+    }));
   } else if (tab === 'aspects') {
     columns = [
-      { key: 'pair', title: C.pair, bold: true, flex: 1.6 },
-      { key: 'aspect', title: C.aspect, flex: 0.7 },
-      { key: 'orb', title: C.orb, align: right, flex: 0.8 },
-      { key: 'motion', title: C.motion, align: right, flex: 1.3 },
+      { key: 'pair', title: C.pair, bold: true, flex: 1.5 },
+      { key: 'aspectCell', title: C.aspect },
+      { key: 'orb', title: C.orb, align: right },
+      { key: 'motion', title: C.motion, align: right },
     ];
-    rows = aspectRows(chart);
+    rows = aspectRows(chart).map((r) => ({
+      ...r,
+      aspectCell: <BodyCell name={String(r.aspect)} meaning={String(r.meaning)} />,
+    }));
   } else {
     columns = [
       { key: 'bodyCell', title: C.body, flex: 1.5 },
       { key: 'sign', title: C.sign },
       { key: 'degree', title: C.degree, align: right },
-      ...(withHouses ? [{ key: 'house', title: C.house, align: right, flex: 0.7 }] : []),
+      ...(withHouses ? [{ key: 'house', title: C.house, align: right }] : []),
     ];
     rows = planetRows(chart).map((r) => ({
       ...r,
-      bodyCell: <BodyCell name={String(r.body)} retrograde={r.retrograde === true} />,
+      bodyCell: <BodyCell name={String(r.body)} retrograde={r.retrograde === true} meaning={String(r.meaning)} />,
     }));
   }
 
   return (
     <Screen nav={nav}>
       <Tabs tabs={tabKeys.map((key) => ({ key, label: S.tabs[key] }))} value={tab} onChange={setTab} />
+      <Txt variant="table" color="gray">
+        {S.intro[shownTab]}
+      </Txt>
+      <SectionHead title={S.helpLabel}>
+        <InfoButton testID="info-detail" title={help.title} items={help.items} />
+      </SectionHead>
       <DataTable columns={columns} rows={rows} />
       {withHouses ? null : (
         <Txt variant="label" color="gray">

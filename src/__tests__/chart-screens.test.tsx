@@ -35,12 +35,15 @@ beforeEach(async () => {
 /** 시트가 닫혀 화면에서 사라질 때까지 기다린다(닫히는 움직임이 끝나야 사라진다) */
 const sheetClosed = () => waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
 
-/** 치지 않고 고른다: 태어난 곳 칸을 누르면 아래에서 시트가 올라오고, 시·도 → 시·군·구 를 고르면 닫힌다 */
+/** 고르기 화면이 닫혀 사라질 때까지 기다린다 */
+const pickerClosed = () => waitFor(() => expect(screen.queryByTestId('place-picker')).toBeNull());
+
+/** 치지 않고 고른다: 태어난 곳 칸을 누르면 고르기 화면이 가득 차고, 시·도 → 시·군·구 를 고르면 닫힌다 */
 async function fillPlace() {
   await fireEvent.press(screen.getByTestId('place-field'));
   await fireEvent.press(await screen.findByText('서울'));
   await fireEvent.press(await screen.findByText('마포구'));
-  await sheetClosed();
+  await pickerClosed();
 }
 
 /** 시각 칸을 누르면 올라오는 드럼롤 시트에서 오전/오후 · 시 · 분을 고르고 확인을 누른다 */
@@ -98,9 +101,9 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.queryByText(H.timeConfirm)).toBeNull();
   });
 
-  it('태어난 곳은 아래에서 올라오는 시트에서 고른다: 왼쪽 시·도, 오른쪽 그 시·도의 시·군·구', async () => {
+  it('태어난 곳은 화면을 가득 채우는 고르기 화면에서 고른다: 왼쪽 시·도, 오른쪽 그 시·도의 시·군·구', async () => {
     await render(<HomeScreen />);
-    // 시트를 열기 전에는 고르는 줄이 화면에 없다
+    // 열기 전에는 고르는 줄이 화면에 없다
     expect(screen.queryByTestId('place-option')).toBeNull();
     await fireEvent.press(screen.getByTestId('place-field'));
     // 열자마자 시·도 17개와 첫 시·도(서울)의 구 25개가 함께 보인다
@@ -112,8 +115,8 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.getAllByTestId('place-option')).toHaveLength(16);
     await fireEvent.press(screen.getByText('서울'));
     await fireEvent.press(screen.getByText('마포구'));
-    // 고르면 시트가 닫히고 고른 곳이 칸에 적힌다
-    await sheetClosed();
+    // 고르면 닫히고 고른 곳이 칸에 적힌다
+    await pickerClosed();
     expect(screen.getByText('서울특별시 마포구')).toBeTruthy();
     // 다시 열면 고른 시·도의 목록부터 보인다
     await fireEvent.press(screen.getByTestId('place-field'));
@@ -122,7 +125,7 @@ describe('출생 정보 입력(홈)', () => {
     await fireEvent.press(screen.getByText('세종'));
     expect(screen.getAllByTestId('place-option')).toHaveLength(1);
     await fireEvent.press(screen.getByText('세종특별자치시'));
-    await sheetClosed();
+    await pickerClosed();
     await fillDateAndTime('2000-06-15', '21:00');
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() =>
@@ -130,12 +133,12 @@ describe('출생 정보 입력(홈)', () => {
     );
   });
 
-  it('시트 바깥을 누르면 고르지 않고 닫힌다', async () => {
+  it('고르기 화면에서 뒤로 가면 고르지 않고 닫힌다', async () => {
     await render(<HomeScreen />);
     await fireEvent.press(screen.getByTestId('place-field'));
     expect(await screen.findByText('경기')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('sheet-dim'));
-    await sheetClosed();
+    await fireEvent.press(screen.getByLabelText(strings.common.backLabel));
+    await pickerClosed();
     expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
   });
 
@@ -224,8 +227,11 @@ describe('차트', () => {
     expect(screen.getByText(strings.signs.CAPRICORN)).toBeTruthy();
     expect(screen.getAllByTestId('wheel-house-line')).toHaveLength(12);
     expect(screen.getAllByTestId('wheel-body-dot')).toHaveLength(10);
-    expect(screen.getAllByTestId('data-table-row')).toHaveLength(2);
-    expect(screen.getByText('24°40′')).toBeTruthy();
+    // 숫자 표는 "자세히" 로 옮기고, 이 화면에는 쉬운 말 설명을 바로 적는다
+    expect(screen.queryAllByTestId('data-table-row')).toHaveLength(0);
+    expect(screen.getByText(strings.chart.wheelCaption)).toBeTruthy();
+    expect(screen.getByText(strings.chart.keySunCaption)).toBeTruthy();
+    expect(screen.getByText(strings.chart.keyAscCaption)).toBeTruthy();
   });
 
   it('시각 "모름" 이면 하우스 선 0개이고 상승궁·하우스 번호를 보여 주지 않는다', async () => {
@@ -274,6 +280,10 @@ describe('차트 자세히', () => {
     expect(screen.getByText(strings.bodies.MC)).toBeTruthy();
     expect(screen.getByText(strings.bodies.FORTUNE)).toBeTruthy();
     expect(screen.getAllByText(D.retrograde).length).toBeGreaterThanOrEqual(3);
+    // 표 위에 이 표가 무엇인지 한 줄, 줄마다 그 천체가 맡은 주제를 쉬운 말로 적는다
+    expect(screen.getByText(D.intro.planets)).toBeTruthy();
+    expect(screen.getByText(strings.bodyMeanings.SUN)).toBeTruthy();
+    expect(screen.getByText(strings.bodyMeanings.VERTEX)).toBeTruthy();
     expect(screen.getByText('2000. 6. 15. 오후 9:00 · 서울특별시 마포구')).toBeTruthy();
   });
 
@@ -282,7 +292,11 @@ describe('차트 자세히', () => {
     await render(<ChartDetailScreen />);
     await fireEvent.press(await screen.findByRole('tab', { name: D.tabs.houses }));
     expect(screen.getAllByTestId('data-table-row')).toHaveLength(12);
+    expect(screen.getByText(D.intro.houses)).toBeTruthy();
+    expect(screen.getByText(strings.houseMeanings[7])).toBeTruthy();
     await fireEvent.press(screen.getByRole('tab', { name: D.tabs.aspects }));
+    expect(screen.getByText(D.intro.aspects)).toBeTruthy();
+    expect(screen.getAllByText(strings.aspectMeanings.CONJUNCTION).length).toBeGreaterThan(0);
     expect(screen.getAllByTestId('data-table-row')).toHaveLength(fixtures.chart.aspects.length);
     expect(screen.getAllByText(strings.aspects.CONJUNCTION).length).toBeGreaterThan(0);
   });
@@ -308,5 +322,44 @@ describe('차트 자세히', () => {
     expect(screen.queryAllByRole('tab')).toHaveLength(2);
     expect(screen.queryByText(strings.bodies.ASC)).toBeNull();
     expect(screen.queryByText(strings.bodies.FORTUNE)).toBeNull();
+  });
+});
+
+describe('설명 버튼', () => {
+  const HELP = strings.help;
+
+  it('차트 화면: 그림 읽는 법과 세 가지의 뜻을 물음표 버튼으로 연다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<ChartScreen />);
+    expect(await screen.findByText(strings.chart.wheelHeading)).toBeTruthy();
+    expect(screen.queryByText(HELP.wheel.items[0].text)).toBeNull();
+    await fireEvent.press(screen.getByTestId('info-wheel'));
+    expect(await screen.findByText(HELP.wheel.title)).toBeTruthy();
+    expect(screen.getByText(HELP.wheel.items[0].text)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
+    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
+    await fireEvent.press(screen.getByTestId('info-key-three'));
+    expect(await screen.findByText(HELP.keyThree.title)).toBeTruthy();
+  });
+
+  it('시각 모름 차트의 설명에는 하우스와 첫인상 이야기가 없다', async () => {
+    await saveBirth({ profile: { ...profile, time: null }, chart: fixtures.chartTimeUnknown });
+    await render(<ChartScreen />);
+    await fireEvent.press(await screen.findByTestId('info-key-three'));
+    expect(await screen.findByText(HELP.keyThree.title)).toBeTruthy();
+    expect(screen.queryByText(HELP.keyThree.asc.text)).toBeNull();
+    expect(screen.getByText(HELP.keyThree.items[0].text)).toBeTruthy();
+  });
+
+  it('차트 자세히: 보고 있는 탭의 설명을 연다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<ChartDetailScreen />);
+    await fireEvent.press(await screen.findByTestId('info-detail'));
+    expect(await screen.findByText(HELP.planets.title)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
+    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
+    await fireEvent.press(screen.getByText(strings.detail.tabs.aspects));
+    await fireEvent.press(screen.getByTestId('info-detail'));
+    expect(await screen.findByText(HELP.aspects.title)).toBeTruthy();
   });
 });

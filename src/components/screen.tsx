@@ -23,6 +23,7 @@ export function Screen({ nav, children }: ScreenProps) {
         {nav}
         <ScrollView
           style={styles.scroll}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled">
           {children}

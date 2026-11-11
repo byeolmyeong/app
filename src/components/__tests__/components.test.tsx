@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { processColor, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -6,6 +6,7 @@ import { DataTable } from '@/components/data-table';
 import { Field } from '@/components/field';
 import { ChartMark } from '@/components/chart-mark';
 import { SectionLabel } from '@/components/section-label';
+import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
 import { Colors, FontFamily, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
@@ -170,5 +171,33 @@ describe('SectionLabel', () => {
     const style = StyleSheet.flatten(screen.getByText('한 줄 총평').props.style);
     expect(style.fontSize).toBe(Typography.label.fontSize);
     expect(style.color).toBe(Colors.gray);
+  });
+});
+
+describe('ScrollPicker', () => {
+  const hours = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
+
+  it('줄을 누르면 그 값을 고른다', async () => {
+    const onChange = jest.fn();
+    await render(<ScrollPicker testID="hour" items={hours} value={3} onChange={onChange} />);
+    expect(screen.getAllByText('7')).toHaveLength(1);
+    expect(screen.getByTestId('hour-3').props.accessibilityState.selected).toBe(true);
+    await fireEvent.press(screen.getByTestId('hour-7'));
+    expect(onChange).toHaveBeenCalledWith(7);
+  });
+
+  it('loop 이면 끝에서 처음으로 이어지게 목록을 앞뒤로 한 벌씩 더 그린다', async () => {
+    const onChange = jest.fn();
+    await render(<ScrollPicker testID="hour" loop items={hours} value={12} onChange={onChange} />);
+    // 12 다음에 1 이, 1 앞에 12 가 보인다
+    expect(screen.getAllByText('12')).toHaveLength(3);
+    expect(screen.getAllByText('1')).toHaveLength(3);
+    // 가운데 벌의 줄이 골라져 있다
+    expect(screen.getByTestId('hour-12').props.accessibilityState.selected).toBe(true);
+    // 굴려서 뒤쪽 벌의 3 에 멈춰도 값은 3 이다
+    await fireEvent.scroll(screen.getByTestId('hour-scroll'), {
+      nativeEvent: { contentOffset: { y: (24 + 2) * 36 } },
+    });
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(3));
   });
 });

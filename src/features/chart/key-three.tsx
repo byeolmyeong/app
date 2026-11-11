@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Spacing } from '@/constants/theme';
+import { Colors, LineWidth, Radius, Spacing } from '@/constants/theme';
 import { keyThree } from '@/features/chart/chart-rows';
 import type { Chart } from '@/lib/api';
 
@@ -15,6 +15,9 @@ export function KeyThree({ chart }: { chart: Chart }) {
             {item.label}
           </Txt>
           <Txt variant="heading">{item.value}</Txt>
+          <Txt variant="label" color="hint">
+            {item.caption}
+          </Txt>
         </View>
       ))}
     </View>
@@ -22,12 +25,7 @@ export function KeyThree({ chart }: { chart: Chart }) {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    borderTopWidth: LineWidth,
-    borderBottomWidth: LineWidth,
-    borderColor: Colors.ink,
-  },
-  cell: { flex: 1, paddingVertical: Spacing.xs, gap: Spacing.xxs },
-  divided: { borderLeftWidth: LineWidth, borderLeftColor: Colors.hair, paddingLeft: Spacing.sm },
+  row: { flexDirection: 'row', backgroundColor: Colors.fill, borderRadius: Radius, paddingVertical: Spacing.md },
+  cell: { flex: 1, alignItems: 'center', gap: Spacing.xxs },
+  divided: { borderLeftWidth: LineWidth, borderLeftColor: Colors.hair },
 });

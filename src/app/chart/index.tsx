@@ -2,22 +2,24 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { DataTable } from '@/components/data-table';
+import { InfoButton } from '@/components/info-button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
+import { SectionHead } from '@/components/section-head';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
-import { planetRows, showsHouses } from '@/features/chart/chart-rows';
+import { showsHouses } from '@/features/chart/chart-rows';
 import { ChartWheel } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 
 const S = strings.chart;
+const H = strings.help;
 
-/** 차트: 휠, 핵심 3요소, 태양·달 두 줄, 다음으로 가는 버튼. 로그인 없이 본다. */
+/** 차트: 휠과 핵심 3요소를 쉬운 말 설명과 함께 보여 준다. 숫자 표는 "자세히" 화면에 있다. 로그인 없이 본다. */
 export default function ChartScreen() {
   const { loaded, chart } = useBirthProfile();
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
@@ -30,19 +32,28 @@ export default function ChartScreen() {
     );
 
   const withHouses = showsHouses(chart);
-  const columns = [
-    { key: 'body', bold: true },
-    { key: 'sign' },
-    { key: 'degree', align: 'right' as const },
-    ...(withHouses ? [{ key: 'house', align: 'right' as const, flex: 0.5 }] : []),
-  ];
-  const rows = planetRows(chart).filter((r) => r.key === 'SUN' || r.key === 'MOON');
 
   return (
     <Screen nav={nav}>
+      <SectionHead title={S.wheelHeading}>
+        <InfoButton testID="info-wheel" title={H.wheel.title} items={H.wheel.items} />
+      </SectionHead>
+      <Txt variant="table" color="gray">
+        {S.wheelCaption}
+      </Txt>
       <ChartWheel chart={chart} />
+      <SectionHead title={S.keyThreeHeading}>
+        {/* 시각을 모르면 상승점(첫인상)을 보여 주지 않으므로 설명에서도 뺀다 */}
+        <InfoButton
+          testID="info-key-three"
+          title={H.keyThree.title}
+          items={withHouses ? [...H.keyThree.items, H.keyThree.asc] : H.keyThree.items}
+        />
+      </SectionHead>
+      <Txt variant="table" color="gray">
+        {S.keyThreeCaption}
+      </Txt>
       <KeyThree chart={chart} />
-      <DataTable header={false} columns={columns} rows={rows} />
       {withHouses ? null : (
         <Txt variant="label" color="gray">
           {S.timeUnknownNote}

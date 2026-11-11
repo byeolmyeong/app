@@ -27,7 +27,7 @@ flowchart LR
 
 ## 앱이 하는 일과 하지 않는 일
 - 한다: 입력 받기, 서버가 준 차트·글을 그리기, 로그인 흐름, 공유·알림 연결, 받은 결과를 기기에 보관.
-- 하지 않는다: 차트·별자리·하우스·변곡점 연도 계산, 글 생성, 횟수 제한 판정. 전부 서버가 한다. 결정: docs/decisions/006-server-side-chart.md
+- 하지 않는다: 차트·별자리·하우스·변곡점 구간·궁합 점수 계산, 글 생성, 만 14세 판정. 전부 서버가 한다. 결정: docs/decisions/006-server-side-chart.md
 
 ## 모듈 경계 (src/)
 - `app/` — 화면(Expo Router). 화면 목록은 docs/release-1.0.0.md "화면".

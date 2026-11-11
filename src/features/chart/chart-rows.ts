@@ -26,6 +26,7 @@ function positionRow(p: Position | Point, withHouse: boolean): DataTableRow {
   return {
     key: name,
     body: bodyName(name),
+    meaning: strings.bodyMeanings[name] ?? '',
     retrograde: 'retrograde' in p && p.retrograde,
     sign: signName(p.sign),
     degree: formatDegree(p),
@@ -42,6 +43,7 @@ export function planetRows(chart: Chart): DataTableRow[] {
     const angle = (key: 'ASC' | 'MC', p: SignPosition): DataTableRow => ({
       key,
       body: bodyName(key),
+      meaning: strings.bodyMeanings[key] ?? '',
       retrograde: false,
       sign: signName(p.sign),
       degree: formatDegree(p),
@@ -58,6 +60,7 @@ export function houseRows(chart: Chart): DataTableRow[] {
   return chart.houses.map((h) => ({
     key: String(h.house),
     house: String(h.house),
+    meaning: strings.houseMeanings[String(h.house)] ?? '',
     sign: signName(h.sign),
     degree: formatDegree(h),
   }));
@@ -66,21 +69,27 @@ export function houseRows(chart: Chart): DataTableRow[] {
 export function aspectRows(chart: Chart): DataTableRow[] {
   return chart.aspects.map((a, i) => ({
     key: `${a.a}-${a.b}-${i}`,
-    pair: `${bodyName(a.a)} · ${bodyName(a.b)}`,
+    pair: `${bodyName(a.a)}·${bodyName(a.b)}`,
     aspect: label(strings.aspects, a.type),
+    meaning: strings.aspectMeanings[a.type] ?? '',
     orb: `${a.orb.toFixed(2)}°`,
     motion: a.applying ? strings.detail.applying : strings.detail.separating,
   }));
 }
 
 /** 핵심 3요소: 태양·달의 별자리와 (시각을 알 때만) 상승궁 */
-export function keyThree(chart: Chart): { label: string; value: string }[] {
+export function keyThree(chart: Chart): { label: string; value: string; caption: string }[] {
   const signOf = (body: string) => chart.positions.find((p) => p.body === body)?.sign;
   const sun = signOf('SUN');
   const moon = signOf('MOON');
-  const items: { label: string; value: string }[] = [];
-  if (sun) items.push({ label: strings.chart.keySun, value: signName(sun) });
-  if (moon) items.push({ label: strings.chart.keyMoon, value: signName(moon) });
-  if (showsHouses(chart) && chart.angles) items.push({ label: strings.chart.keyAsc, value: signName(chart.angles.asc.sign) });
+  const items: { label: string; value: string; caption: string }[] = [];
+  if (sun) items.push({ label: strings.chart.keySun, value: signName(sun), caption: strings.chart.keySunCaption });
+  if (moon) items.push({ label: strings.chart.keyMoon, value: signName(moon), caption: strings.chart.keyMoonCaption });
+  if (showsHouses(chart) && chart.angles)
+    items.push({
+      label: strings.chart.keyAsc,
+      value: signName(chart.angles.asc.sign),
+      caption: strings.chart.keyAscCaption,
+    });
   return items;
 }

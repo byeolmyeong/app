@@ -9,7 +9,7 @@ export type TabsProps<K extends string> = {
   onChange: (key: K) => void;
 };
 
-/** 글자 탭. 고른 탭은 먹색 굵은 글씨와 밑줄, 나머지는 회색. */
+/** 글자 탭. 화면 폭을 탭 수로 똑같이 나눠 쓴다. 고른 탭은 굵은 글씨와 밑줄, 나머지는 회색. */
 export function Tabs<K extends string>({ tabs, value, onChange }: TabsProps<K>) {
   return (
     <View style={styles.row} accessibilityRole="tablist">
@@ -33,8 +33,14 @@ export function Tabs<K extends string>({ tabs, value, onChange }: TabsProps<K>) 
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: Spacing.md, borderBottomWidth: LineWidth, borderBottomColor: Colors.ink },
-  tab: { paddingVertical: Spacing.xs, borderBottomWidth: LineWidth * 2, borderBottomColor: 'transparent' },
+  row: { flexDirection: 'row', borderBottomWidth: LineWidth, borderBottomColor: Colors.hair },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: LineWidth * 2,
+    borderBottomColor: 'transparent',
+  },
   on: { borderBottomColor: Colors.ink },
-  onText: { fontWeight: '800' },
+  onText: { fontWeight: '700' },
 });

@@ -116,6 +116,9 @@ export const Sizes = {
   /** 태어난 곳 시트: 두 칸 목록의 높이 · 왼쪽 시·도 칸의 너비 */
   placeSheetHeight: 384,
   regionPaneWidth: 104,
+  /** 설명(물음표) 버튼의 지름 · 설명 시트에서 글이 굴러가는 영역의 최대 높이 */
+  infoButton: 20,
+  infoSheetHeight: 360,
   /** 시트 위의 손잡이 줄 */
   handleWidth: 50,
   handleHeight: 4,

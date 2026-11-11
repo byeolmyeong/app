@@ -5,8 +5,6 @@
  */
 export const strings = {
   appName: '별명',
-  /** 도장의 두 글자 */
-  seal: ['별', '명'],
   common: {
     back: '←',
     backLabel: '뒤로',

@@ -9,7 +9,7 @@ export type ButtonVariant = 'primary' | 'line' | 'danger';
 export type ButtonProps = {
   label: string;
   onPress: () => void;
-  /** primary 먹 바탕(한 화면에 하나) · line 선 · danger 인주 */
+  /** primary 먹 바탕(한 화면에 하나) · line 선 · danger 오류·삭제 */
   variant?: ButtonVariant;
   disabled?: boolean;
 };
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: Colors.ink, borderColor: Colors.ink },
   line: { backgroundColor: 'transparent', borderColor: Colors.ink },
-  danger: { backgroundColor: Colors.seal, borderColor: Colors.seal },
+  danger: { backgroundColor: Colors.danger, borderColor: Colors.danger },
   disabled: { opacity: 0.4 },
   label: { fontWeight: '700' },
 });

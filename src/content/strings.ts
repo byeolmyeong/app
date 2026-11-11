@@ -87,6 +87,7 @@ export const strings = {
     NORTH_NODE: '북쪽 교점',
     LILITH: '릴리스',
     FORTUNE: '행운점',
+    VERTEX: '버텍스',
     ASC: '상승점',
     MC: '중천',
   },

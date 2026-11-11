@@ -1,11 +1,13 @@
 {
   "timeKnown": true,
+  "houseSystem": "PLACIDUS",
   "positions": [
     {
       "body": "SUN",
       "sign": "GEMINI",
       "degree": 24,
-      "minute": 41,
+      "minute": 40,
+      "longitude": 84.68,
       "house": 6,
       "retrograde": false
     },
@@ -14,6 +16,7 @@
       "sign": "SAGITTARIUS",
       "degree": 8,
       "minute": 54,
+      "longitude": 248.9,
       "house": 11,
       "retrograde": false
     },
@@ -22,6 +25,7 @@
       "sign": "CANCER",
       "degree": 17,
       "minute": 38,
+      "longitude": 107.63,
       "house": 7,
       "retrograde": false
     },
@@ -30,6 +34,7 @@
       "sign": "GEMINI",
       "degree": 25,
       "minute": 47,
+      "longitude": 85.79,
       "house": 6,
       "retrograde": false
     },
@@ -37,7 +42,8 @@
       "body": "MARS",
       "sign": "GEMINI",
       "degree": 29,
-      "minute": 19,
+      "minute": 18,
+      "longitude": 89.31,
       "house": 6,
       "retrograde": false
     },
@@ -45,7 +51,8 @@
       "body": "JUPITER",
       "sign": "TAURUS",
       "degree": 26,
-      "minute": 48,
+      "minute": 47,
+      "longitude": 56.79,
       "house": 4,
       "retrograde": false
     },
@@ -54,6 +61,7 @@
       "sign": "TAURUS",
       "degree": 24,
       "minute": 54,
+      "longitude": 54.9,
       "house": 4,
       "retrograde": false
     },
@@ -61,8 +69,9 @@
       "body": "URANUS",
       "sign": "AQUARIUS",
       "degree": 20,
-      "minute": 39,
-      "house": 2,
+      "minute": 38,
+      "longitude": 320.64,
+      "house": 1,
       "retrograde": true
     },
     {
@@ -70,6 +79,7 @@
       "sign": "AQUARIUS",
       "degree": 6,
       "minute": 12,
+      "longitude": 306.2,
       "house": 1,
       "retrograde": true
     },
@@ -78,108 +88,143 @@
       "sign": "SAGITTARIUS",
       "degree": 11,
       "minute": 10,
+      "longitude": 251.17,
       "house": 11,
       "retrograde": true
     }
   ],
   "points": [
     {
-      "body": "NORTH_NODE",
+      "point": "NORTH_NODE",
       "sign": "CANCER",
       "degree": 26,
-      "minute": 2,
-      "house": 7,
-      "retrograde": true
+      "minute": 14,
+      "longitude": 116.24,
+      "house": 7
     },
     {
-      "body": "LILITH",
-      "sign": "SAGITTARIUS",
-      "degree": 19,
-      "minute": 44,
-      "house": 12,
-      "retrograde": false
+      "point": "LILITH",
+      "sign": "CAPRICORN",
+      "degree": 11,
+      "minute": 53,
+      "longitude": 281.89,
+      "house": 1
     },
     {
-      "body": "FORTUNE",
-      "sign": "AQUARIUS",
+      "point": "FORTUNE",
+      "sign": "CANCER",
       "degree": 26,
-      "minute": 35,
-      "house": 2,
-      "retrograde": false
+      "minute": 45,
+      "longitude": 116.76,
+      "house": 7
+    },
+    {
+      "point": "VERTEX",
+      "sign": "LEO",
+      "degree": 19,
+      "minute": 5,
+      "longitude": 139.09,
+      "house": 7
     }
   ],
   "houses": [
     {
+      "house": 1,
       "sign": "CAPRICORN",
-      "degree": 11,
-      "minute": 6
+      "degree": 10,
+      "minute": 59,
+      "longitude": 280.99
     },
     {
+      "house": 2,
       "sign": "AQUARIUS",
-      "degree": 18,
-      "minute": 0
+      "degree": 20,
+      "minute": 56,
+      "longitude": 320.93
     },
     {
-      "sign": "PISCES",
-      "degree": 27,
-      "minute": 0
+      "house": 3,
+      "sign": "ARIES",
+      "degree": 1,
+      "minute": 12,
+      "longitude": 1.2
     },
     {
+      "house": 4,
       "sign": "TAURUS",
       "degree": 3,
-      "minute": 28
+      "minute": 12,
+      "longitude": 33.2
     },
     {
+      "house": 5,
       "sign": "TAURUS",
-      "degree": 28,
-      "minute": 0
+      "degree": 27,
+      "minute": 55,
+      "longitude": 57.91
     },
     {
+      "house": 6,
       "sign": "GEMINI",
       "degree": 19,
-      "minute": 0
+      "minute": 13,
+      "longitude": 79.22
     },
     {
+      "house": 7,
       "sign": "CANCER",
-      "degree": 11,
-      "minute": 6
+      "degree": 10,
+      "minute": 59,
+      "longitude": 100.99
     },
     {
+      "house": 8,
       "sign": "LEO",
-      "degree": 18,
-      "minute": 0
+      "degree": 20,
+      "minute": 56,
+      "longitude": 140.93
     },
     {
-      "sign": "VIRGO",
-      "degree": 27,
-      "minute": 0
+      "house": 9,
+      "sign": "LIBRA",
+      "degree": 1,
+      "minute": 12,
+      "longitude": 181.2
     },
     {
+      "house": 10,
       "sign": "SCORPIO",
       "degree": 3,
-      "minute": 28
+      "minute": 12,
+      "longitude": 213.2
     },
     {
+      "house": 11,
       "sign": "SCORPIO",
-      "degree": 28,
-      "minute": 0
+      "degree": 27,
+      "minute": 55,
+      "longitude": 237.91
     },
     {
+      "house": 12,
       "sign": "SAGITTARIUS",
       "degree": 19,
-      "minute": 0
+      "minute": 13,
+      "longitude": 259.22
     }
   ],
   "angles": {
     "asc": {
       "sign": "CAPRICORN",
-      "degree": 11,
-      "minute": 6
+      "degree": 10,
+      "minute": 59,
+      "longitude": 280.99
     },
     "mc": {
       "sign": "SCORPIO",
       "degree": 3,
-      "minute": 28
+      "minute": 12,
+      "longitude": 213.2
     }
   },
   "aspects": [
@@ -201,7 +246,7 @@
       "a": "SUN",
       "b": "URANUS",
       "type": "TRINE",
-      "orb": 4.03,
+      "orb": 4.04,
       "applying": false
     },
     {
@@ -223,6 +268,13 @@
       "b": "MARS",
       "type": "CONJUNCTION",
       "orb": 3.52,
+      "applying": true
+    },
+    {
+      "a": "VENUS",
+      "b": "URANUS",
+      "type": "TRINE",
+      "orb": 5.15,
       "applying": false
     },
     {
@@ -233,11 +285,25 @@
       "applying": false
     },
     {
+      "a": "JUPITER",
+      "b": "URANUS",
+      "type": "SQUARE",
+      "orb": 6.15,
+      "applying": false
+    },
+    {
       "a": "SATURN",
       "b": "URANUS",
       "type": "SQUARE",
       "orb": 4.26,
       "applying": false
+    },
+    {
+      "a": "NEPTUNE",
+      "b": "PLUTO",
+      "type": "SEXTILE",
+      "orb": 4.97,
+      "applying": true
     }
   ]
 }

@@ -4,7 +4,7 @@
  */
 import type { DataTableRow } from '@/components/data-table';
 import { strings } from '@/content/strings';
-import type { Chart, Position, SignPosition } from '@/lib/api';
+import type { Chart, Point, Position, SignPosition } from '@/lib/api';
 
 const label = (map: Record<string, string>, key: string) => map[key] ?? key;
 
@@ -12,20 +12,21 @@ export const bodyName = (body: string) => label(strings.bodies, body);
 export const signName = (sign: string) => label(strings.signs, sign);
 
 /** 예: 24°41′, 26°02′ */
-export const formatDegree = (p: SignPosition) => `${p.degree}°${String(p.minute).padStart(2, '0')}′`;
+export const formatDegree = (p: Pick<SignPosition, 'degree' | 'minute'>) => `${p.degree}°${String(p.minute).padStart(2, '0')}′`;
 
 /** 하우스·상승점을 보여 줘도 되는 차트인가 */
 export const showsHouses = (chart: Chart) =>
   chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
 
 /** 시각을 알아야만 정해지는 지점 */
-const TIME_DEPENDENT_POINTS = ['FORTUNE', 'ASC', 'MC'];
+const TIME_DEPENDENT_POINTS = ['FORTUNE', 'VERTEX'];
 
-function positionRow(p: Position, withHouse: boolean): DataTableRow {
+function positionRow(p: Position | Point, withHouse: boolean): DataTableRow {
+  const name = 'body' in p ? p.body : p.point;
   return {
-    key: p.body,
-    body: bodyName(p.body),
-    retrograde: p.retrograde,
+    key: name,
+    body: bodyName(name),
+    retrograde: 'retrograde' in p && p.retrograde,
     sign: signName(p.sign),
     degree: formatDegree(p),
     house: withHouse && p.house !== undefined ? String(p.house) : strings.common.none,
@@ -35,7 +36,7 @@ function positionRow(p: Position, withHouse: boolean): DataTableRow {
 /** 행성 10개 + 추가 지점 + (시각을 알 때) 상승점·중천 */
 export function planetRows(chart: Chart): DataTableRow[] {
   const known = showsHouses(chart);
-  const points = known ? chart.points : chart.points.filter((p) => !TIME_DEPENDENT_POINTS.includes(p.body));
+  const points = known ? chart.points : chart.points.filter((p) => !TIME_DEPENDENT_POINTS.includes(p.point));
   const rows = [...chart.positions, ...points].map((p) => positionRow(p, known));
   if (known && chart.angles) {
     const angle = (key: 'ASC' | 'MC', p: SignPosition): DataTableRow => ({
@@ -54,9 +55,9 @@ export function planetRows(chart: Chart): DataTableRow[] {
 /** 하우스 경계 12줄. 시각 "모름" 이면 빈 배열 */
 export function houseRows(chart: Chart): DataTableRow[] {
   if (!showsHouses(chart) || !chart.houses) return [];
-  return chart.houses.map((h, i) => ({
-    key: String(i + 1),
-    house: String(i + 1),
+  return chart.houses.map((h) => ({
+    key: String(h.house),
+    house: String(h.house),
     sign: signName(h.sign),
     degree: formatDegree(h),
   }));

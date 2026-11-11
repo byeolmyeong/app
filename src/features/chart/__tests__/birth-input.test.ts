@@ -2,7 +2,7 @@ import { strings } from '@/content/strings';
 import { formatBirthSummary, parseBirthDate, parseBirthTime, validateBirthInput } from '@/features/chart/birth-input';
 
 const today = new Date(2026, 10, 10); // 2026-11-10 (기기 날짜)
-const place = { id: 'seoul-mapo', name: '서울 마포구' };
+const place = { id: 1841277, name: '서울특별시 마포구' };
 const E = strings.home.errors;
 
 describe('parseBirthDate', () => {
@@ -49,7 +49,7 @@ describe('validateBirthInput', () => {
     const r = validateBirthInput({ dateText: '2000-06-15', timeText: '21:00', timeUnknown: false, place }, today);
     expect(r).toEqual({
       ok: true,
-      input: { date: '2000-06-15', time: '21:00', placeId: 'seoul-mapo' },
+      input: { date: '2000-06-15', time: '21:00', placeId: 1841277 },
       profile: { date: '2000-06-15', time: '21:00', place },
     });
   });
@@ -70,8 +70,8 @@ describe('validateBirthInput', () => {
 
 describe('formatBirthSummary', () => {
   it('날짜·시각·출생지를 한 줄로 적는다', () => {
-    expect(formatBirthSummary({ date: '2000-06-15', time: '21:00', place })).toBe('2000. 6. 15. 오후 9:00 · 서울 마포구');
-    expect(formatBirthSummary({ date: '1990-01-01', time: '00:05', place })).toBe('1990. 1. 1. 오전 12:05 · 서울 마포구');
-    expect(formatBirthSummary({ date: '2000-06-15', time: null, place })).toBe('2000. 6. 15. · 서울 마포구');
+    expect(formatBirthSummary({ date: '2000-06-15', time: '21:00', place })).toBe('2000. 6. 15. 오후 9:00 · 서울특별시 마포구');
+    expect(formatBirthSummary({ date: '1990-01-01', time: '00:05', place })).toBe('1990. 1. 1. 오전 12:05 · 서울특별시 마포구');
+    expect(formatBirthSummary({ date: '2000-06-15', time: null, place })).toBe('2000. 6. 15. · 서울특별시 마포구');
   });
 });

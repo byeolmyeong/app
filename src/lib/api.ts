@@ -8,25 +8,50 @@ import { fixtures } from '@/lib/fixtures';
 // ── 계약의 타입 ────────────────────────────────────────────────────────────
 
 /** `GET /places?q=` 의 한 줄 */
-export type Place = { id: string; name: string; lat: number; lon: number };
+export type Place = { id: number; name: string; lat: number; lon: number };
 
 /** `POST /charts`·`PUT /profile` 의 요청. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름") */
-export type BirthInput = { date: string; time: string | null; placeId: string };
+export type BirthInput = { date: string; time: string | null; placeId: number };
 
-/** 별자리 안 위치. 하우스 경계·상승점·중천의 값 */
-export type SignPosition = { sign: string; degree: number; minute: number };
+/** 별자리 안 위치와 황경(0 이상 360 미만). 상승점·중천의 값 */
+export type SignPosition = {
+  sign: string;
+  degree: number;
+  minute: number;
+  longitude: number;
+};
 
-/** 천체·추가 지점의 위치. house 는 시각을 알 때만 온다 */
-export type Position = SignPosition & { body: string; house?: number; retrograde: boolean };
+/** 천체의 위치. house 는 시각을 알 때만 온다 */
+export type Position = SignPosition & {
+  body: string;
+  house?: number;
+  retrograde: boolean;
+};
 
-export type Aspect = { a: string; b: string; type: string; orb: number; applying: boolean };
+/** 추가 지점(NORTH_NODE·LILITH·FORTUNE·VERTEX)의 위치. FORTUNE·VERTEX 는 시각을 알 때만 온다 */
+export type Point = SignPosition & { point: string; house?: number };
+
+/** 하우스 경계. house 는 1~12 */
+export type House = SignPosition & { house: number };
+
+export type Aspect = {
+  a: string;
+  b: string;
+  type: string;
+  orb: number;
+  applying: boolean;
+};
 
 export type Chart = {
   timeKnown: boolean;
+  /** 하우스 방식 이름. 지금은 "PLACIDUS" */
+  houseSystem: string;
+  /** 시각을 모르고 그날 안에 달 별자리가 바뀔 때만 true 로 온다 */
+  moonSignMayChange?: boolean;
   positions: Position[];
-  points: Position[];
+  points: Point[];
   /** 1~12 하우스 경계. 시각 "모름" 이면 없다 */
-  houses?: SignPosition[];
+  houses?: House[];
   /** 상승점·중천. 시각 "모름" 이면 없다 */
   angles?: { asc: SignPosition; mc: SignPosition };
   aspects: Aspect[];
@@ -74,13 +99,27 @@ export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiErrorK
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 
 const isSignPosition = (v: unknown): v is SignPosition =>
-  isObject(v) && typeof v.sign === 'string' && typeof v.degree === 'number' && typeof v.minute === 'number';
+  isObject(v) &&
+  typeof v.sign === 'string' &&
+  typeof v.degree === 'number' &&
+  typeof v.minute === 'number' &&
+  typeof v.longitude === 'number';
+
+const isOptionalNumber = (v: unknown) => ['number', 'undefined'].includes(typeof v);
 
 const isPosition = (v: unknown): v is Position =>
   isSignPosition(v) &&
   typeof (v as Record<string, unknown>).body === 'string' &&
   typeof (v as Record<string, unknown>).retrograde === 'boolean' &&
-  ['number', 'undefined'].includes(typeof (v as Record<string, unknown>).house);
+  isOptionalNumber((v as Record<string, unknown>).house);
+
+const isPoint = (v: unknown): v is Point =>
+  isSignPosition(v) &&
+  typeof (v as Record<string, unknown>).point === 'string' &&
+  isOptionalNumber((v as Record<string, unknown>).house);
+
+const isHouse = (v: unknown): v is House =>
+  isSignPosition(v) && typeof (v as Record<string, unknown>).house === 'number';
 
 const isAspect = (v: unknown): v is Aspect =>
   isObject(v) &&
@@ -91,11 +130,12 @@ const isAspect = (v: unknown): v is Aspect =>
   typeof v.applying === 'boolean';
 
 export function isChart(v: unknown): v is Chart {
-  if (!isObject(v) || typeof v.timeKnown !== 'boolean') return false;
+  if (!isObject(v) || typeof v.timeKnown !== 'boolean' || typeof v.houseSystem !== 'string') return false;
+  if (!['boolean', 'undefined'].includes(typeof v.moonSignMayChange)) return false;
   if (!Array.isArray(v.positions) || !v.positions.every(isPosition)) return false;
-  if (!Array.isArray(v.points) || !v.points.every(isPosition)) return false;
+  if (!Array.isArray(v.points) || !v.points.every(isPoint)) return false;
   if (!Array.isArray(v.aspects) || !v.aspects.every(isAspect)) return false;
-  if (v.houses !== undefined && !(Array.isArray(v.houses) && v.houses.length === 12 && v.houses.every(isSignPosition)))
+  if (v.houses !== undefined && !(Array.isArray(v.houses) && v.houses.length === 12 && v.houses.every(isHouse)))
     return false;
   if (v.angles !== undefined && !(isObject(v.angles) && isSignPosition(v.angles.asc) && isSignPosition(v.angles.mc)))
     return false;
@@ -108,7 +148,7 @@ export function isPlaceList(v: unknown): v is Place[] {
     v.every(
       (p) =>
         isObject(p) &&
-        typeof p.id === 'string' &&
+        typeof p.id === 'number' &&
         typeof p.name === 'string' &&
         typeof p.lat === 'number' &&
         typeof p.lon === 'number',
@@ -165,14 +205,24 @@ export function createApi(config: ApiConfig) {
   return {
     /** `GET /places?q=` 국내 시·군·구 검색 */
     async searchPlaces(q: string): Promise<ApiResult<Place[]>> {
-      if (config.useFixtures) return { ok: true, data: fixtures.places.filter((p) => p.name.includes(q.trim())) };
-      return request('GET', `/places?q=${encodeURIComponent(q)}`, { validate: isPlaceList });
+      if (config.useFixtures) {
+        // 서버와 같이: 공백으로 나눈 낱말이 이름에 모두 든 곳을 20개까지
+        const words = q.trim().split(/\s+/).filter(Boolean);
+        const found = words.length ? fixtures.places.filter((p) => words.every((w) => p.name.includes(w))) : [];
+        return { ok: true, data: found.slice(0, 20) };
+      }
+      return request('GET', `/places?q=${encodeURIComponent(q)}`, {
+        validate: isPlaceList,
+      });
     },
 
     /** `POST /charts` 로그인 없이 차트를 받는다 */
     async createChart(input: BirthInput): Promise<ApiResult<Chart>> {
       if (config.useFixtures)
-        return { ok: true, data: input.time === null ? fixtures.chartTimeUnknown : fixtures.chart };
+        return {
+          ok: true,
+          data: input.time === null ? fixtures.chartTimeUnknown : fixtures.chart,
+        };
       return request('POST', '/charts', { body: input, validate: isChart });
     },
   };

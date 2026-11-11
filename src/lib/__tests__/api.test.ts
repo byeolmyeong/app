@@ -15,7 +15,7 @@ function headersOf(fetchFn: jest.MockedFunction<typeof fetch>) {
   return (fetchFn.mock.calls[0][1]?.headers ?? {}) as Record<string, string>;
 }
 
-const input = { date: '2000-06-15', time: '21:00', placeId: 'seoul-mapo' };
+const input = { date: '2000-06-15', time: '21:00', placeId: 1841277 };
 
 describe('api: 오류를 구분한 결과', () => {
   it('401 은 로그인 필요 결과다', async () => {
@@ -96,7 +96,12 @@ describe('api: 개발용 가짜 서버 스위치', () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     const places = await api.searchPlaces('마포');
-    expect(places.ok && places.data.map((p) => p.name)).toEqual(['서울 마포구']);
+    expect(places.ok && places.data.map((p) => p.name)).toEqual(['서울특별시 마포구']);
+    // 서버와 같이: 공백으로 나눈 낱말이 이름에 모두 들어 있으면 찾고, 20개까지만 준다
+    const words = await api.searchPlaces('서울 마포');
+    expect(words.ok && words.data.map((p) => p.id)).toEqual([1841277]);
+    const many = await api.searchPlaces('시');
+    expect(many.ok && many.data.length).toBe(20);
     const chart = await api.createChart(input);
     expect(chart).toEqual({ ok: true, data: fixtures.chart });
     expect(fetchFn).not.toHaveBeenCalled();
@@ -130,7 +135,7 @@ describe('fixtures: 서버 계약의 모양', () => {
     expect(c.houses).toBeUndefined();
     expect(c.angles).toBeUndefined();
     expect([...c.positions, ...c.points].every((p) => p.house === undefined)).toBe(true);
-    expect(c.points.map((p) => p.body)).not.toContain('FORTUNE');
+    expect(c.points.map((p) => p.point)).toEqual(['NORTH_NODE', 'LILITH']);
   });
 
   it('요약 해석은 계약의 필드만 갖는다', () => {

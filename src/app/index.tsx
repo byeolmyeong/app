@@ -29,7 +29,7 @@ export default function HomeScreen() {
     () => (profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
     [profile],
   );
-  const reading = useStoredReading(input);
+  const { reading } = useStoredReading(input);
   const nav = <NavBar left={<ChartMark />} />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (profile && chart)

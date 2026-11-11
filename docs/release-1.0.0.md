@@ -6,7 +6,7 @@ last_reviewed: 2026-11-11
 ---
 # 1.0.0 기능 명세
 
-> 상태: 활성 · 기준 2026-11-11 · 제품 방향은 docs/product.md, 구현 순서는 docs/plans/2026-11-10-mvp.md, 기획안은 docs/design/proposal-1.0.0.pdf, 디자인 시안은 docs/design/screens-1.0.0.html
+> 상태: 활성 · 기준 2026-11-11 · 제품 방향은 docs/product.md, 구현 순서는 docs/plans/2026-11-10-mvp.md, 기획안은 docs/design/product-brief-1.0.0.md(2026-11-11 최종, 보드 product-brief-1.0.0.png), 이전 기획안 docs/design/proposal-1.0.0.pdf 와 디자인 시안 docs/design/screens-1.0.0.html 은 2026-11-11 결정 전 내용이다
 
 ## 한 줄
 가입하고 출생 정보를 넣으면 차트와 "나를 설명해 주는 글"을 받고, 더 깊은 리포트와 사람마다 다른 인생의 변곡점을 읽고, 다른 사람과 나 기준 궁합 점수·랭킹을 보고, 결과를 스토리 카드로 공유한다. AI 가 결과와 함께 방향성을 제시한다. 결제와 횟수 제한은 없다.

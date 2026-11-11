@@ -152,12 +152,12 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
   });
 
-  it('날짜·시각·출생지를 넣고 누르면 차트를 받아 보관하고 /chart 로 간다', async () => {
+  it('날짜·시각·출생지를 넣고 누르면 차트를 받아 보관하고 풀이 글(/reading)로 간다', async () => {
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 1841277 });
     expect(await loadBirth()).toEqual({ profile, chart: fixtures.chart });
     // 세션이 없으면 서버에 출생 정보를 저장하지 않는다
@@ -170,7 +170,7 @@ describe('출생 정보 입력(홈)', () => {
     await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.saveProfile).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 1841277 });
     expect(await loadBirth()).toEqual({ profile, chart: fixtures.chart });
   });
@@ -193,7 +193,7 @@ describe('출생 정보 입력(홈)', () => {
     await fillDateAndTime('2000-06-15', null);
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: 1841277 });
   });
 
@@ -247,7 +247,7 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.getByText('오후 9:00')).toBeTruthy();
     expect(await screen.findByText('서울특별시 마포구')).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).not.toHaveBeenCalled();
   });
 });

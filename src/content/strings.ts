@@ -46,7 +46,7 @@ export const strings = {
       경상남도: '경남',
       제주특별자치도: '제주',
     } as Record<string, string>,
-    submit: '내 하늘 보기',
+    submit: '내 별명 읽기',
     submitting: '하늘을 계산하는 중',
     placeLoadFailed: '출생지 목록을 불러오지 못했어요.',
     placeRetry: '다시 불러오기',

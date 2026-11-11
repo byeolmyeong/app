@@ -52,7 +52,7 @@ export type BirthFormProps = {
  * 출생 정보 입력. 한 화면에 생년월일 · 태어난 시각("모름") · 태어난 곳이 모두 보인다.
  * 생년월일은 숫자를 치고, 시각은 칸을 누르면 아래에서 올라오는 드럼롤 시트에서,
  * 곳은 화면을 가득 채우는 고르기 화면(`PlacePicker`)에서 고른다.
- * "내 하늘 보기" 를 누르면 차트를 받아 보관하고 /chart 로 간다.
+ * 맨 아래 버튼을 누르면 차트를 받아 보관하고 풀이 글(/reading)로 간다. 차트는 풀이 글 화면에서 연다.
  */
 export function BirthForm({ stored, save }: BirthFormProps) {
   const initial = stored?.profile;
@@ -130,7 +130,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     setRequestError(null);
     // 같은 입력의 차트를 이미 갖고 있으면 다시 요청하지 않는다.
     if (stored && sameInput(stored.profile, v.profile)) {
-      router.push('/chart');
+      router.push('/reading');
       return;
     }
     setSubmitting(true);
@@ -146,7 +146,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
       return;
     }
     await save({ profile: v.profile, chart: r.data });
-    router.push('/chart');
+    router.push('/reading');
   }
 
   const timeError = !timeUnknown && errors.time ? S.errors.timeRequired : undefined;

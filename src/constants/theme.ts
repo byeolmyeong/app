@@ -91,6 +91,8 @@ export const ScreenPaddingX = 20;
 
 /** 모서리. 버튼·입력칸·칩 12. */
 export const Radius = 12;
+/** 카드(홈의 카테고리 칸)의 모서리 */
+export const CardRadius = 16;
 /** 하단 시트의 위쪽 모서리 */
 export const SheetRadius = 24;
 

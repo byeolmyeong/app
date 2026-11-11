@@ -12,6 +12,50 @@ export const strings = {
     timeColon: ':',
     none: '—',
   },
+  /** 홈(카테고리 화면). 구성은 docs/decisions/019-home-categories.md */
+  main: {
+    title: '나의 별명',
+    editBirth: '출생 정보 바꾸기',
+    soon: '준비 중',
+    categories: [
+      {
+        title: '나',
+        caption: '내가 어떤 사람인지',
+        items: [
+          { label: '요약 풀이', path: '/reading' },
+          { label: '내 차트', path: '/chart' },
+          { label: '심층 리포트', path: null },
+        ],
+      },
+      {
+        title: '관계',
+        caption: '사람을 대하는 방식과 연애',
+        items: [
+          { label: '사람을 대하는 성향', path: null },
+          { label: '연애에서 해 볼 만한 것', path: null },
+        ],
+      },
+      {
+        title: '궁합',
+        caption: '누군가와 나 사이',
+        items: [
+          { label: '상대와 궁합 보기', path: null },
+          { label: '궁합 랭킹', path: null },
+        ],
+      },
+      {
+        title: '시기',
+        caption: '지금과 앞으로의 흐름',
+        items: [
+          { label: '지금 나의 구간', path: null },
+          { label: '다가오는 변곡점', path: null },
+        ],
+      },
+    ],
+  },
+  birth: {
+    title: '출생 정보',
+  },
   home: {
     title: '별이 붙여 준\n나의 별명',
     subtitle: '태어난 순간의 하늘을 계산해\n나를 설명하는 글로 풀어 드립니다.',

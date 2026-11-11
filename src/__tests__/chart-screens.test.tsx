@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 
 import ChartDetailScreen from '@/app/chart/detail';
 import ChartScreen from '@/app/chart/index';
+import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import { strings } from '@/content/strings';
 import { getSession } from '@/features/auth/use-session';
@@ -242,7 +243,8 @@ describe('출생 정보 입력(홈)', () => {
 
   it('보관된 입력값을 복원하고, 바꾸지 않고 누르면 서버를 다시 부르지 않는다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
+    // 출생 정보가 있으면 홈은 카테고리 화면이다. 넣어 둔 값을 고치는 곳은 /birth 다(결정 019).
+    await render(<BirthScreen />);
     expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();
     expect(screen.getByText('오후 9:00')).toBeTruthy();
     expect(await screen.findByText('서울특별시 마포구')).toBeTruthy();

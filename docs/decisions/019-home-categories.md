@@ -3,7 +3,7 @@ type: decision
 tags: [화면 구성, 홈, 카테고리, 출생 정보]
 status: active
 last_reviewed: 2026-11-11
-superseded_by:
+superseded_by: 021-home-relation-synastry-back.md (관계 · 궁합 칸을 홈에서 뺀 부분만. 나머지는 유효)
 ---
 # 019. 홈은 카테고리 화면이고, 출생 정보 입력은 처음 한 번과 바꿀 때만 나온다
 

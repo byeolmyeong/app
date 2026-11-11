@@ -12,14 +12,14 @@ const PER_ROW = 4;
 type Category = (typeof M.categories)[number];
 
 /** 홈에서 갈 수 있는 화면. 아직 없는 기능의 항목은 path 가 null 이다 */
-export type HomePath = '/reading' | '/chart' | '/report' | '/report?area=RELATIONSHIP';
+export type HomePath = '/reading' | '/chart' | '/report';
 
 export type HomeCategoriesProps = {
   onOpen: (path: HomePath) => void;
 };
 
 /**
- * 홈의 카테고리(나 · 관계 · 궁합 · 시기, 결정 019). 아이콘과 그 아래 이름만 있는 타일을 한 줄에 넷씩, 양끝을 화면 여백에 맞춰 놓는다.
+ * 홈의 카테고리(나 · 시기, 결정 019. 관계 · 궁합은 기능이 생길 때까지 뺐다). 아이콘과 그 아래 이름만 있는 타일을 한 줄에 넷씩, 양끝을 화면 여백에 맞춰 놓는다.
  * 타일을 누르면 그 칸의 항목이 아래 시트로 올라온다. 항목이 모두 준비 중인 칸은 흐리게 그리고 누를 수 없다.
  */
 export function HomeCategories({ onOpen }: HomeCategoriesProps) {
@@ -44,8 +44,8 @@ export function HomeCategories({ onOpen }: HomeCategoriesProps) {
     <View style={styles.root}>
       {rows.map((row, index) => (
         <View key={index} testID="home-category-row" style={styles.row}>
-          {row.map((category) => {
-            if (!category) return <View key="empty" style={styles.tile} />;
+          {row.map((category, slot) => {
+            if (!category) return <View key={slot} style={styles.tile} />;
             const soon = category.items.every((item) => item.path === null);
             return (
               <Pressable
@@ -115,7 +115,7 @@ export function HomeCategories({ onOpen }: HomeCategoriesProps) {
   );
 }
 
-/** 칸마다의 선 아이콘: 나(사람) · 관계(마음) · 궁합(겹친 두 원) · 시기(시계). */
+/** 칸마다의 선 아이콘: 나(사람) · 시기(시계). */
 function CategoryIcon({ name, color }: { name: Category['key']; color: string }) {
   const stroke = {
     stroke: color,
@@ -130,15 +130,6 @@ function CategoryIcon({ name, color }: { name: Category['key']; color: string })
         <>
           <Circle cx={12} cy={8} r={3.5} {...stroke} />
           <Path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" {...stroke} />
-        </>
-      ) : null}
-      {name === 'relation' ? (
-        <Path d="M12 20s-7-4.4-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.6 12 20 12 20z" {...stroke} />
-      ) : null}
-      {name === 'synastry' ? (
-        <>
-          <Circle cx={9} cy={12} r={5.5} {...stroke} />
-          <Circle cx={15} cy={12} r={5.5} {...stroke} />
         </>
       ) : null}
       {name === 'timing' ? (

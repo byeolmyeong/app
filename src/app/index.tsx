@@ -18,7 +18,7 @@ import { MainTabs } from '@/features/home/main-tabs';
 import { useStoredReading } from '@/features/reading/use-reading';
 
 /**
- * 홈. 출생 정보가 있으면 카테고리(나 · 관계 · 궁합 · 시기), 나의 한 줄 총평, 나를 이루는 세 가지와 아래 탭을 보여 주고,
+ * 홈. 출생 정보가 있으면 카테고리(나 · 시기), 나의 한 줄 총평, 나를 이루는 세 가지와 아래 탭을 보여 주고,
  * 없으면 출생 정보 입력부터 받는다(결정 019).
  * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
  */

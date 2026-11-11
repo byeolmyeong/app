@@ -37,22 +37,6 @@ export const strings = {
         ],
       },
       {
-        key: 'relation',
-        title: '관계',
-        items: [
-          { label: '사람을 대하는 성향', path: '/report?area=RELATIONSHIP' },
-          { label: '연애에서 해 볼 만한 것', path: null },
-        ],
-      },
-      {
-        key: 'synastry',
-        title: '궁합',
-        items: [
-          { label: '상대와 궁합 보기', path: null },
-          { label: '궁합 랭킹', path: null },
-        ],
-      },
-      {
         key: 'timing',
         title: '시기',
         items: [

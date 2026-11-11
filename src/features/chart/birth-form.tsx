@@ -40,8 +40,8 @@ export type BirthFormProps = {
 };
 
 /**
- * 출생 정보 입력. 한 화면에서 차례로 펼친다: 생년월일 → 태어난 시각("모름") → 시·도 → 시·군·구.
- * 앞 칸을 맞게 채우면 다음 칸이 아래에 나타나고, 한 번 나타난 칸은 앞 칸을 고쳐도 사라지지 않는다.
+ * 출생 정보 입력. 한 화면에 순서대로 모두 보인다: 생년월일 → 태어난 시각("모름") → 시·도 → 시·군·구.
+ * 시·군·구만 시·도를 고른 뒤에 그 아래에 나타난다.
  * 태어난 곳은 치지 않고 고른다. 누르면 차트를 받아 보관하고 /chart 로 간다.
  */
 export function BirthForm({ stored, save }: BirthFormProps) {
@@ -51,9 +51,6 @@ export function BirthForm({ stored, save }: BirthFormProps) {
   const [timeUnknown, setTimeUnknown] = useState(initial ? initial.time === null : false);
   const [place, setPlace] = useState<BirthProfile['place'] | null>(initial?.place ?? null);
   const [region, setRegion] = useState<string | null>(initial ? regionOf(initial.place.name) : null);
-  /** 어디까지 펼쳤는가 */
-  const [showTime, setShowTime] = useState(Boolean(initial));
-  const [showPlace, setShowPlace] = useState(Boolean(initial));
   /** 서버가 준 전체 목록. null 은 아직 받지 못함 */
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [placesFailed, setPlacesFailed] = useState(false);
@@ -85,7 +82,6 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     setDateText(value);
     const date = value.length === DATE_LENGTH ? parseBirthDate(value, new Date()) : null;
     setErrors((e) => ({ ...e, date: date && !date.ok ? date.error : undefined }));
-    if (date?.ok) setShowTime(true);
   }
 
   function onTimeText(text: string) {
@@ -93,12 +89,6 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     setTimeText(value);
     const time = value.length === TIME_LENGTH ? parseBirthTime(value) : null;
     setErrors((e) => ({ ...e, time: time && !time.ok ? time.error : undefined }));
-    if (time?.ok) setShowPlace(true);
-  }
-
-  function onTimeUnknown(checked: boolean) {
-    setTimeUnknown(checked);
-    if (checked) setShowPlace(true);
   }
 
   function onPickRegion(name: string) {
@@ -118,12 +108,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     if (submitting) return;
     const v = validateBirthInput({ dateText, timeText, timeUnknown, place }, new Date());
     if (!v.ok) {
-      // 아직 펼치지 않은 칸의 오류는 보여 주지 않는다
-      setErrors({
-        date: v.errors.date,
-        time: showTime ? v.errors.time : undefined,
-        place: showPlace ? v.errors.place : undefined,
-      });
+      setErrors(v.errors);
       return;
     }
     setErrors({});
@@ -137,9 +122,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     const r = await api.createChart(v.input);
     setSubmitting(false);
     if (!r.ok) {
-      setRequestError(
-        r.error === 'NETWORK' || r.error === 'LIMIT' ? S.requestErrors[r.error] : S.requestErrors.OTHER,
-      );
+      setRequestError(r.error === 'NETWORK' || r.error === 'LIMIT' ? S.requestErrors[r.error] : S.requestErrors.OTHER);
       return;
     }
     await save({ profile: v.profile, chart: r.data });
@@ -161,72 +144,64 @@ export function BirthForm({ stored, save }: BirthFormProps) {
             accessibilityLabel={S.dateLabel}
           />
         </Field>
-        {showTime ? (
-          <>
-            <Field
-              label={S.timeLabel}
-              hint={timeUnknown ? undefined : S.timeHint}
-              error={timeUnknown ? undefined : errors.time}>
-              {timeUnknown ? (
-                <Txt variant="body" color="gray">
-                  {S.timeUnknownValue}
-                </Txt>
-              ) : (
-                <FieldInput
-                  autoFocus={!initial}
-                  value={timeText}
-                  onChangeText={onTimeText}
-                  placeholder={S.timePlaceholder}
-                  keyboardType="number-pad"
-                  maxLength={TIME_LENGTH}
-                  accessibilityLabel={S.timeLabel}
-                />
-              )}
-            </Field>
-            <View style={styles.check}>
-              <Checkbox label={S.timeUnknown} checked={timeUnknown} onChange={onTimeUnknown} />
-            </View>
-          </>
-        ) : null}
-        {showPlace ? (
-          <>
-            <Field label={S.placeLabel} error={errors.place}>
-              <Txt variant="body" color={place ? 'ink' : 'gray'}>
-                {place ? place.name : S.placePlaceholder}
-              </Txt>
-            </Field>
-            {placesFailed ? (
-              <View style={styles.note}>
-                <Txt variant="table" color="gray">
-                  {S.placeLoadFailed}
-                </Txt>
-                <TextLink label={S.placeRetry} onPress={loadPlaces} />
-              </View>
-            ) : null}
-            {places ? (
-              <View style={styles.options}>
-                {[...new Set(places.map((p) => regionOf(p.name)))].map((name) => (
-                  <Option key={name} label={name} selected={region === name} onPress={() => onPickRegion(name)} />
-                ))}
-              </View>
-            ) : null}
-            {districts.length > 0 ? (
-              <View style={[styles.options, styles.districts]}>
-                {districts.map((p) => (
-                  <Option
-                    key={p.id}
-                    label={districtOf(p.name)}
-                    selected={place?.id === p.id}
-                    onPress={() => onPickPlace(p)}
-                  />
-                ))}
-              </View>
-            ) : null}
-            <Txt variant="label" color="gray" style={styles.note}>
-              {S.placeNote}
+        <Field
+          label={S.timeLabel}
+          hint={timeUnknown ? undefined : S.timeHint}
+          error={timeUnknown ? undefined : errors.time}
+        >
+          {timeUnknown ? (
+            <Txt variant="body" color="gray">
+              {S.timeUnknownValue}
             </Txt>
-          </>
+          ) : (
+            <FieldInput
+              value={timeText}
+              onChangeText={onTimeText}
+              placeholder={S.timePlaceholder}
+              keyboardType="number-pad"
+              maxLength={TIME_LENGTH}
+              accessibilityLabel={S.timeLabel}
+            />
+          )}
+        </Field>
+        <View style={styles.check}>
+          <Checkbox label={S.timeUnknown} checked={timeUnknown} onChange={setTimeUnknown} />
+        </View>
+        <Field label={S.placeLabel} error={errors.place}>
+          <Txt variant="body" color={place ? 'ink' : 'gray'}>
+            {place ? place.name : S.placePlaceholder}
+          </Txt>
+        </Field>
+        {placesFailed ? (
+          <View style={styles.note}>
+            <Txt variant="table" color="gray">
+              {S.placeLoadFailed}
+            </Txt>
+            <TextLink label={S.placeRetry} onPress={loadPlaces} />
+          </View>
         ) : null}
+        {places ? (
+          <View style={styles.options}>
+            {[...new Set(places.map((p) => regionOf(p.name)))].map((name) => (
+              <Option key={name} label={name} selected={region === name} onPress={() => onPickRegion(name)} />
+            ))}
+          </View>
+        ) : null}
+        {districts.length > 0 ? (
+          <View style={[styles.options, styles.districts]}>
+            {districts.map((p) => (
+              <Option
+                key={p.id}
+                label={districtOf(p.name)}
+                selected={place?.id === p.id}
+                onPress={() => onPickPlace(p)}
+              />
+            ))}
+          </View>
+        ) : null}
+        <Txt variant="label" color="gray" style={styles.note}>
+          {S.placeNote}
+        </Txt>
       </View>
       <View style={styles.bottom}>
         {requestError ? (
@@ -248,7 +223,8 @@ function Option({ label, selected, onPress }: { label: string; selected: boolean
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.option, selected && styles.optionSelected]}>
+      style={[styles.option, selected && styles.optionSelected]}
+    >
       <Txt variant="table" color={selected ? 'paper' : 'ink'}>
         {label}
       </Txt>

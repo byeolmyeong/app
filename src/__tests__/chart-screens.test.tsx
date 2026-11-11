@@ -38,37 +38,31 @@ async function fillPlace() {
   await fireEvent.press(await screen.findByText('마포구'));
 }
 
-/** 생년월일을 넣으면 시각 칸이, 시각을 넣으면(null 이면 "모름") 태어난 곳 고르기가 아래에 나타난다 */
 async function fillDateAndTime(date: string, time: string | null) {
   await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), date);
-  if (time === null) await fireEvent.press(await screen.findByText(H.timeUnknown));
-  else await fireEvent.changeText(await screen.findByPlaceholderText(H.timePlaceholder), time);
+  if (time === null) await fireEvent.press(screen.getByText(H.timeUnknown));
+  else await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), time);
 }
 
 describe('출생 정보 입력(홈)', () => {
-  it('한 화면에서 차례로 펼친다: 생년월일 → 태어난 시각 → 시·도 → 시·군·구', async () => {
+  it('한 화면에 순서대로 모두 보인다: 생년월일 · 태어난 시각 · 시·도, 시·도를 고르면 시·군·구', async () => {
     await render(<HomeScreen />);
-    expect(screen.queryByPlaceholderText(H.timePlaceholder)).toBeNull();
-    expect(screen.queryByText(H.timeUnknown)).toBeNull();
-    expect(screen.queryByTestId('place-option')).toBeNull();
-    // 숫자만 쳐도 꼴이 맞춰지고, 다 치면 시각 칸이 나타난다
-    await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '2000061');
-    expect(screen.queryByPlaceholderText(H.timePlaceholder)).toBeNull();
-    await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '20000615');
-    expect(screen.getByDisplayValue('2000-06-15')).toBeTruthy();
+    // 아무것도 넣기 전에도 세 칸이 다 보인다
+    expect(screen.getByPlaceholderText(H.datePlaceholder)).toBeTruthy();
+    expect(screen.getByPlaceholderText(H.timePlaceholder)).toBeTruthy();
     expect(screen.getByText(H.timeUnknown)).toBeTruthy();
-    expect(screen.queryByTestId('place-option')).toBeNull();
-    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '2100');
-    expect(screen.getByDisplayValue('21:00')).toBeTruthy();
-    // 시·도 17개가 나타나고, 하나를 고르면 그 아래에 시·군·구가 펼쳐진다
     expect(await screen.findByText('경기도')).toBeTruthy();
     expect(screen.getAllByTestId('place-option')).toHaveLength(17);
+    // 숫자만 쳐도 꼴이 맞춰진다
+    await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '20000615');
+    expect(screen.getByDisplayValue('2000-06-15')).toBeTruthy();
+    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '2100');
+    expect(screen.getByDisplayValue('21:00')).toBeTruthy();
+    // 시·도를 고르면 그 아래에 시·군·구가 나타난다
     await fireEvent.press(screen.getByText('서울특별시'));
     expect(screen.getAllByTestId('place-option')).toHaveLength(17 + 25);
     await fireEvent.press(screen.getByText('마포구'));
     expect(screen.getByText('서울특별시 마포구')).toBeTruthy();
-    // 앞 칸은 그대로 보이고 고칠 수 있다
-    expect(screen.getByDisplayValue('2000-06-15')).toBeTruthy();
   });
 
   it('다른 시·도를 누르면 그 시·도의 시·군·구로 바뀌고, 세종은 누르면 바로 정해진다', async () => {
@@ -106,28 +100,27 @@ describe('출생 정보 입력(홈)', () => {
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: 1841277 });
   });
 
-  it('1900년 이전 날짜는 다 치자마자 오류를 보여 주고 다음 칸을 펼치지 않는다', async () => {
+  it('1900년 이전 날짜는 다 치자마자 오류를 보여 준다', async () => {
     await render(<HomeScreen />);
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '1899-12-31');
     expect(screen.getByText(H.errors.dateTooEarly)).toBeTruthy();
-    expect(screen.queryByPlaceholderText(H.timePlaceholder)).toBeNull();
     // 칸을 고치면 그 칸의 오류 문구는 사라진다
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '1999-12-31');
     expect(screen.queryByText(H.errors.dateTooEarly)).toBeNull();
-    expect(screen.getByPlaceholderText(H.timePlaceholder)).toBeTruthy();
   });
 
-  it('틀린 시각은 오류를 보여 주고 태어난 곳을 펼치지 않는다', async () => {
+  it('틀린 시각은 다 치자마자 오류를 보여 준다', async () => {
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '2561');
     expect(screen.getByText(H.errors.timeFormat)).toBeTruthy();
-    expect(screen.queryByTestId('place-option')).toBeNull();
   });
 
   it('다 채우지 않고 누르면 빈 칸의 오류를 보여 주고 서버를 부르지 않는다', async () => {
     await render(<HomeScreen />);
     await fireEvent.press(screen.getByText(H.submit));
     expect(await screen.findByText(H.errors.dateFormat)).toBeTruthy();
+    expect(screen.getByText(H.errors.timeFormat)).toBeTruthy();
+    expect(screen.getByText(H.errors.placeRequired)).toBeTruthy();
     await fillDateAndTime('2000-06-15', '21:00');
     await fireEvent.press(screen.getByText(H.submit));
     expect(await screen.findByText(H.errors.placeRequired)).toBeTruthy();
@@ -156,7 +149,7 @@ describe('출생 정보 입력(홈)', () => {
     expect(await loadBirth()).toBeNull();
   });
 
-  it('보관된 입력값을 모두 펼쳐 복원하고, 바꾸지 않고 누르면 서버를 다시 부르지 않는다', async () => {
+  it('보관된 입력값을 복원하고, 바꾸지 않고 누르면 서버를 다시 부르지 않는다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();

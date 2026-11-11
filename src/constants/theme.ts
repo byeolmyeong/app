@@ -114,7 +114,7 @@ export const Sizes = {
   /** 웹 넓은 화면에서 가운데에 보이는 앱 화면의 폭 */
   maxContentWidth: 390,
   /** 홈 카테고리 타일의 아이콘 */
-  categoryIcon: 32,
+  categoryIcon: 40,
   /** 아래 탭 줄의 높이 · 탭 아이콘 */
   tabBarHeight: 60,
   tabIcon: 24,

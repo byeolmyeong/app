@@ -1,0 +1,103 @@
+import { useLocalSearchParams } from 'expo-router';
+import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import { Button } from '@/components/button';
+import { NavBar } from '@/components/nav-bar';
+import { Screen } from '@/components/screen';
+import { Txt } from '@/components/txt';
+import { Spacing } from '@/constants/theme';
+import { strings } from '@/content/strings';
+import { useSession } from '@/features/auth/use-session';
+import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
+import { useBirthProfile } from '@/features/chart/use-birth-profile';
+import { ReportView } from '@/features/report/report-view';
+import { useReport } from '@/features/report/use-report';
+import { REPORT_AREAS } from '@/lib/api';
+
+const S = strings.report;
+
+/**
+ * 심층 리포트: 서버가 쓴 네 영역(성격 · 관계 · 일 · 감정)의 긴 글. 글은 1~2분 동안 쓰이므로 요청한 뒤 쓰는 중을 보여 준다.
+ * 주소의 area(예: `/report?area=RELATIONSHIP`)로 처음 보일 탭을 고른다. 다시 생성은 없다(같은 차트 = 같은 글).
+ */
+export default function ReportScreen() {
+  const { area } = useLocalSearchParams<{ area?: string }>();
+  const { ready } = useSession();
+  const { loaded, profile } = useBirthProfile();
+  // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다.
+  const input = useMemo(
+    () => (ready && profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
+    [ready, profile],
+  );
+  const { state, start } = useReport(input);
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+
+  if (loaded && !profile)
+    return (
+      <Screen nav={nav}>
+        <ChartEmpty />
+      </Screen>
+    );
+
+  if (state.status === 'checking')
+    return (
+      <Screen nav={nav}>
+        <View style={styles.status}>
+          <Txt variant="table" color="gray">
+            {S.checking}
+          </Txt>
+        </View>
+      </Screen>
+    );
+
+  if (state.status === 'none')
+    return (
+      <Screen nav={nav}>
+        <View style={styles.status}>
+          <Txt variant="body">{S.intro}</Txt>
+          <Button label={S.request} onPress={start} />
+        </View>
+      </Screen>
+    );
+
+  if (state.status === 'writing')
+    return (
+      <Screen nav={nav}>
+        <View style={styles.status}>
+          <Txt variant="heading">{S.writing}</Txt>
+          <Txt variant="table" color="gray">
+            {S.writingNote}
+          </Txt>
+        </View>
+      </Screen>
+    );
+
+  if (state.status === 'failed')
+    return (
+      <Screen nav={nav}>
+        <View style={styles.status}>
+          <Txt variant="body">
+            {state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}
+          </Txt>
+          <Button label={S.retry} onPress={start} />
+        </View>
+      </Screen>
+    );
+
+  return (
+    <Screen nav={nav}>
+      <ReportView report={state.report} initialArea={REPORT_AREAS.find((a) => a === area)} />
+      <View style={styles.footer}>
+        <Txt variant="label" color="gray">
+          {strings.reading.disclaimer}
+        </Txt>
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  status: { gap: Spacing.md, paddingTop: Spacing.lg },
+  footer: { paddingTop: Spacing.lg },
+});

@@ -33,23 +33,7 @@ export const strings = {
         items: [
           { label: '요약 풀이', path: '/reading' },
           { label: '내 차트', path: '/chart' },
-          { label: '심층 리포트', path: null },
-        ],
-      },
-      {
-        key: 'relation',
-        title: '관계',
-        items: [
-          { label: '사람을 대하는 성향', path: null },
-          { label: '연애에서 해 볼 만한 것', path: null },
-        ],
-      },
-      {
-        key: 'synastry',
-        title: '궁합',
-        items: [
-          { label: '상대와 궁합 보기', path: null },
-          { label: '궁합 랭킹', path: null },
+          { label: '심층 리포트', path: '/report' },
         ],
       },
       {
@@ -156,6 +140,22 @@ export const strings = {
       NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
       LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
       OTHER: '글을 받아 오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+    },
+    retry: '다시 시도',
+  },
+  report: {
+    title: '심층 리포트',
+    checking: '리포트를 확인하고 있어요',
+    intro: '성격 · 관계 · 일 · 감정, 네 가지로 나를 길게 풀어 드려요.',
+    request: '리포트 받기',
+    writing: '리포트를 쓰는 중이에요',
+    writingNote: '1~2분쯤 걸려요. 화면을 나갔다가 다시 들어와도 돼요.',
+    /** 영역 탭. 키는 서버가 주는 식별자다 */
+    areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정' },
+    failed: {
+      NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+      LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+      OTHER: '리포트를 쓰지 못했어요. 잠시 뒤 다시 시도해 주세요.',
     },
     retry: '다시 시도',
   },

@@ -41,14 +41,12 @@ describe('홈', () => {
     expect(screen.queryByTestId('home-category')).toBeNull();
   });
 
-  it('출생 정보가 있으면 카테고리 네 칸을 보여 준다: 나 · 관계 · 궁합 · 시기', async () => {
+  it('출생 정보가 있으면 카테고리 두 칸을 보여 준다: 나 · 시기(관계 · 궁합은 기능이 생길 때까지 뺐다)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    expect(await screen.findAllByTestId('home-category')).toHaveLength(4);
+    expect(await screen.findAllByTestId('home-category')).toHaveLength(2);
     expect(screen.getAllByTestId('home-category').map((c) => c.props.accessibilityLabel)).toEqual([
       '나',
-      '관계',
-      '궁합',
       '시기',
     ]);
     // 입력 칸도, 제목이나 출생 정보 줄도 없다. 맨 위부터 타일이다(출생 정보는 마이에 있다)
@@ -60,7 +58,9 @@ describe('홈', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
-    expect(screen.getAllByTestId('home-category-icon')).toHaveLength(4);
+    expect(screen.getAllByTestId('home-category-icon')).toHaveLength(2);
+    // 타일이 둘이어도 한 줄은 네 자리다: 빈 자리 둘이 뒤를 채워, 타일이 왼쪽(머리의 표식과 같은 선)부터 놓인다
+    expect(screen.getByTestId('home-category-row').props.children).toHaveLength(4);
     // 한 줄에 넷, 줄의 양끝이 화면 여백에 맞는다(첫 아이콘의 왼쪽 끝이 머리의 표식과 같은 선)
     const rows = screen.getAllByTestId('home-category-row');
     expect(rows).toHaveLength(1);
@@ -88,24 +88,32 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
-  it('아직 없는 기능은 "준비 중" 으로 보이고 눌러도 아무 데도 가지 않는다', async () => {
+  it('"나" 의 심층 리포트는 /report 로 간다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
-    // 관계 · 궁합 · 시기 세 타일은 통째로 준비 중이라 흐리게 보이고 눌러도 열리지 않는다
+    await fireEvent.press(screen.getAllByTestId('home-category')[0]);
+    await fireEvent.press(await screen.findByText('심층 리포트'));
+    expect(router.push).toHaveBeenCalledWith('/report');
+  });
+
+  it('아직 없는 기능의 타일은 흐리게 보이고 눌러도 열리지 않는다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findAllByTestId('home-category');
+    // 타일은 순서로 고른다: 나 · 시기. 시기는 통째로 준비 중이다
     expect(screen.getAllByTestId('home-category').map((t) => t.props.accessibilityState.disabled)).toEqual([
       false,
       true,
-      true,
-      true,
     ]);
-    // 타일은 순서로 고른다: 나 · 관계 · 궁합 · 시기
-    await fireEvent.press(screen.getAllByTestId('home-category')[2]);
+    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
     expect(screen.queryByTestId('sheet-dim')).toBeNull();
-    // "나" 안의 아직 없는 항목도 준비 중이다
-    await fireEvent.press(screen.getAllByTestId('home-category')[0]);
-    await fireEvent.press(await screen.findByText('심층 리포트'));
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('홈에서 리포트의 특정 영역으로 바로 가는 항목은 없다', () => {
+    const paths = M.categories.flatMap((c) => c.items.map((item) => item.path as string | null));
+    expect(paths.filter((path) => path?.startsWith('/report'))).toEqual(['/report']);
   });
 
   it('아래에 탭 두 개가 있다: 홈 · 마이. 누르면 그 화면으로 바꾼다', async () => {

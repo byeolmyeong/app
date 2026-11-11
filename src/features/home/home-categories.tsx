@@ -3,9 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Sheet } from '@/components/sheet';
-import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
-import { CardRadius, Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const M = strings.main;
@@ -15,17 +14,14 @@ type Category = (typeof M.categories)[number];
 export type HomePath = '/reading' | '/chart';
 
 export type HomeCategoriesProps = {
-  /** 넣어 둔 출생 정보 한 줄(예: "2000. 6. 15. 오후 9:00 · 서울특별시 마포구") */
-  birthSummary: string;
   onOpen: (path: HomePath) => void;
-  onEditBirth: () => void;
 };
 
 /**
- * 홈의 카테고리(나 · 관계 · 궁합 · 시기, 결정 019). 아이콘과 이름이 한 벌인 타일을 한 줄에 둘씩 놓는다.
- * 타일을 누르면 그 칸의 항목이 아래 시트로 올라온다. 항목이 모두 준비 중인 칸은 타일에 표시하고 누를 수 없다.
+ * 홈의 카테고리(나 · 관계 · 궁합 · 시기, 결정 019). 아이콘과 그 아래 이름만 있는 타일을 한 줄에 넷씩 놓는다.
+ * 타일을 누르면 그 칸의 항목이 아래 시트로 올라온다. 항목이 모두 준비 중인 칸은 흐리게 그리고 누를 수 없다.
  */
-export function HomeCategories({ birthSummary, onOpen, onEditBirth }: HomeCategoriesProps) {
+export function HomeCategories({ onOpen }: HomeCategoriesProps) {
   const [opened, setOpened] = useState<Category | null>(null);
   /** 시트가 닫히는 동안에도 내용이 남아 있게, 마지막으로 연 칸을 따로 둔다 */
   const [shown, setShown] = useState<Category | null>(null);
@@ -37,13 +33,6 @@ export function HomeCategories({ birthSummary, onOpen, onEditBirth }: HomeCatego
 
   return (
     <View style={styles.root}>
-      <View style={styles.head}>
-        <Txt variant="display">{M.title}</Txt>
-        <Txt variant="table" color="gray">
-          {birthSummary}
-        </Txt>
-        <TextLink label={M.editBirth} onPress={onEditBirth} />
-      </View>
       <View style={styles.grid}>
         {M.categories.map((category) => {
           const soon = category.items.every((item) => item.path === null);
@@ -58,26 +47,12 @@ export function HomeCategories({ birthSummary, onOpen, onEditBirth }: HomeCatego
                 onPress={() => open(category)}
                 style={styles.tile}
               >
-                <View style={styles.tileTop}>
-                  <View testID="home-category-icon" style={styles.icon}>
-                    <CategoryIcon name={category.key} color={soon ? Colors.muted : Colors.ink} />
-                  </View>
-                  {soon ? (
-                    <View testID="home-category-soon" style={styles.tag}>
-                      <Txt variant="label" color="gray">
-                        {M.soon}
-                      </Txt>
-                    </View>
-                  ) : null}
+                <View testID="home-category-icon" style={styles.icon}>
+                  <CategoryIcon name={category.key} color={soon ? Colors.muted : Colors.ink} />
                 </View>
-                <View style={styles.tileText}>
-                  <Txt variant="heading" color={soon ? 'hint' : 'ink'}>
-                    {category.title}
-                  </Txt>
-                  <Txt variant="label" color={soon ? 'muted' : 'gray'}>
-                    {category.caption}
-                  </Txt>
-                </View>
+                <Txt variant="table" color={soon ? 'muted' : 'ink'}>
+                  {category.title}
+                </Txt>
               </Pressable>
             </View>
           );
@@ -165,32 +140,17 @@ function CategoryIcon({ name, color }: { name: Category['key']; color: string })
 }
 
 const styles = StyleSheet.create({
-  root: { gap: Spacing.md, paddingBottom: Spacing.lg },
-  head: { gap: Spacing.xs, paddingTop: Spacing.lg, paddingBottom: Spacing.xs },
-  // 타일을 같은 너비로 한 줄에 둘씩. 타일 사이는 칸의 안쪽 여백으로 띄운다.
-  grid: { flexDirection: 'row', flexWrap: 'wrap', margin: -Spacing.xs / 2 },
-  cell: { width: '50%', padding: Spacing.xs / 2 },
-  tile: {
-    backgroundColor: Colors.fill,
-    borderRadius: CardRadius,
-    padding: Spacing.md,
-    gap: Spacing.lg,
-  },
-  tileTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  root: { paddingTop: Spacing.md, paddingBottom: Spacing.lg },
+  // 타일을 같은 너비로 한 줄에 넷씩.
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  cell: { width: '25%', paddingVertical: Spacing.xs },
+  tile: { alignItems: 'center', gap: Spacing.xxs / 2 },
+  // 바탕 없이 아이콘만 그린다. 누르는 자리는 넉넉히 둔다.
   icon: {
     width: Sizes.categoryIconBox,
     height: Sizes.categoryIconBox,
-    borderRadius: Sizes.categoryIconBox / 2,
-    backgroundColor: Colors.paper,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tileText: { gap: Spacing.xxs / 2 },
-  tag: {
-    backgroundColor: Colors.hair,
-    borderRadius: Spacing.xs,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xxs / 2,
   },
   item: {
     height: Sizes.listRow,

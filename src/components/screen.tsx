@@ -7,6 +7,8 @@ import { Colors, LineWidth, ScreenPaddingX, Sizes, Spacing } from '@/constants/t
 export type ScreenProps = {
   /** 화면 머리(NavBar). 스크롤되지 않는다 */
   nav?: ReactNode;
+  /** 화면 아래에 붙는 것(아래 탭). 스크롤되지 않는다 */
+  footer?: ReactNode;
   children: ReactNode;
 };
 
@@ -14,7 +16,7 @@ export type ScreenProps = {
  * 모든 화면의 바탕. 흰색, 좌우 여백 20.
  * 넓은 웹 화면에서는 가운데에 앱 화면 폭의 한 단만 보이고, 그 밖은 흰색이며 옅은 선으로 나뉜다.
  */
-export function Screen({ nav, children }: ScreenProps) {
+export function Screen({ nav, footer, children }: ScreenProps) {
   // 화면 폭은 그린 뒤에 잰다. 서버가 먼저 그린 것과 달라지지 않게 처음에는 좁은 화면으로 본다.
   const [wide, setWide] = useState(false);
   return (
@@ -28,6 +30,7 @@ export function Screen({ nav, children }: ScreenProps) {
           keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
+        {footer}
       </SafeAreaView>
     </View>
   );

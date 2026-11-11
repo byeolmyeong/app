@@ -34,9 +34,9 @@ last_reviewed: 2026-11-11
 
 ## 버전별 범위
 - 1.0.0 — 무료 핵심 기능(횟수 제한 없음): 스플래시 직후 구글·애플·카카오 로그인(만 14세 이상), 출생 정보 입력, 차트, 요약 해석, 심층 리포트(외행성 통과 구간을 포함한 변곡점), 궁합(나 기준 점수·랭킹), 스토리 공유 카드. 웹과 스토어 앱 동시 출시. 기능 명세: docs/release-1.0.0.md
-  - 방향성 제시(F10)는 1.0.0 에 전체 무료로 주고 추후 같은 기능을 유료로 바꾼다. 심층 리포트는 계속 무료다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
+  - 방향성 제시(F10)는 1.0.0 에 전체 무료로 주고 추후 같은 기능을 유료로 바꾼다. 심층 리포트와 궁합 리포트는 계속 무료다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
 - 1.1.0 — 결제와 친구창:
-  - 인앱결제와 궁합 리포트 유료화: 궁합 리포트는 1.0.0 에 무료로 들어 있고, 1.1.0 이후 같은 기능을 유료로 바꾼다. 심층 리포트(성격·관계·일·감정·시기)는 유료로 바꾸지 않는다. [확인 필요] 유료로 바꾸는 시점과 가격, 이미 만든 궁합 리포트를 계속 볼 수 있게 할지. 결정: docs/decisions/011-no-usage-limits-in-1.0.0.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
+  - 인앱결제: 1.1.0 의 유료 상품은 방향성 제시와 990원 광고 제거다. 심층 리포트와 궁합 리포트는 유료로 바꾸지 않는다. [확인 필요] 방향성 제시를 유료로 바꾸는 시점과 가격. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
   - 방향성 제시 유료화(1.0.0 과 같은 기능, 건당 구매), 광고와 990원 광고 제거 상품. 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
   - 친구창: 친구 추가, 채팅, 같이 볼 수 있는 방. 결정: docs/decisions/007-friends-chat-shared-room.md
   - 투두·조각·레벨업: AI 가 방향성 제시에서 뽑은 투두를 완료하면 조각을 받고, 조각이 쌓이면 레벨이 오른다. 대표 문구 "조각을 모은다". 1.0.0 에서 옮겨 왔다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md

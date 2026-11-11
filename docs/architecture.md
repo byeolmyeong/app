@@ -33,9 +33,9 @@ flowchart LR
 ```
 app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇게: features 의 훅·부품을 조립만 한다
   index.tsx          출생 정보 입력 (태스크 4 뒤에는 가입 마지막 단계)
-  reading.tsx · report.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · settings.tsx
+  reading.tsx · report.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · settings/(설정 · 처리방침 · 약관)
 features/            기능별 로직과 기능 전용 부품
-  auth/              세션(개발용 세션 → 나중에 소셜 로그인), 세션 토큰 보관, 로그인 전 가드
+  auth/              세션(개발용 세션 → 나중에 소셜 로그인), 세션 토큰 보관, 로그인 전 가드, 계정 삭제(확인 시트 · 기기 저장 비움)
   chart/             차트 휠·표·입력 폼 (서버가 준 Chart 만 그린다)
   reading/           요약 해석 요청 상태·문단 부품
   report/            심층 리포트·변곡점 타임라인
@@ -68,6 +68,7 @@ lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타�
 - 세션 토큰은 기기 보안 저장소에만 두고, 요청마다 `Authorization: Bearer <token>` 헤더로 보낸다.
 - 출생 정보: 입력 화면이 차트를 받은 뒤 세션이 있으면 `PUT /profile` 로 서버에도 저장한다. 요약 해석은 서버가 이 값으로 쓴다.
 - 글: 세션이 있어야 요청한다. 요약 해석(`POST /readings`, 본문 없음)은 바로 받아 출생 정보별로 기기에 보관하고, 다시 열 때는 보관본을 쓴다. 401 이면 세션을 한 번 다시 받는다. 리포트는 202 를 받은 뒤 상태를 확인하거나 알림으로 완성을 안다.
+- 계정 삭제: 설정의 확인 시트 → `DELETE /account`(204) → 성공했을 때만 기기 저장소에서 이 앱의 키(`byeolmyeong.` 으로 시작하는 것 전부)와 보안 저장소의 세션 토큰을 지우고 첫 화면(`/`, 출생 정보 입력)으로 간다. 실패하면 기기의 것은 건드리지 않는다. 기능이 기기에 새로 두는 키는 `byeolmyeong.<이름>.v<판>` 으로 짓는다(그래야 삭제 때 함께 지워진다).
 - 서버가 준비되기 전에는 `lib/fixtures/` 의 응답 예시로 화면을 만든다.
 
 ## 비즈니스 룰 (앱이 지키는 것)

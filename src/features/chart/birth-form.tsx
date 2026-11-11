@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -22,11 +22,13 @@ import type { StoredBirth } from '@/features/chart/use-birth-profile';
 import { api, type Place } from '@/lib/api';
 
 const S = strings.home;
+/** 다 친 날짜(YYYY-MM-DD)와 시각(HH:mm)의 글자 수. 다 쳤을 때 바로 검사한다 */
+const DATE_LENGTH = 10;
+const TIME_LENGTH = 5;
 
 /** 목록의 이름은 "시·도 시·군·구" 꼴이다. 앞 낱말이 시·도다(세종은 한 낱말뿐이다). */
 const regionOf = (name: string) => name.split(' ')[0];
 const districtOf = (name: string) => name.split(' ').slice(1).join(' ');
-const LAST_STEP = S.steps.length - 1;
 
 const sameInput = (a: BirthProfile, b: BirthProfile) =>
   a.date === b.date && a.time === b.time && a.place.id === b.place.id;
@@ -35,23 +37,23 @@ export type BirthFormProps = {
   /** 기기에 보관된 값. 있으면 입력 칸을 이 값으로 채운다 */
   stored: StoredBirth | null;
   save: (value: StoredBirth) => Promise<void>;
-  /** 첫 질문 위에만 보여 주는 소개 */
-  intro?: ReactNode;
 };
 
 /**
- * 출생 정보 입력. 한 화면에 하나씩 묻는다: 생년월일 → 태어난 시각("모름") → 태어난 곳.
- * 태어난 곳은 치지 않고 고른다: 시·도 → 그 안의 시·군·구.
- * 마지막에 누르면 차트를 받아 보관하고 /chart 로 간다.
+ * 출생 정보 입력. 한 화면에서 차례로 펼친다: 생년월일 → 태어난 시각("모름") → 시·도 → 시·군·구.
+ * 앞 칸을 맞게 채우면 다음 칸이 아래에 나타나고, 한 번 나타난 칸은 앞 칸을 고쳐도 사라지지 않는다.
+ * 태어난 곳은 치지 않고 고른다. 누르면 차트를 받아 보관하고 /chart 로 간다.
  */
-export function BirthForm({ stored, save, intro }: BirthFormProps) {
+export function BirthForm({ stored, save }: BirthFormProps) {
   const initial = stored?.profile;
-  const [step, setStep] = useState(0);
   const [dateText, setDateText] = useState(initial?.date ?? '');
   const [timeText, setTimeText] = useState(initial?.time ?? '');
   const [timeUnknown, setTimeUnknown] = useState(initial ? initial.time === null : false);
   const [place, setPlace] = useState<BirthProfile['place'] | null>(initial?.place ?? null);
   const [region, setRegion] = useState<string | null>(initial ? regionOf(initial.place.name) : null);
+  /** 어디까지 펼쳤는가 */
+  const [showTime, setShowTime] = useState(Boolean(initial));
+  const [showPlace, setShowPlace] = useState(Boolean(initial));
   /** 서버가 준 전체 목록. null 은 아직 받지 못함 */
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [placesFailed, setPlacesFailed] = useState(false);
@@ -78,11 +80,32 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
     };
   }, []);
 
+  function onDateText(text: string) {
+    const value = formatDateTyping(text);
+    setDateText(value);
+    const date = value.length === DATE_LENGTH ? parseBirthDate(value, new Date()) : null;
+    setErrors((e) => ({ ...e, date: date && !date.ok ? date.error : undefined }));
+    if (date?.ok) setShowTime(true);
+  }
+
+  function onTimeText(text: string) {
+    const value = formatTimeTyping(text);
+    setTimeText(value);
+    const time = value.length === TIME_LENGTH ? parseBirthTime(value) : null;
+    setErrors((e) => ({ ...e, time: time && !time.ok ? time.error : undefined }));
+    if (time?.ok) setShowPlace(true);
+  }
+
+  function onTimeUnknown(checked: boolean) {
+    setTimeUnknown(checked);
+    if (checked) setShowPlace(true);
+  }
+
   function onPickRegion(name: string) {
+    setRegion(name);
     const inRegion = (places ?? []).filter((p) => regionOf(p.name) === name);
     // 하위 시·군·구가 없는 곳(세종)은 바로 정해진다
     if (inRegion.length === 1 && inRegion[0].name === name) return onPickPlace(inRegion[0]);
-    setRegion(name);
     setPlace(null);
   }
 
@@ -91,27 +114,16 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
     setErrors((e) => ({ ...e, place: undefined }));
   }
 
-  /** 지금 화면의 칸만 검사하고 다음 질문으로 간다 */
-  function onNext() {
-    if (step === 0) {
-      const date = parseBirthDate(dateText, new Date());
-      if (!date.ok) return setErrors({ date: date.error });
-    } else if (!timeUnknown) {
-      const time = parseBirthTime(timeText);
-      if (!time.ok) return setErrors({ time: time.error });
-    }
-    setErrors({});
-    setStep(step + 1);
-  }
-
   async function onSubmit() {
     if (submitting) return;
     const v = validateBirthInput({ dateText, timeText, timeUnknown, place }, new Date());
     if (!v.ok) {
-      setErrors(v.errors);
-      // 앞 질문의 값이 틀렸으면 그 질문으로 돌아간다(오늘 날짜가 넘어간 경우 등)
-      if (v.errors.date) setStep(0);
-      else if (v.errors.time) setStep(1);
+      // 아직 펼치지 않은 칸의 오류는 보여 주지 않는다
+      setErrors({
+        date: v.errors.date,
+        time: showTime ? v.errors.time : undefined,
+        place: showPlace ? v.errors.place : undefined,
+      });
       return;
     }
     setErrors({});
@@ -134,40 +146,24 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
     router.push('/chart');
   }
 
-  const last = step === LAST_STEP;
+  const districts = places && region ? places.filter((p) => regionOf(p.name) === region && districtOf(p.name)) : [];
 
   return (
     <View style={styles.form}>
-      {step === 0 ? intro : null}
-      <View style={styles.question}>
-        <Txt variant="label" color="gray">
-          {`${step + 1} / ${S.steps.length}`}
-        </Txt>
-        <Txt variant="title">{S.steps[step]}</Txt>
-      </View>
       <View>
-        {step === 0 ? (
-          <Field first label={S.dateLabel} hint={S.dateHint} error={errors.date}>
-            <FieldInput
-              key="date"
-              autoFocus
-              value={dateText}
-              onChangeText={(text) => {
-                setDateText(formatDateTyping(text));
-                setErrors((e) => ({ ...e, date: undefined }));
-              }}
-              onSubmitEditing={onNext}
-              placeholder={S.datePlaceholder}
-              keyboardType="number-pad"
-              maxLength={10}
-              accessibilityLabel={S.dateLabel}
-            />
-          </Field>
-        ) : null}
-        {step === 1 ? (
+        <Field first label={S.dateLabel} hint={S.dateHint} error={errors.date}>
+          <FieldInput
+            value={dateText}
+            onChangeText={onDateText}
+            placeholder={S.datePlaceholder}
+            keyboardType="number-pad"
+            maxLength={DATE_LENGTH}
+            accessibilityLabel={S.dateLabel}
+          />
+        </Field>
+        {showTime ? (
           <>
             <Field
-              first
               label={S.timeLabel}
               hint={timeUnknown ? undefined : S.timeHint}
               error={timeUnknown ? undefined : errors.time}>
@@ -177,29 +173,24 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
                 </Txt>
               ) : (
                 <FieldInput
-                  key="time"
-                  autoFocus
+                  autoFocus={!initial}
                   value={timeText}
-                  onChangeText={(text) => {
-                    setTimeText(formatTimeTyping(text));
-                    setErrors((e) => ({ ...e, time: undefined }));
-                  }}
-                  onSubmitEditing={onNext}
+                  onChangeText={onTimeText}
                   placeholder={S.timePlaceholder}
                   keyboardType="number-pad"
-                  maxLength={5}
+                  maxLength={TIME_LENGTH}
                   accessibilityLabel={S.timeLabel}
                 />
               )}
             </Field>
             <View style={styles.check}>
-              <Checkbox label={S.timeUnknown} checked={timeUnknown} onChange={setTimeUnknown} />
+              <Checkbox label={S.timeUnknown} checked={timeUnknown} onChange={onTimeUnknown} />
             </View>
           </>
         ) : null}
-        {step === 2 ? (
+        {showPlace ? (
           <>
-            <Field first label={S.placeLabel} error={errors.place}>
+            <Field label={S.placeLabel} error={errors.place}>
               <Txt variant="body" color={place ? 'ink' : 'gray'}>
                 {place ? place.name : S.placePlaceholder}
               </Txt>
@@ -212,41 +203,23 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
                 <TextLink label={S.placeRetry} onPress={loadPlaces} />
               </View>
             ) : null}
-            {places && region ? (
-              <View style={styles.regionHead}>
-                <Txt variant="label" color="gray">
-                  {region}
-                </Txt>
-                <TextLink
-                  label={S.regionBack}
-                  onPress={() => {
-                    setRegion(null);
-                    setPlace(null);
-                  }}
-                />
-              </View>
-            ) : null}
             {places ? (
               <View style={styles.options}>
-                {region
-                  ? places
-                      .filter((p) => regionOf(p.name) === region && districtOf(p.name))
-                      .map((p) => (
-                        <Option
-                          key={p.id}
-                          label={districtOf(p.name)}
-                          selected={place?.id === p.id}
-                          onPress={() => onPickPlace(p)}
-                        />
-                      ))
-                  : [...new Set(places.map((p) => regionOf(p.name)))].map((name) => (
-                      <Option
-                        key={name}
-                        label={name}
-                        selected={place?.name === name}
-                        onPress={() => onPickRegion(name)}
-                      />
-                    ))}
+                {[...new Set(places.map((p) => regionOf(p.name)))].map((name) => (
+                  <Option key={name} label={name} selected={region === name} onPress={() => onPickRegion(name)} />
+                ))}
+              </View>
+            ) : null}
+            {districts.length > 0 ? (
+              <View style={[styles.options, styles.districts]}>
+                {districts.map((p) => (
+                  <Option
+                    key={p.id}
+                    label={districtOf(p.name)}
+                    selected={place?.id === p.id}
+                    onPress={() => onPickPlace(p)}
+                  />
+                ))}
               </View>
             ) : null}
             <Txt variant="label" color="gray" style={styles.note}>
@@ -261,12 +234,7 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
             {requestError}
           </Txt>
         ) : null}
-        {step > 0 ? <TextLink label={S.back} onPress={() => setStep(step - 1)} /> : null}
-        {last ? (
-          <Button label={submitting ? S.submitting : S.submit} disabled={submitting} onPress={onSubmit} />
-        ) : (
-          <Button label={S.next} onPress={onNext} />
-        )}
+        <Button label={submitting ? S.submitting : S.submit} disabled={submitting} onPress={onSubmit} />
       </View>
     </View>
   );
@@ -290,14 +258,13 @@ function Option({ label, selected, onPress }: { label: string; selected: boolean
 
 const styles = StyleSheet.create({
   form: { flexGrow: 1, gap: Spacing.lg },
-  question: { gap: Spacing.xs, paddingTop: Spacing.lg },
-  regionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Spacing.md,
-  },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, paddingTop: Spacing.sm },
+  /** 시·도 아래에 펼쳐지는 시·군·구. 옅은 선으로 나눈다 */
+  districts: {
+    marginTop: Spacing.sm,
+    borderTopWidth: LineWidth,
+    borderTopColor: Colors.hair,
+  },
   option: {
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,
@@ -309,7 +276,9 @@ const styles = StyleSheet.create({
   note: { paddingTop: Spacing.sm, gap: Spacing.xs },
   check: {
     paddingLeft: Sizes.fieldLabelWidth + Spacing.xs,
-    paddingTop: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: LineWidth,
+    borderBottomColor: Colors.hair,
   },
   bottom: { marginTop: 'auto', gap: Spacing.sm },
 });

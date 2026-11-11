@@ -186,7 +186,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
       </View>
       <View style={styles.bottom}>
         {requestError ? (
-          <Txt variant="table" color="seal">
+          <Txt variant="table" color="danger">
             {requestError}
           </Txt>
         ) : null}

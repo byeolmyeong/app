@@ -1,33 +1,44 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { processColor, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
 import { DataTable } from '@/components/data-table';
 import { Field } from '@/components/field';
-import { Seal } from '@/components/seal';
+import { ChartMark } from '@/components/chart-mark';
 import { SectionLabel } from '@/components/section-label';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontFamily, MonoFamily, Radius, SerifFamily, Spacing, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 describe('테마', () => {
-  it('시안의 색 5개를 그대로 갖는다', () => {
+  it('천문도 색을 갖는다(결정 016)', () => {
     expect(Colors).toMatchObject({
-      paper: '#FBFAF6',
-      ink: '#121212',
-      gray: '#85847E',
-      hair: '#D8D6CE',
-      seal: '#C9342B',
+      paper: '#F4F1EA',
+      canvas: '#E9E6DE',
+      ink: '#15161A',
+      gray: '#77736A',
+      hair: '#D6D2C8',
+      gold: '#C8822E',
+      night: '#0F1220',
+      nightGold: '#E0A45A',
+      danger: '#B3402F',
     });
+    expect(Colors).not.toHaveProperty('seal');
   });
 
-  it('글자 단계 6개와 간격·모서리를 갖는다', () => {
-    expect(Object.keys(Typography)).toEqual(['display', 'title', 'heading', 'body', 'table', 'label']);
-    expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 34 });
-    expect(Typography.label).toMatchObject({ fontSize: 11, lineHeight: 14 });
+  it('글자 단계 8개와 간격·모서리를 갖는다', () => {
+    expect(Object.keys(Typography)).toEqual(['display', 'title', 'heading', 'body', 'table', 'mono', 'number', 'label']);
+    expect(Typography.display).toMatchObject({ fontFamily: SerifFamily, fontSize: 30, lineHeight: 38 });
+    expect(Typography.title).toMatchObject({ fontFamily: SerifFamily, fontSize: 22 });
+    expect(Typography.body).toMatchObject({ fontFamily: FontFamily, fontSize: 15, lineHeight: 24 });
+    // 한글이 섞이는 표·보조 문장은 Pretendard, 숫자만 있는 곳은 고정폭
+    expect(Typography.table).toMatchObject({ fontFamily: FontFamily });
+    expect(Typography.mono).toMatchObject({ fontFamily: MonoFamily });
+    expect(Typography.number).toMatchObject({ fontFamily: MonoFamily, fontSize: 26 });
+    expect(Typography.label).toMatchObject({ fontFamily: FontFamily, fontSize: 11, lineHeight: 14 });
     expect(Object.values(Spacing).slice(0, 7)).toEqual([4, 8, 12, 16, 24, 32, 48]);
-    expect(Radius).toBe(2);
+    expect(Radius).toBe(4);
   });
 });
 
@@ -48,7 +59,7 @@ describe('Button', () => {
       return style;
     };
     expect((await bg('primary')).backgroundColor).toBe(Colors.ink);
-    expect((await bg('danger')).backgroundColor).toBe(Colors.seal);
+    expect((await bg('danger')).backgroundColor).toBe(Colors.danger);
     const line = await bg('line');
     expect(line.backgroundColor).toBe('transparent');
     expect(line.borderColor).toBe(Colors.ink);
@@ -110,13 +121,13 @@ describe('DataTable', () => {
   });
 });
 
-describe('Seal', () => {
-  it('두 글자를 인주 바탕에 그린다', async () => {
-    await render(<Seal />);
-    expect(screen.getByText(strings.seal[0])).toBeTruthy();
-    expect(screen.getByText(strings.seal[1])).toBeTruthy();
-    const style = StyleSheet.flatten(screen.getByTestId('seal').props.style);
-    expect(style.backgroundColor).toBe(Colors.seal);
+describe('ChartMark', () => {
+  it('눈금 원과 금색 점 하나로 된 표식을 그린다', async () => {
+    await render(<ChartMark />);
+    expect(screen.getByTestId('chart-mark')).toBeTruthy();
+    expect(screen.getByLabelText(strings.appName)).toBeTruthy();
+    // react-native-svg 는 색을 { type: 0, payload: 숫자 } 로 바꿔 넘긴다
+    expect(screen.getByTestId('chart-mark-dot').props.fill).toEqual({ type: 0, payload: processColor(Colors.gold) });
   });
 });
 

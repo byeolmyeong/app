@@ -27,7 +27,7 @@ export function Field({ label, hint, error, first = false, children }: FieldProp
         {typeof children === 'string' ? <Txt variant="body">{children}</Txt> : children}
       </View>
       {error ? (
-        <Txt variant="label" color="seal">
+        <Txt variant="label" color="danger">
           {error}
         </Txt>
       ) : hint ? (

@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
+import { ChartMark } from '@/components/chart-mark';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { Seal } from '@/components/seal';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -14,7 +14,7 @@ export default function HomeScreen() {
   const { loaded, profile, chart, save } = useBirthProfile();
   const stored = profile && chart ? { profile, chart } : null;
   return (
-    <Screen nav={<NavBar left={<Seal size="sm" />} />}>
+    <Screen nav={<NavBar left={<ChartMark />} />}>
       <View style={styles.intro}>
         <Txt variant="display">{strings.home.title}</Txt>
         <Txt variant="table" color="gray">

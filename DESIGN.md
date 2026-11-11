@@ -6,7 +6,7 @@ last_reviewed: 2026-11-11
 ---
 # 디자인 가이드 — 화면을 만들 때
 
-> 상태: 활성 · 기준 2026-11-11 · 방향은 "천문도"(결정: docs/decisions/016-design-direction-observatory.md). 보드: docs/design/design-system-v2.png(기초 값·컴포넌트), docs/design/key-screens-v2.png(핵심 화면 4개). 기획안: docs/design/product-brief-1.0.0.md. 지금 코드(`theme.ts`)는 아직 이전 방향(도장과 책력) 값이다. 앱 계획 태스크 13 에서 바꾼다. 바뀔 때는 아래 "값의 위치" 의 파일만 바꾼다.
+> 상태: 활성 · 기준 2026-11-11 · 방향은 "천문도"(결정: docs/decisions/016-design-direction-observatory.md). 보드: docs/design/design-system-v2.png(기초 값·컴포넌트), docs/design/key-screens-v2.png(핵심 화면 4개). 기획안: docs/design/product-brief-1.0.0.md. 코드 값은 앱 계획 태스크 13 에서 이 방향으로 바꿨다. 바뀔 때는 아래 "값의 위치" 의 파일만 바꾼다.
 
 ## 원칙 (3개 이내)
 1. 천문도. 장식 대신 서버가 계산한 차트를 눈금 원과 가는 선으로 보여 준다. 종이 바탕에 먹 글씨, 포인트는 금 하나. 금은 "지금"과 "큰 변화"에만 쓴다.
@@ -28,10 +28,10 @@ last_reviewed: 2026-11-11
 ## 값의 위치 (코드 상수가 단일 출처. 여기엔 경로와 용도만)
 - 색·글자 단계·간격·모서리·부품 크기: `src/constants/theme.ts` (`Colors`, `Typography`, `Spacing`, `Radius`, `Sizes`). 목표 값은 결정 016 과 docs/design/design-system-v2.png.
 - 문구: `src/content/strings.ts`
-- 글꼴: 고운바탕(제목) · Pretendard(본문) · IBM Plex Mono(숫자). 파일과 라이선스(모두 SIL OFL 1.1)는 `assets/fonts/`, 적재는 `src/app/_layout.tsx` 의 `useFonts`. 지금은 Pretendard 만 적재되어 있다(태스크 13 에서 둘을 더한다).
+- 글꼴: 고운바탕(제목, `SerifFamily`) · Pretendard(본문, `FontFamily`) · IBM Plex Mono(숫자만 있는 곳, `MonoFamily`). Pretendard 파일과 라이선스는 `assets/fonts/`, 고운바탕·IBM Plex Mono 는 `@expo-google-fonts/*` 패키지(SIL OFL 1.1). 적재는 `src/app/_layout.tsx` 의 `useFonts`. 한글이 섞인 글자에는 고정폭을 쓰지 않는다(`table` 은 Pretendard, `mono`·`number` 만 고정폭).
 
 ## 컴포넌트·레이아웃
-- 공용 부품은 `src/components/` 에만 둔다: `Txt`(글자 단계·색), `Button`(주 `primary`·선 `line`·빨강 `danger`), `Field`, `DataTable`, `Seal`(도장 — 태스크 13 에서 없애거나 차트 표식으로 바꾼다), `Sheet`, `SectionLabel`. 화면 뼈대: `Screen`, `NavBar`, `Tabs`(밑줄 하나), `Checkbox`, `TextLink`, `FieldInput`.
+- 공용 부품은 `src/components/` 에만 둔다: `Txt`(글자 단계·색), `Button`(주 `primary`·선 `line`·빨강 `danger`), `Field`, `DataTable`, `ChartMark`(화면 머리의 눈금 원 표식, 도장을 대신한다), `Sheet`, `SectionLabel`. 화면 뼈대: `Screen`, `NavBar`, `Tabs`(밑줄 하나), `Checkbox`, `TextLink`, `FieldInput`.
 - 차트 전용 부품은 `src/features/chart/`: `ChartWheel`(SVG 휠, 좌표는 `wheel-layout.ts`), `KeyThree`, `BodyCell`. 화면 곳곳의 작은 차트(요약 해석·궁합·공유 카드)도 같은 휠을 줄여 쓴다.
 - 해석 문단: 제목(Pretendard 굵게) + 오른쪽 근거(고정폭 작은 글자) + 본문. 상자 없이 문단 사이는 옅은 선.
 - 변곡점 구간: 날짜(고정폭) · 종류와 영역(오른쪽 작은 글자, 큰 변화만 금) · 기호(마디 ●, 변화·기회 ○, 운명적 만남 ✦) · 구간 제목(Pretendard 굵게). "지금"은 금색 세로줄.

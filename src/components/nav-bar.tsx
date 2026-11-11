@@ -46,6 +46,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: ScreenPaddingX,
   },
-  side: { width: Sizes.buttonHeight, alignItems: 'flex-start' },
+  side: { width: Sizes.navSide, alignItems: 'flex-start' },
   title: { fontWeight: '700' },
 });

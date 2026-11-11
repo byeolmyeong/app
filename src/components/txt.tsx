@@ -3,7 +3,7 @@ import { Text, type TextProps } from 'react-native';
 import { Colors, Typography, type ColorName, type TypographyName } from '@/constants/theme';
 
 export type TxtProps = TextProps & {
-  /** 글자 단계 6개 중 하나 */
+  /** 글자 단계(theme.ts Typography) 중 하나 */
   variant?: TypographyName;
   color?: ColorName;
 };

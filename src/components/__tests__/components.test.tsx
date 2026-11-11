@@ -30,8 +30,8 @@ describe('테마', () => {
   it('글자 단계 8개와 간격·모서리를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual(['display', 'title', 'heading', 'body', 'table', 'mono', 'number', 'label']);
     expect(Typography.display).toMatchObject({ fontFamily: SerifFamily, fontSize: 30, lineHeight: 38 });
-    expect(Typography.title).toMatchObject({ fontFamily: SerifFamily, fontSize: 22 });
-    expect(Typography.body).toMatchObject({ fontFamily: FontFamily, fontSize: 15, lineHeight: 24 });
+    expect(Typography.title).toMatchObject({ fontFamily: SerifFamily, fontSize: 26 });
+    expect(Typography.body).toMatchObject({ fontFamily: FontFamily, fontSize: 14, lineHeight: 22 });
     // 한글이 섞이는 표·보조 문장은 Pretendard, 숫자만 있는 곳은 고정폭
     expect(Typography.table).toMatchObject({ fontFamily: FontFamily });
     expect(Typography.mono).toMatchObject({ fontFamily: MonoFamily });

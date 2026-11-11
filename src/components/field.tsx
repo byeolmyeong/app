@@ -8,7 +8,7 @@ export type FieldProps = {
   label: string;
   /** 오른쪽 끝의 작은 도움말 */
   hint?: string;
-  /** 있으면 도움말 대신 인주색으로 보여 준다 */
+  /** 있으면 도움말 대신 오류색(danger)으로 보여 준다 */
   error?: string;
   /** 묶음의 첫 줄이면 위에 먹 선을 긋는다 */
   first?: boolean;

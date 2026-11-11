@@ -34,7 +34,7 @@ flowchart LR
 - `features/chart/` — 차트 휠과 표 그리기. 서버가 준 `Chart` 만 입력으로 받는다.
 - `features/auth/` — 구글·애플·카카오 로그인, 만 14세 이상 확인, 세션 토큰 보관.
 - `features/reading/` · `features/report/` · `features/synastry/` — 화면별 요청 상태와 표시.
-- `components/` — 공용 부품(버튼, 입력 줄, 표, 도장, 시트).
+- `components/` — 공용 부품(버튼, 입력 줄, 표, 차트 표식, 시트).
 - `content/` — 화면 문구와 처리방침·약관 문안.
 - `lib/` — 서버 호출(`api.ts`)과 응답 예시(`fixtures/`).
 - 의존 방향: `app` → `features` → `components`·`lib`·`content`. `features` 끼리는 서로 import 하지 않고 `chart` 의 그리기 부품만 예외로 쓴다.

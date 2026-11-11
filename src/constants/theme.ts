@@ -46,15 +46,15 @@ export const Typography = {
   /** 한 줄 총평, 홈 제목 */
   display: { fontFamily: SerifFamily, fontSize: 30, lineHeight: 38, fontWeight: '700', letterSpacing: -0.6 },
   /** 화면 제목, 구간 제목 */
-  title: { fontFamily: SerifFamily, fontSize: 22, lineHeight: 30, fontWeight: '700', letterSpacing: -0.3 },
+  title: { fontFamily: SerifFamily, fontSize: 26, lineHeight: 34, fontWeight: '700', letterSpacing: -0.4 },
   /** 문단 제목, 버튼 */
   heading: { fontFamily: FontFamily, fontSize: 15, lineHeight: 22, fontWeight: '700' },
   /** 해석 본문 */
-  body: { fontFamily: FontFamily, fontSize: 15, lineHeight: 24, fontWeight: '400' },
+  body: { fontFamily: FontFamily, fontSize: 14, lineHeight: 22, fontWeight: '400' },
   /** 표의 칸, 보조 문장(한글이 섞인 곳). 숫자 폭은 고정 */
   table: { fontFamily: FontFamily, fontSize: 13, lineHeight: 20, fontWeight: '500', fontVariant: tabular },
   /** 숫자만 있는 작은 글자(날짜, 도수, 근거 줄의 숫자) */
-  mono: { fontFamily: MonoFamily, fontSize: 12, lineHeight: 18, fontWeight: '400', fontVariant: tabular },
+  mono: { fontFamily: MonoFamily, fontSize: 11, lineHeight: 16, fontWeight: '400', fontVariant: tabular },
   /** 점수, 순위 */
   number: { fontFamily: MonoFamily, fontSize: 26, lineHeight: 32, fontWeight: '500', fontVariant: tabular },
   /** 작은 라벨(한글) */
@@ -90,6 +90,8 @@ export const Sizes = {
   fieldLabelWidth: 88,
   /** 화면 머리의 차트 표식 */
   mark: 28,
+  /** 화면 머리 양옆 칸의 너비 */
+  navSide: 48,
   checkbox: 16,
   /** 차트 휠의 최대 지름 */
   wheel: 300,

@@ -46,7 +46,7 @@ describe('api: 오류를 구분한 결과', () => {
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { timeKnown: true }), getToken: () => null });
     expect(await api.createChart(input)).toEqual({ ok: false, error: 'INVALID', status: 200 });
     const api2 = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, [{ id: 'x' }]), getToken: () => null });
-    expect(await api2.searchPlaces('서울')).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    expect(await api2.listPlaces()).toEqual({ ok: false, error: 'INVALID', status: 200 });
   });
 });
 
@@ -79,13 +79,13 @@ describe('api: 요청 모양', () => {
     expect(headersOf(fetchFn)['Content-Type']).toBe('application/json');
   });
 
-  it('GET /places?q= 에 검색어를 인코딩해 보낸다', async () => {
+  it('GET /places 로 전체 목록을 받는다', async () => {
     const fetchFn = fakeFetch(200, fixtures.places);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null });
-    const result = await api.searchPlaces('서울 마포');
-    expect(result.ok).toBe(true);
+    const result = await api.listPlaces();
+    expect(result.ok && result.data).toHaveLength(229);
     const [url, init] = fetchFn.mock.calls[0];
-    expect(url).toBe(`${BASE}/places?q=${encodeURIComponent('서울 마포')}`);
+    expect(url).toBe(`${BASE}/places`);
     expect(init?.method).toBe('GET');
     expect(init?.body).toBeUndefined();
   });
@@ -95,13 +95,8 @@ describe('api: 개발용 가짜 서버 스위치', () => {
   it('켜면 fetch 를 부르지 않고 fixtures 로 답한다', async () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
-    const places = await api.searchPlaces('마포');
-    expect(places.ok && places.data.map((p) => p.name)).toEqual(['서울특별시 마포구']);
-    // 서버와 같이: 공백으로 나눈 낱말이 이름에 모두 들어 있으면 찾고, 20개까지만 준다
-    const words = await api.searchPlaces('서울 마포');
-    expect(words.ok && words.data.map((p) => p.id)).toEqual([1841277]);
-    const many = await api.searchPlaces('시');
-    expect(many.ok && many.data.length).toBe(20);
+    const places = await api.listPlaces();
+    expect(places.ok && places.data).toHaveLength(229);
     const chart = await api.createChart(input);
     expect(chart).toEqual({ ok: true, data: fixtures.chart });
     expect(fetchFn).not.toHaveBeenCalled();

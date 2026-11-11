@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/checkbox';
 import { Field, FieldInput } from '@/components/field';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, LineWidth, Radius, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import {
   formatDateTyping,
@@ -22,7 +22,10 @@ import type { StoredBirth } from '@/features/chart/use-birth-profile';
 import { api, type Place } from '@/lib/api';
 
 const S = strings.home;
-const SEARCH_DELAY_MS = 300;
+
+/** 목록의 이름은 "시·도 시·군·구" 꼴이다. 앞 낱말이 시·도다(세종은 한 낱말뿐이다). */
+const regionOf = (name: string) => name.split(' ')[0];
+const districtOf = (name: string) => name.split(' ').slice(1).join(' ');
 const LAST_STEP = S.steps.length - 1;
 
 const sameInput = (a: BirthProfile, b: BirthProfile) =>
@@ -37,7 +40,8 @@ export type BirthFormProps = {
 };
 
 /**
- * 출생 정보 입력. 한 화면에 하나씩 묻는다: 생년월일 → 태어난 시각("모름") → 태어난 곳 검색.
+ * 출생 정보 입력. 한 화면에 하나씩 묻는다: 생년월일 → 태어난 시각("모름") → 태어난 곳.
+ * 태어난 곳은 치지 않고 고른다: 시·도 → 그 안의 시·군·구.
  * 마지막에 누르면 차트를 받아 보관하고 /chart 로 간다.
  */
 export function BirthForm({ stored, save, intro }: BirthFormProps) {
@@ -47,47 +51,43 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
   const [timeText, setTimeText] = useState(initial?.time ?? '');
   const [timeUnknown, setTimeUnknown] = useState(initial ? initial.time === null : false);
   const [place, setPlace] = useState<BirthProfile['place'] | null>(initial?.place ?? null);
-  const [placeText, setPlaceText] = useState(initial?.place.name ?? '');
-  const [results, setResults] = useState<Place[] | null>(null);
-  const [searchFailed, setSearchFailed] = useState(false);
+  const [region, setRegion] = useState<string | null>(initial ? regionOf(initial.place.name) : null);
+  /** 서버가 준 전체 목록. null 은 아직 받지 못함 */
+  const [places, setPlaces] = useState<Place[] | null>(null);
+  const [placesFailed, setPlacesFailed] = useState(false);
   const [errors, setErrors] = useState<BirthFormErrors>({});
   const [requestError, setRequestError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const searchSeq = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+  const loadPlaces = useCallback(async () => {
+    setPlacesFailed(false);
+    const r = await api.listPlaces();
+    if (r.ok) setPlaces(r.data);
+    else setPlacesFailed(true);
+  }, []);
 
-  function onPlaceText(text: string) {
-    setPlaceText(text);
+  useEffect(() => {
+    let alive = true;
+    api.listPlaces().then((r) => {
+      if (!alive) return;
+      if (r.ok) setPlaces(r.data);
+      else setPlacesFailed(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  function onPickRegion(name: string) {
+    const inRegion = (places ?? []).filter((p) => regionOf(p.name) === name);
+    // 하위 시·군·구가 없는 곳(세종)은 바로 정해진다
+    if (inRegion.length === 1 && inRegion[0].name === name) return onPickPlace(inRegion[0]);
+    setRegion(name);
     setPlace(null);
-    if (timer.current) clearTimeout(timer.current);
-    const seq = ++searchSeq.current;
-    const q = text.trim();
-    if (!q) {
-      setResults(null);
-      setSearchFailed(false);
-      return;
-    }
-    // 글자마다 부르지 않고, 늦게 온 앞선 검색의 답은 버린다.
-    timer.current = setTimeout(async () => {
-      const r = await api.searchPlaces(q);
-      if (seq !== searchSeq.current) return;
-      setResults(r.ok ? r.data : null);
-      setSearchFailed(!r.ok);
-    }, SEARCH_DELAY_MS);
   }
 
   function onPickPlace(p: Place) {
-    searchSeq.current++;
     setPlace({ id: p.id, name: p.name });
-    setPlaceText(p.name);
-    setResults(null);
     setErrors((e) => ({ ...e, place: undefined }));
   }
 
@@ -199,27 +199,59 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
         ) : null}
         {step === 2 ? (
           <>
-            <Field first label={S.placeLabel} hint={S.placeHint} error={errors.place}>
-              <FieldInput
-                key="place"
-                autoFocus
-                value={placeText}
-                onChangeText={onPlaceText}
-                placeholder={S.placePlaceholder}
-                autoCorrect={false}
-                accessibilityLabel={S.placeLabel}
-              />
-            </Field>
-            {results?.map((p) => (
-              <Pressable key={p.id} accessibilityRole="button" onPress={() => onPickPlace(p)} style={styles.result}>
-                <Txt variant="table">{p.name}</Txt>
-              </Pressable>
-            ))}
-            {results?.length === 0 || searchFailed ? (
-              <Txt variant="table" color="gray" style={styles.note}>
-                {searchFailed ? S.placeSearchFailed : S.placeEmpty}
+            <Field first label={S.placeLabel} error={errors.place}>
+              <Txt variant="body" color={place ? 'ink' : 'gray'}>
+                {place ? place.name : S.placePlaceholder}
               </Txt>
+            </Field>
+            {placesFailed ? (
+              <View style={styles.note}>
+                <Txt variant="table" color="gray">
+                  {S.placeLoadFailed}
+                </Txt>
+                <TextLink label={S.placeRetry} onPress={loadPlaces} />
+              </View>
             ) : null}
+            {places && region ? (
+              <View style={styles.regionHead}>
+                <Txt variant="label" color="gray">
+                  {region}
+                </Txt>
+                <TextLink
+                  label={S.regionBack}
+                  onPress={() => {
+                    setRegion(null);
+                    setPlace(null);
+                  }}
+                />
+              </View>
+            ) : null}
+            {places ? (
+              <View style={styles.options}>
+                {region
+                  ? places
+                      .filter((p) => regionOf(p.name) === region && districtOf(p.name))
+                      .map((p) => (
+                        <Option
+                          key={p.id}
+                          label={districtOf(p.name)}
+                          selected={place?.id === p.id}
+                          onPress={() => onPickPlace(p)}
+                        />
+                      ))
+                  : [...new Set(places.map((p) => regionOf(p.name)))].map((name) => (
+                      <Option
+                        key={name}
+                        label={name}
+                        selected={place?.name === name}
+                        onPress={() => onPickRegion(name)}
+                      />
+                    ))}
+              </View>
+            ) : null}
+            <Txt variant="label" color="gray" style={styles.note}>
+              {S.placeNote}
+            </Txt>
           </>
         ) : null}
       </View>
@@ -240,16 +272,41 @@ export function BirthForm({ stored, save, intro }: BirthFormProps) {
   );
 }
 
+/** 고르는 칸 하나. 고른 것은 먹색으로 채운다. */
+function Option({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      testID="place-option"
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[styles.option, selected && styles.optionSelected]}>
+      <Txt variant="table" color={selected ? 'paper' : 'ink'}>
+        {label}
+      </Txt>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   form: { flexGrow: 1, gap: Spacing.lg },
   question: { gap: Spacing.xs, paddingTop: Spacing.lg },
-  result: {
-    paddingVertical: Spacing.sm,
-    paddingLeft: Sizes.fieldLabelWidth + Spacing.xs,
-    borderBottomWidth: LineWidth,
-    borderBottomColor: Colors.hair,
+  regionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: Spacing.md,
   },
-  note: { paddingVertical: Spacing.sm },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, paddingTop: Spacing.sm },
+  option: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderWidth: LineWidth,
+    borderColor: Colors.hair,
+    borderRadius: Radius,
+  },
+  optionSelected: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  note: { paddingTop: Spacing.sm, gap: Spacing.xs },
   check: {
     paddingLeft: Sizes.fieldLabelWidth + Spacing.xs,
     paddingTop: Spacing.sm,

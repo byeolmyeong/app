@@ -18,7 +18,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { searchPlaces: jest.fn(), createChart: jest.fn() },
+  api: { listPlaces: jest.fn(), createChart: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -28,13 +28,14 @@ const H = strings.home;
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockApi.searchPlaces.mockResolvedValue({ ok: true, data: fixtures.places.filter((p) => p.name.includes('마포')) });
+  mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
 });
 
+/** 치지 않고 고른다: 시·도 → 시·군·구 */
 async function fillPlace() {
-  await fireEvent.changeText(screen.getByPlaceholderText(H.placePlaceholder), '마포');
-  await fireEvent.press(await screen.findByText('서울특별시 마포구'));
+  await fireEvent.press(await screen.findByText('서울특별시'));
+  await fireEvent.press(await screen.findByText('마포구'));
 }
 
 const next = () => fireEvent.press(screen.getByText(H.next));
@@ -53,7 +54,7 @@ describe('출생 정보 입력(홈)', () => {
     await render(<HomeScreen />);
     expect(screen.getByText(H.steps[0])).toBeTruthy();
     expect(screen.queryByPlaceholderText(H.timePlaceholder)).toBeNull();
-    expect(screen.queryByPlaceholderText(H.placePlaceholder)).toBeNull();
+    expect(screen.queryByText('서울특별시')).toBeNull();
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '20000615');
     expect(screen.getByDisplayValue('2000-06-15')).toBeTruthy();
     await next();
@@ -65,7 +66,7 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.getByDisplayValue('21:00')).toBeTruthy();
     await next();
     expect(screen.getByText(H.steps[2])).toBeTruthy();
-    expect(screen.getByPlaceholderText(H.placePlaceholder)).toBeTruthy();
+    expect(await screen.findByText('서울특별시')).toBeTruthy();
     // 이전으로 돌아가도 넣은 값이 남아 있다
     await fireEvent.press(screen.getByText(H.back));
     expect(screen.getByDisplayValue('21:00')).toBeTruthy();
@@ -75,7 +76,6 @@ describe('출생 정보 입력(홈)', () => {
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
-    expect(mockApi.searchPlaces).toHaveBeenCalledWith('마포');
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 1841277 });
@@ -121,12 +121,35 @@ describe('출생 정보 입력(홈)', () => {
     expect(mockApi.createChart).not.toHaveBeenCalled();
   });
 
-  it('검색 결과가 없으면 해외 출생지 준비 중 안내를 보여 준다', async () => {
-    mockApi.searchPlaces.mockResolvedValue({ ok: true, data: [] });
+  it('출생지는 시·도를 고르면 그 안의 시·군·구를 보여 주고, 치는 칸이 없다', async () => {
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
-    await fireEvent.changeText(screen.getByPlaceholderText(H.placePlaceholder), 'Tokyo');
-    expect(await screen.findByText(H.placeEmpty)).toBeTruthy();
+    expect(await screen.findByText('경기도')).toBeTruthy();
+    expect(screen.getAllByTestId('place-option')).toHaveLength(17);
+    expect(screen.queryByText('마포구')).toBeNull();
+    await fireEvent.press(screen.getByText('서울특별시'));
+    expect(screen.getAllByTestId('place-option')).toHaveLength(25);
+    await fireEvent.press(screen.getByText('마포구'));
+    expect(screen.getByText('서울특별시 마포구')).toBeTruthy();
+    // 시·도를 다시 고를 수 있다
+    await fireEvent.press(screen.getByText(H.regionBack));
+    expect(screen.getAllByTestId('place-option')).toHaveLength(17);
+    // 하위 시·군·구가 없는 세종은 누르면 바로 정해진다
+    await fireEvent.press(screen.getByText('세종특별자치시'));
+    expect(screen.getAllByText('세종특별자치시').length).toBeGreaterThan(1);
+    await fireEvent.press(screen.getByText(H.submit));
+    await waitFor(() => expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 8394437 }));
+  });
+
+  it('목록을 불러오지 못하면 안내를 보여 주고 다시 불러올 수 있다', async () => {
+    mockApi.listPlaces.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await render(<HomeScreen />);
+    await fillDateAndTime('2000-06-15', '21:00');
+    expect(await screen.findByText(H.placeLoadFailed)).toBeTruthy();
+    mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
+    await fireEvent.press(screen.getByText(H.placeRetry));
+    expect(await screen.findByText('서울특별시')).toBeTruthy();
+    expect(screen.queryByText(H.placeLoadFailed)).toBeNull();
   });
 
   it('서버 호출이 실패하면 안내를 보여 주고 이동하지 않는다', async () => {
@@ -147,7 +170,7 @@ describe('출생 정보 입력(홈)', () => {
     await next();
     expect(screen.getByDisplayValue('21:00')).toBeTruthy();
     await next();
-    expect(screen.getByDisplayValue('서울특별시 마포구')).toBeTruthy();
+    expect(await screen.findByText('서울특별시 마포구')).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
     expect(mockApi.createChart).not.toHaveBeenCalled();

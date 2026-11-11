@@ -7,7 +7,7 @@ import { fixtures } from '@/lib/fixtures';
 
 // ── 계약의 타입 ────────────────────────────────────────────────────────────
 
-/** `GET /places?q=` 의 한 줄 */
+/** `GET /places` 의 한 줄. name 은 "시·도 시·군·구" 꼴이고 세종만 한 낱말이다 */
 export type Place = { id: number; name: string; lat: number; lon: number };
 
 /** `POST /charts`·`PUT /profile` 의 요청. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름") */
@@ -203,17 +203,10 @@ export function createApi(config: ApiConfig) {
   }
 
   return {
-    /** `GET /places?q=` 국내 시·군·구 검색 */
-    async searchPlaces(q: string): Promise<ApiResult<Place[]>> {
-      if (config.useFixtures) {
-        // 서버와 같이: 공백으로 나눈 낱말이 이름에 모두 든 곳을 20개까지
-        const words = q.trim().split(/\s+/).filter(Boolean);
-        const found = words.length ? fixtures.places.filter((p) => words.every((w) => p.name.includes(w))) : [];
-        return { ok: true, data: found.slice(0, 20) };
-      }
-      return request('GET', `/places?q=${encodeURIComponent(q)}`, {
-        validate: isPlaceList,
-      });
+    /** `GET /places` 국내 시·군·구 전체 목록. 화면이 시·도별로 묶어 고르게 한다 */
+    async listPlaces(): Promise<ApiResult<Place[]>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.places };
+      return request('GET', '/places', { validate: isPlaceList });
     },
 
     /** `POST /charts` 로그인 없이 차트를 받는다 */

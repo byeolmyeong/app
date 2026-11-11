@@ -39,6 +39,28 @@ export function parseBirthTime(text: string): Parsed {
   return { ok: true, value: `${pad(h)}:${pad(mi)}` };
 }
 
+/**
+ * 입력하는 동안 숫자만 남겨 YYYY-MM-DD 꼴로 맞춘다. 붙임표는 뒤에 숫자가 있을 때만 넣어 지울 때 막히지 않는다.
+ * 한 자리로 끝날 수밖에 없는 월(2~9)·일(4~9)은 앞에 0 을 붙인다. 맞는 날짜인지는 [parseBirthDate] 가 본다.
+ */
+export function formatDateTyping(text: string): string {
+  const digits = text.replace(/\D/g, '');
+  const year = digits.slice(0, 4);
+  let rest = digits.slice(4);
+  if (rest && rest[0] > '1') rest = `0${rest}`;
+  const month = rest.slice(0, 2);
+  let day = rest.slice(2);
+  if (day && day[0] > '3') day = `0${day}`;
+  return [year, month, day.slice(0, 2)].filter(Boolean).join('-');
+}
+
+/** 입력하는 동안 숫자만 남겨 HH:mm 꼴로 맞춘다. 3~9 로 시작하면 앞에 0 을 붙인다(9 → 09). */
+export function formatTimeTyping(text: string): string {
+  let digits = text.replace(/\D/g, '');
+  if (digits && digits[0] > '2') digits = `0${digits}`;
+  return [digits.slice(0, 2), digits.slice(2, 4)].filter(Boolean).join(':');
+}
+
 export type BirthForm = {
   dateText: string;
   timeText: string;

@@ -15,7 +15,7 @@ describe('테마', () => {
   it('천문도 색을 갖는다(결정 016)', () => {
     expect(Colors).toMatchObject({
       paper: '#F4F1EA',
-      canvas: '#E9E6DE',
+      canvas: '#FFFFFF',
       ink: '#15161A',
       gray: '#77736A',
       hair: '#D6D2C8',

@@ -15,19 +15,21 @@ export function Sheet({ visible, onClose, children }: SheetProps) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.root}>
-        <Pressable testID="sheet-dim" accessibilityRole="button" style={styles.dim} onPress={onClose} />
-        <View style={styles.sheet}>{children}</View>
+        {/* 넓은 웹 화면에서도 앱 화면 폭 안에서만 어두워지고 올라온다 */}
+        <View style={styles.column}>
+          <Pressable testID="sheet-dim" accessibilityRole="button" style={styles.dim} onPress={onClose} />
+          <View style={styles.sheet}>{children}</View>
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
+  root: { flex: 1, alignItems: 'center' },
+  column: { flex: 1, width: '100%', maxWidth: Sizes.maxContentWidth, justifyContent: 'flex-end' },
   dim: { ...StyleSheet.absoluteFill, backgroundColor: DimColor },
   sheet: {
-    width: '100%',
-    maxWidth: Sizes.maxContentWidth,
     backgroundColor: Colors.paper,
     borderTopWidth: LineWidth * 1.5,
     borderTopColor: Colors.ink,

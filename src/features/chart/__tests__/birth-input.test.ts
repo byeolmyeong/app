@@ -1,5 +1,12 @@
 import { strings } from '@/content/strings';
-import { formatBirthSummary, parseBirthDate, parseBirthTime, validateBirthInput } from '@/features/chart/birth-input';
+import {
+  formatBirthSummary,
+  formatDateTyping,
+  formatTimeTyping,
+  parseBirthDate,
+  parseBirthTime,
+  validateBirthInput,
+} from '@/features/chart/birth-input';
 
 const today = new Date(2026, 10, 10); // 2026-11-10 (기기 날짜)
 const place = { id: 1841277, name: '서울특별시 마포구' };
@@ -73,5 +80,41 @@ describe('formatBirthSummary', () => {
     expect(formatBirthSummary({ date: '2000-06-15', time: '21:00', place })).toBe('2000. 6. 15. 오후 9:00 · 서울특별시 마포구');
     expect(formatBirthSummary({ date: '1990-01-01', time: '00:05', place })).toBe('1990. 1. 1. 오전 12:05 · 서울특별시 마포구');
     expect(formatBirthSummary({ date: '2000-06-15', time: null, place })).toBe('2000. 6. 15. · 서울특별시 마포구');
+  });
+});
+
+describe('입력하는 동안 자동으로 꼴을 맞춘다', () => {
+  it('날짜: 숫자만 쳐도 YYYY-MM-DD 가 된다', () => {
+    expect(formatDateTyping('2')).toBe('2');
+    expect(formatDateTyping('2000')).toBe('2000');
+    expect(formatDateTyping('20000')).toBe('2000-0');
+    expect(formatDateTyping('200006')).toBe('2000-06');
+    expect(formatDateTyping('20000615')).toBe('2000-06-15');
+    expect(formatDateTyping('2000-06-15')).toBe('2000-06-15');
+    expect(formatDateTyping('200006159')).toBe('2000-06-15');
+    expect(formatDateTyping('2000년 abc')).toBe('2000');
+  });
+
+  it('날짜: 한 자리로 끝날 수밖에 없는 월·일은 앞에 0 을 붙인다', () => {
+    expect(formatDateTyping('20006')).toBe('2000-06');
+    expect(formatDateTyping('2000069')).toBe('2000-06-09');
+    expect(formatDateTyping('20001')).toBe('2000-1');
+  });
+
+  it('날짜: 지울 때 붙임표에서 막히지 않는다', () => {
+    expect(formatDateTyping('2000-')).toBe('2000');
+    expect(formatDateTyping('2000-06-')).toBe('2000-06');
+  });
+
+  it('시각: 숫자만 쳐도 HH:mm 이 된다', () => {
+    expect(formatTimeTyping('2')).toBe('2');
+    expect(formatTimeTyping('21')).toBe('21');
+    expect(formatTimeTyping('210')).toBe('21:0');
+    expect(formatTimeTyping('2100')).toBe('21:00');
+    expect(formatTimeTyping('21:00')).toBe('21:00');
+    expect(formatTimeTyping('21005')).toBe('21:00');
+    expect(formatTimeTyping('9')).toBe('09');
+    expect(formatTimeTyping('930')).toBe('09:30');
+    expect(formatTimeTyping('21:')).toBe('21');
   });
 });

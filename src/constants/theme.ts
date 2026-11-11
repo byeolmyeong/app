@@ -9,8 +9,8 @@ import type { TextStyle } from 'react-native';
 export const Colors = {
   /** 종이 · 화면 바탕 */
   paper: '#F4F1EA',
-  /** 바탕 · 화면 밖, 넓은 웹 화면의 여백 */
-  canvas: '#E9E6DE',
+  /** 바탕 · 화면 밖, 넓은 웹 화면의 여백. 앱 화면만 색이 있고 그 밖은 흰색이다 */
+  canvas: '#FFFFFF',
   /** 먹 · 글씨, 굵은 선, 주 버튼 */
   ink: '#15161A',
   /** 흐린 먹 · 라벨, 보조 글씨, 근거 줄 */
@@ -95,6 +95,6 @@ export const Sizes = {
   checkbox: 16,
   /** 차트 휠의 최대 지름 */
   wheel: 300,
-  /** 웹 넓은 화면에서 본문이 퍼지지 않게 하는 최대 폭 */
+  /** 웹 넓은 화면에서 가운데에 보이는 앱 화면의 폭. 그 밖은 바탕색(canvas)이다 */
   maxContentWidth: 480,
 } as const;

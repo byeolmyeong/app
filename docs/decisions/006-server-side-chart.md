@@ -7,7 +7,7 @@ superseded_by:
 ---
 # 006. 차트 계산은 서버에서 한다
 
-> 상태: 활성 · 결정일 2026-11-10 · docs/decisions/003-chart-engine-astronomy-engine.md 를 대체한다
+> 상태: 활성 · 결정일 2026-11-10 · docs/decisions/003-chart-engine-astronomy-engine.md 를 대체한다 · 일부 대체: "차트 계산 요청은 로그인 없이 받는다"는 docs/decisions/009-signup-first-kakao-age14.md 가 대체
 
 ## 맥락
 003 은 로그인도 서버도 없는 작은 범위를 전제로 차트를 기기 안에서 계산하기로 했다. 그 뒤 1.0.0 범위에 궁합 초대, 리포트, 푸시 알림, 횟수 제한이 들어왔다(docs/release-1.0.0.md). 사용자가 계산은 서버에서 해야 한다고 정했다.

@@ -10,7 +10,10 @@ export type ScreenProps = {
   children: ReactNode;
 };
 
-/** 모든 화면의 바탕. 종이색, 좌우 여백 24, 넓은 화면에서는 가운데 한 단. */
+/**
+ * 모든 화면의 바탕. 종이색, 좌우 여백 24.
+ * 넓은 웹 화면에서는 가운데에 앱 화면 폭의 종이 한 단만 보이고, 그 밖은 바탕색이다.
+ */
 export function Screen({ nav, children }: ScreenProps) {
   return (
     <View style={styles.root}>
@@ -28,8 +31,8 @@ export function Screen({ nav, children }: ScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.paper, alignItems: 'center' },
-  column: { flex: 1, width: '100%', maxWidth: Sizes.maxContentWidth },
+  root: { flex: 1, backgroundColor: Colors.canvas, alignItems: 'center' },
+  column: { flex: 1, width: '100%', maxWidth: Sizes.maxContentWidth, backgroundColor: Colors.paper },
   scroll: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: ScreenPaddingX, paddingBottom: Spacing.lg, gap: Spacing.md },
 });

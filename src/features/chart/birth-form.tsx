@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Checkbox } from '@/components/checkbox';
 import { Field, FieldInput } from '@/components/field';
+import { Sheet } from '@/components/sheet';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
 import { Colors, LineWidth, Radius, Sizes, Spacing } from '@/constants/theme';
@@ -40,9 +41,9 @@ export type BirthFormProps = {
 };
 
 /**
- * 출생 정보 입력. 한 화면에 순서대로 모두 보인다: 생년월일 → 태어난 시각("모름") → 시·도 → 시·군·구.
- * 시·군·구만 시·도를 고른 뒤에 그 아래에 나타난다.
- * 태어난 곳은 치지 않고 고른다. 누르면 차트를 받아 보관하고 /chart 로 간다.
+ * 출생 정보 입력. 한 화면에 생년월일 · 태어난 시각("모름") · 태어난 곳이 모두 보인다.
+ * 태어난 곳은 치지 않고 고른다: 줄을 누르면 아래에서 시트가 올라오고 시·도 → 시·군·구 를 고르면 닫힌다.
+ * "내 하늘 보기" 를 누르면 차트를 받아 보관하고 /chart 로 간다.
  */
 export function BirthForm({ stored, save }: BirthFormProps) {
   const initial = stored?.profile;
@@ -54,6 +55,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
   /** 서버가 준 전체 목록. null 은 아직 받지 못함 */
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [placesFailed, setPlacesFailed] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [errors, setErrors] = useState<BirthFormErrors>({});
   const [requestError, setRequestError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -95,13 +97,19 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     setRegion(name);
     const inRegion = (places ?? []).filter((p) => regionOf(p.name) === name);
     // 하위 시·군·구가 없는 곳(세종)은 바로 정해진다
-    if (inRegion.length === 1 && inRegion[0].name === name) return onPickPlace(inRegion[0]);
-    setPlace(null);
+    if (inRegion.length === 1 && inRegion[0].name === name) onPickPlace(inRegion[0]);
   }
 
   function onPickPlace(p: Place) {
     setPlace({ id: p.id, name: p.name });
     setErrors((e) => ({ ...e, place: undefined }));
+    setSheetOpen(false);
+  }
+
+  /** 닫을 때 시·도만 고르고 만 상태는 버리고, 고른 곳의 시·도로 되돌린다 */
+  function onCloseSheet() {
+    setSheetOpen(false);
+    setRegion(place ? regionOf(place.name) : null);
   }
 
   async function onSubmit() {
@@ -130,6 +138,8 @@ export function BirthForm({ stored, save }: BirthFormProps) {
   }
 
   const districts = places && region ? places.filter((p) => regionOf(p.name) === region && districtOf(p.name)) : [];
+  /** 시트가 시·군·구를 보여 주는 중인가. 하위가 없는 시·도(세종)는 시·도 목록에 머문다 */
+  const showDistricts = districts.length > 0;
 
   return (
     <View style={styles.form}>
@@ -167,11 +177,19 @@ export function BirthForm({ stored, save }: BirthFormProps) {
         <View style={styles.check}>
           <Checkbox label={S.timeUnknown} checked={timeUnknown} onChange={setTimeUnknown} />
         </View>
-        <Field label={S.placeLabel} error={errors.place}>
-          <Txt variant="body" color={place ? 'ink' : 'gray'}>
-            {place ? place.name : S.placePlaceholder}
-          </Txt>
-        </Field>
+        <Pressable testID="place-field" accessibilityRole="button" onPress={() => setSheetOpen(true)}>
+          <Field label={S.placeLabel} hint={place ? S.placeChange : S.placeHint} error={errors.place}>
+            <Txt variant="body" color={place ? 'ink' : 'gray'}>
+              {place ? place.name : S.placePlaceholder}
+            </Txt>
+          </Field>
+        </Pressable>
+      </View>
+      <Sheet visible={sheetOpen} onClose={onCloseSheet}>
+        <View style={styles.sheetHead}>
+          <Txt variant="heading">{showDistricts ? region : S.regionTitle}</Txt>
+          {showDistricts ? <TextLink label={S.regionBack} onPress={() => setRegion(null)} /> : null}
+        </View>
         {placesFailed ? (
           <View style={styles.note}>
             <Txt variant="table" color="gray">
@@ -182,27 +200,29 @@ export function BirthForm({ stored, save }: BirthFormProps) {
         ) : null}
         {places ? (
           <View style={styles.options}>
-            {[...new Set(places.map((p) => regionOf(p.name)))].map((name) => (
-              <Option key={name} label={name} selected={region === name} onPress={() => onPickRegion(name)} />
-            ))}
-          </View>
-        ) : null}
-        {districts.length > 0 ? (
-          <View style={[styles.options, styles.districts]}>
-            {districts.map((p) => (
-              <Option
-                key={p.id}
-                label={districtOf(p.name)}
-                selected={place?.id === p.id}
-                onPress={() => onPickPlace(p)}
-              />
-            ))}
+            {showDistricts
+              ? districts.map((p) => (
+                  <Option
+                    key={p.id}
+                    label={districtOf(p.name)}
+                    selected={place?.id === p.id}
+                    onPress={() => onPickPlace(p)}
+                  />
+                ))
+              : [...new Set(places.map((p) => regionOf(p.name)))].map((name) => (
+                  <Option
+                    key={name}
+                    label={name}
+                    selected={place ? regionOf(place.name) === name : false}
+                    onPress={() => onPickRegion(name)}
+                  />
+                ))}
           </View>
         ) : null}
         <Txt variant="label" color="gray" style={styles.note}>
           {S.placeNote}
         </Txt>
-      </View>
+      </Sheet>
       <View style={styles.bottom}>
         {requestError ? (
           <Txt variant="table" color="danger">
@@ -234,13 +254,8 @@ function Option({ label, selected, onPress }: { label: string; selected: boolean
 
 const styles = StyleSheet.create({
   form: { flexGrow: 1, gap: Spacing.lg },
-  options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, paddingTop: Spacing.sm },
-  /** 시·도 아래에 펼쳐지는 시·군·구. 옅은 선으로 나눈다 */
-  districts: {
-    marginTop: Spacing.sm,
-    borderTopWidth: LineWidth,
-    borderTopColor: Colors.hair,
-  },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   option: {
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,

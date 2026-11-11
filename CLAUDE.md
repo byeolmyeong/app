@@ -43,7 +43,7 @@
 - 차트·별자리·하우스·연도를 앱에서 계산하지 않는다. 서버가 준 값만 그린다. 근거: docs/decisions/006-server-side-chart.md
 - 색·글자·간격은 `src/constants/theme.ts`, 문구는 `src/content/strings.ts` 에서만 가져온다.
 - 세션 토큰은 기기 보안 저장소에만 둔다. API 키와 프롬프트는 서버에만 있다.
-- 문구에 건강·투자·미래 사건의 단정 표현과 궁합 점수를 쓰지 않는다. 근거: docs/release-1.0.0.md
+- 문구에 건강·투자·미래 사건의 단정 표현을 쓰지 않는다. 궁합 점수는 서버가 준 값만 보여 준다. 근거: docs/release-1.0.0.md, docs/decisions/010-synastry-score-ranking-share-cards.md
 - 결정이 바뀌면 코드보다 먼저 docs/decisions/에 새 ADR. 원본은 docs/raw/, 종합은 docs/synthesis/.
 - 커밋: 한국어 + Conventional Commits. 한 커밋 = 한 관심사. 작업 브랜치에서 한다.
 - 한 커밋을 넘는 일은 /plan-feature 로 계획을 승인받고 실행한다. 완료라고 말하기 전에 /verify 를 이번에 돌린다.

@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "astro-app",
-    "slug": "astro-app",
+    "name": "별명",
+    "slug": "byeolmyeong",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "astroapp",
-    "userInterfaceStyle": "automatic",
+    "scheme": "byeolmyeong",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },

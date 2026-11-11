@@ -41,3 +41,10 @@ example
 # generated native folders
 /ios
 /android
+
+# 3계층(개인 로컬) — second-brain
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+.local/

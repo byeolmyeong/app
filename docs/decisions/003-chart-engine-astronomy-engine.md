@@ -1,0 +1,31 @@
+---
+type: decision
+tags: [차트 계산, astronomy-engine, Swiss Ephemeris, 라이선스]
+status: superseded
+last_reviewed: 2026-11-10
+superseded_by: docs/decisions/006-server-side-chart.md
+---
+# 003. 차트 계산은 astronomy-engine 위에 직접 구현한다
+
+> 상태: 대체됨 → docs/decisions/006-server-side-chart.md · 결정일 2026-11-10
+
+## 맥락
+출생 차트에는 행성의 황경, 상승점·중천, 하우스 경계, 애스펙트가 필요하다. 업계 표준 라이브러리인 Swiss Ephemeris 는 AGPL 이라, 소스를 공개하지 않으려면 유료 상용 라이선스를 사야 한다.
+
+## 결정
+행성 위치는 `astronomy-engine`(순수 JS)으로 구하고, 상승점·중천·플라시더스 하우스·애스펙트는 `src/features/chart/` 에 직접 구현한다. 계산은 기기 안에서 한다.
+
+## 근거
+- 라이선스 비용과 소스 공개 의무가 없다. [확인 필요] astronomy-engine 이 MIT 라이선스인지 설치 시 패키지의 LICENSE 로 확인한다.
+- 순수 JS 라 웹·iOS·Android 에서 같은 코드가 돌고 서버가 필요 없다.
+- 하우스·애스펙트는 공식이 공개된 구면 삼각법 계산이라 기준값 테스트로 검증할 수 있다.
+
+## 대안
+- Swiss Ephemeris 상용 라이선스 — 정확도는 최고지만 초기 비용이 든다. 매출이 생기면 다시 본다.
+- Swiss Ephemeris AGPL 로 서버에서 계산 — 서비스 소스 공개 의무가 생긴다.
+- 외부 점성술 계산 API — 호출당 비용과 장애 의존이 생긴다.
+
+## 결과·재검토 조건
+- 직접 구현한 부분의 정확도는 우리 책임이다. 공개 차트 계산기(astro.com 등)의 결과를 기준값으로 삼아 테스트한다. 허용 오차: 행성 황경 0.01도, 하우스 경계 0.1도.
+- 플라시더스는 위도 약 66도 이상에서 계산되지 않는다. 그 경우 홀 사인 하우스로 대체한다.
+- 소행성·카이론 등 astronomy-engine 이 주지 않는 천체가 필요해지면 다시 본다.

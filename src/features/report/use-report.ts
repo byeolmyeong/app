@@ -2,7 +2,8 @@
  * 심층 리포트를 요청하고 다 쓰일 때까지 확인하는 상태와 기기 보관.
  * 글은 서버가 뒤에서 1~2분 동안 쓴다. 쓰는 중에는 화면이 떠 있는 동안만 5초마다 상태를 확인하고,
  * 다 썼거나 실패했거나 화면을 떠나면 멈춘다. 요청(POST)은 사용자가 누를 때만 한다(스스로 다시 요청하지 않는다).
- * 다 쓴 리포트는 출생 정보별로 기기에 두고 다시 열 때 서버를 부르지 않는다(같은 차트 = 같은 글).
+ * 다 쓴 리포트는 출생 정보별로 기기에 두고 다시 열 때 바로 보여 준다(같은 차트 = 같은 글).
+ * 시기의 "지금 나의 구간" 만은 서버가 그날 날짜로 만들므로, 보관본이 오늘 것이 아니면 한 번 조용히 다시 받는다(결정 021).
  * 글은 서버가 준 그대로 쓴다. 출생 정보와 리포트의 글은 로그에 남기지 않는다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -50,6 +51,10 @@ async function saveReport(key: string, report: Report): Promise<void> {
   }
 }
 
+/** 기기의 오늘(한국 날짜, YYYY-MM-DD). 보관본의 "지금" 이 오늘 것인지 견주는 데만 쓴다 */
+const KOREA_OFFSET_MS = 9 * 60 * 60 * 1000;
+const koreaToday = () => new Date(Date.now() + KOREA_OFFSET_MS).toISOString().slice(0, 10);
+
 /** 화면이 떠 있는 동안의 한 벌. 화면을 떠나거나 출생 정보가 바뀌면 alive 가 꺼지고 그 뒤의 응답은 버린다 */
 type Run = {
   key: string;
@@ -80,6 +85,14 @@ async function check(run: Run): Promise<void> {
     waitAndCheck(run);
   } else if (r.data.status === 'FAILED') settle(run, { status: 'failed', error: 'FAILED' });
   else settle(run, { status: 'none' });
+}
+
+/** 보관본을 보여 준 뒤 "지금" 을 오늘 것으로 바꾼다. 받지 못했거나 다 쓴 리포트가 아니면 보관본을 그대로 둔다 */
+async function refresh(run: Run): Promise<void> {
+  const r = await api.getReport();
+  if (!run.alive || !r.ok || r.data.status !== 'DONE') return;
+  await saveReport(run.key, r.data.report);
+  if (run.alive) run.set({ status: 'done', report: r.data.report });
 }
 
 function waitAndCheck(run: Run) {
@@ -130,8 +143,9 @@ export function useReport(input: BirthInput | null) {
     current.current = run;
     loadReport(key).then((stored) => {
       if (!run.alive) return;
-      if (stored) run.set({ status: 'done', report: stored });
-      else void check(run);
+      if (!stored) return void check(run);
+      run.set({ status: 'done', report: stored });
+      if (stored.timing.current.date !== koreaToday()) void refresh(run);
     });
     return () => {
       run.alive = false;

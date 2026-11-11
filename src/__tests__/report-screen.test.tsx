@@ -165,7 +165,11 @@ describe('심층 리포트 화면', () => {
     expect(await screen.findByText(R.failed.LIMIT)).toBeTruthy();
   });
 
-  it('다시 열면 보관된 리포트를 보여 주고 서버를 부르지 않는다', async () => {
+  it('같은 날 다시 열면 보관된 리포트를 보여 주고 서버를 부르지 않는다', async () => {
+    // "지금 나의 구간" 이 오늘(한국 날짜) 것인 리포트. 오늘 것이 아니면 한 번 다시 받는다(use-report 테스트)
+    const date = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const today = { ...report, timing: { ...report.timing, current: { ...report.timing.current, date } } };
+    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: today } });
     const first = await render(<ReportScreen />);
     await screen.findByText(personality.title);
     await first.unmount();

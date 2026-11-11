@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import MyScreen from '@/app/my';
+import { Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
@@ -59,9 +60,13 @@ describe('홈', () => {
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
     expect(screen.getAllByTestId('home-category-icon')).toHaveLength(4);
-    for (const cell of screen.getAllByTestId('home-category-cell')) {
-      expect(StyleSheet.flatten(cell.props.style).width).toBe('25%');
-    }
+    // 한 줄에 넷, 줄의 양끝이 화면 여백에 맞는다(첫 아이콘의 왼쪽 끝이 머리의 표식과 같은 선)
+    const rows = screen.getAllByTestId('home-category-row');
+    expect(rows).toHaveLength(1);
+    expect(StyleSheet.flatten(rows[0].props.style).justifyContent).toBe('space-between');
+    // 아이콘 자리에 좌우 여백이 없어야 끝이 맞는다
+    const icon = StyleSheet.flatten(screen.getAllByTestId('home-category-icon')[0].props.style);
+    expect(icon.width).toBe(Sizes.categoryIcon);
     // 설명 글이나 "준비 중" 딱지는 타일에 없다
     expect(screen.queryByText(M.soon)).toBeNull();
   });

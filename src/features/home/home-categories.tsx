@@ -8,6 +8,7 @@ import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const M = strings.main;
+const PER_ROW = 4;
 type Category = (typeof M.categories)[number];
 
 /** 홈에서 갈 수 있는 화면. 아직 없는 기능의 항목은 path 가 null 이다 */
@@ -18,13 +19,21 @@ export type HomeCategoriesProps = {
 };
 
 /**
- * 홈의 카테고리(나 · 관계 · 궁합 · 시기, 결정 019). 아이콘과 그 아래 이름만 있는 타일을 한 줄에 넷씩 놓는다.
+ * 홈의 카테고리(나 · 관계 · 궁합 · 시기, 결정 019). 아이콘과 그 아래 이름만 있는 타일을 한 줄에 넷씩, 양끝을 화면 여백에 맞춰 놓는다.
  * 타일을 누르면 그 칸의 항목이 아래 시트로 올라온다. 항목이 모두 준비 중인 칸은 흐리게 그리고 누를 수 없다.
  */
 export function HomeCategories({ onOpen }: HomeCategoriesProps) {
   const [opened, setOpened] = useState<Category | null>(null);
   /** 시트가 닫히는 동안에도 내용이 남아 있게, 마지막으로 연 칸을 따로 둔다 */
   const [shown, setShown] = useState<Category | null>(null);
+
+  // 한 줄에 넷씩 끊는다. 마지막 줄이 모자라면 빈 자리로 채워 앞줄과 세로로 맞춘다.
+  const rows: (Category | null)[][] = [];
+  for (let i = 0; i < M.categories.length; i += PER_ROW) {
+    const row: (Category | null)[] = M.categories.slice(i, i + PER_ROW);
+    while (row.length < PER_ROW) row.push(null);
+    rows.push(row);
+  }
 
   function open(category: Category) {
     setShown(category);
@@ -33,17 +42,20 @@ export function HomeCategories({ onOpen }: HomeCategoriesProps) {
 
   return (
     <View style={styles.root}>
-      <View style={styles.grid}>
-        {M.categories.map((category) => {
-          const soon = category.items.every((item) => item.path === null);
-          return (
-            <View key={category.key} testID="home-category-cell" style={styles.cell}>
+      {rows.map((row, index) => (
+        <View key={index} testID="home-category-row" style={styles.row}>
+          {row.map((category) => {
+            if (!category) return <View key="empty" style={styles.tile} />;
+            const soon = category.items.every((item) => item.path === null);
+            return (
               <Pressable
+                key={category.key}
                 testID="home-category"
                 accessibilityRole="button"
                 accessibilityLabel={category.title}
                 accessibilityState={{ disabled: soon }}
                 disabled={soon}
+                hitSlop={Spacing.sm}
                 onPress={() => open(category)}
                 style={styles.tile}
               >
@@ -54,10 +66,10 @@ export function HomeCategories({ onOpen }: HomeCategoriesProps) {
                   {category.title}
                 </Txt>
               </Pressable>
-            </View>
-          );
-        })}
-      </View>
+            );
+          })}
+        </View>
+      ))}
 
       <Sheet visible={opened !== null} onClose={() => setOpened(null)} title={shown?.title}>
         <View>
@@ -141,17 +153,12 @@ function CategoryIcon({ name, color }: { name: Category['key']; color: string })
 
 const styles = StyleSheet.create({
   root: { paddingTop: Spacing.md, paddingBottom: Spacing.lg },
-  // 타일을 같은 너비로 한 줄에 넷씩.
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: '25%', paddingVertical: Spacing.xs },
-  tile: { alignItems: 'center', gap: Spacing.xxs / 2 },
-  // 바탕 없이 아이콘만 그린다. 누르는 자리는 넉넉히 둔다.
-  icon: {
-    width: Sizes.categoryIconBox,
-    height: Sizes.categoryIconBox,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // 한 줄의 양끝을 화면 여백에 맞춘다: 첫 아이콘의 왼쪽 끝이 머리의 표식과 같은 선에 온다.
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm },
+  // 타일의 너비는 아이콘과 같다. 이름은 그 가운데에 놓이고 넘쳐도 된다.
+  tile: { width: Sizes.categoryIcon, alignItems: 'center', gap: Spacing.xs, overflow: 'visible' },
+  // 바탕도 좌우 여백도 없다. 누르는 자리는 hitSlop 으로 넓힌다.
+  icon: { width: Sizes.categoryIcon, height: Sizes.categoryIcon },
   item: {
     height: Sizes.listRow,
     flexDirection: 'row',

@@ -91,6 +91,8 @@ export const ScreenPaddingX = 20;
 
 /** 모서리. 버튼·입력칸·칩 12. */
 export const Radius = 12;
+/** 카드(홈의 카테고리 칸)의 모서리 */
+export const CardRadius = 16;
 /** 하단 시트의 위쪽 모서리 */
 export const SheetRadius = 24;
 
@@ -111,6 +113,11 @@ export const Sizes = {
   wheel: 300,
   /** 웹 넓은 화면에서 가운데에 보이는 앱 화면의 폭 */
   maxContentWidth: 390,
+  /** 홈 카테고리 타일의 아이콘 */
+  categoryIcon: 40,
+  /** 아래 탭 줄의 높이 · 탭 아이콘 */
+  tabBarHeight: 60,
+  tabIcon: 24,
   /** 목록 한 줄의 높이 */
   listRow: 48,
   /** 태어난 곳 고르기: 왼쪽 시·도 칸의 너비 */

@@ -12,6 +12,59 @@ export const strings = {
     timeColon: ':',
     none: '—',
   },
+  /** 홈(카테고리 화면). 구성은 docs/decisions/019-home-categories.md */
+  /** 아래 탭(결정 019) */
+  tabs: { home: '홈', my: '마이' },
+  my: {
+    title: '마이',
+    birthLabel: '출생 정보',
+    editBirth: '바꾸기',
+  },
+  main: {
+    soon: '준비 중',
+    readingLabel: '나의 별명',
+    readingMore: '풀이 읽기',
+    readingEmpty: '아직 별명을 짓지 않았어요.',
+    readingCta: '내 별명 읽기',
+    categories: [
+      {
+        key: 'me',
+        title: '나',
+        items: [
+          { label: '요약 풀이', path: '/reading' },
+          { label: '내 차트', path: '/chart' },
+          { label: '심층 리포트', path: null },
+        ],
+      },
+      {
+        key: 'relation',
+        title: '관계',
+        items: [
+          { label: '사람을 대하는 성향', path: null },
+          { label: '연애에서 해 볼 만한 것', path: null },
+        ],
+      },
+      {
+        key: 'synastry',
+        title: '궁합',
+        items: [
+          { label: '상대와 궁합 보기', path: null },
+          { label: '궁합 랭킹', path: null },
+        ],
+      },
+      {
+        key: 'timing',
+        title: '시기',
+        items: [
+          { label: '지금 나의 구간', path: null },
+          { label: '다가오는 변곡점', path: null },
+        ],
+      },
+    ],
+  },
+  birth: {
+    title: '출생 정보',
+  },
   home: {
     title: '별이 붙여 준\n나의 별명',
     subtitle: '태어난 순간의 하늘을 계산해\n나를 설명하는 글로 풀어 드립니다.',

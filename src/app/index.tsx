@@ -1,28 +1,55 @@
+import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ChartMark } from '@/components/chart-mark';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
+import { SectionHead } from '@/components/section-head';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { BirthForm } from '@/features/chart/birth-form';
+import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
+import { HomeCategories } from '@/features/home/home-categories';
+import { HomeReadingCard } from '@/features/home/home-reading-card';
+import { MainTabs } from '@/features/home/main-tabs';
+import { useStoredReading } from '@/features/reading/use-reading';
 
-/** 홈이 곧 출생 정보 입력 화면이다. 로그인 없이 쓴다. */
+/**
+ * 홈. 출생 정보가 있으면 카테고리(나 · 관계 · 궁합 · 시기), 나의 한 줄 총평, 나를 이루는 세 가지와 아래 탭을 보여 주고,
+ * 없으면 출생 정보 입력부터 받는다(결정 019).
+ * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
+ */
 export default function HomeScreen() {
   const { loaded, profile, chart, save } = useBirthProfile();
-  const stored = profile && chart ? { profile, chart } : null;
+  // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
+  const input = useMemo(
+    () => (profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
+    [profile],
+  );
+  const reading = useStoredReading(input);
+  const nav = <NavBar left={<ChartMark />} />;
+  if (!loaded) return <Screen nav={nav}>{null}</Screen>;
+  if (profile && chart)
+    return (
+      <Screen nav={nav} footer={<MainTabs active="home" />}>
+        <HomeCategories onOpen={(path) => router.push(path)} />
+        <HomeReadingCard headline={reading?.headline ?? null} onOpen={() => router.push('/reading')} />
+        <SectionHead title={strings.chart.keyThreeHeading} />
+        <KeyThree chart={chart} />
+      </Screen>
+    );
   return (
-    <Screen nav={<NavBar left={<ChartMark />} />}>
+    <Screen nav={nav}>
       <View style={styles.intro}>
         <Txt variant="display">{strings.home.title}</Txt>
         <Txt variant="table" color="gray">
           {strings.home.subtitle}
         </Txt>
       </View>
-      {/* 기기 저장소를 읽고 나면 보관된 값으로 입력 칸을 다시 만든다. 읽기 전에도 빈 칸으로 쓸 수 있다. */}
-      <BirthForm key={loaded ? 'restored' : 'initial'} stored={stored} save={save} />
+      <BirthForm stored={null} save={save} />
     </Screen>
   );
 }

@@ -51,15 +51,15 @@ lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타�
 - 화면을 렌더하는 테스트는 `src/__tests__/` 에 둔다. `app/` 안에 두면 라우트가 되고, `features/` 에 두면 `app` 을 import 해 의존 규칙에 걸린다.
 - 다른 기능이 가져다 써도 되는 파일은 `eslint.config.js` 의 `SHARED_FEATURE_FILES` 에 적는다(지금: `chart/ChartWheel.tsx`, `auth/use-session.ts`).
 
-## 의존 규칙 (ESLint `import/no-restricted-paths` 가 강제한다, 결정 017)
-| 규칙 | 이유 |
-|---|---|
-| `components`·`constants`·`content`·`lib` 는 `app`·`features` 를 import 하지 않는다 | 공용이 기능을 알면 순환이 생긴다 |
-| `features/<A>` 는 다른 `features/<B>` 를 import 하지 않는다. 예외: `features/chart` 의 그리기 부품(ChartWheel 등), `features/auth` 의 세션 훅 | 기능 하나를 고칠 때 다른 기능이 깨지지 않게 |
-| `features` 는 `app` 을 import 하지 않는다 | 화면은 위, 기능은 아래 |
-| 서버 호출은 `lib/api.ts` 로만 한다(`fetch` 를 화면·기능에서 직접 부르지 않는다) | 세션 헤더·오류 처리를 한 곳에서 |
-| 색·글자·간격은 `constants/theme.ts`, 문구는 `content/strings.ts` 에서만 | 디자인·번역이 한 곳에서 바뀐다 |
-| 차트·변곡점·점수 계산을 앱에서 하지 않는다 | 서버가 계산한다(결정 006) |
+## 의존 규칙 (결정 017 — `npx expo lint` 가 실패하면 위반이다)
+| 규칙 | 이유 | 강제 |
+|---|---|---|
+| 공용(`components`·`constants`·`content`·`lib`, 그리고 `app`·`features`·`__tests__` 밖의 모든 `src/` 최상위 폴더)은 `app`·`features` 를 import 하지 않는다 | 공용이 기능을 알면 순환이 생긴다 | `import/no-restricted-paths` |
+| `features/<A>` 는 다른 `features/<B>` 를 import 하지 않는다. 예외: `eslint.config.js` 의 `SHARED_FEATURE_FILES`(지금 `chart/ChartWheel.tsx`, `auth/use-session.ts`). `features/` 바로 아래에는 파일을 두지 않는다 | 기능 하나를 고칠 때 다른 기능이 깨지지 않게 | `import/no-restricted-paths` |
+| `features` 는 `app` 을 import 하지 않는다 | 화면은 위, 기능은 아래 | `import/no-restricted-paths` |
+| 서버 호출은 `lib/` 에서만 한다(`lib/api.ts`). 화면·기능은 `fetch`·`XMLHttpRequest`·`expo/fetch` 를 쓰지 않는다 | 세션 헤더·오류 처리를 한 곳에서 | `no-restricted-globals`·`-properties`·`-imports` |
+| 색·글자·간격은 `constants/theme.ts`, 문구는 `content/strings.ts` 에서만 | 디자인·번역이 한 곳에서 바뀐다 | 리뷰 |
+| 차트·변곡점·점수 계산을 앱에서 하지 않는다 | 서버가 계산한다(결정 006) | 리뷰 |
 
 ## 데이터 흐름
 - 차트: 입력 → `POST /charts` → 받은 `Chart` 를 그리고 기기에 보관. 다시 열 때는 보관본을 쓴다.

@@ -22,7 +22,7 @@ export function KeyThree({ chart, bare = false }: KeyThreeProps) {
             {item.label}
           </Txt>
           <Txt variant="heading">{item.value + strings.chart.signSuffix}</Txt>
-          <Txt variant="label" color="hint">
+          <Txt variant="label" color="hint" style={styles.caption}>
             {item.caption}
           </Txt>
         </View>
@@ -33,7 +33,8 @@ export function KeyThree({ chart, bare = false }: KeyThreeProps) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', backgroundColor: Colors.fill, borderRadius: Radius, paddingVertical: Spacing.md },
-  bare: { backgroundColor: 'transparent', paddingVertical: 0 },
-  cell: { flex: 1, alignItems: 'center', gap: Spacing.xxs },
+  bare: { alignSelf: 'stretch', backgroundColor: 'transparent', paddingVertical: 0 },
+  cell: { flex: 1, alignItems: 'center', gap: Spacing.xs, paddingHorizontal: Spacing.xs },
+  caption: { textAlign: 'center' },
   divided: { borderLeftWidth: LineWidth, borderLeftColor: Colors.hair },
 });

@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 
 import { Colors, FontFamily, Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -14,30 +14,38 @@ export type ChartPictureProps = {
   chart: Chart;
   /** 그림의 한 변 길이 */
   size: number;
+  /** 별자리 이름을 기호 아래에 적는다. 작은 그림(홈 카드)에서는 끈다. */
+  named?: boolean;
 };
 
 /**
- * 차트를 그림으로만 보여 준다(풀이 글 머리, 홈 카드). 글자·번호·눈금 없이 고리와 천체 점, 점을 잇는 선만 그린다.
- * 사람마다 점의 자리와 선이 달라 그 사람만의 그림이 된다. 태양은 주색으로 크게, 달은 조금 크게 그린다.
+ * 차트를 그림으로 보여 준다(풀이 글 머리, 홈 카드). 보자마자 내 별자리를 알 수 있게
+ * 한가운데에 태양 자리의 모양(전갈·게 …)과 이름을 크게 두고, 고리에서 그 자리 칸만 주색으로 칠한다.
+ * 둘레의 점은 천체의 자리라 사람마다 다르다. 태양은 주색으로 크게, 달은 조금 크게 그린다.
  * 읽는 법은 차트 화면([ChartWheel])에 있다.
  */
-export function ChartPicture({ chart, size }: ChartPictureProps) {
+export function ChartPicture({ chart, size, named = true }: ChartPictureProps) {
   const w = wheelLayout(chart);
   const radius = (body: string) => w.dotRadius * (body === 'SUN' ? 2.6 : body === 'MOON' ? 1.9 : 1.3);
+  const sunSign = chart.positions.find((p) => p.body === 'SUN')?.sign;
+  const signName = sunSign ? label(strings.signs, sunSign) + strings.chart.signSuffix : undefined;
+  const text = { fontFamily: FontFamily, textAnchor: 'middle', alignmentBaseline: 'central' } as const;
   return (
     <View
       testID="chart-picture"
       style={{ width: size, height: size }}
       accessibilityRole="image"
-      accessibilityLabel={strings.chart.wheelLabel}>
+      accessibilityLabel={signName ?? strings.chart.wheelLabel}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${w.size} ${w.size}`}>
+        {w.signs
+          .filter((s) => s.sign === sunSign)
+          .map((s) => (
+            <Path key={`c${s.sign}`} testID="picture-sign-cell" d={s.cell} fill={Colors.primary} />
+          ))}
         <Circle cx={w.center} cy={w.center} r={w.rOuter} fill="none" stroke={Colors.hair} strokeWidth={1.2} />
         <Circle cx={w.center} cy={w.center} r={w.rSign} fill="none" stroke={Colors.hair} strokeWidth={1.2} />
         {w.signs.map((s) => (
           <Line key={`sl${s.sign}`} {...s.line} stroke={Colors.hair} strokeWidth={1.2} />
-        ))}
-        {w.aspectLines.map(({ dashed, ...l }, i) => (
-          <Line key={`a${i}`} {...l} stroke={dashed ? Colors.muted : Colors.primary} strokeWidth={1.2} />
         ))}
         {w.bodies.map((b) => (
           <Circle
@@ -49,6 +57,28 @@ export function ChartPicture({ chart, size }: ChartPictureProps) {
             fill={b.body === 'SUN' ? Colors.primary : Colors.ink}
           />
         ))}
+        {sunSign ? (
+          <SvgText
+            testID="picture-sign-figure"
+            {...text}
+            x={w.center}
+            y={w.center - (named ? w.size * 0.06 : 0)}
+            fontSize={w.size * (named ? 0.3 : 0.38)}>
+            {label(strings.signFigures, sunSign)}
+          </SvgText>
+        ) : null}
+        {named && signName ? (
+          <SvgText
+            testID="picture-sign-name"
+            {...text}
+            x={w.center}
+            y={w.center + w.size * 0.15}
+            fontSize={w.size * 0.085}
+            fontWeight="700"
+            fill={Colors.ink}>
+            {signName}
+          </SvgText>
+        ) : null}
       </Svg>
     </View>
   );

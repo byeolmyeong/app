@@ -326,6 +326,21 @@ export const strings = {
     AQUARIUS: '물병',
     PISCES: '물고기',
   },
+  /** 별자리의 모양(전갈·게·사자 …). 디자이너의 그림이 오기 전까지 쓰는 임시 그림 문자다. */
+  signFigures: {
+    ARIES: '🐏',
+    TAURUS: '🐂',
+    GEMINI: '👯',
+    CANCER: '🦀',
+    LEO: '🦁',
+    VIRGO: '👩',
+    LIBRA: '⚖️',
+    SCORPIO: '🦂',
+    SAGITTARIUS: '🏹',
+    CAPRICORN: '🐐',
+    AQUARIUS: '🏺',
+    PISCES: '🐟',
+  },
   aspects: {
     CONJUNCTION: '합',
     SEXTILE: '육분',

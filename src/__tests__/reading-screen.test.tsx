@@ -180,7 +180,15 @@ describe('요약 해석 화면', () => {
     // 그림에는 하우스 번호나 천체 이름 같은 글자가 없다
     expect(screen.queryAllByTestId('wheel-house-number')).toHaveLength(0);
     expect(screen.queryByText(strings.bodiesShort.SUN)).toBeNull();
-    // 그림만으로는 무슨 자리인지 알 수 없으니 바로 아래에 글로 적는다
+    // 그림 한가운데에 내 별자리(태양 자리)의 모양과 이름이 크게 있고, 그 자리 칸만 칠한다
+    expect(screen.getByTestId('picture-sign-figure')).toBeTruthy();
+    expect(JSON.stringify(screen.toJSON())).toContain(strings.signFigures.GEMINI);
+    expect(screen.getByTestId('picture-sign-name')).toBeTruthy();
+    expect(screen.getByTestId('chart-picture').props.accessibilityLabel).toBe(
+      strings.signs.GEMINI + strings.chart.signSuffix,
+    );
+    expect(screen.getAllByTestId('picture-sign-cell')).toHaveLength(1);
+    // 그림 아래에는 중심 · 마음 · 첫인상을 글로 적는다
     expect(screen.getByText(strings.chart.keySun)).toBeTruthy();
     expect(screen.getByText(strings.signs.GEMINI + strings.chart.signSuffix)).toBeTruthy();
     // 누르면 차트로 간다

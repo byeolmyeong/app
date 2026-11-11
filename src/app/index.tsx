@@ -39,7 +39,7 @@ export default function HomeScreen() {
         <HomeCategories onOpen={(path) => router.push(path)} />
         <HomeReadingCard
           headline={reading?.headline ?? null}
-          picture={<ChartPicture chart={chart} size={Sizes.homePicture} />}
+          picture={<ChartPicture chart={chart} size={Sizes.homePicture} named={false} />}
           onOpen={() => router.push('/reading')}
         />
         <SectionHead title={strings.chart.keyThreeHeading} />

@@ -1,6 +1,6 @@
-# 별명 (byeolmyeong-app)
+# 앱 저장소 (byeolmyeong-app) — 앱 이름은 바꿀 예정(가칭 "별명")
 
-별이 붙여 준 나의 별명 — 출생 차트를 계산해 AI 가 용어 없이 풀어 주는 한국어 서양 점성술 서비스. 심층 리포트와 궁합을 앱에서 건당 인앱결제로 판다(결제는 핵심 기능 뒤에 붙인다).
+점성술 몰라도 읽히는 나, 나의 사람들, 나의 타이밍 — 출생 차트를 서버가 계산하고 AI 가 용어 없이 풀어 주는 한국어 서양 점성술 서비스. 1.0.0 은 결제·횟수 제한·광고 없이 무료이고, 1.1.0 부터 광고와 방향성 제시 유료화를 붙인다. 앱 이름은 docs/decisions/013-rename-app.md
 
 ## 항상 (자동 로드, 합계 30,000자 이내)
 - Expo 규칙·명령: @AGENTS.md
@@ -12,7 +12,7 @@
 - 1.0.0 에 무엇이 들어가는지(기능·화면·출시 기준) → docs/release-1.0.0.md
 - 모듈 경계·데이터 흐름·비즈니스 룰(시각 보정·소유자 검사)을 바꿀 때 → docs/architecture.md
 - 지금 할 일 → docs/plans/2026-11-10-app-1.0.0.md
-- 화면을 만들 때 → DESIGN.md (원칙·쓰지 않는 것·값의 위치), docs/design/screens-1.0.0.html (시안)
+- 화면을 만들 때 → DESIGN.md (원칙·쓰지 않는 것·값의 위치), docs/design/product-brief-1.0.0.md (기획안). 화면 디자인은 프로덕트 디자이너가 새로 만든다
 - 코드 어디서 시작할지 모를 때 → docs/codebase-map.md (`/agent-codebase bootstrap` 이 만든다)
 - "왜 이렇게 됐나"가 궁금할 때 → docs/decisions/ ADR 번호순. 바뀌면 새 번호로 대체. 종합된 답은 docs/synthesis/.
 
@@ -43,7 +43,7 @@
 - 차트·별자리·하우스·연도를 앱에서 계산하지 않는다. 서버가 준 값만 그린다. 근거: docs/decisions/006-server-side-chart.md
 - 색·글자·간격은 `src/constants/theme.ts`, 문구는 `src/content/strings.ts` 에서만 가져온다.
 - 세션 토큰은 기기 보안 저장소에만 둔다. API 키와 프롬프트는 서버에만 있다.
-- 문구에 건강·투자·미래 사건의 단정 표현과 궁합 점수를 쓰지 않는다. 근거: docs/release-1.0.0.md
+- 문구에 건강·투자·미래 사건의 단정 표현을 쓰지 않는다. 궁합 점수는 서버가 준 값만 보여 준다. 근거: docs/release-1.0.0.md, docs/decisions/010-synastry-score-ranking-share-cards.md
 - 결정이 바뀌면 코드보다 먼저 docs/decisions/에 새 ADR. 원본은 docs/raw/, 종합은 docs/synthesis/.
 - 커밋: 한국어 + Conventional Commits. 한 커밋 = 한 관심사. 작업 브랜치에서 한다.
 - 한 커밋을 넘는 일은 /plan-feature 로 계획을 승인받고 실행한다. 완료라고 말하기 전에 /verify 를 이번에 돌린다.

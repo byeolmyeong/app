@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1632" height="980" viewBox="0 0 1632 980" font-family="Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif">
+  <rect width="1632" height="980" fill="#FFFFFF"/>
+
+  <!-- 왼쪽: 한 문장 · 타깃 · 차별점 · 원칙 -->
+  <rect x="0" y="36" width="816" height="908" fill="#F6F5F2"/>
+  <text x="48" y="96" font-size="14" font-weight="700" letter-spacing="3" fill="#8A8784">PRODUCT BRIEF · 1.0.0</text>
+
+  <text x="48" y="150" font-size="16" font-weight="700" fill="#4B4FD9">한 문장</text>
+  <text font-size="36" font-weight="700" fill="#1F1E1C">
+    <tspan x="48" y="200">점성술 몰라도 읽히는</tspan>
+    <tspan x="48" y="248">나, 나의 사람들, 나의 타이밍</tspan>
+  </text>
+  <text x="48" y="286" font-size="18" fill="#8A8784">1.0.0 대표 문구 · 새로 정함</text>
+
+  <text x="48" y="346" font-size="16" font-weight="700" fill="#4B4FD9">타깃</text>
+  <text font-size="21" font-weight="700" fill="#1F1E1C">
+    <tspan x="48" y="388">핵심 · 20대 초반~30대 초반</tspan>
+    <tspan x="48" y="468">확산 · 10대 후반 (만 14세 이상)</tspan>
+    <tspan x="48" y="548">공통 · 점성술은 잘 모름</tspan>
+  </text>
+  <text font-size="19" fill="#3A3835">
+    <tspan x="48" y="422">연애·궁합, 전환기에 "나 지금 어떤 시기야?"</tspan>
+    <tspan x="48" y="502">예쁜 결과를 스토리에 올림 · 친구 궁합, 진로·미래</tspan>
+    <tspan x="48" y="582">"왜 그런지" 납득하고 싶음 · 결과를 스토리로 공유</tspan>
+  </text>
+
+  <text x="48" y="644" font-size="16" font-weight="700" fill="#4B4FD9">차별점</text>
+  <text x="48" y="688" font-size="28" font-weight="700" fill="#1F1E1C">점성술 몰라도 읽힌다</text>
+  <text font-size="19" fill="#3A3835">
+    <tspan x="48" y="728">• 해석 본문에 점성술 용어를 쓰지 않음</tspan>
+    <tspan x="48" y="760">• 문단마다 "왜 그런지" 근거를 표시</tspan>
+    <tspan x="48" y="792">• 단정하지 않고 '이 시기의 주제'로 말함</tspan>
+  </text>
+
+  <text x="48" y="850" font-size="16" font-weight="700" fill="#4B4FD9">1.0.0 원칙</text>
+  <text font-size="19" fill="#3A3835">
+    <tspan x="48" y="886">결제 없음 · 횟수 제한 없음 · 광고 없음 (1.1.0부터)</tspan>
+    <tspan x="48" y="916">만 14세 이상 · 한국어·국내 출생지 · 웹·iOS·Android 동시</tspan>
+  </text>
+
+  <!-- 오른쪽: 1.0.0 출시 기능 -->
+  <rect x="860" y="36" width="772" height="908" fill="#F6F5F2"/>
+  <text x="908" y="96" font-size="14" font-weight="700" letter-spacing="3" fill="#8A8784">1.0.0 출시 기능</text>
+
+  <g fill="#FFFFFF">
+    <rect x="908" y="124" width="330" height="252" rx="14"/>
+    <rect x="1254" y="124" width="330" height="252" rx="14"/>
+    <rect x="908" y="392" width="330" height="252" rx="14"/>
+    <rect x="1254" y="392" width="330" height="252" rx="14"/>
+    <rect x="908" y="660" width="330" height="252" rx="14"/>
+    <rect x="1254" y="660" width="330" height="252" rx="14"/>
+  </g>
+  <rect x="908" y="124" width="6" height="252" fill="#8A8784"/>
+  <rect x="1254" y="124" width="6" height="252" fill="#6C5CE7"/>
+  <rect x="908" y="392" width="6" height="252" fill="#2E9C8F"/>
+  <rect x="1254" y="392" width="6" height="252" fill="#E8618C"/>
+  <rect x="908" y="660" width="6" height="252" fill="#E0A82E"/>
+  <rect x="1254" y="660" width="6" height="252" fill="#4B4FD9"/>
+
+  <g font-size="22" font-weight="700">
+    <text x="936" y="170" fill="#5F5C58">시작</text>
+    <text x="1282" y="170" fill="#6C5CE7">나</text>
+    <text x="936" y="438" fill="#2E9C8F">시기</text>
+    <text x="1282" y="438" fill="#E8618C">관계</text>
+    <text x="936" y="706" fill="#C98B12">공유</text>
+    <text x="1282" y="706" fill="#4B4FD9">방향성</text>
+  </g>
+  <g font-size="14" fill="#A09C95">
+    <text x="996" y="170">F1 · F2 · F7</text>
+    <text x="1310" y="170">F3 · F4</text>
+    <text x="996" y="438">F4</text>
+    <text x="1342" y="438">F5</text>
+    <text x="996" y="706">F6</text>
+    <text x="1366" y="706">F10</text>
+  </g>
+
+  <g font-size="16" fill="#3A3835">
+    <text x="936" y="214">• 스플래시 직후 구글·애플·카카오</text>
+    <text x="936" y="246">• 만 14세 확인 → 출생 정보 입력</text>
+    <text x="936" y="278">• 버튼 하나로 바로 내 요약</text>
+    <text x="936" y="310">• 차트는 요약 화면에서 열기</text>
+
+    <text x="1282" y="214">• 요약 해석: 한 줄 총평 + 5문단</text>
+    <text x="1282" y="246">• 심층 리포트 5개 영역</text>
+    <text x="1298" y="278">성격·관계·일·감정·시기</text>
+    <text x="1282" y="310">• 문단마다 근거 표시</text>
+
+    <text x="936" y="482">• 누구나 오는 마디 4개</text>
+    <text x="936" y="514">• 변화 구간 (외행성)</text>
+    <text x="936" y="546">• 기회 · 운명적 만남 구간</text>
+    <text x="936" y="578">• 지금 나의 구간 · 다음 변곡점</text>
+
+    <text x="1282" y="482">• 나 기준 궁합 점수 (0~100)</text>
+    <text x="1282" y="514">• 나 vs 여러 명 랭킹 (인원 제한 없음)</text>
+    <text x="1282" y="546">• 직접 입력 또는 초대 링크</text>
+    <text x="1282" y="578">• 궁합 리포트 4개 영역</text>
+
+    <text x="936" y="750">• 요약 해석 · 궁합 점수 · 랭킹 카드</text>
+    <text x="936" y="782">• 다음 변곡점 카드 (시기 + 한 줄)</text>
+    <text x="936" y="814">• 출생 정보·근거는 안 나옴</text>
+    <text x="936" y="846">• "나도 보러 가기" → 가입</text>
+
+    <text x="1282" y="750">• AI 방향성 제시</text>
+    <text x="1298" y="782">미래·이성·궁합, 조언형</text>
+    <text x="1282" y="814">• 1.0.0 기능 전체 무료</text>
+    <text x="1282" y="846">• 투두·조각·레벨업은 1.1.0</text>
+  </g>
+</svg>

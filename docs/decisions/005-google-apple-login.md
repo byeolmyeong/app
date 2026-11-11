@@ -1,13 +1,13 @@
 ---
 type: decision
 tags: [로그인, 구글 로그인, 애플 로그인, 계정]
-status: active
+status: superseded
 last_reviewed: 2026-11-10
-superseded_by:
+superseded_by: docs/decisions/009-signup-first-kakao-age14.md
 ---
 # 005. 로그인은 구글·애플만, 해석을 받을 때 요구한다
 
-> 상태: 활성 · 결정일 2026-11-10
+> 상태: 대체됨 → docs/decisions/009-signup-first-kakao-age14.md · 결정일 2026-11-10
 
 ## 맥락
 1.0.0 은 웹과 스토어 앱에 동시에 낸다. 해석은 서버에 저장하므로 누구의 것인지 알아야 한다. 처음 설계는 로그인 없는 기기별 익명 계정이었고, 사용자가 구글·애플 로그인만 구현하기로 정했다.

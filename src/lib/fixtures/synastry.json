@@ -1,0 +1,143 @@
+{
+  "id": "0b6f3c1e-5a52-4c1d-9a41-2f6d1c7e8a10",
+  "name": "지우",
+  "relation": "LOVE",
+  "score": 82,
+  "headline": "말이 잘 통하고, 서로의 속도를 맞춰 가는 사이",
+  "keywords": [
+    "편안한 대화",
+    "닮은 취향",
+    "다른 쉬는 법"
+  ],
+  "reportStatus": "NONE",
+  "createdAt": "2026-11-11T09:30:00Z",
+  "overlay": {
+    "mine": [
+      {
+        "body": "SUN",
+        "longitude": 84.68
+      },
+      {
+        "body": "MOON",
+        "longitude": 248.9
+      },
+      {
+        "body": "MERCURY",
+        "longitude": 107.63
+      },
+      {
+        "body": "VENUS",
+        "longitude": 85.79
+      },
+      {
+        "body": "MARS",
+        "longitude": 89.31
+      },
+      {
+        "body": "JUPITER",
+        "longitude": 56.79
+      },
+      {
+        "body": "SATURN",
+        "longitude": 54.9
+      },
+      {
+        "body": "URANUS",
+        "longitude": 320.64
+      },
+      {
+        "body": "NEPTUNE",
+        "longitude": 306.2
+      },
+      {
+        "body": "PLUTO",
+        "longitude": 251.17
+      }
+    ],
+    "mineAsc": 280.99,
+    "theirs": [
+      {
+        "body": "SUN",
+        "longitude": 143.2
+      },
+      {
+        "body": "MOON",
+        "longitude": 68.4
+      },
+      {
+        "body": "MERCURY",
+        "longitude": 150.75
+      },
+      {
+        "body": "VENUS",
+        "longitude": 205.5
+      },
+      {
+        "body": "MARS",
+        "longitude": 26.1
+      },
+      {
+        "body": "JUPITER",
+        "longitude": 87.1
+      },
+      {
+        "body": "SATURN",
+        "longitude": 12.6
+      },
+      {
+        "body": "URANUS",
+        "longitude": 289.9
+      },
+      {
+        "body": "NEPTUNE",
+        "longitude": 292.4
+      },
+      {
+        "body": "PLUTO",
+        "longitude": 232.15
+      }
+    ],
+    "lines": [
+      {
+        "mine": "SUN",
+        "theirs": "SUN",
+        "type": "SEXTILE"
+      },
+      {
+        "mine": "SUN",
+        "theirs": "VENUS",
+        "type": "TRINE"
+      },
+      {
+        "mine": "MOON",
+        "theirs": "MOON",
+        "type": "OPPOSITION"
+      },
+      {
+        "mine": "MERCURY",
+        "theirs": "SATURN",
+        "type": "SQUARE"
+      },
+      {
+        "mine": "VENUS",
+        "theirs": "VENUS",
+        "type": "TRINE"
+      },
+      {
+        "mine": "VENUS",
+        "theirs": "JUPITER",
+        "type": "CONJUNCTION"
+      },
+      {
+        "mine": "MARS",
+        "theirs": "MARS",
+        "type": "SEXTILE"
+      },
+      {
+        "mine": "ASC",
+        "theirs": "SATURN",
+        "type": "SQUARE"
+      }
+    ]
+  }
+}

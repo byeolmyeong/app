@@ -37,11 +37,43 @@ async function fillPlace() {
   await fireEvent.press(await screen.findByText('서울특별시 마포구'));
 }
 
+const next = () => fireEvent.press(screen.getByText(H.next));
+
+/** 1단계 생년월일 → 2단계 시각(null 이면 "모름") → 3단계 출생지 화면까지 간다 */
+async function fillDateAndTime(date: string, time: string | null) {
+  await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), date);
+  await next();
+  if (time === null) await fireEvent.press(screen.getByText(H.timeUnknown));
+  else await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), time);
+  await next();
+}
+
 describe('출생 정보 입력(홈)', () => {
+  it('한 화면에 하나씩 묻는다: 생년월일 → 태어난 시각 → 태어난 곳', async () => {
+    await render(<HomeScreen />);
+    expect(screen.getByText(H.steps[0])).toBeTruthy();
+    expect(screen.queryByPlaceholderText(H.timePlaceholder)).toBeNull();
+    expect(screen.queryByPlaceholderText(H.placePlaceholder)).toBeNull();
+    await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '20000615');
+    expect(screen.getByDisplayValue('2000-06-15')).toBeTruthy();
+    await next();
+    expect(screen.getByText(H.steps[1])).toBeTruthy();
+    expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
+    // "모름" 은 시각을 묻는 화면에 있다
+    expect(screen.getByText(H.timeUnknown)).toBeTruthy();
+    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '2100');
+    expect(screen.getByDisplayValue('21:00')).toBeTruthy();
+    await next();
+    expect(screen.getByText(H.steps[2])).toBeTruthy();
+    expect(screen.getByPlaceholderText(H.placePlaceholder)).toBeTruthy();
+    // 이전으로 돌아가도 넣은 값이 남아 있다
+    await fireEvent.press(screen.getByText(H.back));
+    expect(screen.getByDisplayValue('21:00')).toBeTruthy();
+  });
+
   it('날짜·시각·출생지를 넣고 누르면 차트를 받아 보관하고 /chart 로 간다', async () => {
     await render(<HomeScreen />);
-    await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '2000-06-15');
-    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '21:00');
+    await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
     expect(mockApi.searchPlaces).toHaveBeenCalledWith('마포');
     await fireEvent.press(screen.getByText(H.submit));
@@ -53,32 +85,37 @@ describe('출생 정보 입력(홈)', () => {
   it('"모름" 을 고르면 time 을 null 로 보낸다', async () => {
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
-    await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '2000-06-15');
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fillDateAndTime('2000-06-15', null);
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: 1841277 });
   });
 
-  it('1900년 이전 날짜는 오류를 보여 주고 서버를 부르지 않는다', async () => {
+  it('1900년 이전 날짜는 오류를 보여 주고 다음으로 넘어가지 않는다', async () => {
     await render(<HomeScreen />);
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '1899-12-31');
-    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '21:00');
-    await fillPlace();
-    await fireEvent.press(screen.getByText(H.submit));
+    await next();
     expect(await screen.findByText(H.errors.dateTooEarly)).toBeTruthy();
-    expect(mockApi.createChart).not.toHaveBeenCalled();
-    expect(router.push).not.toHaveBeenCalled();
+    expect(screen.getByText(H.steps[0])).toBeTruthy();
     // 칸을 고치면 그 칸의 오류 문구는 사라진다
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '1999-12-31');
     expect(screen.queryByText(H.errors.dateTooEarly)).toBeNull();
   });
 
-  it('출생지를 목록에서 고르지 않으면 오류를 보여 준다', async () => {
+  it('틀린 시각은 오류를 보여 주고 다음으로 넘어가지 않는다', async () => {
     await render(<HomeScreen />);
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '2000-06-15');
-    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '21:00');
+    await next();
+    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '2561');
+    await next();
+    expect(await screen.findByText(H.errors.timeFormat)).toBeTruthy();
+    expect(screen.getByText(H.steps[1])).toBeTruthy();
+  });
+
+  it('출생지를 목록에서 고르지 않으면 오류를 보여 준다', async () => {
+    await render(<HomeScreen />);
+    await fillDateAndTime('2000-06-15', '21:00');
     await fireEvent.press(screen.getByText(H.submit));
     expect(await screen.findByText(H.errors.placeRequired)).toBeTruthy();
     expect(mockApi.createChart).not.toHaveBeenCalled();
@@ -87,6 +124,7 @@ describe('출생 정보 입력(홈)', () => {
   it('검색 결과가 없으면 해외 출생지 준비 중 안내를 보여 준다', async () => {
     mockApi.searchPlaces.mockResolvedValue({ ok: true, data: [] });
     await render(<HomeScreen />);
+    await fillDateAndTime('2000-06-15', '21:00');
     await fireEvent.changeText(screen.getByPlaceholderText(H.placePlaceholder), 'Tokyo');
     expect(await screen.findByText(H.placeEmpty)).toBeTruthy();
   });
@@ -94,8 +132,7 @@ describe('출생 정보 입력(홈)', () => {
   it('서버 호출이 실패하면 안내를 보여 주고 이동하지 않는다', async () => {
     mockApi.createChart.mockResolvedValue({ ok: false, error: 'NETWORK' });
     await render(<HomeScreen />);
-    await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '2000-06-15');
-    await fireEvent.changeText(screen.getByPlaceholderText(H.timePlaceholder), '21:00');
+    await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
     expect(await screen.findByText(H.requestErrors.NETWORK)).toBeTruthy();
@@ -107,7 +144,9 @@ describe('출생 정보 입력(홈)', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();
+    await next();
     expect(screen.getByDisplayValue('21:00')).toBeTruthy();
+    await next();
     expect(screen.getByDisplayValue('서울특별시 마포구')).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));

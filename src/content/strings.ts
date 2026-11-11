@@ -14,11 +14,16 @@ export const strings = {
   home: {
     title: '별이 붙여 준\n나의 별명',
     subtitle: '태어난 순간의 하늘을 계산해\n나를 설명하는 글로 풀어 드립니다.',
+    /** 한 화면에 하나씩 묻는 질문. 순서대로 생년월일 · 태어난 시각 · 태어난 곳 */
+    steps: ['생년월일을 알려 주세요', '몇 시에 태어났나요?', '어디에서 태어났나요?'],
+    next: '다음',
+    back: '이전',
     dateLabel: '생년월일',
+    dateHint: '숫자 8자리',
     datePlaceholder: '2000-06-15',
     timeLabel: '태어난 시각',
     timePlaceholder: '21:00',
-    timeHint: '분 단위',
+    timeHint: '24시간, 분 단위',
     timeUnknownValue: '모름',
     placeLabel: '태어난 곳',
     placePlaceholder: '시·군·구 이름',

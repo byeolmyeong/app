@@ -30,6 +30,18 @@ export const strings = {
     /** 문의 메일 주소. 소유자가 정한 임시 주소다. 바꿀 때는 여기 한 곳만 바꾼다(다른 곳에 적지 않는다) */
     contactEmail: 'kimdonghwan913@gmail.com',
     version: '앱 버전',
+    deleteAccount: '계정 삭제',
+    deleteSheet: {
+      title: '계정을 삭제할까요?',
+      body: '계정과 출생 정보, 받은 풀이와 리포트가 서버와 이 기기에서 모두 지워져요. 되돌릴 수 없어요.',
+      confirm: '삭제',
+      deleting: '삭제하는 중',
+      cancel: '취소',
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        OTHER: '계정을 삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+    },
   },
   /**
    * 처리방침 · 약관의 글. [확인 필요] 본문은 자리표시다. 실제 문안은 소유자가 정해 이 자리의 paragraphs 를 바꾸고,

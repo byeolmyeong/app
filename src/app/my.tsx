@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { ListRow } from '@/components/list-row';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { TextLink } from '@/components/text-link';
@@ -36,6 +37,7 @@ export default function MyScreen() {
         </View>
         <TextLink label={S.editBirth} onPress={() => router.push('/birth')} />
       </View>
+      <ListRow label={S.settings} onPress={() => router.push('/settings')} />
     </Screen>
   );
 }

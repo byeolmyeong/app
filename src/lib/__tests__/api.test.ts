@@ -380,3 +380,41 @@ describe('api: 심층 리포트', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });
+
+describe('api: 계정 삭제', () => {
+  it('DELETE /account 를 본문 없이 세션 헤더와 함께 부르고, 204 는 본문을 읽지 않고 성공이다', async () => {
+    const fetchFn = jest.fn(async () => ({
+      ok: true,
+      status: 204,
+      json: async () => {
+        throw new SyntaxError('Unexpected end of JSON input');
+      },
+    })) as unknown as jest.MockedFunction<typeof fetch>;
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.deleteAccount()).toEqual({ ok: true, data: null });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/account`);
+    expect(init?.method).toBe('DELETE');
+    expect(init?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('실패는 종류를 구분해 돌려주고 다시 부르지 않는다', async () => {
+    const failed = fakeFetch(500);
+    expect(await createApi({ baseUrl: BASE, fetchFn: failed, getToken: () => 't' }).deleteAccount()).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 500,
+    });
+    expect(failed).toHaveBeenCalledTimes(1);
+    const noSession = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => null });
+    expect(await noSession.deleteAccount()).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 성공한다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.deleteAccount()).toEqual({ ok: true, data: null });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});

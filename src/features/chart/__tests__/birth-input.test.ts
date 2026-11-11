@@ -1,5 +1,6 @@
 import { strings } from '@/content/strings';
 import {
+  birthInputOf,
   formatBirthSummary,
   formatDateTyping,
   formatTimeDisplay,
@@ -68,6 +69,26 @@ describe('validateBirthInput', () => {
     expect(r.ok && r.input.time).toBeNull();
   });
 
+  it('시각 "모름" 이면 태어난 곳이 없어도 되고, placeId 와 보관할 곳은 null 이다(결정 020)', () => {
+    const r = validateBirthInput({ dateText: '2000-06-15', timeText: '', timeUnknown: true, place: null }, today);
+    expect(r).toEqual({
+      ok: true,
+      input: { date: '2000-06-15', time: null, placeId: null },
+      profile: { date: '2000-06-15', time: null, place: null },
+    });
+  });
+
+  it('시각 "모름" 이면 앞서 골라 둔 곳이 있어도 보내지도 보관하지도 않는다', () => {
+    const r = validateBirthInput({ dateText: '2000-06-15', timeText: '21:00', timeUnknown: true, place }, today);
+    expect(r.ok && r.input).toEqual({ date: '2000-06-15', time: null, placeId: null });
+    expect(r.ok && r.profile.place).toBeNull();
+  });
+
+  it('시각을 넣었으면 태어난 곳이 필수다', () => {
+    const r = validateBirthInput({ dateText: '2000-06-15', timeText: '21:00', timeUnknown: false, place: null }, today);
+    expect(r).toEqual({ ok: false, errors: { place: E.placeRequired } });
+  });
+
   it('틀린 칸마다 오류를 돌려준다', () => {
     const r = validateBirthInput({ dateText: '1800-01-01', timeText: '99', timeUnknown: false, place: null }, today);
     expect(r).toEqual({
@@ -81,7 +102,28 @@ describe('formatBirthSummary', () => {
   it('날짜·시각·출생지를 한 줄로 적는다', () => {
     expect(formatBirthSummary({ date: '2000-06-15', time: '21:00', place })).toBe('2000. 6. 15. 오후 9:00 · 서울특별시 마포구');
     expect(formatBirthSummary({ date: '1990-01-01', time: '00:05', place })).toBe('1990. 1. 1. 오전 12:05 · 서울특별시 마포구');
-    expect(formatBirthSummary({ date: '2000-06-15', time: null, place })).toBe('2000. 6. 15. · 서울특별시 마포구');
+  });
+
+  it('시각 "모름" 이면 곳 없이 날짜와 "태어난 시각 모름" 을 적는다', () => {
+    expect(formatBirthSummary({ date: '2000-06-15', time: null, place: null })).toBe('2000. 6. 15. · 태어난 시각 모름');
+    // 예전에 보관된 값(시각 모름 + 곳)도 곳을 적지 않는다
+    expect(formatBirthSummary({ date: '2000-06-15', time: null, place })).toBe('2000. 6. 15. · 태어난 시각 모름');
+  });
+});
+
+describe('birthInputOf', () => {
+  it('보관된 출생 정보를 서버 요청 모양으로 바꾼다', () => {
+    expect(birthInputOf({ date: '2000-06-15', time: '21:00', place })).toEqual({
+      date: '2000-06-15',
+      time: '21:00',
+      placeId: 1841277,
+    });
+  });
+
+  it('시각 "모름" 이면 placeId 는 null 이다. 곳이 남아 있어도 보내지 않는다', () => {
+    const expected = { date: '2000-06-15', time: null, placeId: null };
+    expect(birthInputOf({ date: '2000-06-15', time: null, place: null })).toEqual(expected);
+    expect(birthInputOf({ date: '2000-06-15', time: null, place })).toEqual(expected);
   });
 });
 

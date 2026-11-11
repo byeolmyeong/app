@@ -63,6 +63,16 @@ describe('useReading', () => {
     expect(mockApi.createReading).toHaveBeenCalledTimes(2);
   });
 
+  it('시각 "모름"(placeId null)인 출생 정보로도 글을 받아 보관하고, 서버에 다시 저장할 때 placeId 를 null 로 보낸다', async () => {
+    const unknown = { date: '2000-06-15', time: null, placeId: null };
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404 }).mockResolvedValueOnce(ok);
+    const { result } = await renderHook(() => useReading(unknown));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', reading: fixtures.reading }));
+    expect(mockApi.saveProfile).toHaveBeenCalledWith(unknown);
+    const stored = JSON.parse((await AsyncStorage.getItem(READING_STORAGE_KEY)) as string);
+    expect(stored.key).toBe(JSON.stringify(['2000-06-15', null, null]));
+  });
+
   it('보관된 값이 깨졌으면 버리고 새로 받는다', async () => {
     await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ input, reading: { headline: 1 } }));
     const { result } = await renderHook(() => useReading(input));

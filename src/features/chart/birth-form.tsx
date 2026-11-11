@@ -40,7 +40,7 @@ const HOURS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: Strin
 const MINUTES = Array.from({ length: 60 }, (_, i) => ({ value: i, label: String(i).padStart(2, '0') }));
 
 const sameInput = (a: BirthProfile, b: BirthProfile) =>
-  a.date === b.date && a.time === b.time && a.place.id === b.place.id;
+  a.date === b.date && a.time === b.time && a.place?.id === b.place?.id;
 
 export type BirthFormProps = {
   /** 기기에 보관된 값. 있으면 입력 칸을 이 값으로 채운다 */
@@ -50,6 +50,7 @@ export type BirthFormProps = {
 
 /**
  * 출생 정보 입력. 한 화면에 생년월일 · 태어난 시각("모름") · 태어난 곳이 모두 보인다.
+ * 시각 "모름" 을 고르면 태어난 곳 칸은 사라지고 묻지 않는다(계산에 쓰이지 않는다. 결정 020).
  * 생년월일은 숫자를 치고, 시각은 칸을 누르면 아래에서 올라오는 드럼롤 시트에서,
  * 곳은 화면을 가득 채우는 고르기 화면(`PlacePicker`)에서 고른다.
  * 맨 아래 버튼을 누르면 차트를 받아 보관하고 풀이 글(/reading)로 간다. 차트는 풀이 글 화면에서 연다.
@@ -110,7 +111,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
 
   function onTimeUnknown(checked: boolean) {
     setTimeUnknown(checked);
-    setErrors((e) => ({ ...e, time: undefined }));
+    setErrors((e) => ({ ...e, time: undefined, place: undefined }));
   }
 
   function onPickPlace(p: Place) {
@@ -179,16 +180,18 @@ export function BirthForm({ stored, save }: BirthFormProps) {
           </Field>
           <Checkbox label={S.timeUnknown} checked={timeUnknown} onChange={onTimeUnknown} />
         </View>
-        <Field label={S.placeLabel} error={errors.place}>
-          <FieldSelect
-            testID="place-field"
-            value={place?.name}
-            placeholder={S.placePlaceholder}
-            invalid={Boolean(errors.place)}
-            open={sheet === 'place'}
-            onPress={() => setSheet('place')}
-          />
-        </Field>
+        {timeUnknown ? null : (
+          <Field label={S.placeLabel} error={errors.place}>
+            <FieldSelect
+              testID="place-field"
+              value={place?.name}
+              placeholder={S.placePlaceholder}
+              invalid={Boolean(errors.place)}
+              open={sheet === 'place'}
+              onPress={() => setSheet('place')}
+            />
+          </Field>
+        )}
       </View>
       <View style={styles.bottom}>
         {requestError ? (

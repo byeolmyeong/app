@@ -10,6 +10,7 @@ import { Txt } from '@/components/txt';
 import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
+import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { ChartPicture } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
@@ -27,10 +28,7 @@ const S = strings.reading;
 export default function ReadingScreen() {
   const { ready } = useSession();
   const { loaded, profile, chart } = useBirthProfile();
-  const birth = useMemo(
-    () => (profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
-    [profile],
-  );
+  const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 먼저 기기에 받아 둔 글을 찾는다. 있으면 세션을 기다리지 않고 바로 보여 준다.
   const stored = useStoredReading(birth);
   // 받아 둔 글이 없을 때만, 세션이 준비된 뒤에 서버에 요청한다.

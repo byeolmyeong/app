@@ -9,6 +9,7 @@ import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
+import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReportView } from '@/features/report/report-view';
@@ -26,10 +27,7 @@ export default function ReportScreen() {
   const { ready } = useSession();
   const { loaded, profile } = useBirthProfile();
   // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다.
-  const input = useMemo(
-    () => (ready && profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
-    [ready, profile],
-  );
+  const input = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
   const { state, start } = useReport(input);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 

@@ -187,6 +187,31 @@ describe('api: 개발용 세션과 출생 정보 저장', () => {
     expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
   });
 
+  it('시각 "모름" 이면 POST /charts · PUT /profile 에 placeId 를 null 로 보낸다(결정 020)', async () => {
+    const unknown = { date: '2000-06-15', time: null, placeId: null };
+    const chartFetch = fakeFetch(200, fixtures.chartTimeUnknown);
+    await createApi({ baseUrl: BASE, fetchFn: chartFetch, getToken: () => null }).createChart(unknown);
+    expect(JSON.parse(chartFetch.mock.calls[0][1]?.body as string)).toEqual(unknown);
+    const profileFetch = fakeFetch(200, unknown);
+    const api = createApi({ baseUrl: BASE, fetchFn: profileFetch, getToken: () => 'session-abc' });
+    expect(await api.saveProfile(unknown)).toEqual({ ok: true, data: unknown });
+    expect(JSON.parse(profileFetch.mock.calls[0][1]?.body as string)).toEqual(unknown);
+  });
+
+  it('PUT /profile 의 응답: 시각이 null 이면 placeId 가 null 이거나 없어도 되고, 시각이 있으면 숫자여야 한다', async () => {
+    const unknown = { date: '2000-06-15', time: null, placeId: null };
+    const respond = (body: unknown) =>
+      createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => null }).saveProfile(unknown);
+    expect((await respond({ date: '2000-06-15', time: null })).ok).toBe(true);
+    expect((await respond({ date: '2000-06-15', time: null, placeId: null })).ok).toBe(true);
+    expect(await respond({ date: '2000-06-15', time: '21:00', placeId: null })).toEqual({
+      ok: false,
+      error: 'INVALID',
+      status: 200,
+    });
+    expect((await respond({ date: '2000-06-15', time: '21:00' })).ok).toBe(false);
+  });
+
   it('PUT /profile 의 응답 모양이 다르면 INVALID 다', async () => {
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { date: '2000-06-15' }), getToken: () => null });
     expect(await api.saveProfile(profile)).toEqual({ ok: false, error: 'INVALID', status: 200 });

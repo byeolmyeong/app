@@ -10,8 +10,11 @@ import { fixtures } from '@/lib/fixtures';
 /** `GET /places` 의 한 줄. name 은 "시·도 시·군·구" 꼴이고 세종만 한 낱말이다 */
 export type Place = { id: number; name: string; lat: number; lon: number };
 
-/** `POST /charts`·`PUT /profile` 의 요청. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름") */
-export type BirthInput = { date: string; time: string | null; placeId: number };
+/**
+ * `POST /charts`·`PUT /profile` 의 요청. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름").
+ * placeId 는 time 이 있으면 필수이고, time 이 null 이면 null 이다(서버가 쓰지 않는다. 결정 020).
+ */
+export type BirthInput = { date: string; time: string | null; placeId: number | null };
 
 /** 별자리 안 위치와 황경(0 이상 360 미만). 상승점·중천의 값 */
 export type SignPosition = {
@@ -219,12 +222,12 @@ const isReportRequest = (v: unknown): v is ReportRequest =>
 const isDevSession = (v: unknown): v is DevSession =>
   isObject(v) && typeof v.token === 'string' && v.token.length > 0;
 
-/** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다 */
+/** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
   isObject(v) &&
   typeof v.date === 'string' &&
   (typeof v.time === 'string' || v.time === null) &&
-  typeof v.placeId === 'number';
+  (typeof v.placeId === 'number' || (v.time === null && (v.placeId === null || v.placeId === undefined)));
 
 // ── 호출 ───────────────────────────────────────────────────────────────────
 

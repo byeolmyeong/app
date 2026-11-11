@@ -170,6 +170,16 @@ describe('홈의 내용(아이콘 줄 아래)', () => {
     expect(await screen.findByText(M.readingCta)).toBeTruthy();
   });
 
+  it('시각 "모름" 이라 곳이 없는 출생 정보로도 홈을 그리고, 그 출생 정보로 받아 둔 풀이를 찾는다', async () => {
+    await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    await AsyncStorage.setItem(
+      READING_STORAGE_KEY,
+      JSON.stringify({ key: JSON.stringify(['2000-06-15', null, null]), reading: fixtures.reading }),
+    );
+    await render(<HomeScreen />);
+    expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
+  });
+
   it('나를 이루는 세 가지(중심 · 마음 · 첫인상)를 보여 준다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
@@ -187,6 +197,13 @@ describe('마이(/my)', () => {
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true]);
     await fireEvent.press(screen.getByText(strings.my.editBirth));
     expect(router.push).toHaveBeenCalledWith('/birth');
+  });
+
+  it('시각 "모름" 이라 곳이 없는 출생 정보는 날짜와 "태어난 시각 모름" 만 보여 준다(결정 020)', async () => {
+    await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    await render(<MyScreen />);
+    expect(await screen.findByText('2000. 6. 15. · 태어난 시각 모름')).toBeTruthy();
+    expect(screen.getByText(strings.my.editBirth)).toBeTruthy();
   });
 });
 

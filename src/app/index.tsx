@@ -10,6 +10,7 @@ import { Txt } from '@/components/txt';
 import { Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { BirthForm } from '@/features/chart/birth-form';
+import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartPicture } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
@@ -26,10 +27,7 @@ import { useStoredReading } from '@/features/reading/use-reading';
 export default function HomeScreen() {
   const { loaded, profile, chart, save } = useBirthProfile();
   // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
-  const input = useMemo(
-    () => (profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
-    [profile],
-  );
+  const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   const { reading } = useStoredReading(input);
   const nav = <NavBar left={<ChartMark />} />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;

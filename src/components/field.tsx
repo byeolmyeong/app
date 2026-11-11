@@ -1,5 +1,15 @@
-import { useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps, type TextStyle } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import {
+  Animated,
+  Easing,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  type TextInputProps,
+  type TextStyle,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
@@ -41,7 +51,13 @@ export function Field({ label, hint, error, children }: FieldProps) {
 }
 
 /** 치는 입력칸. 회색으로 채운 높이 56 칸이고, 포커스면 초록 테두리, 틀렸으면 오류 테두리. */
-export function FieldInput({ invalid = false, style, onFocus, onBlur, ...rest }: TextInputProps & { invalid?: boolean }) {
+export function FieldInput({
+  invalid = false,
+  style,
+  onFocus,
+  onBlur,
+  ...rest
+}: TextInputProps & { invalid?: boolean }) {
   const [focused, setFocused] = useState(false);
   return (
     <View style={[styles.box, focused && styles.focused, invalid && styles.invalid]}>
@@ -61,6 +77,9 @@ export function FieldInput({ invalid = false, style, onFocus, onBlur, ...rest }:
     </View>
   );
 }
+
+/** 고르는 칸의 화살표가 도는 시간 */
+const ARROW_TURN_MS = 200;
 
 export type FieldSelectProps = {
   /** 고른 값. 없으면 placeholder 를 흐리게 보여 준다 */
@@ -84,6 +103,18 @@ export function FieldSelect({
   open = false,
   testID,
 }: FieldSelectProps) {
+  // 열리면 화살표가 반 바퀴 돌아 위를 향하고, 닫히면 되돌아온다.
+  const [turn] = useState(() => new Animated.Value(open ? 1 : 0));
+  useEffect(() => {
+    Animated.timing(turn, {
+      toValue: open ? 1 : 0,
+      duration: ARROW_TURN_MS,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [open, turn]);
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+
   return (
     <Pressable
       testID={testID}
@@ -91,19 +122,22 @@ export function FieldSelect({
       accessibilityState={{ disabled, expanded: open }}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.box, styles.select, open && styles.focused, invalid && styles.invalid]}>
+      style={[styles.box, styles.select, open && styles.focused, invalid && styles.invalid]}
+    >
       <Txt variant="body" color={disabled ? 'muted' : value ? 'ink' : 'hint'} style={value ? styles.value : undefined}>
         {value ?? placeholder}
       </Txt>
-      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-        <Path
-          d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}
-          stroke={disabled ? Colors.muted : Colors.hint}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
+      <Animated.View style={{ transform: [{ rotate }] }}>
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M6 9l6 6 6-6"
+            stroke={disabled ? Colors.muted : Colors.hint}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </Animated.View>
     </Pressable>
   );
 }

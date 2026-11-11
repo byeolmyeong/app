@@ -261,7 +261,7 @@ describe('차트', () => {
     expect(await screen.findByText(strings.chart.keyAsc)).toBeTruthy();
     expect(screen.getByText(strings.chart.keySun)).toBeTruthy();
     expect(screen.getByText(strings.chart.keyMoon)).toBeTruthy();
-    expect(screen.getByText(strings.signs.CAPRICORN)).toBeTruthy();
+    expect(screen.getByText(strings.signs.CAPRICORN + strings.chart.signSuffix)).toBeTruthy();
     expect(screen.getAllByTestId('wheel-house-line')).toHaveLength(12);
     expect(screen.getAllByTestId('wheel-body-dot')).toHaveLength(10);
     // 숫자 표는 "자세히" 로 옮기고, 이 화면에는 쉬운 말 설명을 바로 적는다

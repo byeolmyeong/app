@@ -1,20 +1,22 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
-import { Spacing } from '@/constants/theme';
+import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
+import { ChartPicture } from '@/features/chart/ChartWheel';
+import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReadingView } from '@/features/reading/reading-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
-import type { Reading } from '@/lib/api';
+import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
 
@@ -24,7 +26,7 @@ const S = strings.reading;
  */
 export default function ReadingScreen() {
   const { ready } = useSession();
-  const { loaded, profile } = useBirthProfile();
+  const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(
     () => (profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
     [profile],
@@ -45,7 +47,7 @@ export default function ReadingScreen() {
   if (stored.reading)
     return (
       <Screen nav={nav}>
-        <ReadingBody reading={stored.reading} />
+        <ReadingBody reading={stored.reading} chart={chart} />
       </Screen>
     );
 
@@ -78,15 +80,22 @@ export default function ReadingScreen() {
 
   return (
     <Screen nav={nav}>
-      <ReadingBody reading={state.reading} />
+      <ReadingBody reading={state.reading} chart={chart} />
     </Screen>
   );
 }
 
-/** 글과 그 아래의 "내 차트 보기" · 안내 문구. */
-function ReadingBody({ reading }: { reading: Reading }) {
+/** 그 사람의 하늘 그림, 글, 그 아래의 "내 차트 보기" · 안내 문구. */
+function ReadingBody({ reading, chart }: { reading: Reading; chart: Chart | null }) {
   return (
     <>
+      {chart ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/chart')} style={styles.picture}>
+          <ChartPicture chart={chart} size={Sizes.readingPicture} />
+          {/* 그림만으로는 무슨 자리인지 알 수 없으니 글로 함께 적는다 */}
+          <KeyThree chart={chart} bare />
+        </Pressable>
+      ) : null}
       <ReadingView reading={reading} />
       <View style={styles.footer}>
         <TextLink label={S.seeChart} onPress={() => router.push('/chart')} />
@@ -99,6 +108,14 @@ function ReadingBody({ reading }: { reading: Reading }) {
 }
 
 const styles = StyleSheet.create({
+  picture: {
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.lg,
+    marginTop: Spacing.xs,
+    backgroundColor: Colors.fill,
+    borderRadius: CardRadius,
+  },
   status: { gap: Spacing.md, paddingTop: Spacing.lg },
   footer: { gap: Spacing.lg, paddingTop: Spacing.lg },
 });

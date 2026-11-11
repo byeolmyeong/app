@@ -10,6 +10,50 @@ const label = (map: Record<string, string>, key: string) => map[key] ?? key;
 
 export type ChartWheelProps = { chart: Chart };
 
+export type ChartPictureProps = {
+  chart: Chart;
+  /** 그림의 한 변 길이 */
+  size: number;
+};
+
+/**
+ * 차트를 그림으로만 보여 준다(풀이 글 머리, 홈 카드). 글자·번호·눈금 없이 고리와 천체 점, 점을 잇는 선만 그린다.
+ * 사람마다 점의 자리와 선이 달라 그 사람만의 그림이 된다. 태양은 주색으로 크게, 달은 조금 크게 그린다.
+ * 읽는 법은 차트 화면([ChartWheel])에 있다.
+ */
+export function ChartPicture({ chart, size }: ChartPictureProps) {
+  const w = wheelLayout(chart);
+  const radius = (body: string) => w.dotRadius * (body === 'SUN' ? 2.6 : body === 'MOON' ? 1.9 : 1.3);
+  return (
+    <View
+      testID="chart-picture"
+      style={{ width: size, height: size }}
+      accessibilityRole="image"
+      accessibilityLabel={strings.chart.wheelLabel}>
+      <Svg width="100%" height="100%" viewBox={`0 0 ${w.size} ${w.size}`}>
+        <Circle cx={w.center} cy={w.center} r={w.rOuter} fill="none" stroke={Colors.hair} strokeWidth={1.2} />
+        <Circle cx={w.center} cy={w.center} r={w.rSign} fill="none" stroke={Colors.hair} strokeWidth={1.2} />
+        {w.signs.map((s) => (
+          <Line key={`sl${s.sign}`} {...s.line} stroke={Colors.hair} strokeWidth={1.2} />
+        ))}
+        {w.aspectLines.map(({ dashed, ...l }, i) => (
+          <Line key={`a${i}`} {...l} stroke={dashed ? Colors.muted : Colors.primary} strokeWidth={1.2} />
+        ))}
+        {w.bodies.map((b) => (
+          <Circle
+            key={`d${b.body}`}
+            testID="wheel-body-dot"
+            cx={b.dot.x}
+            cy={b.dot.y}
+            r={radius(b.body)}
+            fill={b.body === 'SUN' ? Colors.primary : Colors.ink}
+          />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
 /**
  * 출생 차트 휠. 서버가 준 `Chart` 만 그린다.
  * 별자리 고리 · 눈금 · 하우스 선과 번호 · 각도 선(조화 실선, 긴장 점선) · 천체 점과 이름.

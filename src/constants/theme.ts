@@ -109,6 +109,9 @@ export const Sizes = {
   /** 화면 머리 양옆 칸의 너비 */
   navSide: 48,
   checkbox: 24,
+  /** 그 사람의 하늘 그림: 풀이 글 머리 · 홈 카드 */
+  readingPicture: 200,
+  homePicture: 64,
   /** 차트 휠의 최대 지름 */
   wheel: 300,
   /** 웹 넓은 화면에서 가운데에 보이는 앱 화면의 폭 */

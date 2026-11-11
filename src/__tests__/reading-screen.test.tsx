@@ -78,10 +78,11 @@ describe('요약 해석 화면', () => {
     expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
-  it('누를 수 있는 것은 뒤로 가기와 "내 차트 보기" 뿐이다(다시 생성·공유·리포트 없음)', async () => {
+  it('누를 수 있는 것은 뒤로 가기, 차트로 가는 그림과 "내 차트 보기" 뿐이다(다시 생성·공유·리포트 없음)', async () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
-    expect(screen.queryAllByRole('button')).toHaveLength(1);
+    // 버튼은 뒤로 가기와 하늘 그림(차트로 간다) 둘이다
+    expect(screen.queryAllByRole('button')).toHaveLength(2);
     expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
     expect(screen.queryAllByRole('link')).toHaveLength(1);
   });
@@ -168,5 +169,22 @@ describe('요약 해석 화면', () => {
     // 받아 둔 글이 없다는 것을 확인한 뒤에야 "짓는 중" 이 나온다
     expect(await screen.findByText(R.generating)).toBeTruthy();
     await view.unmount();
+  });
+  it('글 위에 그 사람의 하늘 그림을 보여 준다(글자와 번호 없이 점과 선만)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(screen.getByTestId('chart-picture')).toBeTruthy();
+    expect(screen.getAllByTestId('wheel-body-dot')).toHaveLength(10);
+    // 그림에는 하우스 번호나 천체 이름 같은 글자가 없다
+    expect(screen.queryAllByTestId('wheel-house-number')).toHaveLength(0);
+    expect(screen.queryByText(strings.bodiesShort.SUN)).toBeNull();
+    // 그림만으로는 무슨 자리인지 알 수 없으니 바로 아래에 글로 적는다
+    expect(screen.getByText(strings.chart.keySun)).toBeTruthy();
+    expect(screen.getByText(strings.signs.GEMINI + strings.chart.signSuffix)).toBeTruthy();
+    // 누르면 차트로 간다
+    await fireEvent.press(screen.getByTestId('chart-picture'));
+    expect(router.push).toHaveBeenCalledWith('/chart');
   });
 });

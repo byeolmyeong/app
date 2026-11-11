@@ -7,9 +7,10 @@ import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { SectionHead } from '@/components/section-head';
 import { Txt } from '@/components/txt';
-import { Spacing } from '@/constants/theme';
+import { Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { BirthForm } from '@/features/chart/birth-form';
+import { ChartPicture } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { HomeCategories } from '@/features/home/home-categories';
@@ -36,7 +37,11 @@ export default function HomeScreen() {
     return (
       <Screen nav={nav} footer={<MainTabs active="home" />}>
         <HomeCategories onOpen={(path) => router.push(path)} />
-        <HomeReadingCard headline={reading?.headline ?? null} onOpen={() => router.push('/reading')} />
+        <HomeReadingCard
+          headline={reading?.headline ?? null}
+          picture={<ChartPicture chart={chart} size={Sizes.homePicture} />}
+          onOpen={() => router.push('/reading')}
+        />
         <SectionHead title={strings.chart.keyThreeHeading} />
         <KeyThree chart={chart} />
       </Screen>

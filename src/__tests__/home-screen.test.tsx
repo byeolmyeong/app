@@ -138,6 +138,8 @@ describe('홈의 내용(아이콘 줄 아래)', () => {
     await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key, reading: fixtures.reading }));
     await render(<HomeScreen />);
     expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
+    // 카드에 그 사람의 하늘 그림이 작게 들어간다
+    expect(screen.getByTestId('chart-picture')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('home-reading'));
     expect(router.push).toHaveBeenCalledWith('/reading');
   });

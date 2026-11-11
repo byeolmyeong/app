@@ -138,3 +138,106 @@ describe('fixtures: 서버 계약의 모양', () => {
     expect(Object.keys(fixtures.reading.sections[0]).sort()).toEqual(['basis', 'body', 'title']);
   });
 });
+
+/** 부르는 순서대로 다른 응답을 주는 가짜 fetch */
+function fakeFetchSeq(...responses: [status: number, body?: unknown][]) {
+  let i = 0;
+  return jest.fn(async (_url: string, _init?: RequestInit) => {
+    const [status, body] = responses[Math.min(i++, responses.length - 1)];
+    return { ok: status >= 200 && status < 300, status, json: async () => body };
+  }) as unknown as jest.MockedFunction<typeof fetch>;
+}
+
+describe('api: 개발용 세션과 출생 정보 저장', () => {
+  const profile = { date: '2000-06-15', time: null, placeId: 1841277 };
+
+  it('POST /auth/dev 는 본문도 세션 헤더도 없이 부르고 토큰을 받는다', async () => {
+    const fetchFn = fakeFetch(200, { token: 'new-session' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'old-session' });
+    expect(await api.createDevSession()).toEqual({ ok: true, data: { token: 'new-session' } });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/auth/dev`);
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBeUndefined();
+    expect(headersOf(fetchFn)).not.toHaveProperty('Authorization');
+  });
+
+  it('토큰이 빈 글자이거나 없으면 INVALID, 서버가 개발용 로그인을 꺼 두었으면(404) 서버 오류 결과다', async () => {
+    const empty = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { token: '' }), getToken: () => null });
+    expect(await empty.createDevSession()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    const off = createApi({ baseUrl: BASE, fetchFn: fakeFetch(404), getToken: () => null });
+    expect(await off.createDevSession()).toEqual({ ok: false, error: 'SERVER', status: 404 });
+  });
+
+  it('GET /places 에는 세션 헤더를 붙이지 않는다', async () => {
+    const fetchFn = fakeFetch(200, fixtures.places);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    await api.listPlaces();
+    expect(headersOf(fetchFn)).not.toHaveProperty('Authorization');
+  });
+
+  it('PUT /profile 에 { date, time, placeId } 를 세션 헤더와 함께 보낸다', async () => {
+    const fetchFn = fakeFetch(200, profile);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.saveProfile(profile)).toEqual({ ok: true, data: profile });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/profile`);
+    expect(init?.method).toBe('PUT');
+    expect(JSON.parse(init?.body as string)).toEqual(profile);
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('PUT /profile 의 응답 모양이 다르면 INVALID 다', async () => {
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { date: '2000-06-15' }), getToken: () => null });
+    expect(await api.saveProfile(profile)).toEqual({ ok: false, error: 'INVALID', status: 200 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 가짜 토큰을 주고 출생 정보 저장도 성공한다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    const session = await api.createDevSession();
+    expect(session.ok && session.data.token.length).toBeGreaterThan(0);
+    expect(await api.saveProfile(profile)).toEqual({ ok: true, data: profile });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 401 이면 세션을 한 번만 다시 받는다', () => {
+  it('세션을 다시 받으면 같은 호출을 새 토큰으로 한 번 더 한다', async () => {
+    let token = 'expired';
+    const fetchFn = fakeFetchSeq([401, { error: 'UNAUTHORIZED' }], [200, fixtures.chart]);
+    const refreshSession = jest.fn(async () => {
+      token = 'fresh';
+      return true;
+    });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => token, refreshSession });
+    expect(await api.createChart(input)).toEqual({ ok: true, data: fixtures.chart });
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    const headers = fetchFn.mock.calls.map((c) => (c[1]?.headers as Record<string, string>).Authorization);
+    expect(headers).toEqual(['Bearer expired', 'Bearer fresh']);
+  });
+
+  it('다시 받은 뒤에도 401 이면 거기서 멈춘다', async () => {
+    const fetchFn = fakeFetch(401);
+    const refreshSession = jest.fn(async () => true);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'x', refreshSession });
+    expect(await api.createChart(input)).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('세션을 다시 받지 못하면 다시 부르지 않는다', async () => {
+    const fetchFn = fakeFetch(401);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'x', refreshSession: async () => false });
+    expect(await api.createChart(input)).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('POST /auth/dev 자체의 401 로는 세션을 다시 받지 않는다', async () => {
+    const refreshSession = jest.fn(async () => true);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => null, refreshSession });
+    expect(await api.createDevSession()).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
+});

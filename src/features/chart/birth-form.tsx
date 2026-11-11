@@ -10,6 +10,7 @@ import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { getSession } from '@/features/auth/use-session';
 import {
   formatDateTyping,
   formatTimeDisplay,
@@ -134,9 +135,14 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     }
     setSubmitting(true);
     const r = await api.createChart(v.input);
+    // 세션이 있으면 서버에도 출생 정보를 저장한다. 요약 해석은 서버가 저장된 값으로 쓴다.
+    // 저장하지 못하면 기기에도 두지 않는다(기기와 서버의 출생 정보가 달라지지 않게).
+    const saved = r.ok && getSession().token ? await api.saveProfile(v.input) : null;
     setSubmitting(false);
-    if (!r.ok) {
-      setRequestError(r.error === 'NETWORK' || r.error === 'LIMIT' ? S.requestErrors[r.error] : S.requestErrors.OTHER);
+    const failed = !r.ok ? r : saved && !saved.ok ? saved : null;
+    if (!r.ok || failed) {
+      const kind = failed?.error;
+      setRequestError(kind === 'NETWORK' || kind === 'LIMIT' ? S.requestErrors[kind] : S.requestErrors.OTHER);
       return;
     }
     await save({ profile: v.profile, chart: r.data });

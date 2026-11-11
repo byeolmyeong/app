@@ -57,6 +57,9 @@ export type Chart = {
   aspects: Aspect[];
 };
 
+/** `POST /auth/dev` 의 응답. 개발용 세션 토큰 */
+export type DevSession = { token: string };
+
 export type Reading = {
   headline: string;
   sections: { title: string; body: string; basis: string[] }[];
@@ -156,25 +159,54 @@ export function isPlaceList(v: unknown): v is Place[] {
   );
 }
 
+const isDevSession = (v: unknown): v is DevSession =>
+  isObject(v) && typeof v.token === 'string' && v.token.length > 0;
+
+/** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다 */
+const isBirthInput = (v: unknown): v is BirthInput =>
+  isObject(v) &&
+  typeof v.date === 'string' &&
+  (typeof v.time === 'string' || v.time === null) &&
+  typeof v.placeId === 'number';
+
 // ── 호출 ───────────────────────────────────────────────────────────────────
 
 export type ApiConfig = {
   baseUrl: string;
-  /** 세션 토큰을 돌려준다. 없으면 null. 보관은 features/auth 가 한다(태스크 4) */
+  /** 세션 토큰을 돌려준다. 없으면 null. 보관은 features/auth 가 한다 */
   getToken: () => string | null;
+  /** 401 을 받았을 때 세션을 다시 받는다. 새 세션이 생겼으면 true. 없으면 다시 받지 않는다 */
+  refreshSession?: () => Promise<boolean>;
   fetchFn?: typeof fetch;
   /** 개발용 가짜 서버. 켜면 서버를 부르지 않고 fixtures 로 답한다 */
   useFixtures?: boolean;
 };
 
-type RequestOptions<T> = { body?: unknown; validate: (v: unknown) => v is T };
+type RequestOptions<T> = {
+  body?: unknown;
+  validate: (v: unknown) => v is T;
+  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`) */
+  auth?: boolean;
+};
+
+/** 가짜 서버가 주는 세션 토큰 */
+const FIXTURE_TOKEN = 'fixture-session';
 
 export function createApi(config: ApiConfig) {
-  /** 다시 시도하지 않는다. 다시 시도는 화면에서 사용자가 누를 때만 한다. */
-  async function request<T>(method: 'GET' | 'POST', path: string, options: RequestOptions<T>): Promise<ApiResult<T>> {
+  /**
+   * 실패한 호출을 스스로 다시 하지 않는다. 다시 시도는 화면에서 사용자가 누를 때만 한다.
+   * 예외 하나: 401 이면 세션을 한 번 다시 받고 같은 호출을 한 번만 더 한다(retried 가 그 표시다).
+   */
+  async function request<T>(
+    method: 'GET' | 'POST' | 'PUT',
+    path: string,
+    options: RequestOptions<T>,
+    retried = false,
+  ): Promise<ApiResult<T>> {
+    const auth = options.auth !== false;
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
-    const token = config.getToken();
+    const token = auth ? config.getToken() : null;
     if (token) headers.Authorization = `Bearer ${token}`;
 
     let response: Response;
@@ -189,7 +221,11 @@ export function createApi(config: ApiConfig) {
     }
 
     const { status } = response;
-    if (status === 401) return { ok: false, error: 'LOGIN_REQUIRED', status };
+    if (status === 401) {
+      if (auth && !retried && config.refreshSession && (await config.refreshSession()))
+        return request(method, path, options, true);
+      return { ok: false, error: 'LOGIN_REQUIRED', status };
+    }
     if (status === 429) return { ok: false, error: 'LIMIT', status };
     if (!response.ok) return { ok: false, error: 'SERVER', status };
 
@@ -206,10 +242,10 @@ export function createApi(config: ApiConfig) {
     /** `GET /places` 국내 시·군·구 전체 목록. 화면이 시·도별로 묶어 고르게 한다 */
     async listPlaces(): Promise<ApiResult<Place[]>> {
       if (config.useFixtures) return { ok: true, data: fixtures.places };
-      return request('GET', '/places', { validate: isPlaceList });
+      return request('GET', '/places', { validate: isPlaceList, auth: false });
     },
 
-    /** `POST /charts` 로그인 없이 차트를 받는다 */
+    /** `POST /charts` 출생 정보로 차트를 받는다 */
     async createChart(input: BirthInput): Promise<ApiResult<Chart>> {
       if (config.useFixtures)
         return {
@@ -218,21 +254,40 @@ export function createApi(config: ApiConfig) {
         };
       return request('POST', '/charts', { body: input, validate: isChart });
     },
+
+    /** `POST /auth/dev` 개발용 세션 토큰을 받는다. 서버가 개발용 로그인을 꺼 두었으면 404 다 */
+    async createDevSession(): Promise<ApiResult<DevSession>> {
+      if (config.useFixtures) return { ok: true, data: { token: FIXTURE_TOKEN } };
+      return request('POST', '/auth/dev', { validate: isDevSession, auth: false });
+    },
+
+    /** `PUT /profile` 출생 정보를 서버에 저장한다. 요약 해석은 서버가 이 값으로 쓴다 */
+    async saveProfile(input: BirthInput): Promise<ApiResult<BirthInput>> {
+      if (config.useFixtures) return { ok: true, data: input };
+      return request('PUT', '/profile', { body: input, validate: isBirthInput });
+    },
   };
 }
 
 export type Api = ReturnType<typeof createApi>;
 
 let sessionToken: string | null = null;
+let sessionRefresher: (() => Promise<boolean>) | null = null;
 
-/** 로그인·로그아웃 때 features/auth 가 부른다(태스크 4). */
+/** 세션이 생기거나 사라질 때 features/auth 가 부른다. */
 export function setSessionToken(token: string | null) {
   sessionToken = token;
+}
+
+/** 401 을 받았을 때 세션을 다시 받는 방법. features/auth 가 한 번 등록한다. */
+export function setSessionRefresher(refresher: (() => Promise<boolean>) | null) {
+  sessionRefresher = refresher;
 }
 
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
   getToken: () => sessionToken,
+  refreshSession: async () => (sessionRefresher ? sessionRefresher() : false),
   useFixtures: process.env.EXPO_PUBLIC_USE_FIXTURES === '1',
 });

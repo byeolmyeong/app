@@ -22,7 +22,7 @@ function isBirthProfile(v: unknown): v is BirthProfile {
     (typeof p.time === 'string' || p.time === null) &&
     typeof place === 'object' &&
     place !== null &&
-    typeof place.id === 'string' &&
+    typeof place.id === 'number' &&
     typeof place.name === 'string'
   );
 }

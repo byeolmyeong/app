@@ -22,19 +22,19 @@ jest.mock('@/lib/api', () => ({
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
-const profile = { date: '2000-06-15', time: '21:00', place: { id: 'seoul-mapo', name: '서울 마포구' } };
+const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 const H = strings.home;
 
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockApi.searchPlaces.mockResolvedValue({ ok: true, data: fixtures.places.slice(0, 1) });
+  mockApi.searchPlaces.mockResolvedValue({ ok: true, data: fixtures.places.filter((p) => p.name.includes('마포')) });
   mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
 });
 
 async function fillPlace() {
   await fireEvent.changeText(screen.getByPlaceholderText(H.placePlaceholder), '마포');
-  await fireEvent.press(await screen.findByText('서울 마포구'));
+  await fireEvent.press(await screen.findByText('서울특별시 마포구'));
 }
 
 describe('출생 정보 입력(홈)', () => {
@@ -46,7 +46,7 @@ describe('출생 정보 입력(홈)', () => {
     expect(mockApi.searchPlaces).toHaveBeenCalledWith('마포');
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
-    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 'seoul-mapo' });
+    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 1841277 });
     expect(await loadBirth()).toEqual({ profile, chart: fixtures.chart });
   });
 
@@ -58,7 +58,7 @@ describe('출생 정보 입력(홈)', () => {
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
-    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: 'seoul-mapo' });
+    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: 1841277 });
   });
 
   it('1900년 이전 날짜는 오류를 보여 주고 서버를 부르지 않는다', async () => {
@@ -108,7 +108,7 @@ describe('출생 정보 입력(홈)', () => {
     await render(<HomeScreen />);
     expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();
     expect(screen.getByDisplayValue('21:00')).toBeTruthy();
-    expect(screen.getByDisplayValue('서울 마포구')).toBeTruthy();
+    expect(screen.getByDisplayValue('서울특별시 마포구')).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/chart'));
     expect(mockApi.createChart).not.toHaveBeenCalled();
@@ -126,7 +126,7 @@ describe('차트', () => {
     expect(screen.getAllByTestId('wheel-house-line')).toHaveLength(12);
     expect(screen.getAllByTestId('wheel-body-dot')).toHaveLength(10);
     expect(screen.getAllByTestId('data-table-row')).toHaveLength(2);
-    expect(screen.getByText('24°41′')).toBeTruthy();
+    expect(screen.getByText('24°40′')).toBeTruthy();
   });
 
   it('시각 "모름" 이면 하우스 선 0개이고 상승궁·하우스 번호를 보여 주지 않는다', async () => {
@@ -166,16 +166,16 @@ describe('차트', () => {
 describe('차트 자세히', () => {
   const D = strings.detail;
 
-  it('행성 탭: 행성 10개 + 추가 지점 3개 + 상승점·중천', async () => {
+  it('행성 탭: 행성 10개 + 추가 지점 4개 + 상승점·중천', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<ChartDetailScreen />);
     expect(await screen.findByText(strings.bodies.SUN)).toBeTruthy();
-    expect(screen.getAllByTestId('data-table-row')).toHaveLength(15);
+    expect(screen.getAllByTestId('data-table-row')).toHaveLength(16);
     expect(screen.getByText(strings.bodies.ASC)).toBeTruthy();
     expect(screen.getByText(strings.bodies.MC)).toBeTruthy();
     expect(screen.getByText(strings.bodies.FORTUNE)).toBeTruthy();
     expect(screen.getAllByText(D.retrograde).length).toBeGreaterThanOrEqual(3);
-    expect(screen.getByText('2000. 6. 15. 오후 9:00 · 서울 마포구')).toBeTruthy();
+    expect(screen.getByText('2000. 6. 15. 오후 9:00 · 서울특별시 마포구')).toBeTruthy();
   });
 
   it('하우스 탭은 경계 12줄, 각도 탭은 서버가 준 각도 수만큼의 줄', async () => {

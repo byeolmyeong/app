@@ -1,28 +1,38 @@
-import { toLongitude, wheelLayout } from '@/features/chart/wheel-layout';
+import { wheelLayout } from '@/features/chart/wheel-layout';
 import type { Chart, Position } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+
+const SIGNS = [
+  'ARIES',
+  'TAURUS',
+  'GEMINI',
+  'CANCER',
+  'LEO',
+  'VIRGO',
+  'LIBRA',
+  'SCORPIO',
+  'SAGITTARIUS',
+  'CAPRICORN',
+  'AQUARIUS',
+  'PISCES',
+];
 
 const body = (name: string, sign: string, degree: number, minute = 0): Position => ({
   body: name,
   sign,
   degree,
   minute,
+  longitude: SIGNS.indexOf(sign) * 30 + degree + minute / 60,
   retrograde: false,
 });
-const chartOf = (positions: Position[]): Chart => ({ timeKnown: false, positions, points: [], aspects: [] });
-
-describe('toLongitude', () => {
-  it('서버가 준 별자리·도·분을 휠의 각도(0~360)로 바꾼다', () => {
-    expect(toLongitude({ sign: 'ARIES', degree: 0, minute: 0 })).toBe(0);
-    expect(toLongitude({ sign: 'GEMINI', degree: 24, minute: 41 })).toBeCloseTo(84.683, 2);
-    expect(toLongitude({ sign: 'PISCES', degree: 29, minute: 59 })).toBeCloseTo(359.983, 2);
-  });
-
-  it('모르는 별자리는 null 이다', () => {
-    expect(toLongitude({ sign: 'OPHIUCHUS', degree: 1, minute: 0 })).toBeNull();
-  });
+const chartOf = (positions: Position[]): Chart => ({
+  timeKnown: false,
+  houseSystem: 'PLACIDUS',
+  positions,
+  points: [],
+  aspects: [],
 });
 
 describe('wheelLayout: 시각을 아는 차트', () => {
@@ -82,11 +92,6 @@ describe('wheelLayout: 이름 밀기', () => {
   it('떨어져 있으면 밀지 않는다', () => {
     const layout = wheelLayout(chartOf([body('SUN', 'ARIES', 1), body('MOON', 'LIBRA', 1)]));
     expect(layout.bodies.map((b) => b.lift)).toEqual([0, 0]);
-  });
-
-  it('모르는 별자리의 천체는 그리지 않는다', () => {
-    const layout = wheelLayout(chartOf([body('SUN', 'ARIES', 1), body('MOON', '??', 1)]));
-    expect(layout.bodies.map((b) => b.body)).toEqual(['SUN']);
   });
 });
 

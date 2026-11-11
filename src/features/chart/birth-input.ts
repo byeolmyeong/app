@@ -6,7 +6,7 @@ import { strings } from '@/content/strings';
 import type { BirthInput } from '@/lib/api';
 
 /** 기기에 보관하는 출생 정보. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름") */
-export type BirthProfile = { date: string; time: string | null; place: { id: string; name: string } };
+export type BirthProfile = { date: string; time: string | null; place: { id: number; name: string } };
 
 type Parsed = { ok: true; value: string } | { ok: false; error: string };
 
@@ -43,7 +43,7 @@ export type BirthForm = {
   dateText: string;
   timeText: string;
   timeUnknown: boolean;
-  place: { id: string; name: string } | null;
+  place: { id: number; name: string } | null;
 };
 
 export type BirthFormErrors = { date?: string; time?: string; place?: string };

@@ -1,9 +1,9 @@
 /**
  * 차트 휠의 화면 좌표. 서버가 준 `Chart` 의 값을 어디에 그릴지만 정한다.
- * 별자리·하우스·각도를 여기서 계산하지 않는다(docs/decisions/006-server-side-chart.md).
+ * 별자리·하우스·각도를 여기서 계산하지 않는다(docs/decisions/006-server-side-chart.md). 각도는 서버가 준 `longitude` 를 쓴다.
  * 구조는 시안 docs/design/screens-1.0.0.html 의 wheel() 을 옮겼다.
  */
-import type { Chart, SignPosition } from '@/lib/api';
+import type { Chart } from '@/lib/api';
 
 /** 황도대 순서. 휠에서 별자리 칸이 놓이는 차례다. */
 export const SIGN_ORDER = [
@@ -50,15 +50,6 @@ export type WheelLayout = {
   bodies: { body: string; dot: Pt; label: Pt; lift: number }[];
 };
 
-/**
- * 서버가 준 별자리·도·분을 휠 위의 각도(0~360)로 바꾼다. 그리기 위한 단위 변환이다.
- * 계약의 `Chart` 에 황경이 실리면 이 함수는 그 값을 그대로 쓰도록 바꾼다.
- */
-export function toLongitude(p: SignPosition): number | null {
-  const index = (SIGN_ORDER as readonly string[]).indexOf(p.sign);
-  return index < 0 ? null : index * 30 + p.degree + p.minute / 60;
-}
-
 export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayout {
   const center = size / 2;
   const rOuter = center - 1;
@@ -66,7 +57,7 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
   const rInner = rOuter * 0.5;
   // 시각을 알 때만 상승점을 왼쪽 끝에 둔다. 모르면 양자리 0도가 왼쪽이다.
   const showHouses = chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
-  const asc = (showHouses && chart.angles ? toLongitude(chart.angles.asc) : null) ?? 0;
+  const asc = showHouses && chart.angles ? chart.angles.asc.longitude : 0;
 
   const at = (deg: number, r: number): Pt => {
     const t = ((180 + (deg - asc)) * Math.PI) / 180;
@@ -93,10 +84,9 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
   const houseLines: WheelLayout['houseLines'] = [];
   const houseNumbers: WheelLayout['houseNumbers'] = [];
   if (showHouses && chart.houses) {
-    const cusps = chart.houses.map(toLongitude);
+    const cusps = chart.houses.map((h) => h.longitude);
     cusps.forEach((cusp, i) => {
       const next = cusps[(i + 1) % cusps.length];
-      if (cusp === null || next === null) return;
       const main = i % 3 === 0;
       houseLines.push({ ...line(cusp, main ? 0 : rInner, rSign), main });
       const middle = cusp + ((next - cusp + 360) % 360) / 2;
@@ -105,10 +95,8 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
   }
 
   const longitudes = new Map<string, number>();
-  for (const p of [...chart.positions, ...chart.points]) {
-    const lon = toLongitude(p);
-    if (lon !== null) longitudes.set(p.body, lon);
-  }
+  for (const p of chart.positions) longitudes.set(p.body, p.longitude);
+  for (const p of chart.points) longitudes.set(p.point, p.longitude);
 
   const aspectLines: WheelLayout['aspectLines'] = [];
   for (const aspect of chart.aspects) {
@@ -124,8 +112,7 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
 
   const rDot = rSign - size * 0.045;
   const sorted = chart.positions
-    .map((p) => ({ body: p.body, lon: toLongitude(p) }))
-    .filter((p): p is { body: string; lon: number } => p.lon !== null)
+    .map((p) => ({ body: p.body, lon: p.longitude }))
     .sort((p, q) => p.lon - q.lon);
   // 가장 넓게 빈 곳 다음에서 세기 시작해야 0도를 사이에 둔 이웃도 이어서 밀린다.
   let start = 0;

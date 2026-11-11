@@ -8,7 +8,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-const profile = { date: '2000-06-15', time: '21:00', place: { id: 'seoul-mapo', name: '서울 마포구' } };
+const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 
 beforeEach(() => AsyncStorage.clear());
 

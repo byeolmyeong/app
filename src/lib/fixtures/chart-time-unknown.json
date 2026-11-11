@@ -1,60 +1,70 @@
 {
   "timeKnown": false,
+  "houseSystem": "PLACIDUS",
+  "moonSignMayChange": true,
   "positions": [
     {
       "body": "SUN",
       "sign": "GEMINI",
       "degree": 24,
-      "minute": 41,
+      "minute": 19,
+      "longitude": 84.32,
       "retrograde": false
     },
     {
       "body": "MOON",
       "sign": "SAGITTARIUS",
-      "degree": 8,
-      "minute": 54,
+      "degree": 4,
+      "minute": 23,
+      "longitude": 244.38,
       "retrograde": false
     },
     {
       "body": "MERCURY",
       "sign": "CANCER",
       "degree": 17,
-      "minute": 38,
+      "minute": 24,
+      "longitude": 107.41,
       "retrograde": false
     },
     {
       "body": "VENUS",
       "sign": "GEMINI",
       "degree": 25,
-      "minute": 47,
+      "minute": 19,
+      "longitude": 85.32,
       "retrograde": false
     },
     {
       "body": "MARS",
       "sign": "GEMINI",
       "degree": 29,
-      "minute": 19,
+      "minute": 3,
+      "longitude": 89.06,
       "retrograde": false
     },
     {
       "body": "JUPITER",
       "sign": "TAURUS",
       "degree": 26,
-      "minute": 48,
+      "minute": 42,
+      "longitude": 56.71,
       "retrograde": false
     },
     {
       "body": "SATURN",
       "sign": "TAURUS",
       "degree": 24,
-      "minute": 54,
+      "minute": 51,
+      "longitude": 54.86,
       "retrograde": false
     },
     {
       "body": "URANUS",
       "sign": "AQUARIUS",
       "degree": 20,
-      "minute": 39,
+      "minute": 38,
+      "longitude": 320.64,
       "retrograde": true
     },
     {
@@ -62,6 +72,7 @@
       "sign": "AQUARIUS",
       "degree": 6,
       "minute": 12,
+      "longitude": 306.21,
       "retrograde": true
     },
     {
@@ -69,23 +80,24 @@
       "sign": "SAGITTARIUS",
       "degree": 11,
       "minute": 10,
+      "longitude": 251.18,
       "retrograde": true
     }
   ],
   "points": [
     {
-      "body": "NORTH_NODE",
+      "point": "NORTH_NODE",
       "sign": "CANCER",
       "degree": 26,
-      "minute": 2,
-      "retrograde": true
+      "minute": 16,
+      "longitude": 116.26
     },
     {
-      "body": "LILITH",
-      "sign": "SAGITTARIUS",
-      "degree": 19,
-      "minute": 44,
-      "retrograde": false
+      "point": "LILITH",
+      "sign": "CAPRICORN",
+      "degree": 11,
+      "minute": 51,
+      "longitude": 281.85
     }
   ],
   "aspects": [
@@ -93,57 +105,85 @@
       "a": "SUN",
       "b": "VENUS",
       "type": "CONJUNCTION",
-      "orb": 1.11,
+      "orb": 1.01,
       "applying": false
     },
     {
       "a": "SUN",
       "b": "MARS",
       "type": "CONJUNCTION",
-      "orb": 4.63,
+      "orb": 4.74,
       "applying": true
     },
     {
       "a": "SUN",
       "b": "URANUS",
       "type": "TRINE",
-      "orb": 4.03,
+      "orb": 3.67,
+      "applying": false
+    },
+    {
+      "a": "MOON",
+      "b": "JUPITER",
+      "type": "OPPOSITION",
+      "orb": 7.67,
       "applying": false
     },
     {
       "a": "MOON",
       "b": "NEPTUNE",
       "type": "SEXTILE",
-      "orb": 2.7,
-      "applying": false
+      "orb": 1.83,
+      "applying": true
     },
     {
       "a": "MOON",
       "b": "PLUTO",
       "type": "CONJUNCTION",
-      "orb": 2.27,
+      "orb": 6.8,
       "applying": true
     },
     {
       "a": "VENUS",
       "b": "MARS",
       "type": "CONJUNCTION",
-      "orb": 3.52,
+      "orb": 3.73,
+      "applying": true
+    },
+    {
+      "a": "VENUS",
+      "b": "URANUS",
+      "type": "TRINE",
+      "orb": 4.68,
       "applying": false
     },
     {
       "a": "JUPITER",
       "b": "SATURN",
       "type": "CONJUNCTION",
-      "orb": 1.89,
+      "orb": 1.85,
+      "applying": false
+    },
+    {
+      "a": "JUPITER",
+      "b": "URANUS",
+      "type": "SQUARE",
+      "orb": 6.06,
       "applying": false
     },
     {
       "a": "SATURN",
       "b": "URANUS",
       "type": "SQUARE",
-      "orb": 4.26,
+      "orb": 4.21,
       "applying": false
+    },
+    {
+      "a": "NEPTUNE",
+      "b": "PLUTO",
+      "type": "SEXTILE",
+      "orb": 4.97,
+      "applying": true
     }
   ]
 }

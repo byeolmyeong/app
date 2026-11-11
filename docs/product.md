@@ -33,11 +33,11 @@ last_reviewed: 2026-11-11
 - 벤치마킹: 해석 말투와 깊이는 The Pattern, 공유 구조는 Co-Star, 한국 결제 구조와 가격대는 포스텔러.
 
 ## 버전별 범위
-- 1.0.0 — 무료 핵심 기능(횟수 제한 없음, 결과를 보기 전 15초 광고): 스플래시 직후 구글·애플·카카오 로그인(만 14세 이상), 출생 정보 입력, 차트, 요약 해석, 심층 리포트(외행성 통과 구간을 포함한 변곡점), 궁합(나 기준 점수·랭킹), 스토리 공유 카드. 웹과 스토어 앱 동시 출시. 기능 명세: docs/release-1.0.0.md
+- 1.0.0 — 무료 핵심 기능(횟수 제한 없음, 광고 없음): 스플래시 직후 구글·애플·카카오 로그인(만 14세 이상), 출생 정보 입력, 차트, 요약 해석, 심층 리포트(외행성 통과 구간을 포함한 변곡점), 궁합(나 기준 점수·랭킹), 스토리 공유 카드. 웹과 스토어 앱 동시 출시. 기능 명세: docs/release-1.0.0.md
   - 방향성 제시(F10)는 1.0.0 에 전체 무료로 주고 추후 같은 기능을 유료로 바꾼다. 심층 리포트와 궁합 리포트는 계속 무료다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
 - 1.1.0 — 결제와 친구창:
   - 인앱결제: 1.1.0 의 유료 상품은 방향성 제시와 990원 광고 제거다. 심층 리포트와 궁합 리포트는 유료로 바꾸지 않는다. [확인 필요] 방향성 제시를 유료로 바꾸는 시점과 가격. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
-  - 방향성 제시 유료화(1.0.0 과 같은 기능, 건당 구매), 990원 광고 제거 상품. 광고 자체는 1.0.0 부터 나온다. 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-rewarded-ad-before-results-1.0.0.md
+  - 방향성 제시 유료화(1.0.0 과 같은 기능, 건당 구매), 990원 광고 제거 상품. 광고는 1.1.0 부터 결과를 보기 전에 15초 나오고, 같은 결과를 다시 열 때는 나오지 않는다. 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-ad-before-results-15s.md
   - 친구창: 친구 추가, 채팅, 같이 볼 수 있는 방. 결정: docs/decisions/007-friends-chat-shared-room.md
   - 투두·조각·레벨업: AI 가 방향성 제시에서 뽑은 투두를 완료하면 조각을 받고, 조각이 쌓이면 레벨이 오른다. 대표 문구 "조각을 모은다". 1.0.0 에서 옮겨 왔다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
 - 1.2.0 이후 — 오늘의 운세·매일·매주 바뀌는 트랜싯·푸시 알림. 외행성 통과 구간은 1.0.0 에 넣었다(결정: docs/decisions/012-transit-intervals-in-1.0.0.md).
@@ -48,7 +48,7 @@ last_reviewed: 2026-11-11
 - 코드 하나(Expo)로 웹·iOS·Android 를 만든다. 결정: docs/decisions/001-expo-single-codebase.md
 - 서버는 Spring Boot 로 직접 만든다. 결정: docs/decisions/004-spring-backend.md
 - 결제는 1.1.0 에서 붙인다. 스토어 인앱결제만 쓴다. 웹에서는 결제하지 않고 앱으로 유도한다. 결정: docs/decisions/002-iap-only-per-report.md
-- 상품은 건당(소모성) 방향성 제시와, 한 번 사면 계속 가는(비소모성) 990원 광고 제거다. 광고는 1.0.0 부터 결과를 보기 전에 15초 나온다. 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-rewarded-ad-before-results-1.0.0.md
+- 상품은 건당(소모성) 방향성 제시와, 한 번 사면 계속 가는(비소모성) 990원 광고 제거다. 광고는 1.1.0 부터 결과를 보기 전에 15초 나온다(1.0.0 에는 광고가 없다). 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-ad-before-results-15s.md
 - 로그인은 구글·애플·카카오이고, 스플래시 직후 요구하며 만 14세 이상인지 확인한다. 결정: docs/decisions/009-signup-first-kakao-age14.md (005 를 대체)
 - 가격: 광고 제거 990원. [확인 필요] 방향성 제시의 건당 가격. 포스텔러 가격대를 확인한 뒤 정한다.
 
@@ -58,7 +58,7 @@ last_reviewed: 2026-11-11
 - 요약 해석을 끝까지 읽은 비율: 50% 이상.
 - 가입한 사용자 중 요약 해석까지 본 비율: 40% 이상. [확인 필요] 목표치는 추정이며 근거 데이터가 없다.
 - 공유 카드(요약 해석·궁합 점수·랭킹·다음 변곡점)를 올린 사용자 비율: [확인 필요] 목표치.
-- 광고 시청 완료율과 광고 앞 이탈률(특히 첫 요약 해석 앞): [확인 필요] 목표치. 결정: docs/decisions/015-rewarded-ad-before-results-1.0.0.md
+- (1.1.0 이후) 광고 시청 완료율과 광고 앞 이탈률(특히 첫 요약 해석 앞): [확인 필요] 목표치. 결정: docs/decisions/015-ad-before-results-15s.md
 - (1.1.0 이후) 첫 결제 전환율: 3% 이상. [확인 필요] 추정.
 - 공유 링크로 들어온 방문자의 차트 생성 비율: 30% 이상.
 

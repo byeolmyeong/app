@@ -23,7 +23,7 @@ last_reviewed: 2026-11-11
 - 방향성 제시(F10): 1.0.0 에 전체 무료로 주고 추후 같은 기능을 유료로 바꾼다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
 - 푸시 알림: 이벤트 알림만(초대 수락, 리포트 완성).
 - 앱 이름: "별명"을 바꾼다(새 이름은 브랜딩에서). 대표 문구도 새로 정한다. 결정: docs/decisions/013-rename-app.md
-- 디자인: "도장과 책력" 방향, 글꼴은 Pretendard 하나. 새 이름에 맞춰 브랜딩에서 다시 본다.
+- 디자인: "천문도" 방향. 종이·먹·금, 글꼴은 고운바탕·Pretendard·IBM Plex Mono. 결정: docs/decisions/016-design-direction-observatory.md
 - 1.1.0: 광고(결과 전 15초)와 990원 광고 제거, 인앱결제, 방향성 제시 유료화, 투두·조각·레벨업(F11)과 대표 문구 "조각을 모은다", 친구창, 친구끼리 3~5명 그룹 궁합. 결정: docs/decisions/007-friends-chat-shared-room.md, docs/decisions/008-ads-and-ad-removal.md, docs/decisions/015-ad-before-results-15s.md
 
 ## 계산과 글의 역할 분담

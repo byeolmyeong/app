@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1632" height="980" viewBox="0 0 1632 980">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=block');
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+    .sans { font-family: Pretendard, 'Malgun Gothic', sans-serif; }
+    .serif { font-family: 'Gowun Batang', serif; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+  </style>
+  <defs>
+    <line id="tL" x1="0" y1="-36" x2="0" y2="-31" stroke="#15161A" stroke-width="0.9"/>
+    <line id="tS" x1="0" y1="-36" x2="0" y2="-33.5" stroke="#15161A" stroke-width="0.5"/>
+    <path id="star4" d="M0 -6 L1.4 -1.4 L6 0 L1.4 1.4 L0 6 L-1.4 1.4 L-6 0 L-1.4 -1.4 Z"/>
+  </defs>
+  <rect width="1632" height="980" fill="#E9E6DE"/>
+
+  <g class="sans">
+  <text x="64" y="64" class="mono" font-size="13" letter-spacing="2" fill="#77736A">DESIGN SYSTEM · v2 OBSERVATORY</text>
+  <text x="64" y="104" class="serif" font-size="32" font-weight="700" fill="#15161A">디자인 시스템 — 천문도처럼, 정확하게</text>
+  <text x="64" y="134" font-size="15" fill="#5E5A52">원칙: 장식 대신 계산된 차트 · 색은 종이·먹·금 · 박스 대신 선과 여백 · 숫자는 고정폭</text>
+
+  <!-- ===== 색 ===== -->
+  <text x="64" y="190" class="mono" font-size="12" letter-spacing="2" fill="#77736A">01 · COLOR</text>
+  <g font-size="12">
+    <rect x="64" y="206" width="132" height="84" fill="#F4F1EA" stroke="#15161A" stroke-opacity="0.15"/><text x="64" y="310" font-weight="700" fill="#15161A">종이 · paper</text><text x="64" y="328" class="mono" fill="#77736A">#F4F1EA</text>
+    <rect x="208" y="206" width="132" height="84" fill="#E9E6DE" stroke="#15161A" stroke-opacity="0.15"/><text x="208" y="310" font-weight="700" fill="#15161A">바탕 · canvas</text><text x="208" y="328" class="mono" fill="#77736A">#E9E6DE</text>
+    <rect x="352" y="206" width="132" height="84" fill="#15161A"/><text x="352" y="310" font-weight="700" fill="#15161A">먹 · ink</text><text x="352" y="328" class="mono" fill="#77736A">#15161A</text>
+    <rect x="496" y="206" width="132" height="84" fill="#77736A"/><text x="496" y="310" font-weight="700" fill="#15161A">흐린 먹 · muted</text><text x="496" y="328" class="mono" fill="#77736A">#77736A</text>
+    <rect x="640" y="206" width="132" height="84" fill="#C8822E"/><text x="640" y="310" font-weight="700" fill="#15161A">금 · accent</text><text x="640" y="328" class="mono" fill="#77736A">#C8822E</text>
+    <rect x="784" y="206" width="132" height="84" fill="#0F1220"/><text x="784" y="310" font-weight="700" fill="#15161A">밤 · card</text><text x="784" y="328" class="mono" fill="#77736A">#0F1220</text>
+    <rect x="928" y="206" width="132" height="84" fill="#E0A45A"/><text x="928" y="310" font-weight="700" fill="#15161A">밤 위의 금</text><text x="928" y="328" class="mono" fill="#77736A">#E0A45A</text>
+  </g>
+  <text font-size="12" fill="#5E5A52"><tspan x="1100" y="226">· 화면: 종이 바탕 + 먹 글자 + 금 포인트 하나</tspan><tspan x="1100" y="248">· 공유 카드: 밤 바탕 + 종이 글자 + 밤 위의 금</tspan><tspan x="1100" y="270">· 영역(사람·인연 / 일 / 돈 / 나 자신)은 색 대신</tspan><tspan x="1100" y="290">  글자로 쓴다. 큰 변화만 금색</tspan><tspan x="1100" y="312">· 그라데이션 · 반짝이 · 파스텔은 쓰지 않는다</tspan></text>
+
+  <!-- ===== 글자 ===== -->
+  <text x="64" y="384" class="mono" font-size="12" letter-spacing="2" fill="#77736A">02 · TYPE</text>
+  <text x="64" y="428" class="serif" font-size="30" font-weight="700" fill="#15161A">생각나면 바로 해 보는 사람</text>
+  <text x="560" y="420" font-size="12" font-weight="700" fill="#15161A">고운바탕 Bold 30 / 26 / 19</text><text x="560" y="438" font-size="12" fill="#77736A">한 줄 총평, 화면 제목, 구간 제목</text>
+  <text x="64" y="472" font-size="15" font-weight="700" fill="#15161A">중심 · 마음 · 끌림</text>
+  <text x="560" y="466" font-size="12" font-weight="700" fill="#15161A">Pretendard Bold 15 / 14</text><text x="560" y="484" font-size="12" fill="#77736A">문단 제목, 버튼</text>
+  <text x="64" y="508" font-size="14" fill="#2A2A2E">떠오른 생각을 오래 묵히지 못해요. 말로 꺼내고 일단 해 봐야 다음이 보여요.</text>
+  <text x="560" y="502" font-size="12" font-weight="700" fill="#15161A" opacity="0"></text>
+  <text x="64" y="530" font-size="12" fill="#77736A">Pretendard Regular 14 / 줄 22 · 본문</text>
+  <text x="64" y="590" class="mono" font-size="44" font-weight="500" fill="#15161A" letter-spacing="-1">87 · 19° · 2027.03</text>
+  <text x="560" y="574" font-size="12" font-weight="700" fill="#15161A">IBM Plex Mono 96 / 26 / 11</text><text x="560" y="592" font-size="12" fill="#77736A">점수, 도수, 날짜, 순위, 근거 줄</text>
+  <text x="64" y="622" class="mono" font-size="11" fill="#77736A">N°01 · 태양 · 양 19° · 3H</text>
+  <text x="560" y="622" font-size="12" fill="#77736A">작은 라벨은 숫자만 고정폭, 한글은 Pretendard</text>
+
+  <!-- ===== 선·간격 ===== -->
+  <text x="64" y="684" class="mono" font-size="12" letter-spacing="2" fill="#77736A">03 · LINE · SPACE · RADIUS</text>
+  <line x1="64" y1="714" x2="264" y2="714" stroke="#15161A" stroke-width="1"/><text x="280" y="718" font-size="12" fill="#77736A">구역 나눔 · 먹 1px</text>
+  <line x1="64" y1="744" x2="264" y2="744" stroke="#15161A" stroke-opacity="0.15"/><text x="280" y="748" font-size="12" fill="#77736A">문단 나눔 · 먹 15%</text>
+  <line x1="64" y1="774" x2="264" y2="774" stroke="#C8822E" stroke-width="3"/><text x="280" y="778" font-size="12" fill="#77736A">지금 · 강조 · 금 3px</text>
+  <g fill="#15161A"><rect x="64" y="806" width="4" height="18"/><rect x="78" y="806" width="8" height="18"/><rect x="96" y="806" width="12" height="18"/><rect x="118" y="806" width="16" height="18"/><rect x="144" y="806" width="24" height="18"/><rect x="178" y="806" width="28" height="18"/><rect x="216" y="806" width="32" height="18"/></g>
+  <text x="264" y="820" class="mono" font-size="11" fill="#77736A">4 8 12 16 24 28 32</text>
+  <g fill="none" stroke="#15161A"><rect x="64" y="846" width="44" height="30" rx="4"/><rect x="120" y="846" width="44" height="30" rx="34" ry="15"/><rect x="176" y="846" width="44" height="30" rx="3"/></g>
+  <text x="236" y="866" font-size="12" fill="#77736A">버튼 4 · 화면 34 · 카드 3 (거의 각지게)</text>
+
+  <!-- ===== 컴포넌트 ===== -->
+  <text x="680" y="684" class="mono" font-size="12" letter-spacing="2" fill="#77736A">04 · COMPONENTS</text>
+
+  <!-- 버튼 -->
+  <rect x="680" y="702" width="200" height="44" rx="4" fill="#15161A"/><text x="780" y="729" font-size="13" font-weight="600" fill="#F4F1EA" text-anchor="middle">심층 리포트 보기</text>
+  <rect x="892" y="702" width="46" height="44" rx="4" fill="none" stroke="#15161A"/><path d="M915 736 v-18 m-6 6 l6 -6 l6 6" fill="none" stroke="#15161A" stroke-width="1.5"/>
+  <text x="956" y="729" font-size="13" font-weight="700" fill="#15161A">내 차트 보기 →</text>
+  <text x="680" y="766" font-size="11" fill="#77736A">주 버튼 · 공유 · 글자 링크</text>
+
+  <!-- 탭 -->
+  <g font-size="14" font-weight="700"><text x="1080" y="724" fill="#77736A">연애</text><text x="1132" y="724" fill="#15161A">친구</text><text x="1184" y="724" fill="#77736A">일</text></g>
+  <line x1="1132" y1="734" x2="1160" y2="734" stroke="#15161A" stroke-width="2"/><line x1="1080" y1="734" x2="1240" y2="734" stroke="#15161A" stroke-opacity="0.15"/>
+  <text x="1080" y="766" font-size="11" fill="#77736A">탭 · 밑줄 하나</text>
+
+  <!-- 해석 문단 -->
+  <line x1="680" y1="796" x2="1000" y2="796" stroke="#15161A"/>
+  <text x="680" y="824" font-size="14" font-weight="700" fill="#15161A">마음</text><text x="1000" y="824" class="mono" font-size="10" fill="#77736A" text-anchor="end">달 · 사수 8° · 11H</text>
+  <text font-size="13" fill="#2A2A2E"><tspan x="680" y="850">가까이 붙어 있을 때보다, 각자 하고</tspan><tspan x="680" y="870">싶은 걸 하다 만날 때 더 편해요.</tspan></text>
+  <text x="680" y="900" font-size="11" fill="#77736A">해석 문단 · 제목 + 오른쪽 근거 + 본문, 박스 없음</text>
+
+  <!-- 구간 행 -->
+  <text x="1040" y="814" class="mono" font-size="11" fill="#77736A">2032 — 2033 · 29~30세</text><text x="1360" y="814" font-size="11" font-weight="700" fill="#C8822E" text-anchor="end">큰 변화 · 일</text>
+  <circle cx="1046" cy="836" r="5.5" fill="#15161A"/><text x="1062" y="841" font-size="15" font-weight="700" fill="#15161A">책임과 기반을 세우는 시기</text>
+  <g font-size="11" fill="#77736A"><circle cx="1046" cy="872" r="4.5" fill="#15161A"/><text x="1058" y="876">마디</text><circle cx="1104" cy="872" r="4" fill="none" stroke="#15161A" stroke-width="1.2"/><text x="1116" y="876">변화 · 기회</text><use xlink:href="#star4" x="1192" y="872" fill="#15161A" transform="scale(1)"/><text x="1204" y="876">운명적 만남</text><line x1="1282" y1="866" x2="1282" y2="878" stroke="#C8822E" stroke-width="3"/><text x="1290" y="876">지금</text></g>
+  <text x="1040" y="900" font-size="11" fill="#77736A">변곡점 구간 · 기호로 종류를 구분</text>
+
+  <!-- 미니 차트 + 카드 -->
+  <g transform="translate(1470,290)">
+    <circle r="36" fill="none" stroke="#15161A" stroke-width="0.9"/><circle r="24" fill="none" stroke="#15161A" stroke-opacity="0.3" stroke-width="0.7"/>
+    <use xlink:href="#tL"/><use xlink:href="#tL" transform="rotate(30)"/><use xlink:href="#tL" transform="rotate(60)"/><use xlink:href="#tL" transform="rotate(90)"/><use xlink:href="#tL" transform="rotate(120)"/><use xlink:href="#tL" transform="rotate(150)"/><use xlink:href="#tL" transform="rotate(180)"/><use xlink:href="#tL" transform="rotate(210)"/><use xlink:href="#tL" transform="rotate(240)"/><use xlink:href="#tL" transform="rotate(270)"/><use xlink:href="#tL" transform="rotate(300)"/><use xlink:href="#tL" transform="rotate(330)"/>
+    <line x1="-16" y1="-18" x2="20" y2="10" stroke="#15161A" stroke-width="0.6"/><line x1="-16" y1="-18" x2="-22" y2="6" stroke="#C8822E" stroke-width="0.9"/>
+    <circle cx="-16" cy="-18" r="2.4" fill="#C8822E"/><circle cx="20" cy="10" r="1.8" fill="#15161A"/><circle cx="-22" cy="6" r="1.8" fill="#15161A"/>
+  </g>
+  <text x="1470" y="346" font-size="11" fill="#77736A" text-anchor="middle">차트 · 눈금 원 + 가는 선</text>
+
+  <rect x="1420" y="384" width="148" height="262" rx="3" fill="#0F1220"/>
+  <text x="1434" y="406" class="mono" font-size="8" fill="#E9E4D6" fill-opacity="0.7">SYNASTRY · 친구</text>
+  <g transform="translate(1494,480)">
+    <circle r="54" fill="none" stroke="#E9E4D6" stroke-opacity="0.5" stroke-width="0.7"/><circle r="38" fill="none" stroke="#E9E4D6" stroke-opacity="0.2" stroke-width="0.6"/>
+    <circle cx="-22" cy="-28" r="2" fill="#E9E4D6"/><circle cx="32" cy="-18" r="2" fill="#E9E4D6"/><circle cx="-8" cy="-53" r="2.2" fill="#E0A45A"/><circle cx="51" cy="-17" r="2.2" fill="#E0A45A"/><circle cx="24" cy="47" r="2.2" fill="#E0A45A"/>
+    <line x1="-22" y1="-28" x2="51" y2="-17" stroke="#E0A45A" stroke-width="0.7"/><line x1="32" y1="-18" x2="24" y2="47" stroke="#E0A45A" stroke-width="0.7"/>
+  </g>
+  <text x="1430" y="590" class="mono" font-size="44" font-weight="500" fill="#F4F1EA" letter-spacing="-2">87</text>
+  <text x="1434" y="616" class="serif" font-size="11" font-weight="700" fill="#F4F1EA">말이 먼저 통하는 사이</text>
+  <text x="1434" y="636" font-size="8" fill="#E9E4D6" fill-opacity="0.8">나도 내 별 보러 가기 →</text>
+  <text x="1494" y="666" font-size="11" fill="#77736A" text-anchor="middle">공유 카드 9:16</text>
+  </g>
+</svg>

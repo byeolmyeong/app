@@ -4,6 +4,7 @@ import { processColor, StyleSheet } from 'react-native';
 import { Button } from '@/components/button';
 import { DataTable } from '@/components/data-table';
 import { Field } from '@/components/field';
+import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
 import { ChartMark } from '@/components/chart-mark';
 import { SectionLabel } from '@/components/section-label';
@@ -215,5 +216,30 @@ describe('Paragraph', () => {
   it('근거가 없으면 근거 줄을 그리지 않는다', async () => {
     await render(<Paragraph title="제목" body="본문" basis={[]} />);
     expect(screen.queryByText(new RegExp(`^${strings.reading.basisLabel}`))).toBeNull();
+  });
+});
+
+describe('ListRow', () => {
+  it('누를 수 있는 줄은 버튼이고 높이가 목록 한 줄이다. 누르면 알린다', async () => {
+    const onPress = jest.fn();
+    await render(<ListRow label="이용약관" onPress={onPress} />);
+    const row = screen.getByRole('button', { name: '이용약관' });
+    expect(StyleSheet.flatten(row.props.style)).toMatchObject({
+      height: Sizes.listRow,
+      borderBottomColor: Colors.hair,
+    });
+    await fireEvent.press(row);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('값이 있으면 오른쪽에 회색으로 적고, 누를 수 없는 줄은 버튼이 아니다', async () => {
+    await render(<ListRow label="앱 버전" value="1.0.0" />);
+    expect(StyleSheet.flatten(screen.getByText('1.0.0').props.style).color).toBe(Colors.gray);
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('이름의 색을 고를 수 있다(지우는 줄)', async () => {
+    await render(<ListRow label="계정 삭제" color="danger" onPress={() => {}} />);
+    expect(StyleSheet.flatten(screen.getByText('계정 삭제').props.style).color).toBe(Colors.danger);
   });
 });

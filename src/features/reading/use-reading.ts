@@ -68,10 +68,10 @@ function requestReadingOnce(input: BirthInput): Promise<ApiResult<Reading>> {
 }
 
 /**
- * 기기에 받아 둔 요약 해석. 서버를 부르지 않는다(홈에서 한 줄 총평을 보여 줄 때 쓴다).
- * 아직 읽는 중이거나, 받아 둔 글이 없거나, 다른 출생 정보의 글이면 null.
+ * 기기에 받아 둔 요약 해석. 서버를 부르지 않는다(홈의 한 줄 총평, 풀이 글 화면의 첫 확인).
+ * `checked` 는 기기를 다 찾아봤는가, `reading` 은 찾은 글(없거나 다른 출생 정보의 글이면 null).
  */
-export function useStoredReading(input: BirthInput | null): Reading | null {
+export function useStoredReading(input: BirthInput | null): { checked: boolean; reading: Reading | null } {
   const key = input ? keyOf(input) : null;
   const [stored, setStored] = useState<{ key: string; reading: Reading | null } | null>(null);
 
@@ -86,7 +86,7 @@ export function useStoredReading(input: BirthInput | null): Reading | null {
     };
   }, [key]);
 
-  return stored && stored.key === key ? stored.reading : null;
+  return stored && stored.key === key ? { checked: true, reading: stored.reading } : { checked: false, reading: null };
 }
 
 /**

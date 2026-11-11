@@ -6,6 +6,7 @@ import ReadingScreen from '@/app/reading';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { saveBirth } from '@/features/chart/use-birth-profile';
+import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { api, type ApiResult, type Reading } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -145,5 +146,27 @@ describe('요약 해석 화면', () => {
     await waitFor(() => expect(mockApi.createReading).not.toHaveBeenCalled());
     await fireEvent.press(screen.getByText(strings.chart.goHome));
     expect(router.replace).toHaveBeenCalledWith('/');
+  });
+  it('받아 둔 글이 있으면 세션을 기다리지 않고 바로 보여 준다("짓는 중" 이 뜨지 않는다)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await AsyncStorage.setItem(
+      READING_STORAGE_KEY,
+      JSON.stringify({ key: JSON.stringify([profile.date, profile.time, profile.place.id]), reading }),
+    );
+    // 세션을 아직 받는 중이다
+    mockUseSession.mockReturnValue({ token: null, ready: false });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(screen.queryByText(R.generating)).toBeNull();
+    expect(mockApi.createReading).not.toHaveBeenCalled();
+  });
+
+  it('기기에서 글을 찾는 동안에는 "짓는 중" 을 보여 주지 않는다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    mockUseSession.mockReturnValue({ token: null, ready: false });
+    const view = await render(<ReadingScreen />);
+    // 받아 둔 글이 없다는 것을 확인한 뒤에야 "짓는 중" 이 나온다
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    await view.unmount();
   });
 });

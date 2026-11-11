@@ -13,7 +13,8 @@ import { useSession } from '@/features/auth/use-session';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReadingView } from '@/features/reading/reading-view';
-import { useReading } from '@/features/reading/use-reading';
+import { useReading, useStoredReading } from '@/features/reading/use-reading';
+import type { Reading } from '@/lib/api';
 
 const S = strings.reading;
 
@@ -24,12 +25,14 @@ const S = strings.reading;
 export default function ReadingScreen() {
   const { ready } = useSession();
   const { loaded, profile } = useBirthProfile();
-  // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 요청한다.
-  const input = useMemo(
-    () => (ready && profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
-    [ready, profile],
+  const birth = useMemo(
+    () => (profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
+    [profile],
   );
-  const { state, retry } = useReading(input);
+  // 먼저 기기에 받아 둔 글을 찾는다. 있으면 세션을 기다리지 않고 바로 보여 준다.
+  const stored = useStoredReading(birth);
+  // 받아 둔 글이 없을 때만, 세션이 준비된 뒤에 서버에 요청한다.
+  const { state, retry } = useReading(ready && stored.checked && !stored.reading ? birth : null);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   if (loaded && !profile)
@@ -38,6 +41,16 @@ export default function ReadingScreen() {
         <ChartEmpty />
       </Screen>
     );
+
+  if (stored.reading)
+    return (
+      <Screen nav={nav}>
+        <ReadingBody reading={stored.reading} />
+      </Screen>
+    );
+
+  // 기기를 찾아보는 동안에는 아무것도 그리지 않는다("짓는 중" 이 잠깐 비치지 않게).
+  if (!stored.checked) return <Screen nav={nav}>{null}</Screen>;
 
   if (state.status === 'loading')
     return (
@@ -65,14 +78,23 @@ export default function ReadingScreen() {
 
   return (
     <Screen nav={nav}>
-      <ReadingView reading={state.reading} />
+      <ReadingBody reading={state.reading} />
+    </Screen>
+  );
+}
+
+/** 글과 그 아래의 "내 차트 보기" · 안내 문구. */
+function ReadingBody({ reading }: { reading: Reading }) {
+  return (
+    <>
+      <ReadingView reading={reading} />
       <View style={styles.footer}>
         <TextLink label={S.seeChart} onPress={() => router.push('/chart')} />
         <Txt variant="label" color="gray">
           {S.disclaimer}
         </Txt>
       </View>
-    </Screen>
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import { createApi, isChart, isPlaceList } from '@/lib/api';
+import { createApi, isChart, isPlaceList, isReading } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 const BASE = 'https://api.example.test';
@@ -239,5 +239,51 @@ describe('api: 401 이면 세션을 한 번만 다시 받는다', () => {
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => null, refreshSession });
     expect(await api.createDevSession()).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
     expect(refreshSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 요약 해석', () => {
+  it('POST /readings 를 본문 없이 세션 헤더와 함께 부르고 글을 받는다', async () => {
+    const fetchFn = fakeFetch(200, fixtures.reading);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createReading()).toEqual({ ok: true, data: fixtures.reading });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/readings`);
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('출생 정보가 없으면(404)·생성에 실패하면(502) 서버 오류, 429 는 한도 결과다', async () => {
+    const call = (status: number) =>
+      createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, { error: 'X' }), getToken: () => null }).createReading();
+    expect(await call(404)).toEqual({ ok: false, error: 'SERVER', status: 404 });
+    expect(await call(502)).toEqual({ ok: false, error: 'SERVER', status: 502 });
+    expect(await call(429)).toEqual({ ok: false, error: 'LIMIT', status: 429 });
+  });
+
+  it('글의 모양이 계약과 다르면 INVALID 다', async () => {
+    const r = fixtures.reading;
+    expect(isReading(r)).toBe(true);
+    const broken: unknown[] = [
+      null,
+      { ...r, headline: 1 },
+      { ...r, sections: 'x' },
+      { ...r, sections: [{ title: 't', body: 'b' }] },
+      { ...r, sections: [{ title: 't', body: 'b', basis: [1] }] },
+      { ...r, strengths: [1] },
+      { ...r, cautions: undefined },
+      { ...r, shareId: undefined },
+    ];
+    for (const v of broken) expect(isReading(v)).toBe(false);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { headline: 'x' }), getToken: () => null });
+    expect(await api.createReading()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 예시 글을 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.createReading()).toEqual({ ok: true, data: fixtures.reading });
+    expect(fetchFn).not.toHaveBeenCalled();
   });
 });

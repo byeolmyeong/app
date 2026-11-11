@@ -159,6 +159,22 @@ export function isPlaceList(v: unknown): v is Place[] {
   );
 }
 
+const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((item) => typeof item === 'string');
+
+export function isReading(v: unknown): v is Reading {
+  return (
+    isObject(v) &&
+    typeof v.headline === 'string' &&
+    Array.isArray(v.sections) &&
+    v.sections.every(
+      (s) => isObject(s) && typeof s.title === 'string' && typeof s.body === 'string' && isStringList(s.basis),
+    ) &&
+    isStringList(v.strengths) &&
+    isStringList(v.cautions) &&
+    typeof v.shareId === 'string'
+  );
+}
+
 const isDevSession = (v: unknown): v is DevSession =>
   isObject(v) && typeof v.token === 'string' && v.token.length > 0;
 
@@ -265,6 +281,15 @@ export function createApi(config: ApiConfig) {
     async saveProfile(input: BirthInput): Promise<ApiResult<BirthInput>> {
       if (config.useFixtures) return { ok: true, data: input };
       return request('PUT', '/profile', { body: input, validate: isBirthInput });
+    },
+
+    /**
+     * `POST /readings` 요약 해석을 받는다. 본문은 없고 서버가 저장된 출생 정보로 쓴다(없으면 404).
+     * 글을 쓰는 데 몇 초가 걸릴 수 있다. 같은 차트에는 같은 글이 온다.
+     */
+    async createReading(): Promise<ApiResult<Reading>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.reading };
+      return request('POST', '/readings', { validate: isReading });
     },
   };
 }

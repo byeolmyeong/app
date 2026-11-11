@@ -303,6 +303,19 @@ describe('차트', () => {
   });
 });
 
+describe('차트에서 다음 화면으로', () => {
+  it('"내 별명 읽기" 를 누르면 /reading 으로 가고, "궁합 보기" 는 아직 누를 수 없다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<ChartScreen />);
+    const read = await screen.findByRole('button', { name: strings.chart.readReading });
+    expect(read.props.accessibilityState.disabled).toBe(false);
+    await fireEvent.press(read);
+    expect(router.push).toHaveBeenCalledWith('/reading');
+    const synastry = screen.getByRole('button', { name: strings.chart.seeSynastry });
+    expect(synastry.props.accessibilityState.disabled).toBe(true);
+  });
+});
+
 describe('차트 자세히', () => {
   const D = strings.detail;
 

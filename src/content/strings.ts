@@ -153,6 +153,22 @@ export const strings = {
     },
     retry: '다시 시도',
   },
+  report: {
+    title: '심층 리포트',
+    checking: '리포트를 확인하고 있어요',
+    intro: '성격 · 관계 · 일 · 감정, 네 가지로 나를 길게 풀어 드려요.',
+    request: '리포트 받기',
+    writing: '리포트를 쓰는 중이에요',
+    writingNote: '1~2분쯤 걸려요. 화면을 나갔다가 다시 들어와도 돼요.',
+    /** 영역 탭. 키는 서버가 주는 식별자다 */
+    areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정' },
+    failed: {
+      NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+      LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+      OTHER: '리포트를 쓰지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+    },
+    retry: '다시 시도',
+  },
   detail: {
     title: '차트 자세히',
     helpLabel: '이 표 읽는 법',

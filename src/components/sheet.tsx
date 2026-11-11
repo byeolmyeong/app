@@ -29,8 +29,8 @@ const CLOSE_MS = 220;
 const HIDDEN_OFFSET = 720;
 /** 이만큼 넘게 끌어내리고 놓으면 닫는다. 덜 끌면 제자리로 돌아간다 */
 const DRAG_CLOSE_DISTANCE = 90;
-/** 위쪽에서 끌 수 있는 영역의 높이(손잡이 줄 언저리. 제목 줄의 화살표를 가리지 않는다) */
-const DRAG_AREA_HEIGHT = 28;
+/** 위쪽에서 끌 수 있는 영역의 높이. 손잡이 줄부터 제목 줄까지 덮는다(그 아래는 드럼롤처럼 굴리는 것이 있어 넓히지 않는다) */
+const DRAG_AREA_HEIGHT = 80;
 const useNativeDriver = Platform.OS !== 'web';
 const noCaret = (Platform.OS === 'web' ? { caretColor: 'transparent', outlineWidth: 0 } : {}) as ViewStyle;
 
@@ -95,9 +95,6 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             <Pressable testID="sheet-dim" focusable={false} tabIndex={-1} style={styles.dimPress} onPress={onClose} />
           </Animated.View>
           <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
-            <View testID="sheet-drag" style={styles.dragArea} {...pan.panHandlers}>
-              <View style={styles.handle} />
-            </View>
             {title ? (
               <View style={styles.head}>
                 <Txt variant="heading" style={styles.title}>
@@ -106,6 +103,9 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
               </View>
             ) : null}
             {children}
+            <View testID="sheet-drag" style={styles.dragArea} {...pan.panHandlers}>
+              <View style={styles.handle} />
+            </View>
           </Animated.View>
         </View>
       </View>

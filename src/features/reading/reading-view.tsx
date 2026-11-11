@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { Paragraph } from '@/components/paragraph';
 import { SectionHead } from '@/components/section-head';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
@@ -17,15 +18,7 @@ export function ReadingView({ reading }: { reading: Reading }) {
     <View style={styles.root}>
       <Txt variant="display">{reading.headline}</Txt>
       {reading.sections.map((section, i) => (
-        <View key={i} style={styles.section}>
-          {section.basis.length > 0 ? (
-            <Txt variant="label" color="gray">
-              {[S.basisLabel, ...section.basis].join(S.basisSeparator)}
-            </Txt>
-          ) : null}
-          <Txt variant="heading">{section.title}</Txt>
-          <Txt variant="body">{section.body}</Txt>
-        </View>
+        <Paragraph key={i} title={section.title} body={section.body} basis={section.basis} />
       ))}
       <ItemList title={S.strengths} items={reading.strengths} />
       <ItemList title={S.cautions} items={reading.cautions} />

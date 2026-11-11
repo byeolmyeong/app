@@ -4,6 +4,7 @@ import { processColor, StyleSheet } from 'react-native';
 import { Button } from '@/components/button';
 import { DataTable } from '@/components/data-table';
 import { Field } from '@/components/field';
+import { Paragraph } from '@/components/paragraph';
 import { ChartMark } from '@/components/chart-mark';
 import { SectionLabel } from '@/components/section-label';
 import { ScrollPicker } from '@/components/scroll-picker';
@@ -199,5 +200,20 @@ describe('ScrollPicker', () => {
       nativeEvent: { contentOffset: { y: (24 + 2) * 36 } },
     });
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(3));
+  });
+});
+
+describe('Paragraph', () => {
+  it('근거 줄(작은 회색) · 제목 · 본문 순서로 그린다', async () => {
+    await render(<Paragraph title="제목" body="본문" basis={['태양', '쌍둥이', '6하우스']} />);
+    const basis = screen.getByText('근거 · 태양 · 쌍둥이 · 6하우스');
+    expect(StyleSheet.flatten(basis.props.style)).toMatchObject({ ...Typography.label, color: Colors.gray });
+    expect(StyleSheet.flatten(screen.getByText('제목').props.style)).toMatchObject(Typography.heading);
+    expect(StyleSheet.flatten(screen.getByText('본문').props.style)).toMatchObject(Typography.body);
+  });
+
+  it('근거가 없으면 근거 줄을 그리지 않는다', async () => {
+    await render(<Paragraph title="제목" body="본문" basis={[]} />);
+    expect(screen.queryByText(new RegExp(`^${strings.reading.basisLabel}`))).toBeNull();
   });
 });

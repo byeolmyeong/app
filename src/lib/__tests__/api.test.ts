@@ -1,4 +1,4 @@
-import { createApi, isChart, isPlaceList, isReading } from '@/lib/api';
+import { createApi, isChart, isPlaceList, isReading, isReport, isReportState } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 const BASE = 'https://api.example.test';
@@ -284,6 +284,99 @@ describe('api: 요약 해석', () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.createReading()).toEqual({ ok: true, data: fixtures.reading });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 심층 리포트', () => {
+  const report = fixtures.report;
+
+  it('POST /reports 를 본문 없이 세션 헤더와 함께 부르고 상태를 받는다', async () => {
+    const fetchFn = fakeFetch(202, { status: 'WRITING' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.requestReport()).toEqual({ ok: true, data: { status: 'WRITING' } });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/reports`);
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+    const done = createApi({ baseUrl: BASE, fetchFn: fakeFetch(202, { status: 'DONE' }), getToken: () => null });
+    expect(await done.requestReport()).toEqual({ ok: true, data: { status: 'DONE' } });
+  });
+
+  it('POST /reports: 출생 정보가 없으면(404) 서버 오류, 429 는 한도, 모르는 상태는 INVALID 다', async () => {
+    const call = (status: number, body: unknown) =>
+      createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, body), getToken: () => null }).requestReport();
+    expect(await call(404, { error: 'NO_PROFILE' })).toEqual({ ok: false, error: 'SERVER', status: 404 });
+    expect(await call(429, {})).toEqual({ ok: false, error: 'LIMIT', status: 429 });
+    for (const body of [null, {}, { status: 'NONE' }, { status: 'FAILED' }, { status: 1 }])
+      expect(await call(202, body)).toEqual({ ok: false, error: 'INVALID', status: 202 });
+  });
+
+  it('GET /reports/me 를 세션 헤더와 함께 부르고 네 가지 상태를 받는다', async () => {
+    const fetchFn = fakeFetch(200, { status: 'DONE', report });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.getReport()).toEqual({ ok: true, data: { status: 'DONE', report } });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/reports/me`);
+    expect(init?.method).toBe('GET');
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+    for (const status of ['NONE', 'WRITING', 'FAILED']) {
+      const other = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { status }), getToken: () => null });
+      expect(await other.getReport()).toEqual({ ok: true, data: { status } });
+    }
+  });
+
+  it('상태의 모양이 계약과 다르면 INVALID 다', async () => {
+    const broken: unknown[] = [null, {}, { status: 'OTHER' }, { status: 'DONE' }, { status: 'DONE', report: {} }];
+    for (const v of broken) expect(isReportState(v)).toBe(false);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { status: 'DONE' }), getToken: () => null });
+    expect(await api.getReport()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+  });
+
+  it('리포트는 성격 · 관계 · 일 · 감정 네 영역이 이 순서로 있고 문단마다 제목 · 본문 · 근거가 있어야 한다', () => {
+    expect(isReport(report)).toBe(true);
+    const [a, b, c, d] = report.sections;
+    const p = a.paragraphs[0];
+    const broken: unknown[] = [
+      null,
+      {},
+      { sections: 'x' },
+      { sections: [a, b, c] },
+      { sections: [b, a, c, d] },
+      { sections: [a, b, c, d, d] },
+      { sections: [a, b, c, { ...d, area: 'TIMING' }] },
+      { sections: [{ ...a, title: 1 }, b, c, d] },
+      { sections: [{ ...a, paragraphs: [] }, b, c, d] },
+      { sections: [{ ...a, paragraphs: [{ ...p, title: undefined }] }, b, c, d] },
+      { sections: [{ ...a, paragraphs: [{ ...p, body: 1 }] }, b, c, d] },
+      { sections: [{ ...a, paragraphs: [{ title: 't', body: 'b' }] }, b, c, d] },
+      { sections: [{ ...a, paragraphs: [{ ...p, basis: [1] }] }, b, c, d] },
+    ];
+    for (const v of broken) expect(isReport(v)).toBe(false);
+  });
+
+  it('계약에 아직 없는 필드(나중에 올 timing)는 무시한다', () => {
+    expect(isReport({ ...report, timing: { anything: 1 } })).toBe(true);
+    expect(isReportState({ status: 'DONE', report: { ...report, timing: [] }, extra: 1 })).toBe(true);
+  });
+
+  it('예시 리포트는 계약의 모양이다: 네 영역, 영역마다 문단 4~6개, 계약의 필드만', () => {
+    expect(Object.keys(report)).toEqual(['sections']);
+    expect(report.sections.map((s) => s.area)).toEqual(['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION']);
+    for (const section of report.sections) {
+      expect(Object.keys(section).sort()).toEqual(['area', 'paragraphs', 'title']);
+      expect(section.paragraphs.length).toBeGreaterThanOrEqual(4);
+      expect(section.paragraphs.length).toBeLessThanOrEqual(6);
+      for (const paragraph of section.paragraphs) expect(Object.keys(paragraph).sort()).toEqual(['basis', 'body', 'title']);
+    }
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 요청은 DONE, 확인은 예시 리포트를 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.requestReport()).toEqual({ ok: true, data: { status: 'DONE' } });
+    expect(await api.getReport()).toEqual({ ok: true, data: { status: 'DONE', report } });
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

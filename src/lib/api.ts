@@ -70,11 +70,23 @@ export type Reading = {
 
 export type ReportStatus = 'NONE' | 'WRITING' | 'DONE';
 
-/** 계약에 `Report` 의 필드가 아직 없다. 태스크 6 전에 서버 계약에 추가되어야 한다. */
-export type Report = Record<string, unknown>;
+/** 심층 리포트의 영역. 서버는 이 순서로 네 영역을 모두 준다. 시기(타임라인)는 아직 계약에 없다 */
+export const REPORT_AREAS = ['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
+export type ReportArea = (typeof REPORT_AREAS)[number];
 
-/** `GET /reports/me` */
-export type ReportState = { status: ReportStatus; report?: Report };
+export type ReportSection = {
+  area: ReportArea;
+  title: string;
+  paragraphs: { title: string; body: string; basis: string[] }[];
+};
+
+export type Report = { sections: ReportSection[] };
+
+/** `GET /reports/me`. 글은 DONE 일 때만 온다 */
+export type ReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: Report };
+
+/** `POST /reports` 의 응답(202). WRITING 쓰기 시작했거나 쓰는 중 · DONE 이미 써 둠 */
+export type ReportRequest = { status: 'WRITING' | 'DONE' };
 
 export type Synastry = {
   id: string;
@@ -174,6 +186,35 @@ export function isReading(v: unknown): v is Reading {
     typeof v.shareId === 'string'
   );
 }
+
+/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 계약에 없는 필드는 보지 않는다 */
+export function isReport(v: unknown): v is Report {
+  return (
+    isObject(v) &&
+    Array.isArray(v.sections) &&
+    v.sections.length === REPORT_AREAS.length &&
+    v.sections.every(
+      (s, i) =>
+        isObject(s) &&
+        s.area === REPORT_AREAS[i] &&
+        typeof s.title === 'string' &&
+        Array.isArray(s.paragraphs) &&
+        s.paragraphs.length > 0 &&
+        s.paragraphs.every(
+          (p) => isObject(p) && typeof p.title === 'string' && typeof p.body === 'string' && isStringList(p.basis),
+        ),
+    )
+  );
+}
+
+export function isReportState(v: unknown): v is ReportState {
+  if (!isObject(v)) return false;
+  if (v.status === 'DONE') return isReport(v.report);
+  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+const isReportRequest = (v: unknown): v is ReportRequest =>
+  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE');
 
 const isDevSession = (v: unknown): v is DevSession =>
   isObject(v) && typeof v.token === 'string' && v.token.length > 0;
@@ -290,6 +331,21 @@ export function createApi(config: ApiConfig) {
     async createReading(): Promise<ApiResult<Reading>> {
       if (config.useFixtures) return { ok: true, data: fixtures.reading };
       return request('POST', '/readings', { validate: isReading });
+    },
+
+    /**
+     * `POST /reports` 심층 리포트를 써 달라고 한다. 본문은 없고 서버가 저장된 출생 정보로 쓴다(없으면 404).
+     * 글은 뒤에서 1~2분 동안 쓰이므로 여기서는 상태만 온다. 이미 쓰는 중이거나 써 두었으면 새로 쓰지 않는다.
+     */
+    async requestReport(): Promise<ApiResult<ReportRequest>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
+      return request('POST', '/reports', { validate: isReportRequest });
+    },
+
+    /** `GET /reports/me` 내 리포트의 상태. 다 썼으면(DONE) 글이 함께 온다 */
+    async getReport(): Promise<ApiResult<ReportState>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.report } };
+      return request('GET', '/reports/me', { validate: isReportState });
     },
   };
 }

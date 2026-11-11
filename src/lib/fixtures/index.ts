@@ -6,18 +6,21 @@
  * - chart.json: 서버(계획 태스크 15)가 2000-06-15 21:00 · 서울특별시 마포구로 준 실제 응답이다(2026-11-11).
  * - chart-time-unknown.json: 같은 날짜·장소에 시각 null 로 받은 실제 응답. 하우스·상승점·중천·행운점·버텍스가 없다.
  * - reading.json: 글은 시안의 예시 문장이다.
- * - 궁합(`Synastry`)·리포트(`Report`)·공유 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
+ * - report.json: 심층 리포트의 네 영역(성격 · 관계 · 일 · 감정). 글은 계약의 모양에 맞춰 쓴 예시 문장이다. 시기는 아직 없다.
+ * - 궁합(`Synastry`)·공유 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
  */
-import type { Chart, Place, Reading } from '@/lib/api';
+import type { Chart, Place, Reading, Report } from '@/lib/api';
 
 import chartTimeUnknown from './chart-time-unknown.json';
 import chart from './chart.json';
 import places from './places.json';
 import reading from './reading.json';
+import report from './report.json';
 
 export const fixtures = {
   places: places as Place[],
   chart: chart as Chart,
   chartTimeUnknown: chartTimeUnknown as Chart,
   reading: reading as Reading,
+  report: report as Report,
 };

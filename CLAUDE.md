@@ -10,7 +10,7 @@
 ## 상황별 (그 일을 할 때만 읽는다)
 - 제품 방향·버전별 범위·지표를 판단할 때 → docs/product.md
 - 1.0.0 에 무엇이 들어가는지(기능·화면·출시 기준) → docs/release-1.0.0.md
-- 모듈 경계·데이터 흐름·비즈니스 룰(시각 보정·소유자 검사)을 바꿀 때 → docs/architecture.md
+- 디렉터리 구조·의존 규칙·데이터 흐름·비즈니스 룰을 볼 때·바꿀 때 → docs/architecture.md (의존 규칙은 ESLint 가 강제, 결정 017)
 - 지금 할 일 → docs/plans/2026-11-10-app-1.0.0.md
 - 화면을 만들 때 → DESIGN.md (원칙·쓰지 않는 것·값의 위치), docs/design/product-brief-1.0.0.md (기획안). 화면 디자인은 프로덕트 디자이너가 새로 만든다
 - 코드 어디서 시작할지 모를 때 → docs/codebase-map.md (`/agent-codebase bootstrap` 이 만든다)

@@ -69,25 +69,35 @@ export type FieldSelectProps = {
   onPress: () => void;
   invalid?: boolean;
   disabled?: boolean;
+  /** 고르는 시트나 화면이 열려 있는가. 열려 있으면 화살표가 위를 향한다 */
+  open?: boolean;
   testID?: string;
 };
 
 /** 눌러서 고르는 입력칸. 모양은 `FieldInput` 과 같고 오른쪽에 아래 화살표가 있다. 누르면 하단 시트를 연다. */
-export function FieldSelect({ value, placeholder, onPress, invalid = false, disabled = false, testID }: FieldSelectProps) {
+export function FieldSelect({
+  value,
+  placeholder,
+  onPress,
+  invalid = false,
+  disabled = false,
+  open = false,
+  testID,
+}: FieldSelectProps) {
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled, expanded: open }}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.box, styles.select, invalid && styles.invalid]}>
+      style={[styles.box, styles.select, open && styles.focused, invalid && styles.invalid]}>
       <Txt variant="body" color={disabled ? 'muted' : value ? 'ink' : 'hint'} style={value ? styles.value : undefined}>
         {value ?? placeholder}
       </Txt>
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
         <Path
-          d="M6 9l6 6 6-6"
+          d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}
           stroke={disabled ? Colors.muted : Colors.hint}
           strokeWidth={2}
           strokeLinecap="round"

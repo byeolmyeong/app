@@ -166,6 +166,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
               value={timeUnknown ? S.timeUnknownValue : formatTimeDisplay(timeText) || undefined}
               placeholder={S.timePlaceholder}
               disabled={timeUnknown}
+              open={sheet === 'time'}
               invalid={Boolean(timeError)}
               onPress={onOpenTime}
             />
@@ -178,6 +179,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
             value={place?.name}
             placeholder={S.placePlaceholder}
             invalid={Boolean(errors.place)}
+            open={sheet === 'place'}
             onPress={() => setSheet('place')}
           />
         </Field>

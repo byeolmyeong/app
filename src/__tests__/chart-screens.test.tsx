@@ -77,8 +77,11 @@ describe('출생 정보 입력(홈)', () => {
 
   it('태어난 시각은 아래에서 올라오는 시트의 드럼롤에서 고르고, 확인을 눌러야 정해진다', async () => {
     await render(<HomeScreen />);
+    expect(screen.getByTestId('time-field').props.accessibilityState.expanded).toBe(false);
     await fireEvent.press(screen.getByTestId('time-field'));
     expect(await screen.findByText(H.timeConfirm)).toBeTruthy();
+    // 시트가 열려 있는 동안 칸의 화살표는 위를 향한다
+    expect(screen.getByTestId('time-field').props.accessibilityState.expanded).toBe(true);
     await fireEvent.press(screen.getByTestId('time-period-AM'));
     await fireEvent.press(screen.getByTestId('time-hour-7'));
     await fireEvent.press(screen.getByTestId('time-minute-5'));

@@ -9,6 +9,7 @@ import MyScreen from '@/app/my';
 import { Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
+import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -126,6 +127,45 @@ describe('홈', () => {
     await render(<HomeScreen />);
     await screen.findByPlaceholderText(strings.home.datePlaceholder);
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
+  });
+});
+
+describe('홈의 내용(아이콘 줄 아래)', () => {
+  const key = JSON.stringify([profile.date, profile.time, profile.place.id]);
+
+  it('받아 둔 풀이가 있으면 한 줄 총평을 보여 주고, 누르면 풀이 글로 간다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key, reading: fixtures.reading }));
+    await render(<HomeScreen />);
+    expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('home-reading'));
+    expect(router.push).toHaveBeenCalledWith('/reading');
+  });
+
+  it('받아 둔 풀이가 없으면 읽으러 가는 버튼을 보여 준다(서버를 부르지 않는다)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await fireEvent.press(await screen.findByText(M.readingCta));
+    expect(router.push).toHaveBeenCalledWith('/reading');
+    expect(screen.queryByText(fixtures.reading.headline)).toBeNull();
+  });
+
+  it('다른 출생 정보로 받은 풀이는 보여 주지 않는다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await AsyncStorage.setItem(
+      READING_STORAGE_KEY,
+      JSON.stringify({ key: JSON.stringify(['1990-01-01', null, 1]), reading: fixtures.reading }),
+    );
+    await render(<HomeScreen />);
+    expect(await screen.findByText(M.readingCta)).toBeTruthy();
+  });
+
+  it('나를 이루는 세 가지(중심 · 마음 · 첫인상)를 보여 준다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    expect(await screen.findByText(strings.chart.keySun)).toBeTruthy();
+    expect(screen.getByText(strings.chart.keyMoon)).toBeTruthy();
+    expect(screen.getByText(strings.chart.keyAsc)).toBeTruthy();
   });
 });
 

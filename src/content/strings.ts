@@ -22,6 +22,10 @@ export const strings = {
   },
   main: {
     soon: '준비 중',
+    readingLabel: '나의 별명',
+    readingMore: '풀이 읽기',
+    readingEmpty: '아직 별명을 짓지 않았어요.',
+    readingCta: '내 별명 읽기',
     categories: [
       {
         key: 'me',

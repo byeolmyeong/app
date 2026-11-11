@@ -68,6 +68,28 @@ function requestReadingOnce(input: BirthInput): Promise<ApiResult<Reading>> {
 }
 
 /**
+ * 기기에 받아 둔 요약 해석. 서버를 부르지 않는다(홈에서 한 줄 총평을 보여 줄 때 쓴다).
+ * 아직 읽는 중이거나, 받아 둔 글이 없거나, 다른 출생 정보의 글이면 null.
+ */
+export function useStoredReading(input: BirthInput | null): Reading | null {
+  const key = input ? keyOf(input) : null;
+  const [stored, setStored] = useState<{ key: string; reading: Reading | null } | null>(null);
+
+  useEffect(() => {
+    if (key === null) return;
+    let alive = true;
+    loadReading(key).then((reading) => {
+      if (alive) setStored({ key, reading });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+
+  return stored && stored.key === key ? stored.reading : null;
+}
+
+/**
  * 요약 해석. input 이 null 이면(출생 정보·세션을 아직 읽는 중) 요청하지 않고 생성 중으로 둔다.
  * retry 는 실패했을 때 사용자가 누르는 "다시 시도" 다.
  */

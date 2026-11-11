@@ -1,64 +1,76 @@
 /**
- * 디자인 값의 단일 출처. 방향은 "천문도"(docs/decisions/016-design-direction-observatory.md,
- * 보드 docs/design/design-system-v2.png). 화면과 부품은 색·글자·간격을 여기서만 가져온다.
+ * 디자인 값의 단일 출처. 둥근 중립 디자인 시스템(docs/decisions/018-design-system-from-didit.md):
+ * 흰 바탕, 중립 회색, Pretendard, 주색은 초록 하나. 화면과 부품은 색·글자·간격을 여기서만 가져온다.
  * 디자인이 바뀌면 이 파일을 통째로 바꾼다.
  */
 import type { TextStyle } from 'react-native';
 
-/** 색. 화면은 종이·먹·금 하나, 공유 카드는 밤·밤 위의 금. */
+/** 색. 화면은 흰 바탕·중립 회색·초록 하나, 공유 카드는 밤·밤 위의 금. */
 export const Colors = {
-  /** 종이 · 화면 바탕 */
-  paper: '#F4F1EA',
-  /** 바탕 · 화면 밖, 넓은 웹 화면의 여백. 앱 화면만 색이 있고 그 밖은 흰색이다 */
+  /** 화면·시트·칩의 바탕 */
+  paper: '#FFFFFF',
+  /** 화면 밖, 넓은 웹 화면의 여백 */
   canvas: '#FFFFFF',
-  /** 먹 · 글씨, 굵은 선, 주 버튼 */
-  ink: '#15161A',
-  /** 흐린 먹 · 라벨, 보조 글씨, 근거 줄 */
-  gray: '#77736A',
-  /** 옅은 선 · 문단·표의 줄(종이 위 먹 15%) */
-  hair: '#D6D2C8',
-  /** 금 · 포인트 하나. "지금"과 "큰 변화"에만 쓴다 */
-  gold: '#C8822E',
+  /** 본문 글씨 */
+  ink: '#191919',
+  /** 보조 글씨 */
+  gray: '#6A6A6A',
+  /** 도움말, 입력 전 안내 글씨 */
+  hint: '#989898',
+  /** 고르지 않은 것, 비활성 아이콘·글씨 */
+  muted: '#C6C6C6',
+  /** 테두리, 구분선, 비활성 버튼 바탕 */
+  hair: '#E6E6E6',
+  /** 입력칸 바탕 */
+  fill: '#F6F6F6',
+  /** 주색(초록) 하나. 주 버튼, 고른 것, 포커스 테두리, "지금" */
+  primary: '#3DDB99',
+  /** 고른 칩의 옅은 초록 바탕 */
+  primaryLight: '#ECFBF5',
   /** 밤 · 공유 카드 바탕 */
   night: '#0F1220',
   /** 밤 위의 금 · 공유 카드의 점·선 */
   nightGold: '#E0A45A',
   /** 오류 · 삭제 */
-  danger: '#B3402F',
+  danger: '#F73838',
 } as const;
 
 export type ColorName = keyof typeof Colors;
 
-/** 시트 뒤를 가리는 막. 먹 50%. */
-export const DimColor = 'rgba(21,22,26,0.5)';
+/** 시트 뒤를 가리는 막. 검정 40%. */
+export const DimColor = 'rgba(0,0,0,0.4)';
 
-/** 본문·버튼·라벨 글꼴. 굵기는 fontWeight 로 고른다(src/app/_layout.tsx 에서 적재). */
+/** 글꼴은 Pretendard 하나. 굵기는 fontWeight 로 고른다(src/app/_layout.tsx 에서 적재). */
 export const FontFamily = 'Pretendard';
-/** 한 줄 총평·화면 제목·구간 제목 글꼴(400·700) */
-export const SerifFamily = 'GowunBatang';
-/** 숫자만 있는 곳(점수·도수·날짜·순위)의 글꼴(400·500). 한글이 섞이면 쓰지 않는다 */
-export const MonoFamily = 'IBMPlexMono';
 
 const tabular: TextStyle['fontVariant'] = ['tabular-nums'];
 
-/** 글자 단계 8개. 크기/줄높이 · 굵기. */
+/** 글자 사이는 모든 단계에서 글자 크기의 -2% */
+const type = (fontSize: number, lineHeight: number, fontWeight: TextStyle['fontWeight']) =>
+  ({ fontFamily: FontFamily, fontSize, lineHeight, fontWeight, letterSpacing: fontSize * -0.02 }) as const;
+
+/** 글자 단계. 크기/줄높이 · 굵기. */
 export const Typography = {
-  /** 한 줄 총평, 홈 제목 */
-  display: { fontFamily: SerifFamily, fontSize: 30, lineHeight: 38, fontWeight: '700', letterSpacing: -0.6 },
+  /** 홈 제목, 한 줄 총평 */
+  display: type(28, 39, '700'),
   /** 화면 제목, 구간 제목 */
-  title: { fontFamily: SerifFamily, fontSize: 26, lineHeight: 34, fontWeight: '700', letterSpacing: -0.4 },
-  /** 문단 제목, 버튼 */
-  heading: { fontFamily: FontFamily, fontSize: 15, lineHeight: 22, fontWeight: '700' },
-  /** 해석 본문 */
-  body: { fontFamily: FontFamily, fontSize: 14, lineHeight: 22, fontWeight: '400' },
-  /** 표의 칸, 보조 문장(한글이 섞인 곳). 숫자 폭은 고정 */
-  table: { fontFamily: FontFamily, fontSize: 13, lineHeight: 20, fontWeight: '500', fontVariant: tabular },
-  /** 숫자만 있는 작은 글자(날짜, 도수, 근거 줄의 숫자) */
-  mono: { fontFamily: MonoFamily, fontSize: 11, lineHeight: 16, fontWeight: '400', fontVariant: tabular },
+  title: type(24, 34, '700'),
+  /** 시트 제목, 문단 제목 */
+  heading: type(18, 25, '600'),
+  /** 버튼 글씨 */
+  button: type(16, 24, '600'),
+  /** 본문, 입력칸의 값 */
+  body: type(15, 23, '400'),
+  /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
+  table: { ...type(14, 20, '500'), fontVariant: tabular },
+  /** 도움말, 오류, 작은 라벨 */
+  label: type(12, 16, '500'),
+  /** 숫자만 있는 작은 글자(날짜, 도수) */
+  mono: { ...type(12, 16, '500'), fontVariant: tabular },
   /** 점수, 순위 */
-  number: { fontFamily: MonoFamily, fontSize: 26, lineHeight: 32, fontWeight: '500', fontVariant: tabular },
-  /** 작은 라벨(한글) */
-  label: { fontFamily: FontFamily, fontSize: 11, lineHeight: 14, fontWeight: '600', letterSpacing: 0.4 },
+  number: { ...type(24, 34, '600'), fontVariant: tabular },
+  /** 드럼롤 선택의 한 줄 */
+  picker: { ...type(20, 30, '600'), fontVariant: tabular },
 } as const satisfies Record<string, TextStyle>;
 
 export type TypographyName = keyof typeof Typography;
@@ -75,26 +87,40 @@ export const Spacing = {
 } as const;
 
 /** 화면 좌우 여백 */
-export const ScreenPaddingX = Spacing.lg;
+export const ScreenPaddingX = 20;
 
-/** 모서리. 버튼 4, 거의 각지게. 시트도 둥글리지 않는다. */
-export const Radius = 4;
+/** 모서리. 버튼·입력칸·칩 12. */
+export const Radius = 12;
+/** 하단 시트의 위쪽 모서리 */
+export const SheetRadius = 24;
 
-/** 선 굵기. 굵은 선(먹)과 옅은 선 모두 1px 이고 색으로 구분한다. */
+/** 선 굵기 */
 export const LineWidth = 1;
 
 /** 부품 크기 */
 export const Sizes = {
-  buttonHeight: 48,
-  navHeight: 44,
-  fieldLabelWidth: 88,
+  buttonHeight: 56,
+  inputHeight: 56,
+  navHeight: 48,
   /** 화면 머리의 차트 표식 */
   mark: 28,
   /** 화면 머리 양옆 칸의 너비 */
   navSide: 48,
-  checkbox: 16,
+  checkbox: 24,
   /** 차트 휠의 최대 지름 */
   wheel: 300,
-  /** 웹 넓은 화면에서 가운데에 보이는 앱 화면의 폭. 그 밖은 바탕색(canvas)이다 */
-  maxContentWidth: 480,
+  /** 웹 넓은 화면에서 가운데에 보이는 앱 화면의 폭 */
+  maxContentWidth: 390,
+  /** 목록 한 줄의 높이 */
+  listRow: 48,
+  /** 태어난 곳 시트: 두 칸 목록의 높이 · 왼쪽 시·도 칸의 너비 */
+  placeSheetHeight: 384,
+  regionPaneWidth: 104,
+  /** 시트 위의 손잡이 줄 */
+  handleWidth: 50,
+  handleHeight: 4,
+  /** 드럼롤 선택: 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 */
+  pickerRow: 36,
+  pickerRows: 5,
+  pickerWidth: 72,
 } as const;

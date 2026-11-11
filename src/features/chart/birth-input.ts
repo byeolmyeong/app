@@ -54,11 +54,28 @@ export function formatDateTyping(text: string): string {
   return [year, month, day.slice(0, 2)].filter(Boolean).join('-');
 }
 
-/** 입력하는 동안 숫자만 남겨 HH:mm 꼴로 맞춘다. 3~9 로 시작하면 앞에 0 을 붙인다(9 → 09). */
-export function formatTimeTyping(text: string): string {
-  let digits = text.replace(/\D/g, '');
-  if (digits && digits[0] > '2') digits = `0${digits}`;
-  return [digits.slice(0, 2), digits.slice(2, 4)].filter(Boolean).join(':');
+/** 시각 고르기(오전/오후 · 시 · 분)의 값 */
+export type TimePick = { period: 'AM' | 'PM'; hour: number; minute: number };
+
+/** HH:mm 을 고르기 값으로. 꼴이 틀리면 null */
+export function toTimePick(time: string): TimePick | null {
+  const parsed = parseBirthTime(time);
+  if (!parsed.ok) return null;
+  const [h, minute] = parsed.value.split(':').map(Number);
+  return { period: h < 12 ? 'AM' : 'PM', hour: h % 12 === 0 ? 12 : h % 12, minute };
+}
+
+/** 고르기 값을 HH:mm 으로. 오전 12시는 00, 오후 12시는 12 */
+export function fromTimePick(pick: TimePick): string {
+  const h = (pick.hour % 12) + (pick.period === 'PM' ? 12 : 0);
+  return `${pad(h)}:${pad(pick.minute)}`;
+}
+
+/** 예: "오후 9:00". 꼴이 틀리면 빈 글자 */
+export function formatTimeDisplay(time: string): string {
+  const pick = toTimePick(time);
+  if (!pick) return '';
+  return `${pick.period === 'AM' ? strings.detail.am : strings.detail.pm} ${pick.hour}:${pad(pick.minute)}`;
 }
 
 export type BirthForm = {
@@ -93,9 +110,6 @@ export function validateBirthInput(
 export function formatBirthSummary(profile: BirthProfile): string {
   const [y, mo, d] = profile.date.split('-').map(Number);
   let when = `${y}. ${mo}. ${d}.`;
-  if (profile.time) {
-    const [h, mi] = profile.time.split(':').map(Number);
-    when += ` ${h < 12 ? strings.detail.am : strings.detail.pm} ${h % 12 === 0 ? 12 : h % 12}:${pad(mi)}`;
-  }
+  if (profile.time) when += ` ${formatTimeDisplay(profile.time)}`;
   return `${when} · ${profile.place.name}`;
 }

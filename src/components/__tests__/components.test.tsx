@@ -8,61 +8,66 @@ import { ChartMark } from '@/components/chart-mark';
 import { SectionLabel } from '@/components/section-label';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, FontFamily, MonoFamily, Radius, SerifFamily, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontFamily, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 describe('테마', () => {
-  it('천문도 색을 갖는다(결정 016)', () => {
+  it('흰 바탕·중립 회색·초록 주색을 갖는다(결정 018)', () => {
     expect(Colors).toMatchObject({
-      paper: '#F4F1EA',
+      paper: '#FFFFFF',
       canvas: '#FFFFFF',
-      ink: '#15161A',
-      gray: '#77736A',
-      hair: '#D6D2C8',
-      gold: '#C8822E',
+      ink: '#191919',
+      gray: '#6A6A6A',
+      hint: '#989898',
+      muted: '#C6C6C6',
+      hair: '#E6E6E6',
+      fill: '#F6F6F6',
+      primary: '#3DDB99',
+      primaryLight: '#ECFBF5',
       night: '#0F1220',
       nightGold: '#E0A45A',
-      danger: '#B3402F',
+      danger: '#F73838',
     });
-    expect(Colors).not.toHaveProperty('seal');
+    expect(Colors).not.toHaveProperty('gold');
   });
 
-  it('글자 단계 8개와 간격·모서리를 갖는다', () => {
-    expect(Object.keys(Typography)).toEqual(['display', 'title', 'heading', 'body', 'table', 'mono', 'number', 'label']);
-    expect(Typography.display).toMatchObject({ fontFamily: SerifFamily, fontSize: 30, lineHeight: 38 });
-    expect(Typography.title).toMatchObject({ fontFamily: SerifFamily, fontSize: 26 });
-    expect(Typography.body).toMatchObject({ fontFamily: FontFamily, fontSize: 14, lineHeight: 22 });
-    // 한글이 섞이는 표·보조 문장은 Pretendard, 숫자만 있는 곳은 고정폭
-    expect(Typography.table).toMatchObject({ fontFamily: FontFamily });
-    expect(Typography.mono).toMatchObject({ fontFamily: MonoFamily });
-    expect(Typography.number).toMatchObject({ fontFamily: MonoFamily, fontSize: 26 });
-    expect(Typography.label).toMatchObject({ fontFamily: FontFamily, fontSize: 11, lineHeight: 14 });
+  it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
+    expect(Object.keys(Typography)).toEqual([
+      'display', 'title', 'heading', 'button', 'body', 'table', 'label', 'mono', 'number', 'picker',
+    ]);
+    expect(Object.values(Typography).every((t) => t.fontFamily === FontFamily)).toBe(true);
+    expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 39, fontWeight: '700' });
+    expect(Typography.button).toMatchObject({ fontSize: 16, fontWeight: '600' });
+    expect(Typography.body).toMatchObject({ fontSize: 15, lineHeight: 23 });
+    // 글자 사이는 크기의 -2%
+    expect(Typography.body.letterSpacing).toBeCloseTo(-0.3);
     expect(Object.values(Spacing).slice(0, 7)).toEqual([4, 8, 12, 16, 24, 32, 48]);
-    expect(Radius).toBe(4);
+    expect(Radius).toBe(12);
+    expect(SheetRadius).toBe(24);
+    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 56, maxContentWidth: 390 });
   });
 });
 
 describe('Button', () => {
-  it('글씨와 화살표를 그리고 누르면 onPress 를 부른다', async () => {
+  it('글씨를 그리고 누르면 onPress 를 부른다', async () => {
     const onPress = jest.fn();
     await render(<Button label="내 하늘 보기" onPress={onPress} />);
-    expect(screen.getByText('→')).toBeTruthy();
     await fireEvent.press(screen.getByText('내 하늘 보기'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('주·선·빨강 세 가지 바탕을 테마 색으로 그린다', async () => {
-    const bg = async (variant: 'primary' | 'line' | 'danger') => {
-      const view = await render(<Button label="버튼" variant={variant} onPress={() => {}} />);
+  it('주·보조·빨강 세 가지 바탕을 테마 색으로 그리고, 누를 수 없으면 회색이다', async () => {
+    const bg = async (variant: 'primary' | 'line' | 'danger', disabled = false) => {
+      const view = await render(<Button label="버튼" variant={variant} disabled={disabled} onPress={() => {}} />);
       const style = StyleSheet.flatten(screen.getByRole('button').props.style);
       await view.unmount();
       return style;
     };
-    expect((await bg('primary')).backgroundColor).toBe(Colors.ink);
+    expect((await bg('primary')).backgroundColor).toBe(Colors.primary);
+    expect((await bg('line')).backgroundColor).toBe(Colors.fill);
     expect((await bg('danger')).backgroundColor).toBe(Colors.danger);
-    const line = await bg('line');
-    expect(line.backgroundColor).toBe('transparent');
-    expect(line.borderColor).toBe(Colors.ink);
+    expect((await bg('primary', true)).backgroundColor).toBe(Colors.hair);
+    expect((await bg('primary')).borderRadius).toBe(12);
   });
 
   it('disabled 이면 눌러도 onPress 를 부르지 않는다', async () => {
@@ -74,7 +79,7 @@ describe('Button', () => {
 });
 
 describe('Field', () => {
-  it('라벨·값·도움말을 한 줄에 그린다', async () => {
+  it('라벨(위)·값·도움말(아래)을 그린다', async () => {
     await render(
       <Field label="태어난 시각" hint="분 단위">
         오후 9:00
@@ -122,12 +127,12 @@ describe('DataTable', () => {
 });
 
 describe('ChartMark', () => {
-  it('눈금 원과 금색 점 하나로 된 표식을 그린다', async () => {
+  it('눈금 원과 주색 점 하나로 된 표식을 그린다', async () => {
     await render(<ChartMark />);
     expect(screen.getByTestId('chart-mark')).toBeTruthy();
     expect(screen.getByLabelText(strings.appName)).toBeTruthy();
     // react-native-svg 는 색을 { type: 0, payload: 숫자 } 로 바꿔 넘긴다
-    expect(screen.getByTestId('chart-mark-dot').props.fill).toEqual({ type: 0, payload: processColor(Colors.gold) });
+    expect(screen.getByTestId('chart-mark-dot').props.fill).toEqual({ type: 0, payload: processColor(Colors.primary) });
   });
 });
 

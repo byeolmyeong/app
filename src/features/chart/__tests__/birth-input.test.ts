@@ -2,7 +2,9 @@ import { strings } from '@/content/strings';
 import {
   formatBirthSummary,
   formatDateTyping,
-  formatTimeTyping,
+  formatTimeDisplay,
+  fromTimePick,
+  toTimePick,
   parseBirthDate,
   parseBirthTime,
   validateBirthInput,
@@ -106,15 +108,22 @@ describe('입력하는 동안 자동으로 꼴을 맞춘다', () => {
     expect(formatDateTyping('2000-06-')).toBe('2000-06');
   });
 
-  it('시각: 숫자만 쳐도 HH:mm 이 된다', () => {
-    expect(formatTimeTyping('2')).toBe('2');
-    expect(formatTimeTyping('21')).toBe('21');
-    expect(formatTimeTyping('210')).toBe('21:0');
-    expect(formatTimeTyping('2100')).toBe('21:00');
-    expect(formatTimeTyping('21:00')).toBe('21:00');
-    expect(formatTimeTyping('21005')).toBe('21:00');
-    expect(formatTimeTyping('9')).toBe('09');
-    expect(formatTimeTyping('930')).toBe('09:30');
-    expect(formatTimeTyping('21:')).toBe('21');
+});
+
+describe('시각 고르기(오전/오후 · 시 · 분)', () => {
+  it('HH:mm 과 고르기 값을 서로 바꾼다. 자정은 오전 12시, 정오는 오후 12시다', () => {
+    expect(toTimePick('00:05')).toEqual({ period: 'AM', hour: 12, minute: 5 });
+    expect(toTimePick('09:30')).toEqual({ period: 'AM', hour: 9, minute: 30 });
+    expect(toTimePick('12:00')).toEqual({ period: 'PM', hour: 12, minute: 0 });
+    expect(toTimePick('21:00')).toEqual({ period: 'PM', hour: 9, minute: 0 });
+    expect(toTimePick('')).toBeNull();
+    for (const time of ['00:00', '00:59', '11:59', '12:00', '12:01', '23:59'])
+      expect(fromTimePick(toTimePick(time)!)).toBe(time);
+  });
+
+  it('칸에는 "오후 9:00" 꼴로 적는다', () => {
+    expect(formatTimeDisplay('21:00')).toBe('오후 9:00');
+    expect(formatTimeDisplay('00:05')).toBe('오전 12:05');
+    expect(formatTimeDisplay('')).toBe('');
   });
 });

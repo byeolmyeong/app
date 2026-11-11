@@ -3,7 +3,7 @@ type: decision
 tags: [디자인, 디자인 시스템, 천문도, 색, 글꼴, 공유 카드]
 status: active
 last_reviewed: 2026-11-11
-superseded_by:
+superseded_by: 018-design-system-from-didit.md (부품 모양·바탕·글꼴만. 금 하나·차트 표현·공유 카드는 유효)
 ---
 # 016. 디자인 방향을 "천문도"로 바꾼다 (도장과 책력을 대체)
 

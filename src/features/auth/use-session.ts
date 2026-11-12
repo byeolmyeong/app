@@ -26,10 +26,13 @@ export const getSession = (): Session => store.getSnapshot();
 /** 세션을 비운다(계정을 지웠을 때). 보관된 토큰도 지운다 */
 export const clearSession = (): Promise<void> => store.clear();
 
-/** 세션 토큰과 준비 여부. 처음 쓰일 때(앱이 켜질 때) 세션을 시작한다 */
-export function useSession(): Session {
+/**
+ * 세션 토큰과 준비 여부. 처음 쓰일 때(앱이 켜질 때) 세션을 시작한다.
+ * start 가 false 인 동안에는 시작하지 않는다(세션 없이 열리는 공유 페이지. 결정 025).
+ */
+export function useSession(start = true): Session {
   useEffect(() => {
-    void store.start();
-  }, []);
+    if (start) void store.start();
+  }, [start]);
   return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 }

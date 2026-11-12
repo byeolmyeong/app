@@ -41,12 +41,14 @@ describe('홈', () => {
     expect(screen.queryByTestId('home-category')).toBeNull();
   });
 
-  it('출생 정보가 있으면 카테고리 두 칸을 보여 준다: 나 · 시기(관계 · 궁합은 기능이 생길 때까지 뺐다)', async () => {
+  it('출생 정보가 있으면 카테고리 네 칸을 이 순서로 보여 준다: 나 · 관계 · 궁합 · 시기(결정 021)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    expect(await screen.findAllByTestId('home-category')).toHaveLength(2);
+    expect(await screen.findAllByTestId('home-category')).toHaveLength(4);
     expect(screen.getAllByTestId('home-category').map((c) => c.props.accessibilityLabel)).toEqual([
       '나',
+      '관계',
+      '궁합',
       '시기',
     ]);
     // 입력 칸도, 제목이나 출생 정보 줄도 없다. 맨 위부터 타일이다(출생 정보는 마이에 있다)
@@ -58,9 +60,12 @@ describe('홈', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
-    expect(screen.getAllByTestId('home-category-icon')).toHaveLength(2);
-    // 타일이 둘이어도 한 줄은 네 자리다: 빈 자리 둘이 뒤를 채워, 타일이 왼쪽(머리의 표식과 같은 선)부터 놓인다
+    expect(screen.getAllByTestId('home-category-icon')).toHaveLength(4);
+    // 네 타일이 한 줄의 네 자리를 채운다
     expect(screen.getByTestId('home-category-row').props.children).toHaveLength(4);
+    // 타일마다 아이콘 그림이 있다(빈 아이콘이 아니다)
+    for (const icon of screen.getAllByTestId('home-category-icon'))
+      expect(JSON.stringify(icon.toJSON())).toMatch(/RNSVG(Path|Circle)/);
     // 한 줄에 넷, 줄의 양끝이 화면 여백에 맞는다(첫 아이콘의 왼쪽 끝이 머리의 표식과 같은 선)
     const rows = screen.getAllByTestId('home-category-row');
     expect(rows).toHaveLength(1);
@@ -101,19 +106,51 @@ describe('홈', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
-    // 타일은 순서로 고른다: 나 · 시기. 시기는 통째로 준비 중이다
+    // 타일은 순서로 고른다: 나 · 관계 · 궁합 · 시기. 시기만 통째로 준비 중이다
     expect(screen.getAllByTestId('home-category').map((t) => t.props.accessibilityState.disabled)).toEqual([
+      false,
+      false,
       false,
       true,
     ]);
-    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
+    await fireEvent.press(screen.getAllByTestId('home-category')[3]);
     expect(screen.queryByTestId('sheet-dim')).toBeNull();
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  it('홈에서 리포트의 특정 영역으로 바로 가는 항목은 없다', () => {
-    const paths = M.categories.flatMap((c) => c.items.map((item) => item.path as string | null));
-    expect(paths.filter((path) => path?.startsWith('/report'))).toEqual(['/report']);
+  it('"관계" 의 "사람을 대하는 성향" 은 심층 리포트의 관계 영역으로 가고, "연애에서 해 볼 만한 것" 은 준비 중이다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findAllByTestId('home-category');
+    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
+    // 아직 없는 항목은 "준비 중" 이고 눌러도 가지 않는다
+    await fireEvent.press(await screen.findByText('연애에서 해 볼 만한 것'));
+    expect(screen.getByText(M.soon)).toBeTruthy();
+    expect(router.push).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByText('사람을 대하는 성향'));
+    expect(router.push).toHaveBeenCalledWith('/report?area=RELATIONSHIP');
+  });
+
+  it('"궁합" 의 "상대와 궁합 보기" 는 /synastry 로, "궁합 랭킹" 은 /synastry/ranking 으로 간다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findAllByTestId('home-category');
+    await fireEvent.press(screen.getAllByTestId('home-category')[2]);
+    await fireEvent.press(await screen.findByText('상대와 궁합 보기'));
+    expect(router.push).toHaveBeenCalledWith('/synastry');
+    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
+    await fireEvent.press(screen.getAllByTestId('home-category')[2]);
+    await fireEvent.press(await screen.findByText('궁합 랭킹'));
+    expect(router.push).toHaveBeenCalledWith('/synastry/ranking');
+  });
+
+  it('홈의 항목이 가는 곳: 나 3 · 관계 1(+준비 중 1) · 궁합 2 · 시기는 모두 준비 중', () => {
+    expect(M.categories.map((c) => [c.key, c.items.map((item) => item.path as string | null)])).toEqual([
+      ['me', ['/reading', '/chart', '/report']],
+      ['relation', ['/report?area=RELATIONSHIP', null]],
+      ['synastry', ['/synastry', '/synastry/ranking']],
+      ['timing', [null, null]],
+    ]);
   });
 
   it('아래에 탭 두 개가 있다: 홈 · 마이. 누르면 그 화면으로 바꾼다', async () => {

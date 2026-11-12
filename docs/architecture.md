@@ -33,7 +33,7 @@ flowchart LR
 ```
 app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇게: features 의 훅·부품을 조립만 한다
   index.tsx          출생 정보 입력 (태스크 4 뒤에는 가입 마지막 단계)
-  reading.tsx · report.tsx · direction.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · settings/(설정 · 처리방침 · 약관)
+  reading.tsx · report.tsx · direction.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · settings/(설정 · 자주 묻는 질문 · 문의하기 · 처리방침 · 약관)
 features/            기능별 로직과 기능 전용 부품
   auth/              세션(개발용 세션 → 나중에 소셜 로그인), 세션 토큰 보관, 로그인 전 가드, 계정 삭제(확인 시트 · 기기 저장 비움)
   chart/             차트 휠·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) (서버가 준 값만 그린다)
@@ -41,6 +41,7 @@ features/            기능별 로직과 기능 전용 부품
   report/            심층 리포트·변곡점 타임라인
   synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts)
   direction/         방향성 제시(지금은 이성 주제)의 요청 상태·기기 보관·글 부품
+  support/           자주 묻는 질문 목록, 문의하기의 입력 확인(inquiry.ts) · 보내는 상태 · 종류 칩(결정 024)
   share/             공유 카드(9:16 이미지)·공유 시트
 components/          공용 부품(버튼·입력 줄·표·차트 표식·시트·탭…). 기능을 모른다
 constants/theme.ts   디자인 값의 단일 출처
@@ -75,7 +76,8 @@ lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타�
   - 리포트 `/synastry/<id>/report`: `GET /synastry/{id}/report` 로 상태를 보고, 요청(`POST`)에는 상대의 출생 정보를 다시 보낸다 — 메모리에 있으면 그 값, 없으면 화면에서 다시 입력받는다. `BIRTH_MISMATCH` 는 다시 입력, `PROFILE_CHANGED` 는 궁합을 새로 보게 한다. 리포트의 글은 기기에 보관하지 않는다.
   - 랭킹 `/synastry/ranking` 과 지난 궁합 목록은 서버가 준 순서대로만 그린다.
   - 화면 조립은 `app/synastry/` 가 한다: 출생 정보 칸(`features/chart/birth-fields.tsx`)과 겹친 휠(`features/chart/overlay-wheel.tsx`)은 `chart` 의 것이고 `features/synastry` 는 이를 import 하지 않는다(의존 규칙).
-- 서버 오류의 이름: 실패 결과의 `code` 에 오류 본문 `{ error }` 의 값이 온다(`lib/api.ts`). 화면이 가려 쓰는 것은 `BIRTH_MISMATCH` · `PROFILE_CHANGED` 뿐이다.
+- 문의하기(결정 024): `/settings/inquiry` 에서 종류 · 내용 · 답장 받을 이메일을 적으면 앱이 서버와 같은 규칙으로 먼저 확인하고(`features/support/inquiry.ts`: 종류 필수, 내용은 앞뒤 공백을 뗀 뒤 유니코드 코드 포인트로 10~2000자, 이메일은 비우거나 공백 없이 `@` 하나와 점 있는 도메인) `POST /inquiries`(`{ category, body, replyEmail }`, 이메일이 비면 `null`)로 보낸다. 201 `{ id }` 면 완료 상태를 보여 준다. 실패하면 안내만 보여 주고 적은 것은 그대로 둔다(스스로 다시 보내지 않는다). 429(한 계정에 한 시간 5번, 판정은 서버)는 "잠시 뒤 다시" 로 안내한다. 적은 내용과 이메일은 화면의 메모리에만 있다 — 기기 저장소와 로그에 두지 않는다. 자주 묻는 질문(`/settings/faq`)은 서버를 부르지 않고 `strings.faq` 의 글을 그린다.
+- 서버 오류의 이름: 실패 결과의 `code` 에 오류 본문 `{ error }` 의 값이 온다(`lib/api.ts`). 화면이 가려 쓰는 것은 `BIRTH_MISMATCH` · `PROFILE_CHANGED` 와 문의하기의 `INVALID_BODY` · `INVALID_EMAIL` 뿐이다.
 - 서버가 준비되기 전에는 `lib/fixtures/` 의 응답 예시로 화면을 만든다.
 
 ## 비즈니스 룰 (앱이 지키는 것)
@@ -84,6 +86,7 @@ lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타�
 - 초대로 연결된 궁합에서는 상대의 차트를 그리지 않는다. 서버가 상대의 위치를 내려주지 않는다.
 - 직접 입력한 궁합 상대의 출생 정보와 겹친 휠 자료를 기기 저장소에 두지 않는다(메모리에만, 방금 계산한 것 하나). 궁합 점수 옆의 말은 서버가 준 것만 붙이고 앱이 점수 구간을 판정하지 않는다.
 - 출생 정보와 세션 토큰을 로그·분석 이벤트에 남기지 않는다.
+- 문의에 적은 내용과 답장 받을 이메일을 기기 저장소 · 로그에 남기지 않는다. 문의 메일 주소를 앱과 문서에 적지 않는다(결정 024).
 - 알림 허용은 리포트 요청이나 초대 링크 생성 직후에만 묻는다.
 
 ## 관련

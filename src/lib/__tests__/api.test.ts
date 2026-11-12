@@ -1250,3 +1250,40 @@ describe('api: 앱이 쓰는 인스턴스의 점검 알림(결정 030)', () => {
     }
   });
 });
+
+describe('api: 궁합 지우기', () => {
+  it('DELETE /synastry/{id} 를 세션 헤더와 함께 본문 없이 부르고, 204 면 성공이다', async () => {
+    const fetchFn = fakeFetch(204);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.deleteSynastry('syn 1/2')).toEqual({ ok: true, data: null });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/synastry/syn%201%2F2`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('DELETE');
+    expect(fetchFn.mock.calls[0][1]?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer token-1');
+  });
+
+  it('없는 궁합(404 NOT_FOUND)과 그 밖의 실패는 종류대로 돌려주고 다시 부르지 않는다', async () => {
+    const gone = fakeFetch(404, { error: 'NOT_FOUND' });
+    expect(await createApi({ baseUrl: BASE, fetchFn: gone, getToken: () => 't' }).deleteSynastry('s1')).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+    expect(gone).toHaveBeenCalledTimes(1);
+    const failed = fakeFetch(500);
+    expect(await createApi({ baseUrl: BASE, fetchFn: failed, getToken: () => 't' }).deleteSynastry('s1')).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 500,
+    });
+    expect(failed).toHaveBeenCalledTimes(1);
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 성공이다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.deleteSynastry('s1')).toEqual({ ok: true, data: null });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});

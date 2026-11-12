@@ -757,7 +757,7 @@ export function createApi(config: ApiConfig) {
       return { ok: false, error: 'SERVER', status, ...code };
     }
 
-    // 204 는 본문이 없으니 읽지 않는다(`DELETE /account`).
+    // 204 는 본문이 없으니 읽지 않는다(`DELETE /account` · `DELETE /synastry/{id}`).
     let data: unknown = null;
     if (status !== 204) {
       try {
@@ -948,6 +948,16 @@ export function createApi(config: ApiConfig) {
         return found ? { ok: true, data: found } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
       }
       return request('GET', `/synastry/${encodeURIComponent(id)}`, { validate: isSynastry });
+    },
+
+    /**
+     * `DELETE /synastry/{id}` 궁합 하나를 지운다. 서버가 그 궁합의 리포트와 방향성 글도 함께 지운다. 성공은 204 이고 본문이 없다.
+     * 이미 만든 공유 링크는 그때의 사본이라 남는다. 없는 · 남의 궁합은 404 `NOT_FOUND`.
+     * 가짜 서버는 성공이라고만 답한다(예시 목록은 그대로다).
+     */
+    async deleteSynastry(id: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', `/synastry/${encodeURIComponent(id)}`, { validate: (v): v is null => v === null });
     },
 
     /** `GET /synastry/ranking?relation=` 그 관계 유형의 궁합을 서버가 정한 순서(점수가 높은 순)로 */

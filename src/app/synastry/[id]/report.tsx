@@ -15,6 +15,7 @@ import { goBackOrHome } from '@/features/chart/chart-empty';
 import { freshOf } from '@/features/synastry/fresh-synastry';
 import { SynastryReportView } from '@/features/synastry/synastry-report-view';
 import { useSynastryReport } from '@/features/synastry/use-synastry-report';
+import { useGenerationBusy } from '@/features/update/update-gate';
 import type { BirthInput } from '@/lib/api';
 
 const S = strings.synastry.report;
@@ -33,6 +34,8 @@ export default function SynastryReportScreen() {
   const [typed, setTyped] = useState<BirthProfile | null>(null);
   /** 방금 계산한 궁합이면 입력 화면에서 넣은 값이 메모리에 있다 */
   const remembered = synastryId ? (freshOf(synastryId)?.birth ?? null) : null;
+  // 쓰는 중이거나 방금 다 쓰인 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
+  useGenerationBusy(state.status === 'writing', state.status === 'done');
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   const reenter = (

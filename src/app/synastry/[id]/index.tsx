@@ -15,6 +15,7 @@ import { goBackOrHome } from '@/features/chart/chart-empty';
 import { OverlayWheel } from '@/features/chart/overlay-wheel';
 import { SynastrySummary } from '@/features/synastry/synastry-summary';
 import { useSynastry } from '@/features/synastry/use-synastry';
+import { useUpdateBusy } from '@/features/update/update-gate';
 
 const S = strings.synastry.result;
 const H = strings.help.overlay;
@@ -27,6 +28,8 @@ export default function SynastryResultScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { ready } = useSession();
   const { state, retry } = useSynastry(ready && typeof id === 'string' ? id : null);
+  // 방금 계산한 결과(겹친 휠은 그때만 있다)가 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
+  useUpdateBusy(state.status === 'done' && state.synastry.overlay !== undefined);
   const nav = <NavBar title={strings.synastry.title} onBack={goBackOrHome} />;
 
   if (state.status === 'loading')

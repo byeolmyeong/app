@@ -14,6 +14,7 @@ import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReportView, TIMING_TAB, type ReportTab } from '@/features/report/report-view';
 import { useReport } from '@/features/report/use-report';
+import { useGenerationBusy } from '@/features/update/update-gate';
 import { REPORT_AREAS } from '@/lib/api';
 
 const S = strings.report;
@@ -31,6 +32,8 @@ export default function ReportScreen() {
   // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다.
   const input = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
   const { state, start } = useReport(input);
+  // 쓰는 중이거나 방금 다 쓰인 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
+  useGenerationBusy(state.status === 'writing', state.status === 'done');
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   if (loaded && !profile)

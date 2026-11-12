@@ -14,6 +14,7 @@ import { goBackOrHome } from '@/features/chart/chart-empty';
 import { CategoryChips } from '@/features/support/category-chips';
 import { checkInquiry, INQUIRY_BODY_MAX, inquiryLength, type InquiryProblems } from '@/features/support/inquiry';
 import { useInquiry } from '@/features/support/use-inquiry';
+import { useUpdateBusy } from '@/features/update/update-gate';
 import type { InquiryCategory } from '@/lib/api';
 
 const I = strings.inquiry;
@@ -39,6 +40,8 @@ export default function InquiryScreen() {
   const [email, setEmail] = useState('');
   const [problems, setProblems] = useState<InquiryProblems>({});
   const { state, send } = useInquiry();
+  // 적어 둔 글이 있으면(아직 보내지 않았다) 강제 업데이트를 미룬다(결정 027).
+  useUpdateBusy(state.status !== 'sent' && (body !== '' || email !== ''));
   const nav = <NavBar title={I.title} onBack={goBackOrHome} />;
 
   function onSubmit() {

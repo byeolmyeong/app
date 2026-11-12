@@ -17,6 +17,7 @@ import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReadingView } from '@/features/reading/reading-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
+import { useGenerationBusy } from '@/features/update/update-gate';
 import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
@@ -33,6 +34,9 @@ export default function ReadingScreen() {
   const stored = useStoredReading(birth);
   // 받아 둔 글이 없을 때만, 세션이 준비된 뒤에 서버에 요청한다.
   const { state, retry } = useReading(ready && stored.checked && !stored.reading ? birth : null);
+  // 짓는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027). 받아 둔 글을 다시 연 것은 아니다.
+  const generating = profile !== null && stored.checked && !stored.reading && state.status === 'loading';
+  useGenerationBusy(generating, !stored.reading && state.status === 'done');
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   if (loaded && !profile)

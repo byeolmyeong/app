@@ -20,6 +20,7 @@ import { RelationChips } from '@/features/synastry/relation-chips';
 import { SynastryRow } from '@/features/synastry/synastry-row';
 import { useDirectSynastry } from '@/features/synastry/use-direct-synastry';
 import { useSynastryList } from '@/features/synastry/use-synastry-lists';
+import { useGenerationBusy } from '@/features/update/update-gate';
 import type { Relation } from '@/lib/api';
 
 const S = strings.synastry;
@@ -43,6 +44,9 @@ export default function SynastryEntryScreen() {
   const [name, setName] = useState('');
   const [errors, setErrors] = useState<{ relation?: string; name?: string }>({});
   const { state, calculate } = useDirectSynastry();
+  // 계산하는 중과, 계산을 마쳐(idle 로 돌아온다) 결과 화면을 연 뒤에는 강제 업데이트를 미룬다(결정 027).
+  // 이 화면은 결과 화면 아래에 남아 있으므로, 결과가 뜨기 전의 틈에도 바쁨이 이어진다.
+  useGenerationBusy(state.status === 'calculating', state.status === 'idle');
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   async function onSubmit() {

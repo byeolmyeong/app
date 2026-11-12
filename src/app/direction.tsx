@@ -13,6 +13,7 @@ import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { DirectionView } from '@/features/direction/direction-view';
 import { useDirection } from '@/features/direction/use-direction';
+import { useGenerationBusy } from '@/features/update/update-gate';
 
 const S = strings.direction;
 
@@ -25,6 +26,8 @@ export default function DirectionScreen() {
   const { loaded, profile } = useBirthProfile();
   const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   const { state, retry } = useDirection(birth, ready);
+  // 기다리는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
+  useGenerationBusy(profile !== null && state.status === 'loading', state.status === 'done');
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   if (loaded && !profile)

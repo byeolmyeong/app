@@ -96,5 +96,5 @@ export default function SynastryResultScreen() {
 
 const styles = StyleSheet.create({
   status: { gap: Spacing.md, paddingTop: Spacing.lg },
-  footer: { marginTop: 'auto', gap: Spacing.lg, paddingTop: Spacing.lg },
+  footer: { gap: Spacing.lg, paddingTop: Spacing.lg },
 });

@@ -75,21 +75,49 @@ describe('overlayLayout: 겹친 휠의 화면 좌표', () => {
     expect(overlayLayout({ ...overlay, lines }).lines).toEqual([]);
   });
 
-  it('가까이 붙은 점의 이름은 서로 다른 단에 적는다', () => {
+  it('가까이 몰린 점의 이름은 옆으로 벌려 적어 서로 겹치지 않는다(점은 제자리)', () => {
+    // 실제로 겹쳤던 모양: 네 개가 5도 안에 몰려 있다
+    const cluster = (base: number) => [
+      { body: 'SUN', longitude: base },
+      { body: 'MERCURY', longitude: base + 1.5 },
+      { body: 'VENUS', longitude: base + 3 },
+      { body: 'JUPITER', longitude: base + 5 },
+      { body: 'MOON', longitude: base + 120 },
+    ];
+    const plain = { mine: cluster(350), theirs: cluster(88), lines: [] };
+    const crowded = overlayLayout(plain);
+    const apart = (list: { label: { x: number; y: number } }[]) => {
+      let min = Infinity;
+      list.forEach((a, i) =>
+        list.slice(i + 1).forEach((b) => {
+          min = Math.min(min, Math.hypot(a.label.x - b.label.x, a.label.y - b.label.y));
+        }),
+      );
+      return min;
+    };
+    // 두 글자 이름("해왕")이 나란히 놓여도 닿지 않을 만큼
+    expect(apart(crowded.mine)).toBeGreaterThanOrEqual(crowded.labelFontSize * 1.9);
+    expect(apart(crowded.theirs)).toBeGreaterThanOrEqual(crowded.labelFontSize * 1.9);
+    // 이름만 벌린다: 점은 혼자 있을 때와 같은 자리다
+    const alone = overlayLayout({ mine: [plain.mine[1]], theirs: [plain.theirs[1]], lines: [] });
+    expect(crowded.mine.find((m) => m.body === 'MERCURY')!.dot).toEqual(alone.mine[0].dot);
+    expect(crowded.theirs.find((m) => m.body === 'MERCURY')!.dot).toEqual(alone.theirs[0].dot);
+    // 떨어져 있는 점의 이름은 점과 같은 방향에 그대로 있다
+    const moon = crowded.theirs.find((m) => m.body === 'MOON')!;
+    const angle = (p: { x: number; y: number }) => Math.atan2(p.y - crowded.center, p.x - crowded.center);
+    expect(angle(moon.label)).toBeCloseTo(angle(moon.dot), 5);
+  });
+
+  it('이름이 점에서 벌어졌으면 점과 이름을 잇는 가는 선을 준다', () => {
     const crowded = overlayLayout({
-      mine: [
-        { body: 'SUN', longitude: 100 },
-        { body: 'VENUS', longitude: 102 },
-      ],
+      mine: [],
       theirs: [
-        { body: 'SUN', longitude: 200 },
-        { body: 'VENUS', longitude: 203 },
+        { body: 'SUN', longitude: 88 },
+        { body: 'VENUS', longitude: 89 },
+        { body: 'MOON', longitude: 200 },
       ],
       lines: [],
     });
-    const [a, b] = crowded.mine.map((m) => radius(m.label, crowded.center));
-    const [c, d] = crowded.theirs.map((m) => radius(m.label, crowded.center));
-    expect(Math.abs(a - b)).toBeGreaterThan(crowded.labelFontSize);
-    expect(Math.abs(c - d)).toBeGreaterThan(crowded.labelFontSize);
+    expect(crowded.theirs.filter((m) => m.leader).map((m) => m.body).sort()).toEqual(['SUN', 'VENUS']);
   });
 });

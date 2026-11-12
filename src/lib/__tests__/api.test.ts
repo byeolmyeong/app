@@ -354,7 +354,8 @@ describe('api: 방향성 제시(이성)', () => {
     expect(isDirection(d)).toBe(true);
     const broken: unknown[] = [
       null,
-      { ...d, topic: 'FUTURE' },
+      { ...d, topic: 'OTHER' },
+      { ...d, topic: undefined },
       { ...d, title: '' },
       { ...d, title: undefined },
       { ...d, items: 'x' },
@@ -380,6 +381,97 @@ describe('api: 방향성 제시(이성)', () => {
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 방향성 제시(미래 · 궁합)', () => {
+  const future = fixtures.directionFuture;
+  const synastry = fixtures.directionSynastry;
+  const bodyOf = (fetchFn: jest.MockedFunction<typeof fetch>) => JSON.parse(fetchFn.mock.calls[0][1]?.body as string);
+
+  it('세 주제의 글을 모두 계약의 모양으로 받는다', () => {
+    expect(future.topic).toBe('FUTURE');
+    expect(synastry.topic).toBe('SYNASTRY');
+    for (const d of [fixtures.direction, future, synastry]) {
+      expect(isDirection(d)).toBe(true);
+      expect(Object.keys(d).sort()).toEqual(['items', 'title', 'topic']);
+    }
+  });
+
+  it('미래: POST /directions 에 { topic: "FUTURE" } 만 보낸다', async () => {
+    const fetchFn = fakeFetch(200, future);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createDirection('FUTURE')).toEqual({ ok: true, data: future });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/directions`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('POST');
+    expect(bodyOf(fetchFn)).toEqual({ topic: 'FUTURE' });
+  });
+
+  it('궁합: 상대의 출생 정보 없이는 { topic, synastryId } 만 보낸다', async () => {
+    const fetchFn = fakeFetch(200, synastry);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createSynastryDirection('syn-1')).toEqual({ ok: true, data: synastry });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/directions`);
+    expect(bodyOf(fetchFn)).toEqual({ topic: 'SYNASTRY', synastryId: 'syn-1' });
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('궁합: 상대의 출생 정보를 함께 보내고, 시각을 모르면 placeId 키를 싣지 않는다', async () => {
+    const known = fakeFetch(200, synastry);
+    await createApi({ baseUrl: BASE, fetchFn: known, getToken: () => null }).createSynastryDirection('syn-1', input);
+    expect(bodyOf(known)).toEqual({ topic: 'SYNASTRY', synastryId: 'syn-1', ...input });
+    const unknown = fakeFetch(200, synastry);
+    await createApi({ baseUrl: BASE, fetchFn: unknown, getToken: () => null }).createSynastryDirection('syn-1', {
+      date: '1999-03-02',
+      time: null,
+      placeId: 1841277,
+    });
+    expect(bodyOf(unknown)).toEqual({ topic: 'SYNASTRY', synastryId: 'syn-1', date: '1999-03-02', time: null });
+    expect('placeId' in bodyOf(unknown)).toBe(false);
+  });
+
+  it('요청한 주제와 다른 주제의 글이 오면 쓰지 않는다', async () => {
+    const answer = (body: unknown) => createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => null });
+    const invalid = { ok: false, error: 'INVALID', status: 200 };
+    expect(await answer(fixtures.direction).createDirection('FUTURE')).toEqual(invalid);
+    expect(await answer(future).createDirection('LOVE')).toEqual(invalid);
+    expect(await answer(synastry).createDirection('FUTURE')).toEqual(invalid);
+    expect(await answer(future).createSynastryDirection('syn-1')).toEqual(invalid);
+    expect(await answer(fixtures.direction).createSynastryDirection('syn-1', input)).toEqual(invalid);
+  });
+
+  it('궁합의 오류는 code 로 온다(BIRTH_REQUIRED · BIRTH_MISMATCH · PROFILE_CHANGED · NOT_FOUND)', async () => {
+    const call = (status: number, error: string) =>
+      createApi({
+        baseUrl: BASE,
+        fetchFn: fakeFetch(status, { error }),
+        getToken: () => null,
+      }).createSynastryDirection('syn-1');
+    for (const [status, code] of [
+      [400, 'BIRTH_REQUIRED'],
+      [400, 'BIRTH_MISMATCH'],
+      [409, 'PROFILE_CHANGED'],
+      [404, 'NOT_FOUND'],
+    ] as const)
+      expect(await call(status, code)).toEqual({ ok: false, error: 'SERVER', status, code });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 주제에 맞는 예시 글을 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.createDirection('FUTURE')).toEqual({ ok: true, data: future });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
+    expect(await api.createSynastryDirection('syn-1')).toEqual({ ok: true, data: synastry });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it('예시 글은 조언형이다: 항목 제목이 "보기" 로 끝나고 숫자와 앞일의 단정이 없다', () => {
+    for (const d of [future, synastry]) {
+      const texts = [d.title, ...d.items.flatMap((i) => [i.title, i.body])];
+      for (const item of d.items) expect(item.title).toMatch(/보기$/);
+      for (const text of texts)
+        expect(text).not.toMatch(/[0-9]|반드시|틀림없이|운명|거예요|겁니다|것입니다|게 됩니다|게 돼요/);
+    }
   });
 });
 

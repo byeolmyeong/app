@@ -71,10 +71,14 @@ export type Reading = {
   shareId: string;
 };
 
-/** 방향성 제시의 주제. 지금 서버가 받는 것은 이성(`LOVE`) 하나다 */
-export type DirectionTopic = 'LOVE';
+/** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
+export const DIRECTION_TOPICS = ['LOVE', 'FUTURE', 'SYNASTRY'] as const;
+export type DirectionTopic = (typeof DIRECTION_TOPICS)[number];
 
-/** 방향성 제시: 한 줄 제목과 해 볼 만한 것 3개. 항목의 title 은 실천 한 줄, basis 는 `Reading` 과 같은 말(1개 이상) */
+/**
+ * 방향성 제시: 한 줄 제목과 해 볼 만한 것 3개. 항목의 title 은 실천 한 줄, basis 는 1개 이상이다
+ * (이성 · 미래는 `Reading` 과 같은 말, 궁합은 `SynastryReport` 와 같은 내 쪽 요소의 말).
+ */
 export type Direction = {
   topic: DirectionTopic;
   title: string;
@@ -362,7 +366,7 @@ const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 
 export function isDirection(v: unknown): v is Direction {
   return (
     isObject(v) &&
-    v.topic === 'LOVE' &&
+    DIRECTION_TOPICS.some((topic) => topic === v.topic) &&
     isText(v.title) &&
     Array.isArray(v.items) &&
     v.items.length === 3 &&
@@ -494,6 +498,12 @@ const partnerBirthBody = (birth: BirthInput) => ({
   ...(birth.time !== null && birth.placeId !== null ? { placeId: birth.placeId } : {}),
 });
 
+/** 요청한 주제의 글일 때만 받는다. 다른 주제의 글이 오면 계약과 다른 응답이다 */
+const isDirectionOf =
+  (topic: DirectionTopic) =>
+  (v: unknown): v is Direction =>
+    isDirection(v) && v.topic === topic;
+
 const isReportRequest = (v: unknown): v is ReportRequest =>
   isObject(v) && (v.status === 'WRITING' || v.status === 'DONE');
 
@@ -623,12 +633,27 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)를 받는다. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
+     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)의 이성 · 미래 주제. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
      * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
+     * 미래는 "지금의 시기" 가 달라진 날부터 같은 요청이 새 글을 준다. 그래서 볼 때마다 부른다(결정 026).
      */
-    async createDirection(topic: DirectionTopic): Promise<ApiResult<Direction>> {
-      if (config.useFixtures) return { ok: true, data: fixtures.direction };
-      return request('POST', '/directions', { body: { topic }, validate: isDirection });
+    async createDirection(topic: 'LOVE' | 'FUTURE'): Promise<ApiResult<Direction>> {
+      if (config.useFixtures)
+        return { ok: true, data: topic === 'FUTURE' ? fixtures.directionFuture : fixtures.direction };
+      return request('POST', '/directions', { body: { topic }, validate: isDirectionOf(topic) });
+    },
+
+    /**
+     * `POST /directions` 의 궁합 주제: 직접 입력 궁합 한 건(`synastryId`)에 대한 글. birth 는 상대의 출생 정보이고
+     * 그 궁합의 글을 처음 만들 때만 필요하다(서버에 없어 다시 보낸다). 글이 없는데 보내지 않으면 400 `BIRTH_REQUIRED`,
+     * 그 궁합의 상대가 아니면 400 `BIRTH_MISMATCH`, 내 출생 정보가 바뀌었으면 409 `PROFILE_CHANGED` 가 code 로 온다.
+     */
+    async createSynastryDirection(synastryId: string, birth?: BirthInput): Promise<ApiResult<Direction>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.directionSynastry };
+      return request('POST', '/directions', {
+        body: { topic: 'SYNASTRY', synastryId, ...(birth ? partnerBirthBody(birth) : {}) },
+        validate: isDirectionOf('SYNASTRY'),
+      });
     },
 
     /**

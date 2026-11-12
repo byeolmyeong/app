@@ -174,6 +174,8 @@ export const strings = {
   home: {
     title: '별이 붙여 준\n나의 별명',
     subtitle: '태어난 순간의 하늘을 계산해\n나를 설명하는 글로 풀어 드립니다.',
+    /** 기기에 출생 정보가 없어 서버에 저장된 것을 확인하는 동안(결정 029) */
+    restoring: '불러오는 중이에요',
     dateLabel: '생년월일',
     datePlaceholder: '2000-06-15',
     timeLabel: '태어난 시각',

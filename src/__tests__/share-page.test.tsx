@@ -55,6 +55,8 @@ describe('공유 페이지(/s/<공유 식별자>)', () => {
     expect(mockApi.getSharedCard).toHaveBeenCalledWith('AbCdEfGhIjKlMnOpQrStUv');
     // 개발용 세션(POST /auth/dev)도, 세션이 필요한 다른 호출도 하지 않는다
     expect(otherCalls()).toEqual([]);
+    // 출생 정보를 되살리려고 서버에 묻지도 않는다(결정 029)
+    expect(mockApi.getProfile).not.toHaveBeenCalled();
   });
 
   it('"나도 보러 가기" 는 첫 화면(/)으로 간다', async () => {

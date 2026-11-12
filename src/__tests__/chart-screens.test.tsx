@@ -24,6 +24,8 @@ jest.mock('@/lib/api', () => ({
 }));
 jest.mock('@/features/auth/use-session', () => ({
   getSession: jest.fn(() => ({ token: null, ready: true })),
+  // 홈은 세션이 없으면 서버에 저장된 출생 정보를 묻지 않고 입력부터 받는다(결정 029).
+  useSession: jest.fn(() => ({ token: null, ready: true })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;

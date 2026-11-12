@@ -3,7 +3,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { Linking } from 'react-native';
 
 import MyScreen from '@/app/my';
 import SettingsScreen from '@/app/settings/index';
@@ -51,7 +50,6 @@ const STORED_KEYS = [BIRTH_STORAGE_KEY, READING_STORAGE_KEY, REPORT_STORAGE_KEY]
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   await saveBirth({ profile, chart: fixtures.chart });
   await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: 'k', reading: fixtures.reading }));
   await AsyncStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify({ key: 'k', report: fixtures.report }));
@@ -66,10 +64,14 @@ describe('마이에서 설정으로', () => {
 });
 
 describe('설정(/settings)', () => {
-  it('처리방침 · 약관 · 문의 · 앱 버전 · 계정 삭제 줄을 보여 준다', async () => {
+  it('자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 앱 버전 · 계정 삭제 줄을 이 순서로 보여 준다', async () => {
     await render(<SettingsScreen />);
-    for (const label of [S.privacy, S.terms, S.contact, S.version, S.deleteAccount])
-      expect(screen.getByText(label)).toBeTruthy();
+    expect([S.faq, S.inquiry]).toEqual(['자주 묻는 질문', '문의하기']);
+    const labels = [S.faq, S.inquiry, S.privacy, S.terms, S.version, S.deleteAccount];
+    for (const label of labels) expect(screen.getByText(label)).toBeTruthy();
+    const shown = JSON.stringify(screen.toJSON());
+    const places = labels.map((label) => shown.indexOf(`"${label}"`));
+    expect(places).toEqual([...places].sort((a, b) => a - b));
     // 앱 버전은 expo 설정에서 온다
     expect(Constants.expoConfig?.version).toBe('9.8.7');
     expect(screen.getByText('9.8.7')).toBeTruthy();
@@ -85,18 +87,21 @@ describe('설정(/settings)', () => {
     expect(router.push).toHaveBeenLastCalledWith('/settings/terms');
   });
 
-  it('문의 줄은 주소를 보여 주고, 누르면 그 주소로 메일 쓰기를 연다', async () => {
+  it('자주 묻는 질문 · 문의하기 줄은 그 화면으로 간다', async () => {
     await render(<SettingsScreen />);
-    expect(screen.getByText(S.contactEmail)).toBeTruthy();
-    await fireEvent.press(screen.getByText(S.contact));
-    expect(Linking.openURL).toHaveBeenCalledWith(`mailto:${S.contactEmail}`);
+    await fireEvent.press(screen.getByText(S.faq));
+    expect(router.push).toHaveBeenLastCalledWith('/settings/faq');
+    await fireEvent.press(screen.getByText(S.inquiry));
+    expect(router.push).toHaveBeenLastCalledWith('/settings/inquiry');
   });
 
-  it('메일 앱을 열지 못해도 화면은 그대로다', async () => {
-    (Linking.openURL as jest.Mock).mockRejectedValueOnce(new Error('no handler'));
+  it('문의 메일 주소를 어디에도 적지 않는다(결정 024): 화면에도, 문구 전체에도 메일 주소가 없다', async () => {
     await render(<SettingsScreen />);
-    await fireEvent.press(screen.getByText(S.contact));
-    expect(screen.getByText(S.contactEmail)).toBeTruthy();
+    expect(screen.queryByText(/@/)).toBeNull();
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/@|mailto/);
+    expect(JSON.stringify(strings)).not.toMatch(/@|mailto/);
+    expect(S).not.toHaveProperty('contact');
+    expect(S).not.toHaveProperty('contactEmail');
   });
 });
 

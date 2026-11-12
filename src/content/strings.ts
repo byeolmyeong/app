@@ -26,9 +26,8 @@ export const strings = {
     title: '설정',
     privacy: '개인정보 처리방침',
     terms: '이용약관',
-    contact: '문의',
-    /** 문의 메일 주소. 소유자가 정한 임시 주소다. 바꿀 때는 여기 한 곳만 바꾼다(다른 곳에 적지 않는다) */
-    contactEmail: 'kimdonghwan913@gmail.com',
+    faq: '자주 묻는 질문',
+    inquiry: '문의하기',
     version: '앱 버전',
     deleteAccount: '계정 삭제',
     deleteSheet: {

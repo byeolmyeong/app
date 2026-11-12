@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 import { Colors, FontFamily } from '@/constants/theme';
 import { useSession } from '@/features/auth/use-session';
+import { UpdateGate } from '@/features/update/update-gate';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,5 +36,10 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }} />;
+  // 최소 버전보다 낮은 앱은 화면들 대신 "업데이트가 필요해요" 만 본다(결정 027). 세션과 상관없다.
+  return (
+    <UpdateGate>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }} />
+    </UpdateGate>
+  );
 }

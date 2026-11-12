@@ -19,7 +19,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { createReading: jest.fn(), saveProfile: jest.fn() },
+  api: { createReading: jest.fn(), createDirection: jest.fn(), saveProfile: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
@@ -79,13 +79,21 @@ describe('요약 해석 화면', () => {
     expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
-  it('누를 수 있는 것은 뒤로 가기, 차트로 가는 그림과 "내 차트 보기" 뿐이다(다시 생성·공유·리포트 없음)', async () => {
+  it('글 아래에 "연애에서 해 볼 만한 것" 으로 들어가는 줄이 있고, 누르면 /direction 으로 간다. 이 화면은 방향성 제시를 요청하지 않는다', async () => {
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    await fireEvent.press(screen.getByText(R.seeDirection));
+    expect(router.push).toHaveBeenCalledWith('/direction');
+    expect(mockApi.createDirection).not.toHaveBeenCalled();
+  });
+
+  it('누를 수 있는 것은 뒤로 가기, 차트로 가는 그림, "연애에서 해 볼 만한 것" 과 "내 차트 보기" 뿐이다(다시 생성·공유·리포트 없음)', async () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     // 버튼은 뒤로 가기와 하늘 그림(차트로 간다) 둘이다
     expect(screen.queryAllByRole('button')).toHaveLength(2);
     expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
-    expect(screen.queryAllByRole('link')).toHaveLength(1);
+    expect(screen.queryAllByRole('link')).toHaveLength(2);
   });
 
   it('실패하면 안내와 "다시 시도" 를 보여 주고, 누르면 한 번 더 요청한다', async () => {

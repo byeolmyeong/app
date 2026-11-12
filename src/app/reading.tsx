@@ -83,7 +83,7 @@ export default function ReadingScreen() {
   );
 }
 
-/** 그 사람의 하늘 그림, 글, 그 아래의 "내 차트 보기" · 안내 문구. */
+/** 그 사람의 하늘 그림, 글, 그 아래의 "연애에서 해 볼 만한 것 보기" · "내 차트 보기" · 안내 문구. */
 function ReadingBody({ reading, chart }: { reading: Reading; chart: Chart | null }) {
   return (
     <>
@@ -96,6 +96,8 @@ function ReadingBody({ reading, chart }: { reading: Reading; chart: Chart | null
       ) : null}
       <ReadingView reading={reading} />
       <View style={styles.footer}>
+        {/* 방향성 "이성" 은 들어가는 줄만 둔다. 글은 그 화면을 열 때 받는다(결정 023) */}
+        <TextLink label={S.seeDirection} onPress={() => router.push('/direction')} />
         <TextLink label={S.seeChart} onPress={() => router.push('/chart')} />
         <Txt variant="label" color="gray">
           {S.disclaimer}

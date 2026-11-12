@@ -61,6 +61,11 @@ export function OverlayWheel({ overlay, name }: OverlayWheelProps) {
               strokeDasharray={dashed ? '3.4 2.7' : undefined}
             />
           ))}
+          {[...w.mine, ...w.theirs].map((b, i) =>
+            b.leader ? (
+              <Line key={`ld${i}`} testID="overlay-leader" {...b.leader} stroke={Colors.muted} strokeWidth={0.6} />
+            ) : null,
+          )}
           {w.mine.map((b) => (
             <Circle
               key={`m${b.body}`}

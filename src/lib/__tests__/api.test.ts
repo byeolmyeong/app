@@ -1,7 +1,9 @@
 import {
   createApi,
+  isAppConfig,
   isChart,
   isDirection,
+  isFaqList,
   isPlaceList,
   isReading,
   isReport,
@@ -145,7 +147,7 @@ describe('fixtures: 서버 계약의 모양', () => {
   });
 
   it('요약 해석은 계약의 필드만 갖는다', () => {
-    expect(Object.keys(fixtures.reading).sort()).toEqual(['cautions', 'headline', 'sections', 'shareId', 'strengths']);
+    expect(Object.keys(fixtures.reading).sort()).toEqual(['cautions', 'headline', 'sections', 'strengths']);
     expect(Object.keys(fixtures.reading.sections[0]).sort()).toEqual(['basis', 'body', 'title']);
   });
 });
@@ -309,9 +311,11 @@ describe('api: 요약 해석', () => {
       { ...r, sections: [{ title: 't', body: 'b', basis: [1] }] },
       { ...r, strengths: [1] },
       { ...r, cautions: undefined },
-      { ...r, shareId: undefined },
     ];
     for (const v of broken) expect(isReading(v)).toBe(false);
+    // shareId 는 더 쓰지 않는다(서버 결정 012). 없어도, 예전처럼 있어도 받는다
+    expect('shareId' in r).toBe(false);
+    expect(isReading({ ...r, shareId: 'old' })).toBe(true);
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { headline: 'x' }), getToken: () => null });
     expect(await api.createReading()).toEqual({ ok: false, error: 'INVALID', status: 200 });
   });
@@ -354,7 +358,8 @@ describe('api: 방향성 제시(이성)', () => {
     expect(isDirection(d)).toBe(true);
     const broken: unknown[] = [
       null,
-      { ...d, topic: 'FUTURE' },
+      { ...d, topic: 'OTHER' },
+      { ...d, topic: undefined },
       { ...d, title: '' },
       { ...d, title: undefined },
       { ...d, items: 'x' },
@@ -380,6 +385,97 @@ describe('api: 방향성 제시(이성)', () => {
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 방향성 제시(미래 · 궁합)', () => {
+  const future = fixtures.directionFuture;
+  const synastry = fixtures.directionSynastry;
+  const bodyOf = (fetchFn: jest.MockedFunction<typeof fetch>) => JSON.parse(fetchFn.mock.calls[0][1]?.body as string);
+
+  it('세 주제의 글을 모두 계약의 모양으로 받는다', () => {
+    expect(future.topic).toBe('FUTURE');
+    expect(synastry.topic).toBe('SYNASTRY');
+    for (const d of [fixtures.direction, future, synastry]) {
+      expect(isDirection(d)).toBe(true);
+      expect(Object.keys(d).sort()).toEqual(['items', 'title', 'topic']);
+    }
+  });
+
+  it('미래: POST /directions 에 { topic: "FUTURE" } 만 보낸다', async () => {
+    const fetchFn = fakeFetch(200, future);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createDirection('FUTURE')).toEqual({ ok: true, data: future });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/directions`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('POST');
+    expect(bodyOf(fetchFn)).toEqual({ topic: 'FUTURE' });
+  });
+
+  it('궁합: 상대의 출생 정보 없이는 { topic, synastryId } 만 보낸다', async () => {
+    const fetchFn = fakeFetch(200, synastry);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createSynastryDirection('syn-1')).toEqual({ ok: true, data: synastry });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/directions`);
+    expect(bodyOf(fetchFn)).toEqual({ topic: 'SYNASTRY', synastryId: 'syn-1' });
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('궁합: 상대의 출생 정보를 함께 보내고, 시각을 모르면 placeId 키를 싣지 않는다', async () => {
+    const known = fakeFetch(200, synastry);
+    await createApi({ baseUrl: BASE, fetchFn: known, getToken: () => null }).createSynastryDirection('syn-1', input);
+    expect(bodyOf(known)).toEqual({ topic: 'SYNASTRY', synastryId: 'syn-1', ...input });
+    const unknown = fakeFetch(200, synastry);
+    await createApi({ baseUrl: BASE, fetchFn: unknown, getToken: () => null }).createSynastryDirection('syn-1', {
+      date: '1999-03-02',
+      time: null,
+      placeId: 1841277,
+    });
+    expect(bodyOf(unknown)).toEqual({ topic: 'SYNASTRY', synastryId: 'syn-1', date: '1999-03-02', time: null });
+    expect('placeId' in bodyOf(unknown)).toBe(false);
+  });
+
+  it('요청한 주제와 다른 주제의 글이 오면 쓰지 않는다', async () => {
+    const answer = (body: unknown) => createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => null });
+    const invalid = { ok: false, error: 'INVALID', status: 200 };
+    expect(await answer(fixtures.direction).createDirection('FUTURE')).toEqual(invalid);
+    expect(await answer(future).createDirection('LOVE')).toEqual(invalid);
+    expect(await answer(synastry).createDirection('FUTURE')).toEqual(invalid);
+    expect(await answer(future).createSynastryDirection('syn-1')).toEqual(invalid);
+    expect(await answer(fixtures.direction).createSynastryDirection('syn-1', input)).toEqual(invalid);
+  });
+
+  it('궁합의 오류는 code 로 온다(BIRTH_REQUIRED · BIRTH_MISMATCH · PROFILE_CHANGED · NOT_FOUND)', async () => {
+    const call = (status: number, error: string) =>
+      createApi({
+        baseUrl: BASE,
+        fetchFn: fakeFetch(status, { error }),
+        getToken: () => null,
+      }).createSynastryDirection('syn-1');
+    for (const [status, code] of [
+      [400, 'BIRTH_REQUIRED'],
+      [400, 'BIRTH_MISMATCH'],
+      [409, 'PROFILE_CHANGED'],
+      [404, 'NOT_FOUND'],
+    ] as const)
+      expect(await call(status, code)).toEqual({ ok: false, error: 'SERVER', status, code });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 주제에 맞는 예시 글을 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.createDirection('FUTURE')).toEqual({ ok: true, data: future });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
+    expect(await api.createSynastryDirection('syn-1')).toEqual({ ok: true, data: synastry });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it('예시 글은 조언형이다: 항목 제목이 "보기" 로 끝나고 숫자와 앞일의 단정이 없다', () => {
+    for (const d of [future, synastry]) {
+      const texts = [d.title, ...d.items.flatMap((i) => [i.title, i.body])];
+      for (const item of d.items) expect(item.title).toMatch(/보기$/);
+      for (const text of texts)
+        expect(text).not.toMatch(/[0-9]|반드시|틀림없이|운명|거예요|겁니다|것입니다|게 됩니다|게 돼요/);
+    }
   });
 });
 
@@ -546,7 +642,8 @@ describe('api: 심층 리포트', () => {
       expect(Object.keys(section).sort()).toEqual(['area', 'paragraphs', 'title']);
       expect(section.paragraphs.length).toBeGreaterThanOrEqual(4);
       expect(section.paragraphs.length).toBeLessThanOrEqual(6);
-      for (const paragraph of section.paragraphs) expect(Object.keys(paragraph).sort()).toEqual(['basis', 'body', 'title']);
+      for (const paragraph of section.paragraphs)
+        expect(Object.keys(paragraph).sort()).toEqual(['basis', 'body', 'title']);
     }
   });
 
@@ -782,6 +879,411 @@ describe('api: 궁합(직접 입력)', () => {
       ok: true,
       data: { status: 'DONE', report: fixtures.synastryReport },
     });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 문의하기', () => {
+  const inquiry = { category: 'BUG' as const, body: '리포트 화면이 열리지 않아요.', replyEmail: null };
+
+  it('POST /inquiries 에 종류 · 내용 · 답장 주소(없으면 null)를 세션 헤더와 함께 보내고, 201 의 식별자를 받는다', async () => {
+    const fetchFn = fakeFetch(201, { id: '0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createInquiry(inquiry)).toEqual({
+      ok: true,
+      data: { id: '0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10' },
+    });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/inquiries`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(init?.body as string)).toEqual({
+      category: 'BUG',
+      body: '리포트 화면이 열리지 않아요.',
+      replyEmail: null,
+    });
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('답장 주소가 있으면 그대로 보낸다', async () => {
+    const fetchFn = fakeFetch(201, { id: 'a' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
+    await api.createInquiry({ ...inquiry, replyEmail: 'me@example.test' });
+    expect(JSON.parse(fetchFn.mock.calls[0][1]?.body as string).replyEmail).toBe('me@example.test');
+  });
+
+  it('400 은 서버가 적은 이름을 code 로, 429 는 한도 결과로 돌려주고 다시 부르지 않는다', async () => {
+    const call = (status: number, body?: unknown) => {
+      const fetchFn = fakeFetch(status, body);
+      return { fetchFn, api: createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }) };
+    };
+    const bad = call(400, { error: 'INVALID_EMAIL' });
+    expect(await bad.api.createInquiry(inquiry)).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 400,
+      code: 'INVALID_EMAIL',
+    });
+    expect(bad.fetchFn).toHaveBeenCalledTimes(1);
+    expect(await call(429, { error: 'RATE_LIMITED' }).api.createInquiry(inquiry)).toEqual({
+      ok: false,
+      error: 'LIMIT',
+      status: 429,
+    });
+  });
+
+  it('식별자가 없는 성공 응답은 INVALID 다', async () => {
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(201, {}), getToken: () => 't' });
+    expect(await api.createInquiry(inquiry)).toEqual({ ok: false, error: 'INVALID', status: 201 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 성공한다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.createInquiry(inquiry)).toMatchObject({ ok: true, data: { id: expect.any(String) } });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 앱 버전 헤더와 강제 업데이트(결정 027)', () => {
+  const platformConfig = {
+    minVersion: '1.2.0',
+    storeUrl: 'https://store.example.test/app',
+    message: null,
+    blockNow: false,
+  };
+  const appConfig = { ios: platformConfig, android: { ...platformConfig, minVersion: null, storeUrl: null } };
+
+  it('네이티브 앱이면 모든 요청에 X-App-Platform · X-App-Version 을 붙인다', async () => {
+    const fetchFn = fakeFetch(200, fixtures.chart);
+    const api = createApi({
+      baseUrl: BASE,
+      fetchFn,
+      getToken: () => 'token-1',
+      client: { platform: 'ios', version: '1.0.0' },
+    });
+    await api.createChart(input);
+    expect(headersOf(fetchFn)).toMatchObject({
+      'X-App-Platform': 'ios',
+      'X-App-Version': '1.0.0',
+      Authorization: 'Bearer token-1',
+    });
+
+    // 세션이 필요 없는 요청에도 붙인다.
+    const fetchPlaces = fakeFetch(200, []);
+    const android = createApi({
+      baseUrl: BASE,
+      fetchFn: fetchPlaces,
+      getToken: () => null,
+      client: { platform: 'android', version: '2.3.4' },
+    });
+    await android.listPlaces();
+    expect(headersOf(fetchPlaces)).toMatchObject({ 'X-App-Platform': 'android', 'X-App-Version': '2.3.4' });
+  });
+
+  it('웹(client 가 없다)이면 버전 헤더를 보내지 않는다', async () => {
+    for (const client of [null, undefined]) {
+      const fetchFn = fakeFetch(200, fixtures.chart);
+      const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, client });
+      await api.createChart(input);
+      expect(Object.keys(headersOf(fetchFn)).filter((name) => name.startsWith('X-App-'))).toEqual([]);
+    }
+  });
+
+  it('GET /app-config 를 세션 헤더 없이 부르고 플랫폼별 설정을 받는다', async () => {
+    const fetchFn = fakeFetch(200, appConfig);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.getAppConfig()).toEqual({ ok: true, data: appConfig });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/app-config`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    expect(headersOf(fetchFn).Authorization).toBeUndefined();
+  });
+
+  it('GET /app-config 가 401 이어도 세션을 다시 받지 않는다', async () => {
+    const refreshSession = jest.fn(async () => true);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => null, refreshSession });
+    expect((await api.getAppConfig()).ok).toBe(false);
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
+
+  it('설정의 모양: 두 플랫폼이 모두 있고, 값은 글자 또는 null, blockNow 는 참 · 거짓이어야 한다', () => {
+    expect(isAppConfig(appConfig)).toBe(true);
+    expect(isAppConfig({ ios: { ...platformConfig, message: '점검이 있었어요' }, android: platformConfig })).toBe(true);
+    expect(isAppConfig(null)).toBe(false);
+    expect(isAppConfig([])).toBe(false);
+    expect(isAppConfig({ ios: platformConfig })).toBe(false);
+    expect(isAppConfig({ ios: platformConfig, android: null })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, minVersion: 120 } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, minVersion: undefined } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, storeUrl: 1 } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, message: {} } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, blockNow: 'true' } })).toBe(false);
+    const { blockNow: _blockNow, ...withoutBlockNow } = platformConfig;
+    expect(isAppConfig({ ...appConfig, android: withoutBlockNow })).toBe(false);
+  });
+
+  it('모양이 다른 설정은 INVALID, 실패는 종류대로 돌려주고 다시 부르지 않는다', async () => {
+    const bad = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ios: {} }), getToken: () => null });
+    expect(await bad.getAppConfig()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    const fetchFn = fakeFetch(503);
+    const down = createApi({ baseUrl: BASE, fetchFn, getToken: () => null });
+    expect(await down.getAppConfig()).toEqual({ ok: false, error: 'SERVER', status: 503 });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('어느 호출이든 426 UPDATE_REQUIRED 를 받으면 알리고, 결과는 code 와 함께 실패다', async () => {
+    const onUpdateRequired = jest.fn();
+    const fetchFn = fakeFetch(426, { error: 'UPDATE_REQUIRED' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1', onUpdateRequired });
+    expect(await api.createReading()).toEqual({ ok: false, error: 'SERVER', status: 426, code: 'UPDATE_REQUIRED' });
+    expect(onUpdateRequired).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    await api.getAppConfig();
+    expect(onUpdateRequired).toHaveBeenCalledTimes(2);
+  });
+
+  it('426 이라도 UPDATE_REQUIRED 가 아니거나 다른 상태의 UPDATE_REQUIRED 면 알리지 않는다', async () => {
+    const onUpdateRequired = jest.fn();
+    for (const fetchFn of [
+      fakeFetch(426),
+      fakeFetch(426, { error: 'OTHER' }),
+      fakeFetch(400, { error: 'UPDATE_REQUIRED' }),
+    ]) {
+      const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, onUpdateRequired });
+      expect((await api.createReading()).ok).toBe(false);
+    }
+    expect(onUpdateRequired).not.toHaveBeenCalled();
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 아무도 막지 않는 설정을 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    const r = await api.getAppConfig();
+    expect(r.ok && [r.data.ios.minVersion, r.data.android.minVersion]).toEqual([null, null]);
+    expect(r.ok && isAppConfig(r.data)).toBe(true);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 자주 묻는 질문(결정 028)', () => {
+  const faqs = [
+    { id: 'faq-1', question: '요금이 있나요?', answer: '지금은 모두 무료예요.' },
+    { id: 'faq-2', question: '결과는 어떻게 만들어지나요?', answer: '첫 줄\n둘째 줄' },
+  ];
+
+  it('GET /faqs 를 세션 헤더 없이 부르고 서버가 준 순서 그대로 받는다', async () => {
+    const fetchFn = fakeFetch(200, faqs);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.listFaqs()).toEqual({ ok: true, data: faqs });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/faqs`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    expect(headersOf(fetchFn).Authorization).toBeUndefined();
+  });
+
+  it('빈 목록도 받는다', async () => {
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, []), getToken: () => null });
+    expect(await api.listFaqs()).toEqual({ ok: true, data: [] });
+  });
+
+  it('목록의 모양: 배열이고, 항목마다 비지 않은 글자 id · question · answer 가 있어야 한다', () => {
+    expect(isFaqList(faqs)).toBe(true);
+    expect(isFaqList([])).toBe(true);
+    expect(isFaqList(null)).toBe(false);
+    expect(isFaqList({})).toBe(false);
+    expect(isFaqList({ items: faqs })).toBe(false);
+    expect(isFaqList('[]')).toBe(false);
+    expect(isFaqList([null])).toBe(false);
+    expect(isFaqList(['요금이 있나요?'])).toBe(false);
+    expect(isFaqList([{ question: 'q', answer: 'a' }])).toBe(false);
+    expect(isFaqList([{ id: 1, question: 'q', answer: 'a' }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q' }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q', answer: null }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q', answer: ['a'] }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: '', answer: 'a' }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q', answer: '' }])).toBe(false);
+    expect(isFaqList([{ id: '', question: 'q', answer: 'a' }])).toBe(false);
+    // 하나라도 어긋나면 목록 전체를 받지 않는다.
+    expect(isFaqList([...faqs, { id: 'faq-3', question: 'q' }])).toBe(false);
+  });
+
+  it('모양이 다른 목록은 INVALID, 429 는 한도, 그 밖의 실패는 종류대로 돌려주고 다시 부르지 않는다', async () => {
+    const call = async (status: number, body?: unknown) => {
+      const fetchFn = fakeFetch(status, body);
+      const result = await createApi({ baseUrl: BASE, fetchFn, getToken: () => null }).listFaqs();
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+      return result;
+    };
+    expect(await call(200, [{ id: 'a', question: 'q' }])).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    expect(await call(200, { faqs })).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    expect(await call(429)).toEqual({ ok: false, error: 'LIMIT', status: 429 });
+    expect(await call(500)).toEqual({ ok: false, error: 'SERVER', status: 500 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 작은 예시 목록을 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    const r = await api.listFaqs();
+    expect(r).toEqual({ ok: true, data: fixtures.faqs });
+    expect(isFaqList(fixtures.faqs)).toBe(true);
+    expect(fixtures.faqs.length).toBeGreaterThan(0);
+    expect(fixtures.faqs.length).toBeLessThanOrEqual(3);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 서버에 저장된 출생 정보(결정 029)', () => {
+  it('GET /profile 을 세션 헤더와 함께 부르고 저장된 출생 정보를 받는다', async () => {
+    const fetchFn = fakeFetch(200, input);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.getProfile()).toEqual({ ok: true, data: input });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/profile`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    expect(fetchFn.mock.calls[0][1]?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer token-1');
+  });
+
+  it('시각 "모름" 이면 placeId 가 null 인 출생 정보를 받는다', async () => {
+    const unknown = { date: '2000-06-15', time: null, placeId: null };
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, unknown), getToken: () => 't' });
+    expect(await api.getProfile()).toEqual({ ok: true, data: unknown });
+  });
+
+  it('저장된 것이 없으면(404 NO_PROFILE) code 와 함께 실패이고 다시 부르지 않는다', async () => {
+    const fetchFn = fakeFetch(404, { error: 'NO_PROFILE' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
+    expect(await api.getProfile()).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('모양이 다른 출생 정보는 INVALID 다(시각이 있는데 곳이 없다 · 날짜가 없다)', async () => {
+    for (const body of [{ date: '2000-06-15', time: '21:00', placeId: null }, { time: null, placeId: null }, null]) {
+      const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => 't' });
+      expect(await api.getProfile()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    }
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 "저장된 것이 없다" 로 답한다(되살리지 않는다)', async () => {
+    const fetchFn = fakeFetch(200, input);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 't', useFixtures: true });
+    expect(await api.getProfile()).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 점검(결정 030)', () => {
+  const platformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+  const base = { ios: platformConfig, android: platformConfig };
+
+  it('GET /app-config 의 maintenance 를 함께 받는다', async () => {
+    const config = { ...base, maintenance: { active: true, message: '새벽 2시까지 점검해요' } };
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, config), getToken: () => null });
+    expect(await api.getAppConfig()).toEqual({ ok: true, data: config });
+  });
+
+  it('설정의 모양: maintenance 가 있으면 active 는 참 · 거짓, message 는 글자 또는 null 이어야 한다', () => {
+    expect(isAppConfig({ ...base, maintenance: { active: false, message: null } })).toBe(true);
+    expect(isAppConfig({ ...base, maintenance: { active: true, message: '점검 중' } })).toBe(true);
+    expect(isAppConfig({ ...base, maintenance: null })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: true })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { active: 'true', message: null } })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { active: true } })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { active: true, message: 1 } })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { message: null } })).toBe(false);
+  });
+
+  it('maintenance 키가 없는 옛 서버의 응답도 받는다(점검 중이 아닌 것으로 읽는다)', async () => {
+    expect(isAppConfig(base)).toBe(true);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, base), getToken: () => null });
+    const r = await api.getAppConfig();
+    expect(r).toEqual({ ok: true, data: base });
+    expect(r.ok && r.data.maintenance).toBeUndefined();
+  });
+
+  it('어느 호출이든 503 MAINTENANCE 를 받으면 알리고, 결과는 code 와 함께 실패다(다시 부르지 않는다)', async () => {
+    const onMaintenance = jest.fn();
+    const onUpdateRequired = jest.fn();
+    const fetchFn = fakeFetch(503, { error: 'MAINTENANCE' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1', onMaintenance, onUpdateRequired });
+    expect(await api.createReading()).toEqual({ ok: false, error: 'SERVER', status: 503, code: 'MAINTENANCE' });
+    expect(onMaintenance).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    // 세션이 없는 호출(공유 페이지)도 알린다.
+    await api.getSharedCard('AbCdEfGhIjKlMnOpQrStUv');
+    expect(onMaintenance).toHaveBeenCalledTimes(2);
+    expect(onUpdateRequired).not.toHaveBeenCalled();
+  });
+
+  it('503 이라도 MAINTENANCE 가 아니거나 다른 상태의 MAINTENANCE 면 알리지 않는다', async () => {
+    const onMaintenance = jest.fn();
+    for (const fetchFn of [
+      fakeFetch(503),
+      fakeFetch(503, { error: 'OTHER' }),
+      fakeFetch(500, { error: 'MAINTENANCE' }),
+    ]) {
+      const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, onMaintenance });
+      expect((await api.createReading()).ok).toBe(false);
+    }
+    expect(onMaintenance).not.toHaveBeenCalled();
+  });
+
+  it('가짜 서버의 설정은 점검 중이 아니다', async () => {
+    const api = createApi({ baseUrl: BASE, getToken: () => null, useFixtures: true });
+    const r = await api.getAppConfig();
+    expect(r.ok && r.data.maintenance).toEqual({ active: false, message: null });
+  });
+});
+
+describe('api: 앱이 쓰는 인스턴스의 점검 알림(결정 030)', () => {
+  it('503 MAINTENANCE 를 받으면 등록된 처리기를 부르고, 처리기를 거두면 부르지 않는다', async () => {
+    const { api, setMaintenanceHandler } = jest.requireActual<typeof import('@/lib/api')>('@/lib/api');
+    const original = globalThis.fetch;
+    globalThis.fetch = fakeFetch(503, { error: 'MAINTENANCE' });
+    try {
+      const handler = jest.fn();
+      setMaintenanceHandler(handler);
+      expect(await api.getSharedCard('AbCdEfGhIjKlMnOpQrStUv')).toMatchObject({ ok: false, code: 'MAINTENANCE' });
+      expect(handler).toHaveBeenCalledTimes(1);
+      setMaintenanceHandler(null);
+      await api.getSharedCard('AbCdEfGhIjKlMnOpQrStUv');
+      expect(handler).toHaveBeenCalledTimes(1);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});
+
+describe('api: 궁합 지우기', () => {
+  it('DELETE /synastry/{id} 를 세션 헤더와 함께 본문 없이 부르고, 204 면 성공이다', async () => {
+    const fetchFn = fakeFetch(204);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.deleteSynastry('syn 1/2')).toEqual({ ok: true, data: null });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/synastry/syn%201%2F2`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('DELETE');
+    expect(fetchFn.mock.calls[0][1]?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer token-1');
+  });
+
+  it('없는 궁합(404 NOT_FOUND)과 그 밖의 실패는 종류대로 돌려주고 다시 부르지 않는다', async () => {
+    const gone = fakeFetch(404, { error: 'NOT_FOUND' });
+    expect(await createApi({ baseUrl: BASE, fetchFn: gone, getToken: () => 't' }).deleteSynastry('s1')).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+    expect(gone).toHaveBeenCalledTimes(1);
+    const failed = fakeFetch(500);
+    expect(await createApi({ baseUrl: BASE, fetchFn: failed, getToken: () => 't' }).deleteSynastry('s1')).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 500,
+    });
+    expect(failed).toHaveBeenCalledTimes(1);
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 성공이다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.deleteSynastry('s1')).toEqual({ ok: true, data: null });
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

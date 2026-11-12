@@ -6,7 +6,7 @@ import { Colors, LineWidth, Sizes, Spacing, type ColorName } from '@/constants/t
 
 export type ListRowProps = {
   label: string;
-  /** 오른쪽에 적는 값(버전, 주소). 없고 누를 수 있으면 화살표를 그린다 */
+  /** 오른쪽에 적는 값(버전). 없고 누를 수 있으면 화살표를 그린다 */
   value?: string;
   /** 있으면 누를 수 있는 줄이다 */
   onPress?: () => void;

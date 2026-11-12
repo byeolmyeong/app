@@ -3,6 +3,7 @@
  * 계약에 없는 필드는 여기서 만들지 않는다. 어긋나면 서버 저장소의 계약 표를 먼저 고친다.
  * 출생 정보와 세션 토큰은 로그에 남기지 않는다(이 파일은 아무것도 기록하지 않는다).
  */
+import { appClient, type AppClient } from '@/lib/app-client';
 import { fixtures } from '@/lib/fixtures';
 
 // ── 계약의 타입 ────────────────────────────────────────────────────────────
@@ -68,13 +69,16 @@ export type Reading = {
   sections: { title: string; body: string; basis: string[] }[];
   strengths: string[];
   cautions: string[];
-  shareId: string;
 };
 
-/** 방향성 제시의 주제. 지금 서버가 받는 것은 이성(`LOVE`) 하나다 */
-export type DirectionTopic = 'LOVE';
+/** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
+export const DIRECTION_TOPICS = ['LOVE', 'FUTURE', 'SYNASTRY'] as const;
+export type DirectionTopic = (typeof DIRECTION_TOPICS)[number];
 
-/** 방향성 제시: 한 줄 제목과 해 볼 만한 것 3개. 항목의 title 은 실천 한 줄, basis 는 `Reading` 과 같은 말(1개 이상) */
+/**
+ * 방향성 제시: 한 줄 제목과 해 볼 만한 것 3개. 항목의 title 은 실천 한 줄, basis 는 1개 이상이다
+ * (이성 · 미래는 `Reading` 과 같은 말, 궁합은 `SynastryReport` 와 같은 내 쪽 요소의 말).
+ */
 export type Direction = {
   topic: DirectionTopic;
   title: string;
@@ -219,6 +223,63 @@ export type SynastryReportState =
 /** `POST /synastry/{id}/report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
 export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
+/** 문의의 종류(결정 024). 계정 · 풀이/리포트 · 궁합 · 오류 신고 · 기타 */
+export const INQUIRY_CATEGORIES = ['ACCOUNT', 'READING', 'SYNASTRY', 'BUG', 'OTHER'] as const;
+export type InquiryCategory = (typeof INQUIRY_CATEGORIES)[number];
+
+/** `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~2000자(유니코드 코드 포인트로 센다), replyEmail 은 답장을 받지 않으면 null */
+export type InquiryInput = { category: InquiryCategory; body: string; replyEmail: string | null };
+
+/** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */
+export type InquiryCreated = { id: string };
+
+/** `GET /faqs` 의 한 줄(결정 028). 관리자가 적은 질문과 답. answer 는 그냥 글자이고 줄바꿈이 들어 있을 수 있다 */
+export type Faq = { id: string; question: string; answer: string };
+
+/**
+ * `GET /app-config` 의 한 플랫폼 몫(결정 027). minVersion 은 점으로 나눈 숫자("1.2.0")이고 null 이면 아무도 막지 않는다.
+ * message 는 관리자가 적은 안내(그냥 글자). blockNow 는 서버가 426 으로 바로 거절할지의 스위치다(앱은 판정에 쓰지 않는다).
+ */
+export type PlatformConfig = {
+  minVersion: string | null;
+  storeUrl: string | null;
+  message: string | null;
+  blockNow: boolean;
+};
+
+/** 점검(결정 030). active 면 앱은 점검 안내만 보여 준다. message 는 관리자가 적은 안내(그냥 글자) */
+export type Maintenance = { active: boolean; message: string | null };
+
+/** maintenance 는 이 키를 내기 전의 옛 서버 응답에는 없다. 없으면 점검 중이 아닌 것으로 읽는다(결정 030) */
+export type AppConfig = { ios: PlatformConfig; android: PlatformConfig; maintenance?: Maintenance };
+
+/** 다음 변곡점 카드의 계절. 서버가 날짜를 해와 계절로 줄여서 준다(앱은 날짜를 받지 않는다) */
+export const SEASONS = ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'] as const;
+export type Season = (typeof SEASONS)[number];
+
+/**
+ * 공유 카드(서버 결정 012). `kind` 로 가리는 네 모양이고 적힌 키가 전부다. 값이 없는 키는 오지 않는다.
+ * 출생 정보 · 근거 · 본문은 어느 카드에도 없다. SCORE 의 names 는 [공유하는 사람, 상대] 순서,
+ * RANKING 의 entries 는 1~3명이고 name 은 서버가 만든 이니셜이거나(기본) 적은 이름 그대로다.
+ */
+export type ShareCard =
+  | { kind: 'READING'; headline: string; keywords: [string, string, string] }
+  | { kind: 'SCORE'; names: [string, string]; score: number; scoreLabel?: string; headline: string }
+  | { kind: 'RANKING'; relation: Relation; entries: { name: string; score: number }[] }
+  | { kind: 'NEXT_TURN'; year: number; season: Season; theme: string };
+
+export type ShareKind = ShareCard['kind'];
+
+/** `POST /shares` 의 요청. myName 은 공유하는 사람을 부를 이름(1~20자), showNames 가 없으면 이니셜이다 */
+export type ShareRequest =
+  | { kind: 'READING' }
+  | { kind: 'SCORE'; synastryId: string; myName: string }
+  | { kind: 'RANKING'; relation: Relation; showNames?: boolean }
+  | { kind: 'NEXT_TURN' };
+
+/** `POST /shares` 의 응답. card 는 `GET /shared/{shareId}` 가 주는 것과 같다 */
+export type ShareCreated = { shareId: string; card: ShareCard };
+
 // ── 결과 ───────────────────────────────────────────────────────────────────
 
 /**
@@ -294,6 +355,7 @@ export function isPlaceList(v: unknown): v is Place[] {
 
 const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((item) => typeof item === 'string');
 
+/** 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다 */
 export function isReading(v: unknown): v is Reading {
   return (
     isObject(v) &&
@@ -303,8 +365,7 @@ export function isReading(v: unknown): v is Reading {
       (s) => isObject(s) && typeof s.title === 'string' && typeof s.body === 'string' && isStringList(s.basis),
     ) &&
     isStringList(v.strengths) &&
-    isStringList(v.cautions) &&
-    typeof v.shareId === 'string'
+    isStringList(v.cautions)
   );
 }
 
@@ -362,7 +423,7 @@ const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 
 export function isDirection(v: unknown): v is Direction {
   return (
     isObject(v) &&
-    v.topic === 'LOVE' &&
+    DIRECTION_TOPICS.some((topic) => topic === v.topic) &&
     isText(v.title) &&
     Array.isArray(v.items) &&
     v.items.length === 3 &&
@@ -487,6 +548,72 @@ export function isSynastryReportState(v: unknown): v is SynastryReportState {
 const isSynastryReportRequest = (v: unknown): v is SynastryReportRequest =>
   isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
 
+/** 종류마다 제 필드가 모두 계약의 모양이어야 한다. 계약에 없는 필드는 보지 않는다(화면도 그리지 않는다) */
+export function isShareCard(v: unknown): v is ShareCard {
+  if (!isObject(v)) return false;
+  switch (v.kind) {
+    case 'READING':
+      return isText(v.headline) && isKeywords(v.keywords);
+    case 'SCORE':
+      return (
+        isStringList(v.names) &&
+        v.names.length === 2 &&
+        typeof v.score === 'number' &&
+        isOptionalString(v.scoreLabel) &&
+        typeof v.headline === 'string'
+      );
+    case 'RANKING':
+      return (
+        RELATIONS.some((r) => r === v.relation) &&
+        Array.isArray(v.entries) &&
+        v.entries.length >= 1 &&
+        v.entries.length <= 3 &&
+        v.entries.every((e) => isObject(e) && typeof e.name === 'string' && typeof e.score === 'number')
+      );
+    case 'NEXT_TURN':
+      return Number.isInteger(v.year) && SEASONS.some((season) => season === v.season) && isText(v.theme);
+    default:
+      return false;
+  }
+}
+
+const isShareCreated = (v: unknown): v is ShareCreated => isObject(v) && isText(v.shareId) && isShareCard(v.card);
+
+/** `POST /shares` 의 본문. 그 종류의 계약에 있는 값만 싣는다 */
+const shareBody = (input: ShareRequest) => {
+  switch (input.kind) {
+    case 'SCORE':
+      return { kind: input.kind, synastryId: input.synastryId, myName: input.myName };
+    case 'RANKING':
+      return { kind: input.kind, relation: input.relation, showNames: input.showNames === true };
+    default:
+      return { kind: input.kind };
+  }
+};
+
+/** 가짜 서버의 공유 식별자. 카드 예시(fixtures.shareCards)의 키마다 하나다 */
+const FIXTURE_SHARE_PREFIX = 'fixture-share-';
+
+/** 가짜 서버가 만드는 공유. 예시 카드에 받은 이름과 관계만 바꿔 넣는다 */
+function fixtureShare(input: ShareRequest): ShareCreated {
+  const C = fixtures.shareCards;
+  switch (input.kind) {
+    case 'READING':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}reading`, card: C.reading };
+    case 'SCORE':
+      return {
+        shareId: `${FIXTURE_SHARE_PREFIX}score`,
+        card: { ...C.score, names: [input.myName, C.score.names[1]] },
+      };
+    case 'RANKING': {
+      const key = input.showNames ? 'rankingNames' : 'ranking';
+      return { shareId: `${FIXTURE_SHARE_PREFIX}${key}`, card: { ...C[key], relation: input.relation } };
+    }
+    case 'NEXT_TURN':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}nextTurn`, card: C.nextTurn };
+  }
+}
+
 /** 상대의 출생 정보를 요청 본문으로. placeId 는 시각이 있을 때만 싣는다(시각 "모름" 이면 키를 보내지 않는다) */
 const partnerBirthBody = (birth: BirthInput) => ({
   date: birth.date,
@@ -494,13 +621,50 @@ const partnerBirthBody = (birth: BirthInput) => ({
   ...(birth.time !== null && birth.placeId !== null ? { placeId: birth.placeId } : {}),
 });
 
+/** 요청한 주제의 글일 때만 받는다. 다른 주제의 글이 오면 계약과 다른 응답이다 */
+const isDirectionOf =
+  (topic: DirectionTopic) =>
+  (v: unknown): v is Direction =>
+    isDirection(v) && v.topic === topic;
+
 const isReportRequest = (v: unknown): v is ReportRequest =>
   isObject(v) && (v.status === 'WRITING' || v.status === 'DONE');
 
-const isDevSession = (v: unknown): v is DevSession =>
-  isObject(v) && typeof v.token === 'string' && v.token.length > 0;
+const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
 
-/** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
+/** 하나라도 어긋나면 목록 전체를 받지 않는다. 계약에 없는 필드는 보지 않는다 */
+export function isFaqList(v: unknown): v is Faq[] {
+  return (
+    Array.isArray(v) &&
+    v.every((item) => isObject(item) && isText(item.id) && isText(item.question) && isText(item.answer))
+  );
+}
+
+const isNullableString = (v: unknown): v is string | null => typeof v === 'string' || v === null;
+
+const isPlatformConfig = (v: unknown): v is PlatformConfig =>
+  isObject(v) &&
+  isNullableString(v.minVersion) &&
+  isNullableString(v.storeUrl) &&
+  isNullableString(v.message) &&
+  typeof v.blockNow === 'boolean';
+
+const isMaintenance = (v: unknown): v is Maintenance =>
+  isObject(v) && typeof v.active === 'boolean' && isNullableString(v.message);
+
+/** maintenance 는 키가 없을 때만 넘어간다. 있는데 모양이 다르면 응답 전체를 받지 않는다 */
+export function isAppConfig(v: unknown): v is AppConfig {
+  return (
+    isObject(v) &&
+    isPlatformConfig(v.ios) &&
+    isPlatformConfig(v.android) &&
+    (v.maintenance === undefined || isMaintenance(v.maintenance))
+  );
+}
+
+const isDevSession = (v: unknown): v is DevSession => isObject(v) && typeof v.token === 'string' && v.token.length > 0;
+
+/** `PUT /profile` · `GET /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
   isObject(v) &&
   typeof v.date === 'string' &&
@@ -518,14 +682,29 @@ export type ApiConfig = {
   fetchFn?: typeof fetch;
   /** 개발용 가짜 서버. 켜면 서버를 부르지 않고 fixtures 로 답한다 */
   useFixtures?: boolean;
+  /** 네이티브 앱의 플랫폼과 버전. 있으면 모든 요청에 버전 헤더를 붙인다. 웹은 없다(결정 027) */
+  client?: AppClient | null;
+  /** 서버가 426 `UPDATE_REQUIRED` 로 거절했을 때 부른다 */
+  onUpdateRequired?: () => void;
+  /** 서버가 503 `MAINTENANCE` 로 거절했을 때 부른다(결정 030) */
+  onMaintenance?: () => void;
 };
 
 type RequestOptions<T> = {
   body?: unknown;
   validate: (v: unknown) => v is T;
-  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`) */
+  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`·`GET /app-config`·`GET /faqs`·`GET /shared/…`) */
   auth?: boolean;
 };
+
+/** `{ error }` 로 오는 이름: 이 버전의 앱은 더 받지 않는다(상태 426) */
+const UPDATE_REQUIRED = 'UPDATE_REQUIRED';
+
+/** `{ error }` 로 오는 이름: 점검 중이다(상태 503). `/app-config` 를 뺀 모든 주소가 이렇게 답한다 */
+const MAINTENANCE = 'MAINTENANCE';
+
+/** 가짜 서버의 설정. 아무도 막지 않는다 */
+const FIXTURE_PLATFORM_CONFIG: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
 
 /** 가짜 서버가 주는 세션 토큰 */
 const FIXTURE_TOKEN = 'fixture-session';
@@ -546,6 +725,10 @@ export function createApi(config: ApiConfig) {
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
     const token = auth ? config.getToken() : null;
     if (token) headers.Authorization = `Bearer ${token}`;
+    if (config.client) {
+      headers['X-App-Platform'] = config.client.platform;
+      headers['X-App-Version'] = config.client.version;
+    }
 
     let response: Response;
     try {
@@ -569,10 +752,12 @@ export function createApi(config: ApiConfig) {
       // 오류 본문 `{ error }` 의 이름만 읽는다. 본문이 없거나 모양이 달라도 결과는 같다.
       const body: unknown = await response.json().catch(() => null);
       const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
+      if (status === 426 && code.code === UPDATE_REQUIRED) config.onUpdateRequired?.();
+      if (status === 503 && code.code === MAINTENANCE) config.onMaintenance?.();
       return { ok: false, error: 'SERVER', status, ...code };
     }
 
-    // 204 는 본문이 없으니 읽지 않는다(`DELETE /account`).
+    // 204 는 본문이 없으니 읽지 않는다(`DELETE /account` · `DELETE /synastry/{id}`).
     let data: unknown = null;
     if (status !== 204) {
       try {
@@ -589,6 +774,26 @@ export function createApi(config: ApiConfig) {
     async listPlaces(): Promise<ApiResult<Place[]>> {
       if (config.useFixtures) return { ok: true, data: fixtures.places };
       return request('GET', '/places', { validate: isPlaceList, auth: false });
+    },
+
+    /** `GET /app-config` 플랫폼별 최소 버전 · 스토어 주소 · 안내(결정 027)와 점검 여부(결정 030). 세션이 필요 없다 */
+    async getAppConfig(): Promise<ApiResult<AppConfig>> {
+      if (config.useFixtures)
+        return {
+          ok: true,
+          data: {
+            ios: FIXTURE_PLATFORM_CONFIG,
+            android: FIXTURE_PLATFORM_CONFIG,
+            maintenance: { active: false, message: null },
+          },
+        };
+      return request('GET', '/app-config', { validate: isAppConfig, auth: false });
+    },
+
+    /** `GET /faqs` 자주 묻는 질문(결정 028). 공개된 것만, 보여 줄 순서대로 온다(빈 목록일 수 있다). 세션이 필요 없다 */
+    async listFaqs(): Promise<ApiResult<Faq[]>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.faqs };
+      return request('GET', '/faqs', { validate: isFaqList, auth: false });
     },
 
     /** `POST /charts` 출생 정보로 차트를 받는다 */
@@ -614,6 +819,15 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
+     * `GET /profile` 서버에 저장된 내 출생 정보(결정 029). 없으면 404 `NO_PROFILE` 이 code 로 온다.
+     * 가짜 서버는 저장된 것이 없다고 답한다(기기가 비어 있을 때 되살리지 않고 입력부터 받는다).
+     */
+    async getProfile(): Promise<ApiResult<BirthInput>> {
+      if (config.useFixtures) return { ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' };
+      return request('GET', '/profile', { validate: isBirthInput });
+    },
+
+    /**
      * `POST /readings` 요약 해석을 받는다. 본문은 없고 서버가 저장된 출생 정보로 쓴다(없으면 404).
      * 글을 쓰는 데 몇 초가 걸릴 수 있다. 같은 차트에는 같은 글이 온다.
      */
@@ -623,12 +837,27 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)를 받는다. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
+     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)의 이성 · 미래 주제. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
      * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
+     * 미래는 "지금의 시기" 가 달라진 날부터 같은 요청이 새 글을 준다. 그래서 볼 때마다 부른다(결정 026).
      */
-    async createDirection(topic: DirectionTopic): Promise<ApiResult<Direction>> {
-      if (config.useFixtures) return { ok: true, data: fixtures.direction };
-      return request('POST', '/directions', { body: { topic }, validate: isDirection });
+    async createDirection(topic: 'LOVE' | 'FUTURE'): Promise<ApiResult<Direction>> {
+      if (config.useFixtures)
+        return { ok: true, data: topic === 'FUTURE' ? fixtures.directionFuture : fixtures.direction };
+      return request('POST', '/directions', { body: { topic }, validate: isDirectionOf(topic) });
+    },
+
+    /**
+     * `POST /directions` 의 궁합 주제: 직접 입력 궁합 한 건(`synastryId`)에 대한 글. birth 는 상대의 출생 정보이고
+     * 그 궁합의 글을 처음 만들 때만 필요하다(서버에 없어 다시 보낸다). 글이 없는데 보내지 않으면 400 `BIRTH_REQUIRED`,
+     * 그 궁합의 상대가 아니면 400 `BIRTH_MISMATCH`, 내 출생 정보가 바뀌었으면 409 `PROFILE_CHANGED` 가 code 로 온다.
+     */
+    async createSynastryDirection(synastryId: string, birth?: BirthInput): Promise<ApiResult<Direction>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.directionSynastry };
+      return request('POST', '/directions', {
+        body: { topic: 'SYNASTRY', synastryId, ...(birth ? partnerBirthBody(birth) : {}) },
+        validate: isDirectionOf('SYNASTRY'),
+      });
     },
 
     /**
@@ -650,6 +879,47 @@ export function createApi(config: ApiConfig) {
     async deleteAccount(): Promise<ApiResult<null>> {
       if (config.useFixtures) return { ok: true, data: null };
       return request('DELETE', '/account', { validate: (v): v is null => v === null });
+    },
+
+    /**
+     * `POST /inquiries` 문의를 보낸다(결정 024). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` ·
+     * `INVALID_BODY` · `INVALID_EMAIL`). 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용과 주소는 어디에도 남기지 않는다.
+     */
+    async createInquiry(input: InquiryInput): Promise<ApiResult<InquiryCreated>> {
+      if (config.useFixtures) return { ok: true, data: { id: 'fixture-inquiry' } };
+      return request('POST', '/inquiries', {
+        body: { category: input.category, body: input.body, replyEmail: input.replyEmail },
+        validate: isInquiryCreated,
+      });
+    },
+
+    /**
+     * `POST /shares` 공유 카드를 만든다(서버 결정 012). 서버가 그 순간의 공개 글만 따로 저장하고 `card` 와 주소에 쓸 `shareId` 를 준다.
+     * 공유할 것이 없으면(글 · 완성된 리포트 · 다음 변곡점 · 그 관계의 궁합이 없다, 남의 궁합이다) 404 `NOT_FOUND` 다.
+     * 요청한 종류와 다른 카드가 오면 쓰지 않는다.
+     */
+    async createShare(input: ShareRequest): Promise<ApiResult<ShareCreated>> {
+      if (config.useFixtures) return { ok: true, data: fixtureShare(input) };
+      return request('POST', '/shares', {
+        body: shareBody(input),
+        validate: (v): v is ShareCreated => isShareCreated(v) && v.card.kind === input.kind,
+      });
+    },
+
+    /** `GET /shared/{shareId}` 공유 카드 하나. 세션 없이 부른다(공유 페이지). 없는 · 지워진 식별자는 404 `NOT_FOUND` */
+    async getSharedCard(shareId: string): Promise<ApiResult<ShareCard>> {
+      if (config.useFixtures) {
+        const key = shareId.startsWith(FIXTURE_SHARE_PREFIX) ? shareId.slice(FIXTURE_SHARE_PREFIX.length) : '';
+        const found = Object.entries(fixtures.shareCards).find(([name]) => name === key);
+        return found ? { ok: true, data: found[1] } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
+      }
+      return request('GET', `/shared/${encodeURIComponent(shareId)}`, { validate: isShareCard, auth: false });
+    },
+
+    /** `DELETE /shares/{shareId}` 내 공유를 지운다. 성공은 204 이고 그 뒤 링크는 404 다 */
+    async deleteShare(shareId: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', `/shares/${encodeURIComponent(shareId)}`, { validate: (v): v is null => v === null });
     },
 
     /**
@@ -678,6 +948,16 @@ export function createApi(config: ApiConfig) {
         return found ? { ok: true, data: found } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
       }
       return request('GET', `/synastry/${encodeURIComponent(id)}`, { validate: isSynastry });
+    },
+
+    /**
+     * `DELETE /synastry/{id}` 궁합 하나를 지운다. 서버가 그 궁합의 리포트와 방향성 글도 함께 지운다. 성공은 204 이고 본문이 없다.
+     * 이미 만든 공유 링크는 그때의 사본이라 남는다. 없는 · 남의 궁합은 404 `NOT_FOUND`.
+     * 가짜 서버는 성공이라고만 답한다(예시 목록은 그대로다).
+     */
+    async deleteSynastry(id: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', `/synastry/${encodeURIComponent(id)}`, { validate: (v): v is null => v === null });
     },
 
     /** `GET /synastry/ranking?relation=` 그 관계 유형의 궁합을 서버가 정한 순서(점수가 높은 순)로 */
@@ -726,10 +1006,27 @@ export function setSessionRefresher(refresher: (() => Promise<boolean>) | null) 
   sessionRefresher = refresher;
 }
 
+let updateRequiredHandler: (() => void) | null = null;
+
+/** 서버가 426 `UPDATE_REQUIRED` 로 거절했을 때 할 일. features/update 가 등록한다(결정 027). */
+export function setUpdateRequiredHandler(handler: (() => void) | null) {
+  updateRequiredHandler = handler;
+}
+
+let maintenanceHandler: (() => void) | null = null;
+
+/** 서버가 503 `MAINTENANCE` 로 거절했을 때 할 일. features/update 가 등록한다(결정 030). */
+export function setMaintenanceHandler(handler: (() => void) | null) {
+  maintenanceHandler = handler;
+}
+
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
   getToken: () => sessionToken,
   refreshSession: async () => (sessionRefresher ? sessionRefresher() : false),
   useFixtures: process.env.EXPO_PUBLIC_USE_FIXTURES === '1',
+  client: appClient,
+  onUpdateRequired: () => updateRequiredHandler?.(),
+  onMaintenance: () => maintenanceHandler?.(),
 });

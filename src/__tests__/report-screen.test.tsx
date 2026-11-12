@@ -8,7 +8,7 @@ import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { REPORT_POLL_MS } from '@/features/report/use-report';
-import { api, type ApiResult, type Report, type ReportState, type TimingCurrent } from '@/lib/api';
+import { api, type ApiResult, type Direction, type Report, type ReportState, type TimingCurrent } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -20,7 +20,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { requestReport: jest.fn(), getReport: jest.fn(), saveProfile: jest.fn() },
+  api: { requestReport: jest.fn(), getReport: jest.fn(), saveProfile: jest.fn(), createDirection: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
@@ -44,6 +44,8 @@ beforeEach(async () => {
   mockParams.mockReturnValue({});
   mockApi.getReport.mockResolvedValue(done);
   mockApi.requestReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
+  mockApi.createDirection.mockResolvedValue({ ok: true, data: fixtures.directionFuture });
+  mockApi.saveProfile.mockImplementation(async (i) => ({ ok: true, data: i }));
   await saveBirth({ profile, chart: fixtures.chart });
 });
 
@@ -452,5 +454,121 @@ describe('심층 리포트 화면: 시기 탭', () => {
   it('면책 문구는 시기 탭에서도 맨 아래에 있다', async () => {
     await openTiming();
     expect(screen.getByText(strings.reading.disclaimer)).toBeTruthy();
+  });
+});
+
+describe('심층 리포트 화면: 시기 탭 끝의 방향성 제시(미래)', () => {
+  const T = strings.report.timing;
+  const F = strings.direction.future;
+  const future = fixtures.directionFuture;
+  const ok: ApiResult<Direction> = { ok: true, data: future };
+  const failed: ApiResult<Direction> = { ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' };
+  /** 화면에 그려진 순서대로의 글자 */
+  const drawn = () => JSON.stringify(screen.toJSON());
+
+  it('다른 탭을 보는 동안에는 부르지 않고, 시기 탭을 열 때 미래 주제로 부른다', async () => {
+    await render(<ReportScreen />);
+    expect(await screen.findByText(personality.title)).toBeTruthy();
+    await fireEvent.press(screen.getByText('관계'));
+    await act(async () => {});
+    expect(mockApi.createDirection).not.toHaveBeenCalled();
+    expect(screen.queryByText(F.heading)).toBeNull();
+
+    await fireEvent.press(screen.getByText('시기'));
+    expect(await screen.findByText(future.title)).toBeTruthy();
+    expect(mockApi.createDirection).toHaveBeenCalledTimes(1);
+    expect(mockApi.createDirection).toHaveBeenCalledWith('FUTURE');
+  });
+
+  it('탭의 끝(구간 타임라인 뒤, 안내 문구 앞)에 제목과 해 볼 만한 것 3개를 근거와 함께 그대로 보여 준다', async () => {
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    await render(<ReportScreen />);
+    expect(await screen.findByText(future.title)).toBeTruthy();
+    expect(screen.getByText(F.heading)).toBeTruthy();
+    for (const item of future.items) {
+      expect(screen.getByText(item.title)).toBeTruthy();
+      expect(screen.getByText(item.body)).toBeTruthy();
+      expect(screen.getByText(['근거', ...item.basis].join(' · '))).toBeTruthy();
+    }
+    const text = drawn();
+    const rows = screen.getAllByTestId('timing-interval-title');
+    const lastRow = text.lastIndexOf(JSON.stringify(rows[rows.length - 1].props.children));
+    expect(text.indexOf(JSON.stringify(T.timelineHeading))).toBeLessThan(text.indexOf(JSON.stringify(F.heading)));
+    expect(lastRow).toBeGreaterThan(-1);
+    expect(lastRow).toBeLessThan(text.indexOf(JSON.stringify(F.heading)));
+    expect(text.indexOf(JSON.stringify(future.items[2].body))).toBeLessThan(
+      text.indexOf(JSON.stringify(strings.reading.disclaimer)),
+    );
+  });
+
+  it('글을 기다리는 동안에도 시기는 그대로 보이고, 그 칸에만 기다리는 문구가 있다', async () => {
+    let resolve: (r: ApiResult<Direction>) => void = () => {};
+    mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    await render(<ReportScreen />);
+    expect(await screen.findByText(F.generating)).toBeTruthy();
+    expect(screen.getByText(T.nowHeading)).toBeTruthy();
+    expect(screen.getByText(T.timelineHeading)).toBeTruthy();
+    expect(screen.queryByText(future.title)).toBeNull();
+    await act(async () => resolve(ok));
+    expect(await screen.findByText(future.title)).toBeTruthy();
+    expect(screen.queryByText(F.generating)).toBeNull();
+  });
+
+  it('실패해도 시기(지금 · 변곡점 · 타임라인)는 그대로 보이고, "다시 시도" 를 누르면 한 번 더 요청해 글을 보여 준다', async () => {
+    mockApi.createDirection.mockResolvedValueOnce(failed);
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    await render(<ReportScreen />);
+    expect(await screen.findByText(F.failed.OTHER)).toBeTruthy();
+    expect(screen.getByText(T.nowHeading)).toBeTruthy();
+    expect(screen.getAllByTestId('timing-milestone')).toHaveLength(4);
+    expect(screen.getAllByTestId('timing-interval').length).toBeGreaterThan(0);
+    expect(mockApi.createDirection).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByText(F.retry));
+    expect(await screen.findByText(future.title)).toBeTruthy();
+    expect(screen.queryByText(F.retry)).toBeNull();
+    expect(mockApi.createDirection).toHaveBeenCalledTimes(2);
+  });
+
+  it('인터넷이 끊겼을 때는 그에 맞는 안내를 보여 준다', async () => {
+    mockApi.createDirection.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    await render(<ReportScreen />);
+    expect(await screen.findByText(F.failed.NETWORK)).toBeTruthy();
+  });
+
+  it('서버에 출생 정보가 없으면(404 NO_PROFILE) 내 출생 정보를 저장하고 한 번만 다시 요청한다', async () => {
+    mockApi.createDirection.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    await render(<ReportScreen />);
+    expect(await screen.findByText(future.title)).toBeTruthy();
+    expect(mockApi.saveProfile).toHaveBeenCalledWith({ date: profile.date, time: profile.time, placeId: 1841277 });
+    expect(mockApi.createDirection).toHaveBeenCalledTimes(2);
+  });
+
+  it('글을 기기에 두지 않는다: 다시 열면 다시 불러, 그사이 시기가 바뀌었으면 서버가 준 새 글을 보여 준다', async () => {
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    const first = await render(<ReportScreen />);
+    expect(await screen.findByText(future.title)).toBeTruthy();
+    await first.unmount();
+    const stored = await AsyncStorage.multiGet(await AsyncStorage.getAllKeys());
+    expect(JSON.stringify(stored)).not.toContain(future.title);
+    mockApi.createDirection.mockResolvedValue({ ok: true, data: { ...future, title: '새 시기의 글' } });
+    await render(<ReportScreen />);
+    expect(await screen.findByText('새 시기의 글')).toBeTruthy();
+    expect(screen.queryByText(future.title)).toBeNull();
+    expect(mockApi.createDirection).toHaveBeenCalledTimes(2);
+  });
+
+  it('세션 확인이 끝나기 전에는 부르지 않는다(보관된 리포트의 시기 탭이 먼저 보여도)', async () => {
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    const first = await render(<ReportScreen />);
+    expect(await screen.findByText(future.title)).toBeTruthy();
+    await first.unmount();
+    mockApi.createDirection.mockClear();
+    mockUseSession.mockReturnValue({ token: null, ready: false });
+    await render(<ReportScreen />);
+    await act(async () => {});
+    expect(mockApi.createDirection).not.toHaveBeenCalled();
   });
 });

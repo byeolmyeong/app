@@ -17,6 +17,8 @@ import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReadingView } from '@/features/reading/reading-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
+import { ShareEntry } from '@/features/share/share-entry';
+import { useGenerationBusy } from '@/features/update/update-gate';
 import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
@@ -33,6 +35,9 @@ export default function ReadingScreen() {
   const stored = useStoredReading(birth);
   // 받아 둔 글이 없을 때만, 세션이 준비된 뒤에 서버에 요청한다.
   const { state, retry } = useReading(ready && stored.checked && !stored.reading ? birth : null);
+  // 짓는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027). 받아 둔 글을 다시 연 것은 아니다.
+  const generating = profile !== null && stored.checked && !stored.reading && state.status === 'loading';
+  useGenerationBusy(generating, !stored.reading && state.status === 'done');
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   if (loaded && !profile)
@@ -96,6 +101,8 @@ function ReadingBody({ reading, chart }: { reading: Reading; chart: Chart | null
       ) : null}
       <ReadingView reading={reading} />
       <View style={styles.footer}>
+        {/* 공유는 누를 때 만든다. 카드에는 한 줄 총평과 키워드만 들어간다(결정 025) */}
+        <ShareEntry target={{ kind: 'READING' }} />
         {/* 방향성 "이성" 은 들어가는 줄만 둔다. 글은 그 화면을 열 때 받는다(결정 023) */}
         <TextLink label={S.seeDirection} onPress={() => router.push('/direction')} />
         <TextLink label={S.seeChart} onPress={() => router.push('/chart')} />

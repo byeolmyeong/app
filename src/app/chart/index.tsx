@@ -60,10 +60,9 @@ export default function ChartScreen() {
         </Txt>
       )}
       <TextLink label={S.seeAll} onPress={() => router.push('/chart/detail')} />
-      {/* 궁합(태스크 7) 화면이 생기면 연결한다. 그때까지 누를 수 없다. */}
       <View style={styles.actions}>
         <Button label={S.readReading} onPress={() => router.push('/reading')} />
-        <Button label={S.seeSynastry} variant="line" disabled onPress={() => {}} />
+        <Button label={S.seeSynastry} variant="line" onPress={() => router.push('/synastry')} />
       </View>
     </Screen>
   );

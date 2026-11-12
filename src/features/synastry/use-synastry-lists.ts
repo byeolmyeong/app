@@ -1,8 +1,11 @@
 /**
  * 궁합의 목록 두 가지: 관계 유형별 랭킹(`GET /synastry/ranking`)과 지금까지 본 궁합(`GET /synastry`).
  * 순서는 서버가 정한다(랭킹은 점수가 높은 순, 목록은 새것부터). 앱은 받은 순서대로만 그리고 다시 줄 세우지 않는다.
+ * 궁합이 지워지면(delete-synastry.ts) 떠 있는 목록 · 랭킹이 서버에서 다시 받는다(앱이 줄을 골라 빼지 않는다).
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+
+import { getSynastryDeletions, subscribeSynastryDeletions } from '@/features/synastry/delete-synastry';
 
 import {
   api,
@@ -13,6 +16,9 @@ import {
   type SynastryRankingEntry,
 } from '@/lib/api';
 
+const useSynastryDeletions = () =>
+  useSyncExternalStore(subscribeSynastryDeletions, getSynastryDeletions, getSynastryDeletions);
+
 export type RankingState =
   | { status: 'loading' }
   | { status: 'done'; entries: SynastryRankingEntry[] }
@@ -21,6 +27,7 @@ export type RankingState =
 /** relation 이 null 이면(세션을 아직 읽는 중) 서버를 부르지 않고 불러오는 중으로 둔다 */
 export function useRanking(relation: Relation | null) {
   const [attempt, setAttempt] = useState(0);
+  const deletions = useSynastryDeletions();
   const [settled, setSettled] = useState<{
     relation: Relation;
     attempt: number;
@@ -36,7 +43,7 @@ export function useRanking(relation: Relation | null) {
     return () => {
       alive = false;
     };
-  }, [relation, attempt]);
+  }, [relation, attempt, deletions]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
@@ -55,6 +62,7 @@ export function useRanking(relation: Relation | null) {
  */
 export function useSynastryList(enabled: boolean): Synastry[] {
   const [list, setList] = useState<Synastry[]>([]);
+  const deletions = useSynastryDeletions();
 
   useEffect(() => {
     if (!enabled) return;
@@ -65,7 +73,7 @@ export function useSynastryList(enabled: boolean): Synastry[] {
     return () => {
       alive = false;
     };
-  }, [enabled]);
+  }, [enabled, deletions]);
 
   return list;
 }

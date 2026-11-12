@@ -173,7 +173,7 @@ export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
           <Field label={S.placeLabel} error={c.errors.place}>
             <FieldSelect
               testID="place-field"
-              value={c.place?.name}
+              value={c.place?.name || undefined}
               placeholder={S.placePlaceholder}
               invalid={Boolean(c.errors.place)}
               open={c.sheet === 'place'}

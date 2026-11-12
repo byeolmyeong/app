@@ -24,6 +24,8 @@ jest.mock('@/lib/api', () => ({
 }));
 jest.mock('@/features/auth/use-session', () => ({
   getSession: jest.fn(() => ({ token: null, ready: true })),
+  // 홈은 세션이 없으면 서버에 저장된 출생 정보를 묻지 않고 입력부터 받는다(결정 029).
+  useSession: jest.fn(() => ({ token: null, ready: true })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -369,7 +371,7 @@ describe('차트', () => {
 });
 
 describe('차트에서 다음 화면으로', () => {
-  it('"내 별명 읽기" 를 누르면 /reading 으로 가고, "궁합 보기" 는 아직 누를 수 없다', async () => {
+  it('"내 별명 읽기" 를 누르면 /reading 으로, "궁합 보기" 를 누르면 /synastry 로 간다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<ChartScreen />);
     const read = await screen.findByRole('button', { name: strings.chart.readReading });
@@ -377,7 +379,9 @@ describe('차트에서 다음 화면으로', () => {
     await fireEvent.press(read);
     expect(router.push).toHaveBeenCalledWith('/reading');
     const synastry = screen.getByRole('button', { name: strings.chart.seeSynastry });
-    expect(synastry.props.accessibilityState.disabled).toBe(true);
+    expect(synastry.props.accessibilityState.disabled).toBe(false);
+    await fireEvent.press(synastry);
+    expect(router.push).toHaveBeenCalledWith('/synastry');
   });
 });
 

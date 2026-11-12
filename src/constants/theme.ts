@@ -103,6 +103,8 @@ export const LineWidth = 1;
 export const Sizes = {
   buttonHeight: 56,
   inputHeight: 56,
+  /** 여러 줄을 적는 입력칸(문의 내용)의 높이 */
+  textArea: 160,
   navHeight: 48,
   /** 화면 머리의 차트 표식 */
   mark: 28,
@@ -130,6 +132,12 @@ export const Sizes = {
   /** 설명(물음표) 버튼의 지름 · 설명 시트에서 글이 굴러가는 영역의 최대 높이 */
   infoButton: 20,
   infoSheetHeight: 360,
+  /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
+  shareCardWidth: 220,
+  sharePageCardWidth: 280,
+  /** 공유 카드 머리의 초록 줄 */
+  shareCardBarWidth: 24,
+  shareCardBarHeight: 4,
   /** 시트 위의 손잡이 줄 */
   handleWidth: 50,
   handleHeight: 4,

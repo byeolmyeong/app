@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -13,6 +14,7 @@ import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { goBackOrHome } from '@/features/chart/chart-empty';
 import { OverlayWheel } from '@/features/chart/overlay-wheel';
+import { SynastryDeleteSheet } from '@/features/synastry/synastry-delete-sheet';
 import { SynastrySummary } from '@/features/synastry/synastry-summary';
 import { ShareEntry } from '@/features/share/share-entry';
 import { useSynastry } from '@/features/synastry/use-synastry';
@@ -24,6 +26,7 @@ const H = strings.help.overlay;
 /**
  * 궁합 결과: 나 기준 점수(서버가 준 값) · 한 줄 요약 · 키워드 셋.
  * 방금 계산한 결과에는 겹친 휠이 있고, 나중에 목록에서 다시 연 결과에는 없다(서버가 상대의 위치를 저장하지 않는다).
+ * 맨 아래의 "이 궁합 지우기" 는 확인 시트를 거쳐 서버에서 지우고, 지운 뒤에는 이 화면을 /synastry 로 바꾼다.
  */
 export default function SynastryResultScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -31,6 +34,7 @@ export default function SynastryResultScreen() {
   const { state, retry } = useSynastry(ready && typeof id === 'string' ? id : null);
   // 방금 계산한 결과(겹친 휠은 그때만 있다)가 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
   useUpdateBusy(state.status === 'done' && state.synastry.overlay !== undefined);
+  const [deleting, setDeleting] = useState(false);
   const nav = <NavBar title={strings.synastry.title} onBack={goBackOrHome} />;
 
   if (state.status === 'loading')
@@ -101,7 +105,15 @@ export default function SynastryResultScreen() {
         <Txt variant="label" color="gray">
           {strings.reading.disclaimer}
         </Txt>
+        <TextLink label={strings.synastry.delete.entry} onPress={() => setDeleting(true)} />
       </View>
+      {/* 지운 결과로 뒤로 돌아오지 않게 이 화면을 바꾼다 */}
+      <SynastryDeleteSheet
+        visible={deleting}
+        id={synastry.id}
+        onClose={() => setDeleting(false)}
+        onDeleted={() => router.replace('/synastry')}
+      />
     </Screen>
   );
 }

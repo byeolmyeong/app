@@ -651,7 +651,7 @@ export function isAppConfig(v: unknown): v is AppConfig {
 
 const isDevSession = (v: unknown): v is DevSession => isObject(v) && typeof v.token === 'string' && v.token.length > 0;
 
-/** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
+/** `PUT /profile` · `GET /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
   isObject(v) &&
   typeof v.date === 'string' &&
@@ -790,6 +790,15 @@ export function createApi(config: ApiConfig) {
     async saveProfile(input: BirthInput): Promise<ApiResult<BirthInput>> {
       if (config.useFixtures) return { ok: true, data: input };
       return request('PUT', '/profile', { body: input, validate: isBirthInput });
+    },
+
+    /**
+     * `GET /profile` 서버에 저장된 내 출생 정보(결정 029). 없으면 404 `NO_PROFILE` 이 code 로 온다.
+     * 가짜 서버는 저장된 것이 없다고 답한다(기기가 비어 있을 때 되살리지 않고 입력부터 받는다).
+     */
+    async getProfile(): Promise<ApiResult<BirthInput>> {
+      if (config.useFixtures) return { ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' };
+      return request('GET', '/profile', { validate: isBirthInput });
     },
 
     /**

@@ -1129,3 +1129,42 @@ describe('api: 자주 묻는 질문(결정 028)', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });
+
+describe('api: 서버에 저장된 출생 정보(결정 029)', () => {
+  it('GET /profile 을 세션 헤더와 함께 부르고 저장된 출생 정보를 받는다', async () => {
+    const fetchFn = fakeFetch(200, input);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.getProfile()).toEqual({ ok: true, data: input });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/profile`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    expect(fetchFn.mock.calls[0][1]?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer token-1');
+  });
+
+  it('시각 "모름" 이면 placeId 가 null 인 출생 정보를 받는다', async () => {
+    const unknown = { date: '2000-06-15', time: null, placeId: null };
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, unknown), getToken: () => 't' });
+    expect(await api.getProfile()).toEqual({ ok: true, data: unknown });
+  });
+
+  it('저장된 것이 없으면(404 NO_PROFILE) code 와 함께 실패이고 다시 부르지 않는다', async () => {
+    const fetchFn = fakeFetch(404, { error: 'NO_PROFILE' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
+    expect(await api.getProfile()).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('모양이 다른 출생 정보는 INVALID 다(시각이 있는데 곳이 없다 · 날짜가 없다)', async () => {
+    for (const body of [{ date: '2000-06-15', time: '21:00', placeId: null }, { time: null, placeId: null }, null]) {
+      const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => 't' });
+      expect(await api.getProfile()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    }
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 "저장된 것이 없다" 로 답한다(되살리지 않는다)', async () => {
+    const fetchFn = fakeFetch(200, input);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 't', useFixtures: true });
+    expect(await api.getProfile()).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});

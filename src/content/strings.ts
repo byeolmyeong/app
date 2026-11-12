@@ -201,6 +201,26 @@ export const strings = {
       },
       retry: '다시 시도',
     },
+    report: {
+      title: '궁합 리포트',
+      checking: '리포트를 확인하고 있어요',
+      intro: '끌림 · 대화 · 갈등 · 오래가기, 네 가지로 두 사람 사이를 길게 풀어 드려요.',
+      reenter: '상대의 출생 정보는 저장하지 않아요. 리포트를 쓰려면 궁합을 볼 때 넣은 상대의 출생 정보를 다시 넣어 주세요.',
+      request: '리포트 받기',
+      writing: '리포트를 쓰는 중이에요',
+      writingNote: '1~2분쯤 걸려요. 화면을 나갔다가 다시 들어와도 돼요.',
+      /** 영역 탭. 키는 서버가 주는 식별자다 */
+      areas: { ATTRACTION: '끌림', TALK: '대화', CONFLICT: '갈등', LASTING: '오래가기' },
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+        OTHER: '리포트를 쓰지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+      mismatch: '이 궁합을 볼 때 넣은 출생 정보와 달라요. 그때와 같은 생년월일 · 시각 · 곳을 넣어 주세요.',
+      profileChanged: '이 궁합을 본 뒤에 내 출생 정보가 바뀌었어요. 궁합을 새로 본 다음 리포트를 받아 주세요.',
+      recalculate: '궁합 새로 보기',
+      retry: '다시 시도',
+    },
     ranking: {
       title: '궁합 랭킹',
       keywordSeparator: ' · ',

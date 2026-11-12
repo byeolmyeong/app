@@ -1,6 +1,7 @@
 import {
   createApi,
   isChart,
+  isDirection,
   isPlaceList,
   isReading,
   isReport,
@@ -319,6 +320,65 @@ describe('api: 요약 해석', () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.createReading()).toEqual({ ok: true, data: fixtures.reading });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 방향성 제시(이성)', () => {
+  it('POST /directions 에 { topic: "LOVE" } 를 세션 헤더와 함께 보내고 글을 받는다', async () => {
+    const fetchFn = fakeFetch(200, fixtures.direction);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/directions`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(init?.body as string)).toEqual({ topic: 'LOVE' });
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('출생 정보가 없으면(404 NO_PROFILE)·생성에 실패하면(502 GENERATION_FAILED) 서버 오류에 code 가 온다', async () => {
+    const call = (status: number, error: string) =>
+      createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, { error }), getToken: () => null }).createDirection('LOVE');
+    expect(await call(404, 'NO_PROFILE')).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    expect(await call(502, 'GENERATION_FAILED')).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 502,
+      code: 'GENERATION_FAILED',
+    });
+  });
+
+  it('항목이 정확히 3개가 아니거나, 빈 글·빈 근거가 있으면 계약과 다른 모양이다', async () => {
+    const d = fixtures.direction;
+    const [a, b, c] = d.items;
+    expect(isDirection(d)).toBe(true);
+    const broken: unknown[] = [
+      null,
+      { ...d, topic: 'FUTURE' },
+      { ...d, title: '' },
+      { ...d, title: undefined },
+      { ...d, items: 'x' },
+      { ...d, items: [a, b] },
+      { ...d, items: [a, b, c, a] },
+      { ...d, items: [a, b, { ...c, basis: [] }] },
+      { ...d, items: [a, b, { ...c, basis: [1] }] },
+      { ...d, items: [a, b, { ...c, basis: [''] }] },
+      { ...d, items: [a, b, { ...c, basis: undefined }] },
+      { ...d, items: [a, b, { ...c, title: '' }] },
+      { ...d, items: [a, b, { ...c, body: '' }] },
+      { ...d, items: [a, b, null] },
+    ];
+    for (const v of broken) expect(isDirection(v)).toBe(false);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ...d, items: [a, b] }), getToken: () => null });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: false, error: 'INVALID', status: 200 });
+  });
+
+  it('예시 글은 계약의 필드만 갖고, 가짜 서버를 켜면 fetch 없이 그 글을 준다', async () => {
+    expect(Object.keys(fixtures.direction).sort()).toEqual(['items', 'title', 'topic']);
+    expect(Object.keys(fixtures.direction.items[0]).sort()).toEqual(['basis', 'body', 'title']);
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

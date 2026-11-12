@@ -23,6 +23,7 @@ jest.mock('@/lib/api', () => ({
   api: {
     createShare: jest.fn(),
     createReading: jest.fn(),
+    createDirection: jest.fn(),
     getReport: jest.fn(),
     requestReport: jest.fn(),
     saveProfile: jest.fn(),
@@ -62,6 +63,7 @@ beforeEach(async () => {
   }));
   mockApi.createReading.mockResolvedValue({ ok: true, data: fixtures.reading });
   mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
+  mockApi.createDirection.mockResolvedValue({ ok: true, data: fixtures.directionFuture });
   mockApi.getSynastry.mockResolvedValue({ ok: true, data: fixtures.synastryList[0] });
   mockApi.getSynastryRanking.mockImplementation(async (relation) => ({
     ok: true,

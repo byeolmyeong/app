@@ -85,6 +85,12 @@ export default function SynastryResultScreen() {
         </Txt>
       )}
       <View style={styles.footer}>
+        {/* 방향성 제시(궁합)는 눌러 들어간 화면에서만 요청한다(결정 026) */}
+        <Button
+          variant="line"
+          label={strings.direction.synastry.entry}
+          onPress={() => router.push(`/synastry/${synastry.id}/direction`)}
+        />
         <Button
           label={synastry.reportStatus === 'DONE' ? S.seeReport : S.getReport}
           onPress={() => router.push(`/synastry/${synastry.id}/report`)}

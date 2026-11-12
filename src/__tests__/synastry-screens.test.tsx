@@ -26,6 +26,7 @@ jest.mock('@/lib/api', () => ({
     createDirectSynastry: jest.fn(),
     getSynastry: jest.fn(),
     listSynastries: jest.fn(),
+    createSynastryDirection: jest.fn(),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -318,6 +319,30 @@ describe('궁합 결과(/synastry/[id])', () => {
     await render(<SynastryResultScreen />);
     expect(await screen.findByText(S.result.seeReport)).toBeTruthy();
     expect(screen.queryByText(S.result.getReport)).toBeNull();
+  });
+
+  it('"이 사이에서 해 볼 만한 것" 은 요약 · 휠 아래, 리포트 버튼 위에 있고, 누르기 전에는 글을 요청하지 않는다', async () => {
+    rememberFresh({ synastry: made, birth: partner });
+    await render(<SynastryResultScreen />);
+    const entry = await screen.findByText(strings.direction.synastry.entry);
+    await act(async () => {});
+    expect(mockApi.createSynastryDirection).not.toHaveBeenCalled();
+    const text = JSON.stringify(screen.toJSON());
+    const at = (s: string) => text.indexOf(JSON.stringify(s));
+    expect(at(made.headline)).toBeLessThan(at(strings.direction.synastry.entry));
+    expect(at(S.result.wheelCaption)).toBeLessThan(at(strings.direction.synastry.entry));
+    expect(at(strings.direction.synastry.entry)).toBeLessThan(at(S.result.getReport));
+    await fireEvent.press(entry);
+    expect(router.push).toHaveBeenCalledWith(`/synastry/${made.id}/direction`);
+    // 글은 그 화면이 요청한다. 결과 화면은 부르지 않는다
+    expect(mockApi.createSynastryDirection).not.toHaveBeenCalled();
+  });
+
+  it('나중에 다시 연 결과에도 "이 사이에서 해 볼 만한 것" 이 있고, 열기만 해서는 글을 요청하지 않는다', async () => {
+    await render(<SynastryResultScreen />);
+    await fireEvent.press(await screen.findByText(strings.direction.synastry.entry));
+    expect(router.push).toHaveBeenCalledWith(`/synastry/${made.id}/direction`);
+    expect(mockApi.createSynastryDirection).not.toHaveBeenCalled();
   });
 
   it('없는 궁합이면 안내와 궁합 보러 가는 버튼을, 그 밖의 실패에는 "다시 시도" 를 보여 준다', async () => {

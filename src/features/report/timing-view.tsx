@@ -98,8 +98,7 @@ export function TimingView({ timing }: { timing: ReportTiming }) {
           />
         ) : null}
         {earlierLeft > 0 ? (
-          <Button
-            variant="line"
+          <MoreLink
             label={`${T.earlier} (${earlierLeft}${T.countSuffix})`}
             onPress={() => setEarlierShown((n) => n + MORE_STEP)}
           />
@@ -115,14 +114,24 @@ export function TimingView({ timing }: { timing: ReportTiming }) {
           </View>
         ))}
         {laterLeft > 0 ? (
-          <Button
-            variant="line"
+          <MoreLink
             label={`${T.later} (${laterLeft}${T.countSuffix})`}
             onPress={() => setLaterShown((n) => n + MORE_STEP)}
           />
         ) : null}
       </View>
     </View>
+  );
+}
+
+/** 앞뒤 10년 밖의 구간을 더 여는 글자 줄. 버튼이 여럿 겹쳐 보이지 않게 글자로만 둔다 */
+function MoreLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={Spacing.xs} style={styles.more}>
+      <Txt variant="label" color="gray">
+        {label}
+      </Txt>
+    </Pressable>
   );
 }
 
@@ -274,6 +283,7 @@ const styles = StyleSheet.create({
   },
   nearest: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
   legend: { gap: Spacing.xs },
+  more: { alignSelf: 'center', paddingVertical: Spacing.xs },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   legendNote: { flex: 1 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.xxs },

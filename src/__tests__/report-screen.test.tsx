@@ -202,12 +202,15 @@ describe('심층 리포트 화면: 시기 탭', () => {
   const [i1] = timing.intervals;
   const byId = (id: string) => timing.intervals.find((i) => i.id === id)!;
   /** 시기만 바꾼 리포트를 서버가 주게 하고 시기 탭을 연다 */
-  async function openTiming(changed: Partial<Report['timing']> = {}, source: Report = report) {
+  /** `all` 이면 접어 둔 나머지 구간(작은 변화 · 기회 · 만남)까지 펼친 채로 시작한다 */
+  async function openTiming(changed: Partial<Report['timing']> = {}, source: Report = report, all = true) {
     const data: ReportState = { status: 'DONE', report: { ...source, timing: { ...source.timing, ...changed } } };
     mockApi.getReport.mockResolvedValue({ ok: true, data });
     mockParams.mockReturnValue({ area: 'TIMING' });
     await render(<ReportScreen />);
     await screen.findByText(T.nowHeading);
+    const more = all ? screen.queryByText(T.showAll, { exact: false }) : null;
+    if (more) await fireEvent.press(more);
   }
   const rowTitles = () =>
     screen
@@ -302,6 +305,27 @@ describe('심층 리포트 화면: 시기 탭', () => {
     await openTiming({ current: { ...timing.current, nearestMilestone: 'URANUS_OPPOSITION' } });
     const cards = screen.getAllByTestId('timing-milestone');
     expect(cards.map((card) => within(card).queryByText(T.nearest) !== null)).toEqual([false, false, true, false]);
+  });
+
+  it('타임라인은 큰 변화만 먼저 보여 주고, 나머지는 접어 두었다가 누르면 편다', async () => {
+    await openTiming({}, report, false);
+    const big = timing.intervals.filter((i) => i.kind === 'CHANGE' && i.size === 'BIG');
+    // 지금 앞뒤 10년의 큰 변화: i11(2025) · i17(2033). i4(2015 에 끝남)는 "이전", i21(2051)은 "이후" 에 있다
+    expect(rowTitles()).toEqual(big.slice(1, 3).map((i) => i.title));
+    expect(screen.getByText(`${T.earlier} (1${T.countSuffix})`)).toBeTruthy();
+    expect(screen.getByText(`${T.later} (1${T.countSuffix})`)).toBeTruthy();
+    await fireEvent.press(screen.getByText(`${T.showAll} (${timing.intervals.length - big.length}${T.countSuffix})`));
+    expect(rowTitles()).toEqual(titlesOf(5, 18));
+    // 다시 접을 수 있다
+    await fireEvent.press(screen.getByText(T.showBig));
+    expect(rowTitles()).toEqual(big.slice(1, 3).map((i) => i.title));
+  });
+
+  it('큰 변화가 하나도 없으면 접지 않고 전부 보여 준다', async () => {
+    const small = timing.intervals.filter((i) => !(i.kind === 'CHANGE' && i.size === 'BIG'));
+    await openTiming({ intervals: small }, report, false);
+    expect(rowTitles().length).toBeGreaterThan(0);
+    expect(screen.queryByText(T.showAll, { exact: false })).toBeNull();
   });
 
   it('타임라인은 지금 앞뒤 10년의 구간을 먼저 보여 주고, 나머지는 "더 보기" 로 연다', async () => {

@@ -225,7 +225,10 @@ export const strings = {
       },
       nearest: '지금과 가장 가까워요',
       timelineHeading: '나에게 오는 구간',
-      timelineIntro: '지금을 기준으로 앞뒤 10년을 먼저 보여 드려요. 줄을 누르면 설명이 펼쳐져요.',
+      timelineIntro: '큰 변화를 먼저 보여 드려요. 지금을 기준으로 앞뒤 10년이고, 줄을 누르면 설명이 펼쳐져요.',
+      /** 접어 둔 나머지 구간(작은 변화 · 기회 · 만남)을 펴는 버튼. 뒤에 "(12개)" 가 붙는다 */
+      showAll: '작은 변화와 기회도 보기',
+      showBig: '큰 변화만 보기',
       kinds: { CHANGE: '변화', OPPORTUNITY: '기회', FATED: '운명처럼 느껴지는 만남' },
       /** 종류가 무엇인지 타임라인 위에 한 줄씩 적는다 */
       kindNotes: {

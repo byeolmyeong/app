@@ -6,7 +6,7 @@ import { SectionHead } from '@/components/section-head';
 import { Txt } from '@/components/txt';
 import { CardRadius, Colors, LineWidth, Radius, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { formatMonth, formatPeriod, formatYearAge, groupByYear, splitByWindow } from '@/features/report/timing';
+import { formatMonth, formatPeriod, formatYearAge, groupByYear, isBigChange, splitByWindow } from '@/features/report/timing';
 import type { ReportTiming, TimingInterval, TimingMilestone } from '@/lib/api';
 
 const T = strings.report.timing;
@@ -16,17 +16,19 @@ const MORE_STEP = 30;
 
 /**
  * 심층 리포트의 시기 탭(결정 021): 지금 나의 구간 → 안내 → 변곡점 넷 → 구간 타임라인.
- * 날짜 · 해 · 만 나이 · 글은 서버가 준 그대로 적는다. 앱은 지금 앞뒤 10년을 먼저 거르고 시작한 해로 묶기만 한다.
+ * 날짜 · 해 · 만 나이 · 글은 서버가 준 그대로 적는다. 앱은 큰 변화와 지금 앞뒤 10년을 먼저 거르고 시작한 해로 묶기만 한다.
  */
 export function TimingView({ timing }: { timing: ReportTiming }) {
   const { current } = timing;
   /** 앞뒤 10년 밖에서 더 연 구간 수(지금에 가까운 쪽부터) */
   const [earlierShown, setEarlierShown] = useState(0);
   const [laterShown, setLaterShown] = useState(0);
-  const { earlier, around, later } = useMemo(
-    () => splitByWindow(timing.intervals, current.date),
-    [timing.intervals, current.date],
-  );
+  /** 큰 변화만 먼저 보여 주고 나머지(작은 변화 · 기회 · 만남)는 접어 둔다. 큰 변화가 없으면 접지 않는다 */
+  const [allShown, setAllShown] = useState(false);
+  const big = useMemo(() => timing.intervals.filter(isBigChange), [timing.intervals]);
+  const foldable = big.length > 0 && big.length < timing.intervals.length;
+  const listed = foldable && !allShown ? big : timing.intervals;
+  const { earlier, around, later } = useMemo(() => splitByWindow(listed, current.date), [listed, current.date]);
   const groups = useMemo(
     () =>
       groupByYear([
@@ -88,6 +90,13 @@ export function TimingView({ timing }: { timing: ReportTiming }) {
               </View>
             ))}
         </View>
+        {foldable ? (
+          <Button
+            variant="line"
+            label={allShown ? T.showBig : `${T.showAll} (${timing.intervals.length - big.length}${T.countSuffix})`}
+            onPress={() => setAllShown((shown) => !shown)}
+          />
+        ) : null}
         {earlierLeft > 0 ? (
           <Button
             variant="line"

@@ -3,6 +3,7 @@ import {
   isAppConfig,
   isChart,
   isDirection,
+  isFaqList,
   isPlaceList,
   isReading,
   isReport,
@@ -965,6 +966,72 @@ describe('api: 앱 버전 헤더와 강제 업데이트(결정 027)', () => {
     const r = await api.getAppConfig();
     expect(r.ok && [r.data.ios.minVersion, r.data.android.minVersion]).toEqual([null, null]);
     expect(r.ok && isAppConfig(r.data)).toBe(true);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 자주 묻는 질문(결정 028)', () => {
+  const faqs = [
+    { id: 'faq-1', question: '요금이 있나요?', answer: '지금은 모두 무료예요.' },
+    { id: 'faq-2', question: '결과는 어떻게 만들어지나요?', answer: '첫 줄\n둘째 줄' },
+  ];
+
+  it('GET /faqs 를 세션 헤더 없이 부르고 서버가 준 순서 그대로 받는다', async () => {
+    const fetchFn = fakeFetch(200, faqs);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.listFaqs()).toEqual({ ok: true, data: faqs });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/faqs`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    expect(headersOf(fetchFn).Authorization).toBeUndefined();
+  });
+
+  it('빈 목록도 받는다', async () => {
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, []), getToken: () => null });
+    expect(await api.listFaqs()).toEqual({ ok: true, data: [] });
+  });
+
+  it('목록의 모양: 배열이고, 항목마다 비지 않은 글자 id · question · answer 가 있어야 한다', () => {
+    expect(isFaqList(faqs)).toBe(true);
+    expect(isFaqList([])).toBe(true);
+    expect(isFaqList(null)).toBe(false);
+    expect(isFaqList({})).toBe(false);
+    expect(isFaqList({ items: faqs })).toBe(false);
+    expect(isFaqList('[]')).toBe(false);
+    expect(isFaqList([null])).toBe(false);
+    expect(isFaqList(['요금이 있나요?'])).toBe(false);
+    expect(isFaqList([{ question: 'q', answer: 'a' }])).toBe(false);
+    expect(isFaqList([{ id: 1, question: 'q', answer: 'a' }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q' }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q', answer: null }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q', answer: ['a'] }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: '', answer: 'a' }])).toBe(false);
+    expect(isFaqList([{ id: 'a', question: 'q', answer: '' }])).toBe(false);
+    expect(isFaqList([{ id: '', question: 'q', answer: 'a' }])).toBe(false);
+    // 하나라도 어긋나면 목록 전체를 받지 않는다.
+    expect(isFaqList([...faqs, { id: 'faq-3', question: 'q' }])).toBe(false);
+  });
+
+  it('모양이 다른 목록은 INVALID, 429 는 한도, 그 밖의 실패는 종류대로 돌려주고 다시 부르지 않는다', async () => {
+    const call = async (status: number, body?: unknown) => {
+      const fetchFn = fakeFetch(status, body);
+      const result = await createApi({ baseUrl: BASE, fetchFn, getToken: () => null }).listFaqs();
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+      return result;
+    };
+    expect(await call(200, [{ id: 'a', question: 'q' }])).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    expect(await call(200, { faqs })).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    expect(await call(429)).toEqual({ ok: false, error: 'LIMIT', status: 429 });
+    expect(await call(500)).toEqual({ ok: false, error: 'SERVER', status: 500 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 작은 예시 목록을 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    const r = await api.listFaqs();
+    expect(r).toEqual({ ok: true, data: fixtures.faqs });
+    expect(isFaqList(fixtures.faqs)).toBe(true);
+    expect(fixtures.faqs.length).toBeGreaterThan(0);
+    expect(fixtures.faqs.length).toBeLessThanOrEqual(3);
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

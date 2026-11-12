@@ -230,6 +230,9 @@ export type InquiryInput = { category: InquiryCategory; body: string; replyEmail
 /** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */
 export type InquiryCreated = { id: string };
 
+/** `GET /faqs` 의 한 줄(결정 028). 관리자가 적은 질문과 답. answer 는 그냥 글자이고 줄바꿈이 들어 있을 수 있다 */
+export type Faq = { id: string; question: string; answer: string };
+
 /**
  * `GET /app-config` 의 한 플랫폼 몫(결정 027). minVersion 은 점으로 나눈 숫자("1.2.0")이고 null 이면 아무도 막지 않는다.
  * message 는 관리자가 적은 안내(그냥 글자). blockNow 는 서버가 426 으로 바로 거절할지의 스위치다(앱은 판정에 쓰지 않는다).
@@ -523,6 +526,14 @@ const isReportRequest = (v: unknown): v is ReportRequest =>
 
 const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
 
+/** 하나라도 어긋나면 목록 전체를 받지 않는다. 계약에 없는 필드는 보지 않는다 */
+export function isFaqList(v: unknown): v is Faq[] {
+  return (
+    Array.isArray(v) &&
+    v.every((item) => isObject(item) && isText(item.id) && isText(item.question) && isText(item.answer))
+  );
+}
+
 const isNullableString = (v: unknown): v is string | null => typeof v === 'string' || v === null;
 
 const isPlatformConfig = (v: unknown): v is PlatformConfig =>
@@ -565,7 +576,7 @@ export type ApiConfig = {
 type RequestOptions<T> = {
   body?: unknown;
   validate: (v: unknown) => v is T;
-  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`·`GET /app-config`) */
+  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`·`GET /app-config`·`GET /faqs`) */
   auth?: boolean;
 };
 
@@ -649,6 +660,12 @@ export function createApi(config: ApiConfig) {
       if (config.useFixtures)
         return { ok: true, data: { ios: FIXTURE_PLATFORM_CONFIG, android: FIXTURE_PLATFORM_CONFIG } };
       return request('GET', '/app-config', { validate: isAppConfig, auth: false });
+    },
+
+    /** `GET /faqs` 자주 묻는 질문(결정 028). 공개된 것만, 보여 줄 순서대로 온다(빈 목록일 수 있다). 세션이 필요 없다 */
+    async listFaqs(): Promise<ApiResult<Faq[]>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.faqs };
+      return request('GET', '/faqs', { validate: isFaqList, auth: false });
     },
 
     /** `POST /charts` 출생 정보로 차트를 받는다 */

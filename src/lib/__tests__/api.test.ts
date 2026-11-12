@@ -1231,3 +1231,22 @@ describe('api: 점검(결정 030)', () => {
     expect(r.ok && r.data.maintenance).toEqual({ active: false, message: null });
   });
 });
+
+describe('api: 앱이 쓰는 인스턴스의 점검 알림(결정 030)', () => {
+  it('503 MAINTENANCE 를 받으면 등록된 처리기를 부르고, 처리기를 거두면 부르지 않는다', async () => {
+    const { api, setMaintenanceHandler } = jest.requireActual<typeof import('@/lib/api')>('@/lib/api');
+    const original = globalThis.fetch;
+    globalThis.fetch = fakeFetch(503, { error: 'MAINTENANCE' });
+    try {
+      const handler = jest.fn();
+      setMaintenanceHandler(handler);
+      expect(await api.getSharedCard('AbCdEfGhIjKlMnOpQrStUv')).toMatchObject({ ok: false, code: 'MAINTENANCE' });
+      expect(handler).toHaveBeenCalledTimes(1);
+      setMaintenanceHandler(null);
+      await api.getSharedCard('AbCdEfGhIjKlMnOpQrStUv');
+      expect(handler).toHaveBeenCalledTimes(1);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});

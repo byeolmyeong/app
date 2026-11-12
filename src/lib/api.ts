@@ -223,7 +223,7 @@ export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 export const INQUIRY_CATEGORIES = ['ACCOUNT', 'READING', 'SYNASTRY', 'BUG', 'OTHER'] as const;
 export type InquiryCategory = (typeof INQUIRY_CATEGORIES)[number];
 
-/** `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~2000자, replyEmail 은 답장을 받지 않으면 null */
+/** `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~2000자(유니코드 코드 포인트로 센다), replyEmail 은 답장을 받지 않으면 null */
 export type InquiryInput = { category: InquiryCategory; body: string; replyEmail: string | null };
 
 /** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */

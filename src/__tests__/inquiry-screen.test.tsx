@@ -59,6 +59,15 @@ describe('문의하기(/settings/inquiry)', () => {
     expect(screen.getByText(`5${I.countSeparator}2000${I.countUnit}`)).toBeTruthy();
   });
 
+  it('이모지는 하나를 한 글자로 세고(서버와 같다), 이모지 2000개는 보낼 수 있다', async () => {
+    await render(<InquiryScreen />);
+    await fill({ body: ` ${'🌙'.repeat(2000)} ` });
+    expect(screen.getByText(`2000${I.countSeparator}2000${I.countUnit}`)).toBeTruthy();
+    await submit();
+    expect(screen.queryByText(I.errors.bodyTooLong)).toBeNull();
+    expect(mockApi.createInquiry).toHaveBeenCalledWith({ category: 'BUG', body: '🌙'.repeat(2000), replyEmail: null });
+  });
+
   it('고른 종류는 선택 상태가 된다', async () => {
     await render(<InquiryScreen />);
     await fireEvent.press(screen.getByText(I.categories.SYNASTRY));

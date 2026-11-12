@@ -1,4 +1,4 @@
-import { checkInquiry, INQUIRY_BODY_MAX, INQUIRY_BODY_MIN } from '@/features/support/inquiry';
+import { checkInquiry, INQUIRY_BODY_MAX, INQUIRY_BODY_MIN, inquiryLength } from '@/features/support/inquiry';
 
 const draft = { category: 'BUG' as const, body: '리포트 화면이 열리지 않아요.', email: '' };
 
@@ -30,6 +30,17 @@ describe('checkInquiry: 보내기 전에 서버와 같은 규칙으로 확인한
     expect(body(2000).ok).toBe(true);
     expect(body(2001)).toEqual({ ok: false, problems: { body: 'TOO_LONG' } });
     expect(checkInquiry({ ...draft, body: ' '.repeat(30) })).toEqual({ ok: false, problems: { body: 'TOO_SHORT' } });
+  });
+
+  it('길이는 글자(유니코드 코드 포인트)로 센다: 이모지 하나는 한 글자다(서버와 같다)', () => {
+    const body = (text: string) => checkInquiry({ ...draft, body: text });
+    expect('🌙'.length).toBe(2);
+    expect(inquiryLength('  🌙가  ')).toBe(2);
+    expect(body('🌙'.repeat(9))).toEqual({ ok: false, problems: { body: 'TOO_SHORT' } });
+    expect(body('🌙'.repeat(10)).ok).toBe(true);
+    expect(body(` ${'🌙'.repeat(2000)} `).ok).toBe(true);
+    expect(body('🌙'.repeat(2001))).toEqual({ ok: false, problems: { body: 'TOO_LONG' } });
+    expect(body(`${'가'.repeat(1999)}🌙`).ok).toBe(true);
   });
 
   it.each([

@@ -12,7 +12,7 @@ import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { goBackOrHome } from '@/features/chart/chart-empty';
 import { CategoryChips } from '@/features/support/category-chips';
-import { checkInquiry, INQUIRY_BODY_MAX, type InquiryProblems } from '@/features/support/inquiry';
+import { checkInquiry, INQUIRY_BODY_MAX, inquiryLength, type InquiryProblems } from '@/features/support/inquiry';
 import { useInquiry } from '@/features/support/use-inquiry';
 import type { InquiryCategory } from '@/lib/api';
 
@@ -101,7 +101,7 @@ export default function InquiryScreen() {
             />
           </Field>
           <Txt variant="mono" color="hint" style={styles.count}>
-            {`${body.trim().length}${I.countSeparator}${INQUIRY_BODY_MAX}${I.countUnit}`}
+            {`${inquiryLength(body)}${I.countSeparator}${INQUIRY_BODY_MAX}${I.countUnit}`}
           </Txt>
         </View>
         <Field label={I.emailLabel} hint={I.emailHint} error={problems.email && I.errors.emailFormat}>

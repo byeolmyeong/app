@@ -9,9 +9,12 @@
  * - report.json: 심층 리포트의 네 영역(성격 · 관계 · 일 · 감정)과 시기(`timing`: 변곡점 넷, 구간 23개, 오늘은 2026-11-11).
  *   글과 날짜는 계약의 모양에 맞춰 쓴 예시다(서버가 계산한 값이 아니다).
  * - report-timing-time-unknown.json: 시각 모름일 때의 시기 예시. 운명적 만남 구간과 돈 영역이 없다. `reportTimeUnknown` 이 쓴다.
- * - 궁합(`Synastry`)·공유 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
+ * - synastry.json: `POST /synastry/direct` 의 응답 예시(겹친 휠 `overlay` 포함). 내 쪽 위치는 chart.json 의 값이고 상대 쪽과 글은 지어낸 예시다.
+ * - synastry-list.json: `GET /synastry` 의 예시(새것부터, `overlay` 없음). 60점 미만인 것에만 `scoreLabel` 이 있다.
+ * - synastry-report.json: 궁합 리포트의 네 영역(끌림 · 대화 · 갈등 · 오래가기). 글은 예시 문장이고 근거는 내 쪽 요소뿐이다.
+ * - 초대·공유 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
  */
-import type { Chart, Place, Reading, Report, ReportTiming } from '@/lib/api';
+import type { Chart, Place, Reading, Report, ReportTiming, Synastry, SynastryReport } from '@/lib/api';
 
 import chartTimeUnknown from './chart-time-unknown.json';
 import chart from './chart.json';
@@ -19,6 +22,9 @@ import places from './places.json';
 import reading from './reading.json';
 import reportTimingTimeUnknown from './report-timing-time-unknown.json';
 import report from './report.json';
+import synastryList from './synastry-list.json';
+import synastryReport from './synastry-report.json';
+import synastry from './synastry.json';
 
 export const fixtures = {
   places: places as Place[],
@@ -27,4 +33,7 @@ export const fixtures = {
   reading: reading as Reading,
   report: report as Report,
   reportTimeUnknown: { sections: report.sections, timing: reportTimingTimeUnknown as ReportTiming } as Report,
+  synastry: synastry as Synastry,
+  synastryList: synastryList as Synastry[],
+  synastryReport: synastryReport as SynastryReport,
 };

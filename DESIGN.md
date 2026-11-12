@@ -33,7 +33,8 @@ last_reviewed: 2026-11-11
 - 공용 부품은 `src/components/` 에만 둔다: `Txt`(글자 단계·색), `Button`(높이 56·모서리 12·글씨 가운데. 주 `primary` 초록 · 보조 `line` 옅은 회색 · 빨강 `danger`, 누를 수 없으면 회색), `Field`(라벨 위 · 칸 · 도움말이나 오류 아래) 와 그 안의 `FieldInput`(치는 칸) · `FieldSelect`(눌러서 고르는 칸, 오른쪽 아래 화살표), `Checkbox`(체크 표시), `Sheet`, `ScrollPicker`(드럼롤 한 열), `DataTable`, `ChartMark`, `SectionLabel`, `Paragraph`(글의 문단: 근거 줄 · 제목 · 본문. 요약 해석과 심층 리포트가 함께 쓴다). 화면 뼈대: `Screen`, `NavBar`, `Tabs`, `TextLink`.
 - 입력칸: 높이 56, 모서리 12, 옅은 회색으로 채움. 포커스면 초록 테두리, 틀렸으면 빨강 테두리.
 - 하단 시트(`Sheet`): 아래와 양옆은 화면에 붙고 위쪽 모서리만 24. 위에 손잡이 줄, 가운데 제목. 뒤의 막은 제자리에서 서서히 어두워지고 시트만 올라온다. 바깥을 누르거나 위쪽을 잡고 끌어내리면 닫힌다.
-- 차트 전용 부품은 `src/features/chart/`: `ChartWheel`(SVG 휠, 좌표는 `wheel-layout.ts`), `KeyThree`, `BodyCell`.
+- 차트 전용 부품은 `src/features/chart/`: `ChartWheel`(SVG 휠, 좌표는 `wheel-layout.ts`), `OverlayWheel`(궁합의 겹친 휠, 좌표는 `overlay-layout.ts`. 나는 고리 안쪽의 채운 점, 상대는 바깥의 빈 점 — 색이 아니라 자리와 모양으로 가른다), `BirthFields`(출생 정보 세 칸. 내 입력과 궁합의 상대 입력이 함께 쓴다), `KeyThree`, `BodyCell`.
+- 궁합 전용 부품은 `src/features/synastry/`: `RelationChips`(관계 유형 칩, 고른 칩은 옅은 초록), `SynastrySummary`(점수 · 한 줄 요약 · 키워드), `SynastryRow`(랭킹 · 지난 궁합의 한 줄), `SynastryReportView`.
 - 공유 카드(9:16): 밤 바탕, 차트(가는 선 + 금 점·선), 큰 숫자, "나도 보러 가기". 출생 정보와 근거는 넣지 않는다.
 - 화면 좌우 여백 20. 웹 넓은 화면에서는 가운데에 앱 화면 폭(`Sizes.maxContentWidth`, 390) 한 단만 보이고 그 밖은 흰색이며 옅은 선으로 나뉜다. 시트도 그 폭 안에서만 올라온다.
 - 애니메이션: 시트가 올라오고 내려가는 것만. 그 외 없음.

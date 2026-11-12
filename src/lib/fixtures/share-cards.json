@@ -1,0 +1,35 @@
+{
+  "reading": {
+    "kind": "READING",
+    "headline": "궁금한 것이 많고, 멀리 보는 사람",
+    "keywords": ["생각이 먼저 움직입니다", "마음은 넓은 곳을 향합니다", "사람 사이를 잇습니다"]
+  },
+  "score": {
+    "kind": "SCORE",
+    "names": ["나", "지우"],
+    "score": 82,
+    "headline": "말이 잘 통하고, 서로의 속도를 맞춰 가는 사이"
+  },
+  "ranking": {
+    "kind": "RANKING",
+    "relation": "FRIEND",
+    "entries": [
+      { "name": "ㅁㅅ", "score": 91 },
+      { "name": "ㅅㅇ", "score": 77 }
+    ]
+  },
+  "rankingNames": {
+    "kind": "RANKING",
+    "relation": "FRIEND",
+    "entries": [
+      { "name": "민서", "score": 91 },
+      { "name": "서연", "score": 77 }
+    ]
+  },
+  "nextTurn": {
+    "kind": "NEXT_TURN",
+    "year": 2029,
+    "season": "SUMMER",
+    "theme": "내 것으로 남길 것을 고르는 때"
+  }
+}

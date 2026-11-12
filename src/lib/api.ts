@@ -218,6 +218,33 @@ export type SynastryReportState =
 /** `POST /synastry/{id}/report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
 export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
+/** 다음 변곡점 카드의 계절. 서버가 날짜를 해와 계절로 줄여서 준다(앱은 날짜를 받지 않는다) */
+export const SEASONS = ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'] as const;
+export type Season = (typeof SEASONS)[number];
+
+/**
+ * 공유 카드(서버 결정 012). `kind` 로 가리는 네 모양이고 적힌 키가 전부다. 값이 없는 키는 오지 않는다.
+ * 출생 정보 · 근거 · 본문은 어느 카드에도 없다. SCORE 의 names 는 [공유하는 사람, 상대] 순서,
+ * RANKING 의 entries 는 1~3명이고 name 은 서버가 만든 이니셜이거나(기본) 적은 이름 그대로다.
+ */
+export type ShareCard =
+  | { kind: 'READING'; headline: string; keywords: [string, string, string] }
+  | { kind: 'SCORE'; names: [string, string]; score: number; scoreLabel?: string; headline: string }
+  | { kind: 'RANKING'; relation: Relation; entries: { name: string; score: number }[] }
+  | { kind: 'NEXT_TURN'; year: number; season: Season; theme: string };
+
+export type ShareKind = ShareCard['kind'];
+
+/** `POST /shares` 의 요청. myName 은 공유하는 사람을 부를 이름(1~20자), showNames 가 없으면 이니셜이다 */
+export type ShareRequest =
+  | { kind: 'READING' }
+  | { kind: 'SCORE'; synastryId: string; myName: string }
+  | { kind: 'RANKING'; relation: Relation; showNames?: boolean }
+  | { kind: 'NEXT_TURN' };
+
+/** `POST /shares` 의 응답. card 는 `GET /shared/{shareId}` 가 주는 것과 같다 */
+export type ShareCreated = { shareId: string; card: ShareCard };
+
 // ── 결과 ───────────────────────────────────────────────────────────────────
 
 /**
@@ -486,6 +513,72 @@ export function isSynastryReportState(v: unknown): v is SynastryReportState {
 const isSynastryReportRequest = (v: unknown): v is SynastryReportRequest =>
   isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
 
+/** 종류마다 제 필드가 모두 계약의 모양이어야 한다. 계약에 없는 필드는 보지 않는다(화면도 그리지 않는다) */
+export function isShareCard(v: unknown): v is ShareCard {
+  if (!isObject(v)) return false;
+  switch (v.kind) {
+    case 'READING':
+      return isText(v.headline) && isKeywords(v.keywords);
+    case 'SCORE':
+      return (
+        isStringList(v.names) &&
+        v.names.length === 2 &&
+        typeof v.score === 'number' &&
+        isOptionalString(v.scoreLabel) &&
+        typeof v.headline === 'string'
+      );
+    case 'RANKING':
+      return (
+        RELATIONS.some((r) => r === v.relation) &&
+        Array.isArray(v.entries) &&
+        v.entries.length >= 1 &&
+        v.entries.length <= 3 &&
+        v.entries.every((e) => isObject(e) && typeof e.name === 'string' && typeof e.score === 'number')
+      );
+    case 'NEXT_TURN':
+      return Number.isInteger(v.year) && SEASONS.some((season) => season === v.season) && isText(v.theme);
+    default:
+      return false;
+  }
+}
+
+const isShareCreated = (v: unknown): v is ShareCreated => isObject(v) && isText(v.shareId) && isShareCard(v.card);
+
+/** `POST /shares` 의 본문. 그 종류의 계약에 있는 값만 싣는다 */
+const shareBody = (input: ShareRequest) => {
+  switch (input.kind) {
+    case 'SCORE':
+      return { kind: input.kind, synastryId: input.synastryId, myName: input.myName };
+    case 'RANKING':
+      return { kind: input.kind, relation: input.relation, showNames: input.showNames === true };
+    default:
+      return { kind: input.kind };
+  }
+};
+
+/** 가짜 서버의 공유 식별자. 카드 예시(fixtures.shareCards)의 키마다 하나다 */
+const FIXTURE_SHARE_PREFIX = 'fixture-share-';
+
+/** 가짜 서버가 만드는 공유. 예시 카드에 받은 이름과 관계만 바꿔 넣는다 */
+function fixtureShare(input: ShareRequest): ShareCreated {
+  const C = fixtures.shareCards;
+  switch (input.kind) {
+    case 'READING':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}reading`, card: C.reading };
+    case 'SCORE':
+      return {
+        shareId: `${FIXTURE_SHARE_PREFIX}score`,
+        card: { ...C.score, names: [input.myName, C.score.names[1]] },
+      };
+    case 'RANKING': {
+      const key = input.showNames ? 'rankingNames' : 'ranking';
+      return { shareId: `${FIXTURE_SHARE_PREFIX}${key}`, card: { ...C[key], relation: input.relation } };
+    }
+    case 'NEXT_TURN':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}nextTurn`, card: C.nextTurn };
+  }
+}
+
 /** 상대의 출생 정보를 요청 본문으로. placeId 는 시각이 있을 때만 싣는다(시각 "모름" 이면 키를 보내지 않는다) */
 const partnerBirthBody = (birth: BirthInput) => ({
   date: birth.date,
@@ -522,7 +615,7 @@ export type ApiConfig = {
 type RequestOptions<T> = {
   body?: unknown;
   validate: (v: unknown) => v is T;
-  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`) */
+  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`·`GET /shared/…`) */
   auth?: boolean;
 };
 
@@ -649,6 +742,35 @@ export function createApi(config: ApiConfig) {
     async deleteAccount(): Promise<ApiResult<null>> {
       if (config.useFixtures) return { ok: true, data: null };
       return request('DELETE', '/account', { validate: (v): v is null => v === null });
+    },
+
+    /**
+     * `POST /shares` 공유 카드를 만든다(서버 결정 012). 서버가 그 순간의 공개 글만 따로 저장하고 `card` 와 주소에 쓸 `shareId` 를 준다.
+     * 공유할 것이 없으면(글 · 완성된 리포트 · 다음 변곡점 · 그 관계의 궁합이 없다, 남의 궁합이다) 404 `NOT_FOUND` 다.
+     * 요청한 종류와 다른 카드가 오면 쓰지 않는다.
+     */
+    async createShare(input: ShareRequest): Promise<ApiResult<ShareCreated>> {
+      if (config.useFixtures) return { ok: true, data: fixtureShare(input) };
+      return request('POST', '/shares', {
+        body: shareBody(input),
+        validate: (v): v is ShareCreated => isShareCreated(v) && v.card.kind === input.kind,
+      });
+    },
+
+    /** `GET /shared/{shareId}` 공유 카드 하나. 세션 없이 부른다(공유 페이지). 없는 · 지워진 식별자는 404 `NOT_FOUND` */
+    async getSharedCard(shareId: string): Promise<ApiResult<ShareCard>> {
+      if (config.useFixtures) {
+        const key = shareId.startsWith(FIXTURE_SHARE_PREFIX) ? shareId.slice(FIXTURE_SHARE_PREFIX.length) : '';
+        const found = Object.entries(fixtures.shareCards).find(([name]) => name === key);
+        return found ? { ok: true, data: found[1] } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
+      }
+      return request('GET', `/shared/${encodeURIComponent(shareId)}`, { validate: isShareCard, auth: false });
+    },
+
+    /** `DELETE /shares/{shareId}` 내 공유를 지운다. 성공은 204 이고 그 뒤 링크는 404 다 */
+    async deleteShare(shareId: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', `/shares/${encodeURIComponent(shareId)}`, { validate: (v): v is null => v === null });
     },
 
     /**

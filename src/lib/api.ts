@@ -247,7 +247,11 @@ export type PlatformConfig = {
   blockNow: boolean;
 };
 
-export type AppConfig = { ios: PlatformConfig; android: PlatformConfig };
+/** 점검(결정 030). active 면 앱은 점검 안내만 보여 준다. message 는 관리자가 적은 안내(그냥 글자) */
+export type Maintenance = { active: boolean; message: string | null };
+
+/** maintenance 는 이 키를 내기 전의 옛 서버 응답에는 없다. 없으면 점검 중이 아닌 것으로 읽는다(결정 030) */
+export type AppConfig = { ios: PlatformConfig; android: PlatformConfig; maintenance?: Maintenance };
 
 /** 다음 변곡점 카드의 계절. 서버가 날짜를 해와 계절로 줄여서 준다(앱은 날짜를 받지 않는다) */
 export const SEASONS = ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'] as const;
@@ -645,8 +649,17 @@ const isPlatformConfig = (v: unknown): v is PlatformConfig =>
   isNullableString(v.message) &&
   typeof v.blockNow === 'boolean';
 
+const isMaintenance = (v: unknown): v is Maintenance =>
+  isObject(v) && typeof v.active === 'boolean' && isNullableString(v.message);
+
+/** maintenance 는 키가 없을 때만 넘어간다. 있는데 모양이 다르면 응답 전체를 받지 않는다 */
 export function isAppConfig(v: unknown): v is AppConfig {
-  return isObject(v) && isPlatformConfig(v.ios) && isPlatformConfig(v.android);
+  return (
+    isObject(v) &&
+    isPlatformConfig(v.ios) &&
+    isPlatformConfig(v.android) &&
+    (v.maintenance === undefined || isMaintenance(v.maintenance))
+  );
 }
 
 const isDevSession = (v: unknown): v is DevSession => isObject(v) && typeof v.token === 'string' && v.token.length > 0;
@@ -673,6 +686,8 @@ export type ApiConfig = {
   client?: AppClient | null;
   /** 서버가 426 `UPDATE_REQUIRED` 로 거절했을 때 부른다 */
   onUpdateRequired?: () => void;
+  /** 서버가 503 `MAINTENANCE` 로 거절했을 때 부른다(결정 030) */
+  onMaintenance?: () => void;
 };
 
 type RequestOptions<T> = {
@@ -684,6 +699,9 @@ type RequestOptions<T> = {
 
 /** `{ error }` 로 오는 이름: 이 버전의 앱은 더 받지 않는다(상태 426) */
 const UPDATE_REQUIRED = 'UPDATE_REQUIRED';
+
+/** `{ error }` 로 오는 이름: 점검 중이다(상태 503). `/app-config` 를 뺀 모든 주소가 이렇게 답한다 */
+const MAINTENANCE = 'MAINTENANCE';
 
 /** 가짜 서버의 설정. 아무도 막지 않는다 */
 const FIXTURE_PLATFORM_CONFIG: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
@@ -735,6 +753,7 @@ export function createApi(config: ApiConfig) {
       const body: unknown = await response.json().catch(() => null);
       const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
       if (status === 426 && code.code === UPDATE_REQUIRED) config.onUpdateRequired?.();
+      if (status === 503 && code.code === MAINTENANCE) config.onMaintenance?.();
       return { ok: false, error: 'SERVER', status, ...code };
     }
 
@@ -757,10 +776,17 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/places', { validate: isPlaceList, auth: false });
     },
 
-    /** `GET /app-config` 플랫폼별 최소 버전 · 스토어 주소 · 안내(결정 027). 세션이 필요 없다 */
+    /** `GET /app-config` 플랫폼별 최소 버전 · 스토어 주소 · 안내(결정 027)와 점검 여부(결정 030). 세션이 필요 없다 */
     async getAppConfig(): Promise<ApiResult<AppConfig>> {
       if (config.useFixtures)
-        return { ok: true, data: { ios: FIXTURE_PLATFORM_CONFIG, android: FIXTURE_PLATFORM_CONFIG } };
+        return {
+          ok: true,
+          data: {
+            ios: FIXTURE_PLATFORM_CONFIG,
+            android: FIXTURE_PLATFORM_CONFIG,
+            maintenance: { active: false, message: null },
+          },
+        };
       return request('GET', '/app-config', { validate: isAppConfig, auth: false });
     },
 
@@ -977,6 +1003,13 @@ export function setUpdateRequiredHandler(handler: (() => void) | null) {
   updateRequiredHandler = handler;
 }
 
+let maintenanceHandler: (() => void) | null = null;
+
+/** 서버가 503 `MAINTENANCE` 로 거절했을 때 할 일. features/update 가 등록한다(결정 030). */
+export function setMaintenanceHandler(handler: (() => void) | null) {
+  maintenanceHandler = handler;
+}
+
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
@@ -985,4 +1018,5 @@ export const api = createApi({
   useFixtures: process.env.EXPO_PUBLIC_USE_FIXTURES === '1',
   client: appClient,
   onUpdateRequired: () => updateRequiredHandler?.(),
+  onMaintenance: () => maintenanceHandler?.(),
 });

@@ -1168,3 +1168,66 @@ describe('api: 서버에 저장된 출생 정보(결정 029)', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });
+
+describe('api: 점검(결정 030)', () => {
+  const platformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+  const base = { ios: platformConfig, android: platformConfig };
+
+  it('GET /app-config 의 maintenance 를 함께 받는다', async () => {
+    const config = { ...base, maintenance: { active: true, message: '새벽 2시까지 점검해요' } };
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, config), getToken: () => null });
+    expect(await api.getAppConfig()).toEqual({ ok: true, data: config });
+  });
+
+  it('설정의 모양: maintenance 가 있으면 active 는 참 · 거짓, message 는 글자 또는 null 이어야 한다', () => {
+    expect(isAppConfig({ ...base, maintenance: { active: false, message: null } })).toBe(true);
+    expect(isAppConfig({ ...base, maintenance: { active: true, message: '점검 중' } })).toBe(true);
+    expect(isAppConfig({ ...base, maintenance: null })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: true })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { active: 'true', message: null } })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { active: true } })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { active: true, message: 1 } })).toBe(false);
+    expect(isAppConfig({ ...base, maintenance: { message: null } })).toBe(false);
+  });
+
+  it('maintenance 키가 없는 옛 서버의 응답도 받는다(점검 중이 아닌 것으로 읽는다)', async () => {
+    expect(isAppConfig(base)).toBe(true);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, base), getToken: () => null });
+    const r = await api.getAppConfig();
+    expect(r).toEqual({ ok: true, data: base });
+    expect(r.ok && r.data.maintenance).toBeUndefined();
+  });
+
+  it('어느 호출이든 503 MAINTENANCE 를 받으면 알리고, 결과는 code 와 함께 실패다(다시 부르지 않는다)', async () => {
+    const onMaintenance = jest.fn();
+    const onUpdateRequired = jest.fn();
+    const fetchFn = fakeFetch(503, { error: 'MAINTENANCE' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1', onMaintenance, onUpdateRequired });
+    expect(await api.createReading()).toEqual({ ok: false, error: 'SERVER', status: 503, code: 'MAINTENANCE' });
+    expect(onMaintenance).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    // 세션이 없는 호출(공유 페이지)도 알린다.
+    await api.getSharedCard('AbCdEfGhIjKlMnOpQrStUv');
+    expect(onMaintenance).toHaveBeenCalledTimes(2);
+    expect(onUpdateRequired).not.toHaveBeenCalled();
+  });
+
+  it('503 이라도 MAINTENANCE 가 아니거나 다른 상태의 MAINTENANCE 면 알리지 않는다', async () => {
+    const onMaintenance = jest.fn();
+    for (const fetchFn of [
+      fakeFetch(503),
+      fakeFetch(503, { error: 'OTHER' }),
+      fakeFetch(500, { error: 'MAINTENANCE' }),
+    ]) {
+      const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, onMaintenance });
+      expect((await api.createReading()).ok).toBe(false);
+    }
+    expect(onMaintenance).not.toHaveBeenCalled();
+  });
+
+  it('가짜 서버의 설정은 점검 중이 아니다', async () => {
+    const api = createApi({ baseUrl: BASE, getToken: () => null, useFixtures: true });
+    const r = await api.getAppConfig();
+    expect(r.ok && r.data.maintenance).toEqual({ active: false, message: null });
+  });
+});

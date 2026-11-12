@@ -68,7 +68,6 @@ export type Reading = {
   sections: { title: string; body: string; basis: string[] }[];
   strengths: string[];
   cautions: string[];
-  shareId: string;
 };
 
 /** 방향성 제시의 주제. 지금 서버가 받는 것은 이성(`LOVE`) 하나다 */
@@ -294,6 +293,7 @@ export function isPlaceList(v: unknown): v is Place[] {
 
 const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((item) => typeof item === 'string');
 
+/** 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다 */
 export function isReading(v: unknown): v is Reading {
   return (
     isObject(v) &&
@@ -303,8 +303,7 @@ export function isReading(v: unknown): v is Reading {
       (s) => isObject(s) && typeof s.title === 'string' && typeof s.body === 'string' && isStringList(s.basis),
     ) &&
     isStringList(v.strengths) &&
-    isStringList(v.cautions) &&
-    typeof v.shareId === 'string'
+    isStringList(v.cautions)
   );
 }
 

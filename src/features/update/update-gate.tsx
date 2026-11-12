@@ -2,13 +2,15 @@
  * 강제 업데이트의 문(결정 027). 루트 레이아웃이 화면 전체를 이것으로 감싼다.
  * 앱이 켜질 때와 앞으로 돌아올 때 설정을 묻고, 막아야 하면 화면들 대신 "업데이트가 필요해요" 만 보여 준다.
  * 세션이 필요 없다. 웹과 가짜 서버에서는 막지 않는다(판정은 update-store.ts).
+ * 점검(결정 030)도 여기서 본다: 점검 중이면 "점검 중이에요" 만 보여 주고(웹 포함, 업데이트보다 먼저), 끝나면 화면들이 돌아온다.
  */
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
+import { MaintenanceNotice } from '@/features/update/maintenance-notice';
 import { UpdateRequired } from '@/features/update/update-required';
 import { createUpdateStore, type UpdateStore } from '@/features/update/update-store';
-import { api, setUpdateRequiredHandler } from '@/lib/api';
+import { api, setMaintenanceHandler, setUpdateRequiredHandler } from '@/lib/api';
 import { appClient } from '@/lib/app-client';
 
 const UpdateContext = createContext<UpdateStore | null>(null);
@@ -20,6 +22,8 @@ export function UpdateGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     // 어느 호출이든 426 UPDATE_REQUIRED 를 받으면 바로 막는다.
     setUpdateRequiredHandler(store.force);
+    // 어느 호출이든 503 MAINTENANCE 를 받으면 바로 점검 화면을 보여 준다.
+    setMaintenanceHandler(store.maintain);
     void store.check();
     // 쓰는 동안 시간 간격으로 묻지 않는다. 앞으로 돌아올 때만 다시 묻는다.
     const subscription = AppState.addEventListener('change', (next) => {
@@ -28,12 +32,19 @@ export function UpdateGate({ children }: { children: ReactNode }) {
     return () => {
       subscription.remove();
       setUpdateRequiredHandler(null);
+      setMaintenanceHandler(null);
     };
   }, [store]);
 
   return (
     <UpdateContext value={store}>
-      {state.blocked ? <UpdateRequired message={state.message} storeUrl={state.storeUrl} /> : children}
+      {state.maintenance ? (
+        <MaintenanceNotice message={state.maintenance.message} onRetry={store.check} />
+      ) : state.blocked ? (
+        <UpdateRequired message={state.message} storeUrl={state.storeUrl} />
+      ) : (
+        children
+      )}
     </UpdateContext>
   );
 }

@@ -14,6 +14,7 @@ import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReportView, TIMING_TAB, type ReportTab } from '@/features/report/report-view';
 import { useReport } from '@/features/report/use-report';
+import { ShareEntry } from '@/features/share/share-entry';
 import { REPORT_AREAS } from '@/lib/api';
 
 const S = strings.report;
@@ -87,7 +88,16 @@ export default function ReportScreen() {
 
   return (
     <Screen nav={nav}>
-      <ReportView report={state.report} initialArea={TABS.find((a) => a === area)} />
+      <ReportView
+        report={state.report}
+        initialArea={TABS.find((a) => a === area)}
+        // 다음 변곡점이 없으면(네 번을 모두 지났다) 공유할 것이 없어 버튼을 두지 않는다(결정 025)
+        timingShare={
+          state.report.timing.current.nextMilestone ? (
+            <ShareEntry target={{ kind: 'NEXT_TURN' }} label={strings.share.openNextTurn} />
+          ) : undefined
+        }
+      />
       <View style={styles.footer}>
         <Txt variant="label" color="gray">
           {strings.reading.disclaimer}

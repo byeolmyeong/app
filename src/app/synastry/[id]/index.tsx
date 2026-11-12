@@ -14,6 +14,7 @@ import { useSession } from '@/features/auth/use-session';
 import { goBackOrHome } from '@/features/chart/chart-empty';
 import { OverlayWheel } from '@/features/chart/overlay-wheel';
 import { SynastrySummary } from '@/features/synastry/synastry-summary';
+import { ShareEntry } from '@/features/share/share-entry';
 import { useSynastry } from '@/features/synastry/use-synastry';
 
 const S = strings.synastry.result;
@@ -85,6 +86,8 @@ export default function SynastryResultScreen() {
           label={synastry.reportStatus === 'DONE' ? S.seeReport : S.getReport}
           onPress={() => router.push(`/synastry/${synastry.id}/report`)}
         />
+        {/* 점수 카드에는 두 사람의 이름 · 점수 · 한 줄만 들어간다. 내 이름은 시트가 묻는다(결정 025) */}
+        <ShareEntry target={{ kind: 'SCORE', synastryId: synastry.id }} />
         <TextLink label={strings.synastry.past.seeRanking} onPress={() => router.push('/synastry/ranking')} />
         <Txt variant="label" color="gray">
           {strings.reading.disclaimer}

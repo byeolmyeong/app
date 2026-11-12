@@ -6,6 +6,7 @@ import { InfoButton } from '@/components/info-button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { SectionHead } from '@/components/section-head';
+import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -84,6 +85,7 @@ export default function SynastryResultScreen() {
           label={synastry.reportStatus === 'DONE' ? S.seeReport : S.getReport}
           onPress={() => router.push(`/synastry/${synastry.id}/report`)}
         />
+        <TextLink label={strings.synastry.past.seeRanking} onPress={() => router.push('/synastry/ranking')} />
         <Txt variant="label" color="gray">
           {strings.reading.disclaimer}
         </Txt>

@@ -25,6 +25,7 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     createDirectSynastry: jest.fn(),
     getSynastry: jest.fn(),
+    listSynastries: jest.fn(),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -75,6 +76,7 @@ beforeEach(async () => {
   mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
   mockApi.createDirectSynastry.mockResolvedValue({ ok: true, data: made });
   mockApi.getSynastry.mockResolvedValue({ ok: true, data: stored });
+  mockApi.listSynastries.mockResolvedValue({ ok: true, data: [] });
   await saveBirth({ profile, chart: fixtures.chart });
 });
 

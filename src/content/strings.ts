@@ -201,6 +201,22 @@ export const strings = {
       },
       retry: '다시 시도',
     },
+    ranking: {
+      title: '궁합 랭킹',
+      keywordSeparator: ' · ',
+      loading: '랭킹을 불러오고 있어요',
+      empty: '아직 이 사이로 본 궁합이 없어요.',
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+        OTHER: '랭킹을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+    },
+    /** 지금까지 본 궁합의 목록(궁합 시작 화면 아래) */
+    past: {
+      heading: '지난 궁합',
+      seeRanking: '궁합 랭킹 보기',
+    },
     /** 겹친 휠: 내 점과 상대 점을 한 고리에 그린 그림 */
     overlay: {
       wheelLabel: '두 사람의 하늘을 겹친 그림',

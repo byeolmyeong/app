@@ -40,7 +40,7 @@ features/            기능별 로직과 기능 전용 부품
   reading/           요약 해석 요청 상태·문단 부품
   report/            심층 리포트·변곡점 타임라인
   synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts)
-  direction/         방향성 제시(지금은 이성 주제)의 요청 상태·기기 보관·글 부품
+  direction/         방향성 제시(이성 · 미래 · 궁합)의 요청 상태·글 부품. 기기 보관은 이성만(결정 023 · 026)
   share/             공유 카드(9:16 이미지)·공유 시트
 components/          공용 부품(버튼·입력 줄·표·차트 표식·시트·탭…). 기능을 모른다
 constants/theme.ts   디자인 값의 단일 출처
@@ -70,6 +70,9 @@ lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타�
 - 글: 세션이 있어야 요청한다. 요약 해석(`POST /readings`, 본문 없음)은 바로 받아 출생 정보별로 기기에 보관하고, 다시 열 때는 보관본을 쓴다. 401 이면 세션을 한 번 다시 받는다. 리포트는 202 를 받은 뒤 상태를 확인하거나 알림으로 완성을 안다. 다 쓴 리포트도 기기에 보관해 바로 보여 주되, 시기의 "지금 나의 구간"(`timing.current`)은 서버가 그날 날짜로 만들므로 보관본의 `current.date` 가 기기의 오늘(한국 날짜)과 다르면 `GET /reports/me` 를 한 번 조용히 다시 부른다(결정 021). 시기 탭은 서버가 준 날짜 글자를 비교해 "지금 앞뒤 10년" 을 거르고 시작한 해로 묶기만 한다(`features/report/timing.ts`).
 - 계정 삭제: 설정의 확인 시트 → `DELETE /account`(204) → 성공했을 때만 기기 저장소에서 이 앱의 키(`byeolmyeong.` 으로 시작하는 것 전부)와 보안 저장소의 세션 토큰을 지우고 첫 화면(`/`, 출생 정보 입력)으로 간다. 실패하면 기기의 것은 건드리지 않는다. 기능이 기기에 새로 두는 키는 `byeolmyeong.<이름>.v<판>` 으로 짓는다(그래야 삭제 때 함께 지워진다).
 - 방향성 제시(이성): `/direction` 을 열 때만 `POST /directions`(`{ topic: "LOVE" }`)를 부른다(결정 023). 요약 해석 화면과 홈은 부르지 않고 들어가는 줄만 둔다. 서버가 글을 기다렸다 답해 처음에는 20초쯤 걸린다(그동안 기다리는 화면). 받은 글은 요약 해석과 같은 모양의 키(출생 정보별)로 기기에 두고(`features/direction/use-direction.ts`), 있으면 세션을 기다리지 않고 바로 보여 준다. 404 면 기기의 내 출생 정보를 `PUT /profile` 한 뒤 한 번만 더 요청하고, 502 는 "다시 시도" 를 보여 준다. 항목이 정확히 3개가 아니거나 근거가 빈 응답은 쓰지 않는다(`isDirection`).
+- 방향성 제시(미래): 심층 리포트의 시기 탭이 보일 때만 `POST /directions`(`{ topic: "FUTURE" }`)를 부르고 탭의 끝(구간 타임라인 뒤)에 그린다(결정 026). 다른 탭을 보는 동안에는 부르지 않는다. 화면 `app/report.tsx` 가 `features/direction` 의 칸(`FutureDirection`)을 `ReportView` 의 `timingEnd` 자리에 넣는다(기능끼리는 서로 가져오지 않는다). 글은 "지금의 시기" 가 같은 동안만 같고 바뀌는 날은 서버만 알므로 **기기에 두지 않고 보일 때마다 받는다**(저장된 글은 서버가 바로 준다). 기다리는 중 · 실패("다시 시도")는 그 칸 안에서만 보이고 시기의 나머지는 그대로다. 404 면 `PUT /profile` 뒤 한 번만 더 요청한다.
+- 방향성 제시(궁합): 궁합 결과의 버튼을 눌러 `/synastry/<id>/direction` 을 열 때만 `POST /directions`(`{ topic: "SYNASTRY", synastryId }`)를 부른다(결정 026). 결과 화면은 부르지 않는다. 메모리에 상대의 출생 정보가 있으면(방금 계산한 궁합) 함께 보내고(`date` · `time` · 시각을 알 때만 `placeId`), 없으면 식별자만 먼저 보낸 뒤 `BIRTH_REQUIRED` 가 오면 화면에서 다시 입력받아 보낸다. `BIRTH_MISMATCH` · `INVALID_DATE` · `INVALID_TIME` · `UNKNOWN_PLACE` 는 다시 입력, `PROFILE_CHANGED` 는 궁합을 새로 보게 하고, `NOT_FOUND` 는 궁합 결과와 같은 안내다. 상대의 출생 정보도 받은 글도 기기에 두지 않는다.
+- 방향성 제시(공통): 호출은 받은 글의 `topic` 이 요청한 주제일 때만 쓴다(`lib/api.ts` 의 `createDirection` · `createSynastryDirection`). 다르면 계약과 다른 응답(`INVALID`)이다.
 - 궁합(직접 입력): `/synastry` 에서 관계 유형 · 부를 이름 · 상대의 출생 정보를 넣어 `POST /synastry/direct` 를 부른다(글을 기다렸다 답해 수십 초 걸린다. 그동안 기다리는 화면). 받은 결과의 겹친 휠(`overlay`)과 보낸 상대의 출생 정보는 **방금 계산한 것 하나만 메모리에** 둔다(`features/synastry/fresh-synastry.ts`). 기기 저장소에는 두지 않는다 — 서버도 저장하지 않는다(서버 결정 008). 앱을 다시 켜거나 다른 궁합을 계산하면 사라진다.
   - 결과 `/synastry/<id>`: 메모리에 있으면 그것으로(휠 있음), 없으면 `GET /synastry/{id}` 로(휠 없음) 그린다. 점수와 점수 옆의 말(`scoreLabel`)은 받은 그대로다.
   - 리포트 `/synastry/<id>/report`: `GET /synastry/{id}/report` 로 상태를 보고, 요청(`POST`)에는 상대의 출생 정보를 다시 보낸다 — 메모리에 있으면 그 값, 없으면 화면에서 다시 입력받는다. `BIRTH_MISMATCH` 는 다시 입력, `PROFILE_CHANGED` 는 궁합을 새로 보게 한다. 리포트의 글은 기기에 보관하지 않는다.

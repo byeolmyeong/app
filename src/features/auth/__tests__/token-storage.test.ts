@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-import { loadToken, saveToken } from '@/features/auth/token-storage';
+import { deleteToken, loadToken, saveToken } from '@/features/auth/token-storage';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -13,6 +13,9 @@ jest.mock('expo-secure-store', () => {
     getItemAsync: jest.fn(async (key: string) => kept.get(key) ?? null),
     setItemAsync: jest.fn(async (key: string, value: string) => {
       kept.set(key, value);
+    }),
+    deleteItemAsync: jest.fn(async (key: string) => {
+      kept.delete(key);
     }),
   };
 });
@@ -34,12 +37,22 @@ describe('세션 토큰 보관', () => {
     expect(await AsyncStorage.getAllKeys()).toEqual([]);
   });
 
+  it('지우면 보안 저장소에서 사라진다. 지우지 못해도 던지지 않는다', async () => {
+    await saveToken('dev-token');
+    await deleteToken();
+    expect(await loadToken()).toBeNull();
+    mockStore.deleteItemAsync.mockRejectedValueOnce(new Error('unavailable'));
+    await expect(deleteToken()).resolves.toBeUndefined();
+  });
+
   it('웹에서는 어디에도 두지 않는다(메모리에만 있고 새로 열면 다시 받는다)', async () => {
     Platform.OS = 'web';
     await saveToken('web-token');
     expect(await loadToken()).toBeNull();
     expect(mockStore.setItemAsync).not.toHaveBeenCalled();
     expect(mockStore.getItemAsync).not.toHaveBeenCalled();
+    await deleteToken();
+    expect(mockStore.deleteItemAsync).not.toHaveBeenCalled();
     expect(AsyncStorage.setItem).not.toHaveBeenCalled();
   });
 

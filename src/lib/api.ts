@@ -258,7 +258,7 @@ export function createApi(config: ApiConfig) {
    * 예외 하나: 401 이면 세션을 한 번 다시 받고 같은 호출을 한 번만 더 한다(retried 가 그 표시다).
    */
   async function request<T>(
-    method: 'GET' | 'POST' | 'PUT',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
     options: RequestOptions<T>,
     retried = false,
@@ -289,11 +289,14 @@ export function createApi(config: ApiConfig) {
     if (status === 429) return { ok: false, error: 'LIMIT', status };
     if (!response.ok) return { ok: false, error: 'SERVER', status };
 
-    let data: unknown;
-    try {
-      data = await response.json();
-    } catch {
-      return { ok: false, error: 'INVALID', status };
+    // 204 는 본문이 없으니 읽지 않는다(`DELETE /account`).
+    let data: unknown = null;
+    if (status !== 204) {
+      try {
+        data = await response.json();
+      } catch {
+        return { ok: false, error: 'INVALID', status };
+      }
     }
     return options.validate(data) ? { ok: true, data } : { ok: false, error: 'INVALID', status };
   }
@@ -349,6 +352,12 @@ export function createApi(config: ApiConfig) {
     async getReport(): Promise<ApiResult<ReportState>> {
       if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.report } };
       return request('GET', '/reports/me', { validate: isReportState });
+    },
+
+    /** `DELETE /account` 계정과 그 사람의 모든 것(세션 · 출생 정보 · 글)을 서버에서 지운다. 성공은 204 이고 본문이 없다 */
+    async deleteAccount(): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', '/account', { validate: (v): v is null => v === null });
     },
   };
 }

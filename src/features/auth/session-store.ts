@@ -17,6 +17,7 @@ export type SessionStoreDeps = {
   createDevSession: () => Promise<ApiResult<DevSession>>;
   loadToken: () => Promise<string | null>;
   saveToken: (token: string) => Promise<void>;
+  deleteToken: () => Promise<void>;
   /** 요청에 붙일 토큰을 api 에 건넨다 */
   setApiToken: (token: string | null) => void;
 };
@@ -70,6 +71,12 @@ export function createSessionStore(deps: SessionStoreDeps) {
     /** 서버가 401 을 주었을 때. 보관된 토큰을 버리고 새로 받는다. 새 세션이 생겼으면 true */
     refresh(): Promise<boolean> {
       return deps.enabled ? fetchToken() : Promise.resolve(false);
+    },
+
+    /** 계정을 지웠을 때. 보관된 토큰을 버리고 토큰 없이 남는다. 새 세션은 다음 401 이나 다음에 켤 때 받는다 */
+    async clear(): Promise<void> {
+      await deps.deleteToken();
+      set(null);
     },
   };
 }

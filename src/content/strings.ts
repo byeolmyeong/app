@@ -19,6 +19,52 @@ export const strings = {
     title: '마이',
     birthLabel: '출생 정보',
     editBirth: '바꾸기',
+    settings: '설정',
+  },
+  /** 설정(F9). 로그아웃 · 알림은 소셜 로그인 · 푸시가 생길 때 더한다 */
+  settings: {
+    title: '설정',
+    privacy: '개인정보 처리방침',
+    terms: '이용약관',
+    contact: '문의',
+    /** 문의 메일 주소. 소유자가 정한 임시 주소다. 바꿀 때는 여기 한 곳만 바꾼다(다른 곳에 적지 않는다) */
+    contactEmail: 'kimdonghwan913@gmail.com',
+    version: '앱 버전',
+    deleteAccount: '계정 삭제',
+    deleteSheet: {
+      title: '계정을 삭제할까요?',
+      body: '계정과 출생 정보, 받은 풀이와 리포트가 서버와 이 기기에서 모두 지워져요. 되돌릴 수 없어요.',
+      confirm: '삭제',
+      deleting: '삭제하는 중',
+      cancel: '취소',
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        OTHER: '계정을 삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+    },
+  },
+  /**
+   * 처리방침 · 약관의 글. [확인 필요] 본문은 자리표시다. 실제 문안은 소유자가 정해 이 자리의 paragraphs 를 바꾸고,
+   * 그때 placeholderNotice 를 지운다(화면에서 그 줄을 빼는 곳: src/app/settings/privacy.tsx · terms.tsx).
+   */
+  legal: {
+    placeholderNotice: '[확인 필요] 아직 확정되지 않은 임시 글입니다. 출시 전에 실제 문안으로 바뀝니다.',
+    privacy: {
+      title: '개인정보 처리방침',
+      paragraphs: [
+        '[자리표시] 수집하는 개인정보의 항목과 수집 방법이 이 자리에 들어갑니다.',
+        '[자리표시] 개인정보의 이용 목적, 보관 기간, 파기 절차가 이 자리에 들어갑니다.',
+        '[자리표시] 이용자의 권리와 행사 방법, 문의처가 이 자리에 들어갑니다.',
+      ],
+    },
+    terms: {
+      title: '이용약관',
+      paragraphs: [
+        '[자리표시] 서비스의 내용과 이용 조건이 이 자리에 들어갑니다.',
+        '[자리표시] 이용자와 운영자의 권리 · 의무가 이 자리에 들어갑니다.',
+        '[자리표시] 책임의 한계와 약관의 변경 절차가 이 자리에 들어갑니다.',
+      ],
+    },
   },
   main: {
     soon: '준비 중',

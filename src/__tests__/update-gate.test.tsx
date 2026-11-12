@@ -34,7 +34,7 @@ jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() }));
 jest.mock('expo-router', () => {
   const { Text: T } = jest.requireActual('react-native');
-  return { Stack: () => <T>앱의 화면들</T> };
+  return { Stack: () => <T>앱의 화면들</T>, useSegments: () => [] };
 });
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ token: null, ready: true })) }));
 

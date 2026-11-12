@@ -17,6 +17,7 @@ import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { ReadingView } from '@/features/reading/reading-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
+import { ShareEntry } from '@/features/share/share-entry';
 import { useGenerationBusy } from '@/features/update/update-gate';
 import type { Chart, Reading } from '@/lib/api';
 
@@ -100,6 +101,8 @@ function ReadingBody({ reading, chart }: { reading: Reading; chart: Chart | null
       ) : null}
       <ReadingView reading={reading} />
       <View style={styles.footer}>
+        {/* 공유는 누를 때 만든다. 카드에는 한 줄 총평과 키워드만 들어간다(결정 025) */}
+        <ShareEntry target={{ kind: 'READING' }} />
         {/* 방향성 "이성" 은 들어가는 줄만 둔다. 글은 그 화면을 열 때 받는다(결정 023) */}
         <TextLink label={S.seeDirection} onPress={() => router.push('/direction')} />
         <TextLink label={S.seeChart} onPress={() => router.push('/chart')} />

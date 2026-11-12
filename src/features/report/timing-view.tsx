@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -18,7 +18,7 @@ const MORE_STEP = 30;
  * 심층 리포트의 시기 탭(결정 021): 지금 나의 구간 → 안내 → 변곡점 넷 → 구간 타임라인.
  * 날짜 · 해 · 만 나이 · 글은 서버가 준 그대로 적는다. 앱은 큰 변화와 지금 앞뒤 10년을 먼저 거르고 시작한 해로 묶기만 한다.
  */
-export function TimingView({ timing }: { timing: ReportTiming }) {
+export function TimingView({ timing, share }: { timing: ReportTiming; share?: ReactNode }) {
   const { current } = timing;
   /** 앞뒤 10년 밖에서 더 연 구간 수(지금에 가까운 쪽부터) */
   const [earlierShown, setEarlierShown] = useState(0);
@@ -45,6 +45,8 @@ export function TimingView({ timing }: { timing: ReportTiming }) {
   return (
     <View testID="timing-view" style={styles.root}>
       <NowCard current={current} />
+      {/* 다음 변곡점 공유 버튼(화면이 넣는다. 기능끼리는 서로 import 하지 않는다) */}
+      {share}
 
       <View style={styles.notices}>
         <Txt variant="label" color="gray">

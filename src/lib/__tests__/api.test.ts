@@ -147,7 +147,7 @@ describe('fixtures: 서버 계약의 모양', () => {
   });
 
   it('요약 해석은 계약의 필드만 갖는다', () => {
-    expect(Object.keys(fixtures.reading).sort()).toEqual(['cautions', 'headline', 'sections', 'shareId', 'strengths']);
+    expect(Object.keys(fixtures.reading).sort()).toEqual(['cautions', 'headline', 'sections', 'strengths']);
     expect(Object.keys(fixtures.reading.sections[0]).sort()).toEqual(['basis', 'body', 'title']);
   });
 });
@@ -311,9 +311,11 @@ describe('api: 요약 해석', () => {
       { ...r, sections: [{ title: 't', body: 'b', basis: [1] }] },
       { ...r, strengths: [1] },
       { ...r, cautions: undefined },
-      { ...r, shareId: undefined },
     ];
     for (const v of broken) expect(isReading(v)).toBe(false);
+    // shareId 는 더 쓰지 않는다(서버 결정 012). 없어도, 예전처럼 있어도 받는다
+    expect('shareId' in r).toBe(false);
+    expect(isReading({ ...r, shareId: 'old' })).toBe(true);
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { headline: 'x' }), getToken: () => null });
     expect(await api.createReading()).toEqual({ ok: false, error: 'INVALID', status: 200 });
   });

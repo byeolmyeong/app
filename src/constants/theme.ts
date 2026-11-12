@@ -132,6 +132,12 @@ export const Sizes = {
   /** 설명(물음표) 버튼의 지름 · 설명 시트에서 글이 굴러가는 영역의 최대 높이 */
   infoButton: 20,
   infoSheetHeight: 360,
+  /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
+  shareCardWidth: 220,
+  sharePageCardWidth: 280,
+  /** 공유 카드 머리의 초록 줄 */
+  shareCardBarWidth: 24,
+  shareCardBarHeight: 4,
   /** 시트 위의 손잡이 줄 */
   handleWidth: 50,
   handleHeight: 4,

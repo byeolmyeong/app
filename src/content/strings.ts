@@ -432,6 +432,85 @@ export const strings = {
       mine: '나',
     },
   },
+  /**
+   * 공유(F6, 결정 025). 카드에는 서버가 준 `card` 의 값과 앱 이름 · 한 줄 소개만 적는다.
+   * 출생 정보 · 근거 · 리포트 본문은 어디에도 적지 않는다. 계절 · 관계의 키는 서버가 주는 식별자다.
+   */
+  share: {
+    /** 카드 아래와 공유 페이지에 적는 한 줄 소개 */
+    tagline: '태어난 순간의 하늘로 읽는 나',
+    open: '공유하기',
+    openNextTurn: '다음 변곡점 공유하기',
+    sheetTitle: '공유하기',
+    making: '카드를 만들고 있어요',
+    /** 공유할 것이 없을 때(서버의 404) */
+    nothing: {
+      READING: '공유할 풀이가 아직 없어요.',
+      SCORE: '이 궁합은 공유할 수 없어요.',
+      RANKING: '이 사이로 본 궁합이 없어 공유할 랭킹이 없어요.',
+      NEXT_TURN: '공유할 다음 변곡점이 없어요.',
+    },
+    failed: {
+      NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+      LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+      OTHER: '카드를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+    },
+    retry: '다시 시도',
+    /** 궁합 점수 카드에 적을 내 이름. 서버에 내 이름이 없어 공유할 때 묻는다 */
+    myName: {
+      label: '내 이름',
+      placeholder: '예: 동환',
+      hint: '카드에 상대의 이름과 나란히 적혀요.',
+      submit: '카드 만들기',
+      errors: {
+        required: '내 이름을 적어 주세요',
+        tooLong: '이름은 20자까지 적을 수 있어요',
+      },
+    },
+    /** 랭킹 카드. 꺼져 있으면 서버가 이름을 이니셜로 줄여 준다 */
+    showNames: '이름 그대로 보이기',
+    /** 앱은 시스템 공유 시트, 웹은 저장 · 복사 */
+    actions: {
+      shareImage: '이미지 공유',
+      shareLink: '링크 공유',
+      saveImage: '이미지 저장',
+      copyLink: '링크 복사',
+    },
+    notices: {
+      saved: '이미지를 저장했어요.',
+      copied: '링크를 복사했어요.',
+      imageFailed: '이미지를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.',
+      linkFailed: '링크를 보내지 못했어요. 잠시 뒤 다시 눌러 주세요.',
+    },
+    card: {
+      readingLabel: '내 별명',
+      scoreLabel: '궁합',
+      namesSeparator: ' × ',
+      scoreUnit: '점',
+      /** "내 친구 궁합 TOP 3": 가운데에 관계 유형이 들어간다 */
+      rankingPrefix: '내 ',
+      rankingSuffix: ' 궁합 TOP 3',
+      /** "내 다음 변곡점은" 아래에 "2027년 봄" */
+      nextTurnLead: '내 다음 변곡점은',
+      yearSuffix: '년 ',
+      seasons: { SPRING: '봄', SUMMER: '여름', AUTUMN: '가을', WINTER: '겨울' },
+    },
+    /** 공유 페이지(`/s/<공유 식별자>`). 로그인 없이 열린다 */
+    page: {
+      loading: '카드를 불러오고 있어요',
+      notFound: '없거나 공유가 끝난 카드예요.',
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+        OTHER: '카드를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+      retry: '다시 시도',
+      cta: '나도 보러 가기',
+      /** 링크를 붙였을 때 보이는 제목 · 설명 */
+      metaTitle: '별명 — 태어난 순간의 하늘로 읽는 나',
+      metaDescription: '태어난 순간의 하늘을 용어 없이 풀어 드려요. 나도 보러 가기.',
+    },
+  },
   detail: {
     title: '차트 자세히',
     helpLabel: '이 표 읽는 법',

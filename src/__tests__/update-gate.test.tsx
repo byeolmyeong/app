@@ -163,14 +163,15 @@ describe('강제 업데이트(결정 027)', () => {
     expect(screen.queryByText(U.title)).toBeNull();
   });
 
-  it('웹에서는 설정을 묻지 않고 막지 않는다', async () => {
+  it('웹에서는 버전으로 막지 않는다(설정은 점검 때문에 받는다. 결정 030)', async () => {
     mockClient.current = null;
     mockApi.getAppConfig.mockResolvedValue(required);
     const appState = spyAppState();
     await render(<UpdateGate>{app}</UpdateGate>);
     await appState.emit('active');
-    expect(mockApi.getAppConfig).not.toHaveBeenCalled();
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(2);
     expect(screen.getByText('앱의 화면들')).toBeTruthy();
+    expect(screen.queryByText(U.title)).toBeNull();
   });
 
   it('가짜 서버에서는 막지 않는다', async () => {

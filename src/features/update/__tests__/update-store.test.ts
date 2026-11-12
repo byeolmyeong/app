@@ -22,7 +22,7 @@ function setup(client: AppClient | null, ...results: ApiResult<AppConfig>[]) {
 describe('강제 업데이트 판정(결정 027)', () => {
   it('처음에는 막지 않는다', () => {
     const { store, getAppConfig } = setup(ios);
-    expect(store.getSnapshot()).toEqual({ blocked: false, message: null, storeUrl: null });
+    expect(store.getSnapshot()).toEqual({ blocked: false, message: null, storeUrl: null, maintenance: null });
     expect(getAppConfig).not.toHaveBeenCalled();
   });
 
@@ -34,7 +34,12 @@ describe('강제 업데이트 판정(결정 027)', () => {
     const listener = jest.fn();
     store.subscribe(listener);
     await store.check();
-    expect(store.getSnapshot()).toEqual({ blocked: true, message: '꼭 업데이트해 주세요', storeUrl: STORE_URL });
+    expect(store.getSnapshot()).toEqual({
+      blocked: true,
+      message: '꼭 업데이트해 주세요',
+      storeUrl: STORE_URL,
+      maintenance: null,
+    });
     expect(listener).toHaveBeenCalled();
   });
 
@@ -74,12 +79,12 @@ describe('강제 업데이트 판정(결정 027)', () => {
     },
   );
 
-  it('웹(client 가 없다)에서는 확인하지 않고, 426 알림도 막지 않는다', async () => {
+  it('웹(client 가 없다)에서는 버전으로 막지 않고, 426 알림도 막지 않는다(설정은 점검 때문에 받는다. 결정 030)', async () => {
     const { store, getAppConfig } = setup(null, configOf({ minVersion: '9.0.0' }, { minVersion: '9.0.0' }));
     await store.check();
     store.force();
-    expect(getAppConfig).not.toHaveBeenCalled();
-    expect(store.getSnapshot().blocked).toBe(false);
+    expect(getAppConfig).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot()).toEqual({ blocked: false, message: null, storeUrl: null, maintenance: null });
   });
 
   it('바쁜 화면이 있으면 막는 것을 미루고, 모두 나오면 막는다', async () => {
@@ -113,10 +118,10 @@ describe('강제 업데이트 판정(결정 027)', () => {
     const { store, getAppConfig } = setup(ios, configOf({ minVersion: '2.0.0', storeUrl: STORE_URL }));
     store.enterBusy();
     store.force();
-    expect(store.getSnapshot()).toEqual({ blocked: true, message: null, storeUrl: null });
+    expect(store.getSnapshot()).toEqual({ blocked: true, message: null, storeUrl: null, maintenance: null });
     await store.check();
     expect(getAppConfig).toHaveBeenCalledTimes(1);
-    expect(store.getSnapshot()).toEqual({ blocked: true, message: null, storeUrl: STORE_URL });
+    expect(store.getSnapshot()).toEqual({ blocked: true, message: null, storeUrl: STORE_URL, maintenance: null });
   });
 
   it('426 으로 막힌 것은 설정을 받지 못하거나 설정이 괜찮다고 해도 풀리지 않는다', async () => {
@@ -152,7 +157,7 @@ describe('강제 업데이트 판정(결정 027)', () => {
     await store.check();
     expect(store.getSnapshot().blocked).toBe(true);
     await store.check();
-    expect(store.getSnapshot()).toEqual({ blocked: true, message: null, storeUrl: STORE_URL });
+    expect(store.getSnapshot()).toEqual({ blocked: true, message: null, storeUrl: STORE_URL, maintenance: null });
     await store.check();
     expect(store.getSnapshot().blocked).toBe(false);
   });
@@ -170,5 +175,155 @@ describe('강제 업데이트 판정(결정 027)', () => {
     const before = store.getSnapshot();
     await store.check();
     expect(store.getSnapshot()).toBe(before);
+  });
+});
+
+describe('점검 판정(결정 030)', () => {
+  const calm = configOf({});
+  /** 503 알림이 스스로 부른 확인이 끝나기를 기다린다 */
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+  const maintenanceOf = (active: boolean, message: string | null = null, mine: Partial<PlatformConfig> = {}) => {
+    const config = configOf(mine);
+    return config.ok ? { ...config, data: { ...config.data, maintenance: { active, message } } } : config;
+  };
+
+  it('설정이 점검 중이면 점검을 알리고 안내를 함께 둔다. 버전 판정과는 따로다', async () => {
+    const { store } = setup(ios, maintenanceOf(true, '새벽 2시까지 점검해요'));
+    const listener = jest.fn();
+    store.subscribe(listener);
+    await store.check();
+    expect(store.getSnapshot()).toEqual({
+      blocked: false,
+      message: null,
+      storeUrl: null,
+      maintenance: { message: '새벽 2시까지 점검해요' },
+    });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('점검 중이 아니거나(active: false) maintenance 키가 없으면 알리지 않는다', async () => {
+    for (const config of [maintenanceOf(false, '끝났어요'), calm]) {
+      const { store } = setup(ios, config);
+      await store.check();
+      expect(store.getSnapshot().maintenance).toBeNull();
+    }
+  });
+
+  it('웹(client 가 없다)에서도 점검을 알린다', async () => {
+    const { store, getAppConfig } = setup(null, maintenanceOf(true, null, { minVersion: '9.0.0' }));
+    await store.check();
+    expect(getAppConfig).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot()).toEqual({
+      blocked: false,
+      message: null,
+      storeUrl: null,
+      maintenance: { message: null },
+    });
+  });
+
+  it('다음에 성공한 확인이 점검이 끝났다고 하면 스스로 풀린다. 확인이 실패하면 그대로 둔다', async () => {
+    const { store } = setup(ios, maintenanceOf(true), { ok: false, error: 'NETWORK' }, maintenanceOf(false));
+    await store.check();
+    expect(store.getSnapshot().maintenance).not.toBeNull();
+    await store.check();
+    expect(store.getSnapshot().maintenance).not.toBeNull();
+    await store.check();
+    expect(store.getSnapshot().maintenance).toBeNull();
+  });
+
+  it('점검과 업데이트가 함께면 둘 다 판정해 둔다(점검이 풀리면 업데이트가 남는다)', async () => {
+    const { store } = setup(
+      ios,
+      maintenanceOf(true, null, { minVersion: '2.0.0', storeUrl: STORE_URL }),
+      maintenanceOf(false, null, { minVersion: '2.0.0', storeUrl: STORE_URL }),
+    );
+    await store.check();
+    expect(store.getSnapshot()).toEqual({
+      blocked: true,
+      message: null,
+      storeUrl: STORE_URL,
+      maintenance: { message: null },
+    });
+    await store.check();
+    expect(store.getSnapshot()).toEqual({ blocked: true, message: null, storeUrl: STORE_URL, maintenance: null });
+  });
+
+  it('설정으로 안 점검은 바쁜 화면이 있으면 미루고, 모두 나오면 알린다. 알린 뒤의 바쁨은 풀지 않는다', async () => {
+    const { store } = setup(ios, maintenanceOf(true));
+    const leave = store.enterBusy();
+    await store.check();
+    expect(store.getSnapshot().maintenance).toBeNull();
+    leave();
+    expect(store.getSnapshot().maintenance).toEqual({ message: null });
+    store.enterBusy();
+    expect(store.getSnapshot().maintenance).not.toBeNull();
+  });
+
+  it('503 알림은 바쁜 화면이 있어도 바로 알리고, 안내를 받으러 설정을 한 번 묻는다', async () => {
+    const { store, getAppConfig } = setup(ios, maintenanceOf(true, '곧 돌아올게요'));
+    store.enterBusy();
+    store.maintain();
+    expect(store.getSnapshot().maintenance).toEqual({ message: null });
+    await settle();
+    expect(getAppConfig).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot().maintenance).toEqual({ message: '곧 돌아올게요' });
+  });
+
+  it('503 알림은 웹에서도 알린다', () => {
+    const { store } = setup(null, calm);
+    store.maintain();
+    expect(store.getSnapshot().maintenance).toEqual({ message: null });
+  });
+
+  it('503 으로 알린 점검은 붙박이가 아니다: 그 뒤 성공한 확인이 끝났다고 하면 풀린다', async () => {
+    const { store } = setup(ios, maintenanceOf(true), { ok: false, error: 'NETWORK' }, maintenanceOf(false));
+    store.maintain();
+    await settle();
+    expect(store.getSnapshot().maintenance).not.toBeNull();
+    await store.check();
+    expect(store.getSnapshot().maintenance).not.toBeNull();
+    await store.check();
+    expect(store.getSnapshot().maintenance).toBeNull();
+  });
+
+  it('503 알림이 스스로 부른 확인은 점검을 풀지 않는다(설정이 아직 아니라고 해도. 풀렸다 막혔다 되풀이하지 않게)', async () => {
+    const { store, getAppConfig } = setup(ios, maintenanceOf(false, '안내만 먼저'), maintenanceOf(false));
+    store.maintain();
+    await settle();
+    expect(getAppConfig).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot().maintenance).not.toBeNull();
+    // 사용자가 다시 확인하면(또는 앞으로 돌아오면) 풀린다.
+    await store.check();
+    expect(store.getSnapshot().maintenance).toBeNull();
+  });
+
+  it('알림이 부른 확인이 도는 중에 다시 확인을 누르면, 그것이 끝난 뒤 새로 확인해 풀 수 있다', async () => {
+    const { store, getAppConfig } = setup(ios, maintenanceOf(false));
+    store.maintain();
+    await store.check();
+    expect(getAppConfig).toHaveBeenCalledTimes(2);
+    expect(store.getSnapshot().maintenance).toBeNull();
+  });
+
+  it('확인이 도는 중에 온 503 알림은 그 확인의 답으로 풀리지 않는다(답이 알림보다 옛것이다)', async () => {
+    const { store, getAppConfig } = setup(ios, maintenanceOf(false));
+    const checking = store.check();
+    store.maintain();
+    await checking;
+    expect(store.getSnapshot().maintenance).not.toBeNull();
+    expect(getAppConfig).toHaveBeenCalledTimes(1);
+  });
+
+  it('설정 요청이 503 을 받아 알림이 또 와도 다시 묻지 않는다(되풀이하지 않는다)', async () => {
+    const getAppConfig = jest.fn<Promise<ApiResult<AppConfig>>, []>();
+    const store = createUpdateStore({ client: ios, getAppConfig });
+    getAppConfig.mockImplementation(async () => {
+      store.maintain();
+      return { ok: false, error: 'SERVER', status: 503, code: 'MAINTENANCE' };
+    });
+    store.maintain();
+    await settle();
+    expect(getAppConfig).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot().maintenance).not.toBeNull();
   });
 });

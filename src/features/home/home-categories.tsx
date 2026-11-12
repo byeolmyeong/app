@@ -17,6 +17,7 @@ export type HomePath =
   | '/chart'
   | '/report'
   | '/report?area=RELATIONSHIP'
+  | '/direction'
   | '/synastry'
   | '/synastry/ranking';
 

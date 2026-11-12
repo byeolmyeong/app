@@ -41,7 +41,7 @@ export const strings = {
         title: '관계',
         items: [
           { label: '사람을 대하는 성향', path: '/report?area=RELATIONSHIP' },
-          { label: '연애에서 해 볼 만한 것', path: null },
+          { label: '연애에서 해 볼 만한 것', path: '/direction' },
         ],
       },
       {

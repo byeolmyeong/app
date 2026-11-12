@@ -118,17 +118,19 @@ describe('홈', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  it('"관계" 의 "사람을 대하는 성향" 은 심층 리포트의 관계 영역으로 가고, "연애에서 해 볼 만한 것" 은 준비 중이다', async () => {
+  it('"관계" 의 "사람을 대하는 성향" 은 심층 리포트의 관계 영역으로, "연애에서 해 볼 만한 것" 은 /direction 으로 간다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
     await fireEvent.press(screen.getAllByTestId('home-category')[1]);
-    // 아직 없는 항목은 "준비 중" 이고 눌러도 가지 않는다
-    await fireEvent.press(await screen.findByText('연애에서 해 볼 만한 것'));
-    expect(screen.getByText(M.soon)).toBeTruthy();
-    expect(router.push).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByText('사람을 대하는 성향'));
+    await fireEvent.press(await screen.findByText('사람을 대하는 성향'));
     expect(router.push).toHaveBeenCalledWith('/report?area=RELATIONSHIP');
+    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
+    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
+    // 관계 칸에는 준비 중인 항목이 없다
+    expect(screen.queryByText(M.soon)).toBeNull();
+    await fireEvent.press(await screen.findByText('연애에서 해 볼 만한 것'));
+    expect(router.push).toHaveBeenCalledWith('/direction');
   });
 
   it('"궁합" 의 "상대와 궁합 보기" 는 /synastry 로, "궁합 랭킹" 은 /synastry/ranking 으로 간다', async () => {
@@ -144,10 +146,10 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/synastry/ranking');
   });
 
-  it('홈의 항목이 가는 곳: 나 3 · 관계 1(+준비 중 1) · 궁합 2 · 시기는 모두 준비 중', () => {
+  it('홈의 항목이 가는 곳: 나 3 · 관계 2 · 궁합 2 · 시기는 모두 준비 중', () => {
     expect(M.categories.map((c) => [c.key, c.items.map((item) => item.path as string | null)])).toEqual([
       ['me', ['/reading', '/chart', '/report']],
-      ['relation', ['/report?area=RELATIONSHIP', null]],
+      ['relation', ['/report?area=RELATIONSHIP', '/direction']],
       ['synastry', ['/synastry', '/synastry/ranking']],
       ['timing', [null, null]],
     ]);

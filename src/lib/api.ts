@@ -10,8 +10,11 @@ import { fixtures } from '@/lib/fixtures';
 /** `GET /places` 의 한 줄. name 은 "시·도 시·군·구" 꼴이고 세종만 한 낱말이다 */
 export type Place = { id: number; name: string; lat: number; lon: number };
 
-/** `POST /charts`·`PUT /profile` 의 요청. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름") */
-export type BirthInput = { date: string; time: string | null; placeId: number };
+/**
+ * `POST /charts`·`PUT /profile` 의 요청. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름").
+ * placeId 는 time 이 있으면 필수이고, time 이 null 이면 null 이다(서버가 쓰지 않는다. 결정 020).
+ */
+export type BirthInput = { date: string; time: string | null; placeId: number | null };
 
 /** 별자리 안 위치와 황경(0 이상 360 미만). 상승점·중천의 값 */
 export type SignPosition = {
@@ -68,9 +71,17 @@ export type Reading = {
   shareId: string;
 };
 
-export type ReportStatus = 'NONE' | 'WRITING' | 'DONE';
+/** 방향성 제시의 주제. 지금 서버가 받는 것은 이성(`LOVE`) 하나다 */
+export type DirectionTopic = 'LOVE';
 
-/** 심층 리포트의 영역. 서버는 이 순서로 네 영역을 모두 준다. 시기(타임라인)는 아직 계약에 없다 */
+/** 방향성 제시: 한 줄 제목과 해 볼 만한 것 3개. 항목의 title 은 실천 한 줄, basis 는 `Reading` 과 같은 말(1개 이상) */
+export type Direction = {
+  topic: DirectionTopic;
+  title: string;
+  items: { title: string; body: string; basis: string[] }[];
+};
+
+/** 심층 리포트의 글 영역. 서버는 이 순서로 네 영역을 모두 준다. 다섯째 영역인 시기는 `Report.timing` 으로 따로 온다 */
 export const REPORT_AREAS = ['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
 export type ReportArea = (typeof REPORT_AREAS)[number];
 
@@ -80,7 +91,59 @@ export type ReportSection = {
   paragraphs: { title: string; body: string; basis: string[] }[];
 };
 
-export type Report = { sections: ReportSection[] };
+/** 시기의 날짜는 모두 한국 달력의 YYYY-MM-DD 글자다. 글자를 그대로 비교해 거르고 정렬한다(앱은 날짜를 계산하지 않는다) */
+export const MILESTONE_KINDS = ['SATURN_SQUARE', 'SATURN_RETURN', 'URANUS_OPPOSITION', 'SECOND_SATURN_RETURN'] as const;
+export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
+export type TimingSize = 'BIG' | 'SMALL';
+
+/** 누구에게나 오는 변곡점(마디). date 는 처음 정확히 겹치는 날, year·age 는 그날의 해와 만 나이(서버가 계산한 값) */
+export type TimingMilestone = {
+  kind: MilestoneKind;
+  date: string;
+  year: number;
+  age: number;
+  from: string;
+  to: string;
+  size: TimingSize;
+  title: string;
+  body: string;
+};
+
+/** 나에게만 오는 구간. CHANGE 변화 · OPPORTUNITY 기회 · FATED 운명적 만남(시각을 알 때만). size 는 CHANGE 에만 있다 */
+export type TimingInterval = {
+  id: string;
+  kind: 'CHANGE' | 'OPPORTUNITY' | 'FATED';
+  from: string;
+  to: string;
+  area: 'PEOPLE' | 'WORK' | 'MONEY' | 'SELF';
+  size?: TimingSize;
+  title: string;
+  body: string;
+};
+
+/** 지금 나의 구간. 서버가 `GET /reports/me` 때마다 그날(date)로 만든다. 없는 값은 키가 없다 */
+export type TimingCurrent = {
+  date: string;
+  /** 오늘에 걸쳐 있는 구간. 없으면 빈 배열 */
+  intervals: TimingInterval[];
+  /** 오늘이 그 기간 안인 변곡점 */
+  milestone?: TimingMilestone;
+  nextInterval?: TimingInterval;
+  nextMilestone?: TimingMilestone;
+  /** 오늘에서 가장 가까운 변곡점(지났든 아니든). 화면에서 강조한다 */
+  nearestMilestone: MilestoneKind;
+};
+
+/** 심층 리포트의 시기 영역. milestones 는 언제나 넷이 시간 순서로, intervals 는 시작 순서로 온다(서로 겹칠 수 있다) */
+export type ReportTiming = {
+  /** false 면 상승점 구간과 운명적 만남 구간이 빠져 있다 */
+  timeKnown: boolean;
+  milestones: TimingMilestone[];
+  intervals: TimingInterval[];
+  current: TimingCurrent;
+};
+
+export type Report = { sections: ReportSection[]; timing: ReportTiming };
 
 /** `GET /reports/me`. 글은 DONE 일 때만 온다 */
 export type ReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: Report };
@@ -88,16 +151,73 @@ export type ReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 
 /** `POST /reports` 의 응답(202). WRITING 쓰기 시작했거나 쓰는 중 · DONE 이미 써 둠 */
 export type ReportRequest = { status: 'WRITING' | 'DONE' };
 
+/** 궁합의 관계 유형(결정 020). 서버가 유형마다 다른 가중치로 점수를 계산한다 */
+export const RELATIONS = ['LOVE', 'FRIEND', 'WORK', 'FAMILY'] as const;
+export type Relation = (typeof RELATIONS)[number];
+
+/**
+ * 겹친 휠의 자료. `POST /synastry/direct` 의 응답에만 온다(서버가 상대의 위치를 저장하지 않는다. 서버 결정 008).
+ * longitude 는 `Chart` 와 같은 황경. mineAsc 는 내 상승점의 황경이고 내 시각을 알 때만 온다.
+ * lines 는 점수에 쓴 각도: mine 은 SUN·MOON·MERCURY·VENUS·MARS·ASC, theirs 는 상대의 body, type 은 `Chart` 의 각도 종류.
+ */
+export type SynastryOverlay = {
+  mine: { body: string; longitude: number }[];
+  mineAsc?: number;
+  theirs: { body: string; longitude: number }[];
+  lines: { mine: string; theirs: string; type: string }[];
+};
+
+export type SynastryReportStatus = 'NONE' | 'WRITING' | 'FAILED' | 'DONE';
+
+/**
+ * 직접 입력 궁합. score 는 서버가 계산한 나 기준 점수(40~100)다. 앱은 점수를 만들거나 판정하지 않는다.
+ * scoreLabel 은 서버가 낮은 점수에 붙이는 말이고 있을 때만 그대로 보여 준다. 값이 없는 키는 오지 않는다.
+ */
 export type Synastry = {
   id: string;
-  names: [string, string];
+  /** 상대를 부를 이름 */
+  name: string;
+  relation: Relation;
+  score: number;
+  scoreLabel?: string;
   headline: string;
   keywords: [string, string, string];
-  /** 계약에 모양이 아직 없다("나의 차트와 상대 점의 화면 좌표용 황경"). 태스크 7 전에 정해져야 한다. */
-  overlay: unknown;
-  shareId: string;
-  reportStatus: ReportStatus;
+  reportStatus: SynastryReportStatus;
+  /** UTC `YYYY-MM-DDTHH:mm:ssZ` */
+  createdAt: string;
+  overlay?: SynastryOverlay;
 };
+
+/** `POST /synastry/direct` 의 요청. date·time·placeId 는 상대의 출생 정보다 */
+export type DirectSynastryInput = { name: string; relation: Relation } & BirthInput;
+
+/** `GET /synastry/ranking` 의 한 줄. 순서는 서버가 정한다(점수가 높은 순) */
+export type SynastryRankingEntry = {
+  id: string;
+  name: string;
+  score: number;
+  scoreLabel?: string;
+  keywords: [string, string, string];
+};
+
+/** 궁합 리포트의 영역. 서버는 이 순서로 네 영역을 모두 준다 */
+export const SYNASTRY_REPORT_AREAS = ['ATTRACTION', 'TALK', 'CONFLICT', 'LASTING'] as const;
+export type SynastryReportArea = (typeof SYNASTRY_REPORT_AREAS)[number];
+
+export type SynastryReport = {
+  sections: {
+    area: SynastryReportArea;
+    title: string;
+    paragraphs: { title: string; body: string; basis: string[] }[];
+  }[];
+};
+
+/** `GET /synastry/{id}/report`. 글은 DONE 일 때만 온다 */
+export type SynastryReportState =
+  { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: SynastryReport };
+
+/** `POST /synastry/{id}/report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
+export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
 // ── 결과 ───────────────────────────────────────────────────────────────────
 
@@ -107,7 +227,8 @@ export type Synastry = {
  */
 export type ApiErrorKind = 'LOGIN_REQUIRED' | 'LIMIT' | 'NETWORK' | 'SERVER' | 'INVALID';
 
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiErrorKind; status?: number };
+/** code 는 서버가 오류 본문 `{ error }` 에 적어 준 이름(예: `BIRTH_MISMATCH`)이다. 본문이 없으면 없다 */
+export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiErrorKind; status?: number; code?: string };
 
 // ── 응답 검사 (외부 입력은 쓰기 전에 모양을 확인한다) ──────────────────────
 
@@ -187,10 +308,84 @@ export function isReading(v: unknown): v is Reading {
   );
 }
 
-/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 계약에 없는 필드는 보지 않는다 */
+const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+const isSize = (v: unknown) => v === 'BIG' || v === 'SMALL';
+
+const isMilestone = (v: unknown): v is TimingMilestone =>
+  isObject(v) &&
+  MILESTONE_KINDS.some((kind) => kind === v.kind) &&
+  isDate(v.date) &&
+  typeof v.year === 'number' &&
+  typeof v.age === 'number' &&
+  isDate(v.from) &&
+  isDate(v.to) &&
+  isSize(v.size) &&
+  typeof v.title === 'string' &&
+  typeof v.body === 'string';
+
+/** 크기는 변화 구간에만 있고 다른 종류에는 키가 없다 */
+const isInterval = (v: unknown): v is TimingInterval =>
+  isObject(v) &&
+  typeof v.id === 'string' &&
+  (v.kind === 'CHANGE' ? isSize(v.size) : (v.kind === 'OPPORTUNITY' || v.kind === 'FATED') && v.size === undefined) &&
+  isDate(v.from) &&
+  isDate(v.to) &&
+  ['PEOPLE', 'WORK', 'MONEY', 'SELF'].includes(v.area as string) &&
+  typeof v.title === 'string' &&
+  typeof v.body === 'string';
+
+const isTimingCurrent = (v: unknown): v is TimingCurrent =>
+  isObject(v) &&
+  isDate(v.date) &&
+  Array.isArray(v.intervals) &&
+  v.intervals.every(isInterval) &&
+  (v.milestone === undefined || isMilestone(v.milestone)) &&
+  (v.nextInterval === undefined || isInterval(v.nextInterval)) &&
+  (v.nextMilestone === undefined || isMilestone(v.nextMilestone)) &&
+  MILESTONE_KINDS.some((kind) => kind === v.nearestMilestone);
+
+/** 변곡점은 계약의 순서대로 넷이 모두 있어야 한다(화면이 그 순서를 믿고 "첫 번째~네 번째" 로 그린다) */
+const isTiming = (v: unknown): v is ReportTiming =>
+  isObject(v) &&
+  typeof v.timeKnown === 'boolean' &&
+  Array.isArray(v.milestones) &&
+  v.milestones.length === MILESTONE_KINDS.length &&
+  v.milestones.every((m, i) => isMilestone(m) && m.kind === MILESTONE_KINDS[i]) &&
+  Array.isArray(v.intervals) &&
+  v.intervals.every(isInterval) &&
+  isTimingCurrent(v.current);
+
+const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+
+/** 항목은 정확히 3개이고, 제목·본문은 빈 글이 아니며, 근거는 항목마다 하나 이상이어야 한다 */
+export function isDirection(v: unknown): v is Direction {
+  return (
+    isObject(v) &&
+    v.topic === 'LOVE' &&
+    isText(v.title) &&
+    Array.isArray(v.items) &&
+    v.items.length === 3 &&
+    v.items.every(
+      (item) =>
+        isObject(item) &&
+        isText(item.title) &&
+        isText(item.body) &&
+        Array.isArray(item.basis) &&
+        item.basis.length > 0 &&
+        item.basis.every(isText),
+    )
+  );
+}
+
+/**
+ * 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 시기(timing)도 계약의 모양이어야 한다.
+ * 시기가 생기기 전에 받아 기기에 둔 리포트는 여기서 걸러진다. 그 밖의 계약에 없는 필드는 보지 않는다.
+ */
 export function isReport(v: unknown): v is Report {
   return (
     isObject(v) &&
+    isTiming(v.timing) &&
     Array.isArray(v.sections) &&
     v.sections.length === REPORT_AREAS.length &&
     v.sections.every(
@@ -213,18 +408,104 @@ export function isReportState(v: unknown): v is ReportState {
   return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
 }
 
+const isLongitudes = (v: unknown) =>
+  Array.isArray(v) && v.every((p) => isObject(p) && typeof p.body === 'string' && typeof p.longitude === 'number');
+
+const isSynastryOverlay = (v: unknown): v is SynastryOverlay =>
+  isObject(v) &&
+  isLongitudes(v.mine) &&
+  isLongitudes(v.theirs) &&
+  isOptionalNumber(v.mineAsc) &&
+  Array.isArray(v.lines) &&
+  v.lines.every(
+    (l) => isObject(l) && typeof l.mine === 'string' && typeof l.theirs === 'string' && typeof l.type === 'string',
+  );
+
+const isOptionalString = (v: unknown) => ['string', 'undefined'].includes(typeof v);
+const isKeywords = (v: unknown) => isStringList(v) && v.length === 3;
+
+/** 점수의 범위(40~100)는 보지 않는다. 앱은 점수를 판정하지 않고 받은 숫자를 그대로 보여 준다 */
+export function isSynastry(v: unknown): v is Synastry {
+  return (
+    isObject(v) &&
+    typeof v.id === 'string' &&
+    typeof v.name === 'string' &&
+    RELATIONS.some((r) => r === v.relation) &&
+    typeof v.score === 'number' &&
+    isOptionalString(v.scoreLabel) &&
+    typeof v.headline === 'string' &&
+    isKeywords(v.keywords) &&
+    ['NONE', 'WRITING', 'FAILED', 'DONE'].includes(v.reportStatus as string) &&
+    typeof v.createdAt === 'string' &&
+    (v.overlay === undefined || isSynastryOverlay(v.overlay))
+  );
+}
+
+const isSynastryList = (v: unknown): v is Synastry[] => Array.isArray(v) && v.every(isSynastry);
+
+export function isSynastryRanking(v: unknown): v is SynastryRankingEntry[] {
+  return (
+    Array.isArray(v) &&
+    v.every(
+      (r) =>
+        isObject(r) &&
+        typeof r.id === 'string' &&
+        typeof r.name === 'string' &&
+        typeof r.score === 'number' &&
+        isOptionalString(r.scoreLabel) &&
+        isKeywords(r.keywords),
+    )
+  );
+}
+
+/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다([isReport] 와 같은 기준) */
+function isSynastryReport(v: unknown): v is SynastryReport {
+  return (
+    isObject(v) &&
+    Array.isArray(v.sections) &&
+    v.sections.length === SYNASTRY_REPORT_AREAS.length &&
+    v.sections.every(
+      (s, i) =>
+        isObject(s) &&
+        s.area === SYNASTRY_REPORT_AREAS[i] &&
+        typeof s.title === 'string' &&
+        Array.isArray(s.paragraphs) &&
+        s.paragraphs.length > 0 &&
+        s.paragraphs.every(
+          (p) => isObject(p) && typeof p.title === 'string' && typeof p.body === 'string' && isStringList(p.basis),
+        ),
+    )
+  );
+}
+
+export function isSynastryReportState(v: unknown): v is SynastryReportState {
+  if (!isObject(v)) return false;
+  if (v.status === 'DONE') return isSynastryReport(v.report);
+  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+const isSynastryReportRequest = (v: unknown): v is SynastryReportRequest =>
+  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
+
+/** 상대의 출생 정보를 요청 본문으로. placeId 는 시각이 있을 때만 싣는다(시각 "모름" 이면 키를 보내지 않는다) */
+const partnerBirthBody = (birth: BirthInput) => ({
+  date: birth.date,
+  time: birth.time,
+  ...(birth.time !== null && birth.placeId !== null ? { placeId: birth.placeId } : {}),
+});
+
 const isReportRequest = (v: unknown): v is ReportRequest =>
   isObject(v) && (v.status === 'WRITING' || v.status === 'DONE');
 
 const isDevSession = (v: unknown): v is DevSession =>
   isObject(v) && typeof v.token === 'string' && v.token.length > 0;
 
-/** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다 */
+/** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
   isObject(v) &&
   typeof v.date === 'string' &&
   (typeof v.time === 'string' || v.time === null) &&
-  typeof v.placeId === 'number';
+  (typeof v.placeId === 'number' || (v.time === null && (v.placeId === null || v.placeId === undefined)));
 
 // ── 호출 ───────────────────────────────────────────────────────────────────
 
@@ -255,7 +536,7 @@ export function createApi(config: ApiConfig) {
    * 예외 하나: 401 이면 세션을 한 번 다시 받고 같은 호출을 한 번만 더 한다(retried 가 그 표시다).
    */
   async function request<T>(
-    method: 'GET' | 'POST' | 'PUT',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
     options: RequestOptions<T>,
     retried = false,
@@ -284,13 +565,21 @@ export function createApi(config: ApiConfig) {
       return { ok: false, error: 'LOGIN_REQUIRED', status };
     }
     if (status === 429) return { ok: false, error: 'LIMIT', status };
-    if (!response.ok) return { ok: false, error: 'SERVER', status };
+    if (!response.ok) {
+      // 오류 본문 `{ error }` 의 이름만 읽는다. 본문이 없거나 모양이 달라도 결과는 같다.
+      const body: unknown = await response.json().catch(() => null);
+      const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
+      return { ok: false, error: 'SERVER', status, ...code };
+    }
 
-    let data: unknown;
-    try {
-      data = await response.json();
-    } catch {
-      return { ok: false, error: 'INVALID', status };
+    // 204 는 본문이 없으니 읽지 않는다(`DELETE /account`).
+    let data: unknown = null;
+    if (status !== 204) {
+      try {
+        data = await response.json();
+      } catch {
+        return { ok: false, error: 'INVALID', status };
+      }
     }
     return options.validate(data) ? { ok: true, data } : { ok: false, error: 'INVALID', status };
   }
@@ -334,6 +623,15 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
+     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)를 받는다. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
+     * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
+     */
+    async createDirection(topic: DirectionTopic): Promise<ApiResult<Direction>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.direction };
+      return request('POST', '/directions', { body: { topic }, validate: isDirection });
+    },
+
+    /**
      * `POST /reports` 심층 리포트를 써 달라고 한다. 본문은 없고 서버가 저장된 출생 정보로 쓴다(없으면 404).
      * 글은 뒤에서 1~2분 동안 쓰이므로 여기서는 상태만 온다. 이미 쓰는 중이거나 써 두었으면 새로 쓰지 않는다.
      */
@@ -346,6 +644,69 @@ export function createApi(config: ApiConfig) {
     async getReport(): Promise<ApiResult<ReportState>> {
       if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.report } };
       return request('GET', '/reports/me', { validate: isReportState });
+    },
+
+    /** `DELETE /account` 계정과 그 사람의 모든 것(세션 · 출생 정보 · 글)을 서버에서 지운다. 성공은 204 이고 본문이 없다 */
+    async deleteAccount(): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', '/account', { validate: (v): v is null => v === null });
+    },
+
+    /**
+     * `POST /synastry/direct` 상대의 출생 정보로 궁합을 계산한다. 나는 서버에 저장된 출생 정보다(없으면 404 `NO_PROFILE`).
+     * 서버가 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있다. 겹친 휠(`overlay`)은 이 응답에만 온다.
+     */
+    async createDirectSynastry(input: DirectSynastryInput): Promise<ApiResult<Synastry>> {
+      if (config.useFixtures)
+        return { ok: true, data: { ...fixtures.synastry, name: input.name, relation: input.relation } };
+      return request('POST', '/synastry/direct', {
+        body: { name: input.name, relation: input.relation, ...partnerBirthBody(input) },
+        validate: isSynastry,
+      });
+    },
+
+    /** `GET /synastry` 내가 본 궁합 전부, 새것부터. 겹친 휠은 없다 */
+    async listSynastries(): Promise<ApiResult<Synastry[]>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.synastryList };
+      return request('GET', '/synastry', { validate: isSynastryList });
+    },
+
+    /** `GET /synastry/{id}` 궁합 하나. 겹친 휠은 없다. 남의 것·없는 것은 404 */
+    async getSynastry(id: string): Promise<ApiResult<Synastry>> {
+      if (config.useFixtures) {
+        const found = fixtures.synastryList.find((s) => s.id === id);
+        return found ? { ok: true, data: found } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
+      }
+      return request('GET', `/synastry/${encodeURIComponent(id)}`, { validate: isSynastry });
+    },
+
+    /** `GET /synastry/ranking?relation=` 그 관계 유형의 궁합을 서버가 정한 순서(점수가 높은 순)로 */
+    async getSynastryRanking(relation: Relation): Promise<ApiResult<SynastryRankingEntry[]>> {
+      if (config.useFixtures)
+        return {
+          ok: true,
+          // 가짜 서버가 서버를 대신해 줄을 세운다. 화면은 받은 순서대로만 그린다.
+          data: fixtures.synastryList.filter((s) => s.relation === relation).sort((a, b) => b.score - a.score),
+        };
+      return request('GET', `/synastry/ranking?relation=${relation}`, { validate: isSynastryRanking });
+    },
+
+    /**
+     * `POST /synastry/{id}/report` 궁합 리포트를 써 달라고 한다. 서버에 상대의 출생 정보가 없어 다시 보낸다.
+     * 400 `BIRTH_MISMATCH`(그 궁합의 상대가 아니다) · 409 `PROFILE_CHANGED`(내 출생 정보가 바뀌었다)는 code 로 온다.
+     */
+    async requestSynastryReport(id: string, birth: BirthInput): Promise<ApiResult<SynastryReportRequest>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
+      return request('POST', `/synastry/${encodeURIComponent(id)}/report`, {
+        body: partnerBirthBody(birth),
+        validate: isSynastryReportRequest,
+      });
+    },
+
+    /** `GET /synastry/{id}/report` 궁합 리포트의 상태. 다 썼으면(DONE) 글이 함께 온다 */
+    async getSynastryReport(id: string): Promise<ApiResult<SynastryReportState>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.synastryReport } };
+      return request('GET', `/synastry/${encodeURIComponent(id)}/report`, { validate: isSynastryReportState });
     },
   };
 }

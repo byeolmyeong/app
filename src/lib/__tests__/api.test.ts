@@ -1,4 +1,15 @@
-import { createApi, isChart, isPlaceList, isReading, isReport, isReportState } from '@/lib/api';
+import {
+  createApi,
+  isChart,
+  isDirection,
+  isPlaceList,
+  isReading,
+  isReport,
+  isReportState,
+  isSynastry,
+  isSynastryRanking,
+  isSynastryReportState,
+} from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 const BASE = 'https://api.example.test';
@@ -187,6 +198,31 @@ describe('api: 개발용 세션과 출생 정보 저장', () => {
     expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
   });
 
+  it('시각 "모름" 이면 POST /charts · PUT /profile 에 placeId 를 null 로 보낸다(결정 020)', async () => {
+    const unknown = { date: '2000-06-15', time: null, placeId: null };
+    const chartFetch = fakeFetch(200, fixtures.chartTimeUnknown);
+    await createApi({ baseUrl: BASE, fetchFn: chartFetch, getToken: () => null }).createChart(unknown);
+    expect(JSON.parse(chartFetch.mock.calls[0][1]?.body as string)).toEqual(unknown);
+    const profileFetch = fakeFetch(200, unknown);
+    const api = createApi({ baseUrl: BASE, fetchFn: profileFetch, getToken: () => 'session-abc' });
+    expect(await api.saveProfile(unknown)).toEqual({ ok: true, data: unknown });
+    expect(JSON.parse(profileFetch.mock.calls[0][1]?.body as string)).toEqual(unknown);
+  });
+
+  it('PUT /profile 의 응답: 시각이 null 이면 placeId 가 null 이거나 없어도 되고, 시각이 있으면 숫자여야 한다', async () => {
+    const unknown = { date: '2000-06-15', time: null, placeId: null };
+    const respond = (body: unknown) =>
+      createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => null }).saveProfile(unknown);
+    expect((await respond({ date: '2000-06-15', time: null })).ok).toBe(true);
+    expect((await respond({ date: '2000-06-15', time: null, placeId: null })).ok).toBe(true);
+    expect(await respond({ date: '2000-06-15', time: '21:00', placeId: null })).toEqual({
+      ok: false,
+      error: 'INVALID',
+      status: 200,
+    });
+    expect((await respond({ date: '2000-06-15', time: '21:00' })).ok).toBe(false);
+  });
+
   it('PUT /profile 의 응답 모양이 다르면 INVALID 다', async () => {
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { date: '2000-06-15' }), getToken: () => null });
     expect(await api.saveProfile(profile)).toEqual({ ok: false, error: 'INVALID', status: 200 });
@@ -257,8 +293,8 @@ describe('api: 요약 해석', () => {
   it('출생 정보가 없으면(404)·생성에 실패하면(502) 서버 오류, 429 는 한도 결과다', async () => {
     const call = (status: number) =>
       createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, { error: 'X' }), getToken: () => null }).createReading();
-    expect(await call(404)).toEqual({ ok: false, error: 'SERVER', status: 404 });
-    expect(await call(502)).toEqual({ ok: false, error: 'SERVER', status: 502 });
+    expect(await call(404)).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'X' });
+    expect(await call(502)).toEqual({ ok: false, error: 'SERVER', status: 502, code: 'X' });
     expect(await call(429)).toEqual({ ok: false, error: 'LIMIT', status: 429 });
   });
 
@@ -288,6 +324,65 @@ describe('api: 요약 해석', () => {
   });
 });
 
+describe('api: 방향성 제시(이성)', () => {
+  it('POST /directions 에 { topic: "LOVE" } 를 세션 헤더와 함께 보내고 글을 받는다', async () => {
+    const fetchFn = fakeFetch(200, fixtures.direction);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/directions`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(init?.body as string)).toEqual({ topic: 'LOVE' });
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('출생 정보가 없으면(404 NO_PROFILE)·생성에 실패하면(502 GENERATION_FAILED) 서버 오류에 code 가 온다', async () => {
+    const call = (status: number, error: string) =>
+      createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, { error }), getToken: () => null }).createDirection('LOVE');
+    expect(await call(404, 'NO_PROFILE')).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    expect(await call(502, 'GENERATION_FAILED')).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 502,
+      code: 'GENERATION_FAILED',
+    });
+  });
+
+  it('항목이 정확히 3개가 아니거나, 빈 글·빈 근거가 있으면 계약과 다른 모양이다', async () => {
+    const d = fixtures.direction;
+    const [a, b, c] = d.items;
+    expect(isDirection(d)).toBe(true);
+    const broken: unknown[] = [
+      null,
+      { ...d, topic: 'FUTURE' },
+      { ...d, title: '' },
+      { ...d, title: undefined },
+      { ...d, items: 'x' },
+      { ...d, items: [a, b] },
+      { ...d, items: [a, b, c, a] },
+      { ...d, items: [a, b, { ...c, basis: [] }] },
+      { ...d, items: [a, b, { ...c, basis: [1] }] },
+      { ...d, items: [a, b, { ...c, basis: [''] }] },
+      { ...d, items: [a, b, { ...c, basis: undefined }] },
+      { ...d, items: [a, b, { ...c, title: '' }] },
+      { ...d, items: [a, b, { ...c, body: '' }] },
+      { ...d, items: [a, b, null] },
+    ];
+    for (const v of broken) expect(isDirection(v)).toBe(false);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ...d, items: [a, b] }), getToken: () => null });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: false, error: 'INVALID', status: 200 });
+  });
+
+  it('예시 글은 계약의 필드만 갖고, 가짜 서버를 켜면 fetch 없이 그 글을 준다', async () => {
+    expect(Object.keys(fixtures.direction).sort()).toEqual(['items', 'title', 'topic']);
+    expect(Object.keys(fixtures.direction.items[0]).sort()).toEqual(['basis', 'body', 'title']);
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
 describe('api: 심층 리포트', () => {
   const report = fixtures.report;
 
@@ -307,7 +402,12 @@ describe('api: 심층 리포트', () => {
   it('POST /reports: 출생 정보가 없으면(404) 서버 오류, 429 는 한도, 모르는 상태는 INVALID 다', async () => {
     const call = (status: number, body: unknown) =>
       createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, body), getToken: () => null }).requestReport();
-    expect(await call(404, { error: 'NO_PROFILE' })).toEqual({ ok: false, error: 'SERVER', status: 404 });
+    expect(await call(404, { error: 'NO_PROFILE' })).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 404,
+      code: 'NO_PROFILE',
+    });
     expect(await call(429, {})).toEqual({ ok: false, error: 'LIMIT', status: 429 });
     for (const body of [null, {}, { status: 'NONE' }, { status: 'FAILED' }, { status: 1 }])
       expect(await call(202, body)).toEqual({ ok: false, error: 'INVALID', status: 202 });
@@ -356,13 +456,91 @@ describe('api: 심층 리포트', () => {
     for (const v of broken) expect(isReport(v)).toBe(false);
   });
 
-  it('계약에 아직 없는 필드(나중에 올 timing)는 무시한다', () => {
-    expect(isReport({ ...report, timing: { anything: 1 } })).toBe(true);
-    expect(isReportState({ status: 'DONE', report: { ...report, timing: [] }, extra: 1 })).toBe(true);
+  it('시기(timing)가 없거나 계약의 모양이 아니면 리포트로 받지 않는다', () => {
+    const { timing } = report;
+    const [m1, m2, m3, m4] = timing.milestones;
+    const [i1] = timing.intervals;
+    const change = timing.intervals.find((i) => i.kind === 'CHANGE')!;
+    const broken: unknown[] = [
+      { sections: report.sections },
+      { ...report, timing: null },
+      { ...report, timing: [] },
+      { ...report, timing: { ...timing, timeKnown: 'yes' } },
+      { ...report, timing: { ...timing, milestones: [m1, m2, m3] } },
+      { ...report, timing: { ...timing, milestones: [m2, m1, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, year: '2022' }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, age: null }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, date: '2022-04' }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, milestones: [{ ...m1, size: undefined }, m2, m3, m4] } },
+      { ...report, timing: { ...timing, intervals: 'x' } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, id: 1 }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, kind: 'OTHER' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, area: 'HEALTH' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, from: '2003' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, to: 20030328 }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, title: undefined }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, body: 1 }] } },
+      // 크기는 변화 구간에만 있고, 변화 구간에는 꼭 있다
+      { ...report, timing: { ...timing, intervals: [{ ...change, size: undefined }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...change, size: 'HUGE' }] } },
+      { ...report, timing: { ...timing, intervals: [{ ...i1, kind: 'OPPORTUNITY', size: 'BIG' }] } },
+      { ...report, timing: { ...timing, current: undefined } },
+      { ...report, timing: { ...timing, current: { ...timing.current, date: 1 } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, intervals: null } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, intervals: [{}] } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, milestone: null } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nextInterval: null } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nextMilestone: {} } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nearestMilestone: undefined } } },
+      { ...report, timing: { ...timing, current: { ...timing.current, nearestMilestone: 'CHIRON_RETURN' } } },
+    ];
+    for (const v of broken) expect(isReport(v)).toBe(false);
+    expect(isReportState({ status: 'DONE', report: { sections: report.sections } })).toBe(false);
   });
 
-  it('예시 리포트는 계약의 모양이다: 네 영역, 영역마다 문단 4~6개, 계약의 필드만', () => {
-    expect(Object.keys(report)).toEqual(['sections']);
+  it('시기의 없어도 되는 값(지금의 변곡점 · 다음 구간 · 다음 변곡점)은 키가 없어도 받는다', () => {
+    const { date, nearestMilestone } = report.timing.current;
+    const current = { date, intervals: [], nearestMilestone };
+    expect(isReport({ ...report, timing: { ...report.timing, current } })).toBe(true);
+    expect(isReport({ ...report, timing: { ...report.timing, intervals: [], current } })).toBe(true);
+    expect(
+      isReport({
+        ...report,
+        timing: { ...report.timing, current: { ...current, milestone: report.timing.milestones[0] } },
+      }),
+    ).toBe(true);
+  });
+
+  it('예시 시기는 계약의 모양이다: 변곡점 넷, 시작 순서의 구간, 오늘에 걸친 구간과 다음 구간', () => {
+    const { timing } = report;
+    expect(timing.timeKnown).toBe(true);
+    expect(timing.milestones.map((m) => m.kind)).toEqual([
+      'SATURN_SQUARE',
+      'SATURN_RETURN',
+      'URANUS_OPPOSITION',
+      'SECOND_SATURN_RETURN',
+    ]);
+    expect(timing.intervals.length).toBeGreaterThanOrEqual(20);
+    expect(timing.intervals.map((i) => i.from)).toEqual(timing.intervals.map((i) => i.from).sort());
+    for (const i of timing.intervals) expect('size' in i).toBe(i.kind === 'CHANGE');
+    const { current } = timing;
+    expect(current.intervals).toEqual(timing.intervals.filter((i) => i.from <= current.date && current.date <= i.to));
+    expect(current.intervals.length).toBeGreaterThan(0);
+    expect(current.nextInterval).toEqual(timing.intervals.find((i) => i.from > current.date));
+    expect(current.nextMilestone).toEqual(timing.milestones.find((m) => m.date > current.date));
+    expect('milestone' in current).toBe(false);
+  });
+
+  it('시각 모름 예시 리포트에는 운명적 만남 구간과 돈 영역이 없다', () => {
+    const { timing } = fixtures.reportTimeUnknown;
+    expect(isReport(fixtures.reportTimeUnknown)).toBe(true);
+    expect(timing.timeKnown).toBe(false);
+    expect(timing.intervals.length).toBeGreaterThan(0);
+    expect(timing.intervals.filter((i) => i.kind === 'FATED' || i.area === 'MONEY')).toEqual([]);
+  });
+
+  it('예시 리포트는 계약의 모양이다: 네 영역과 시기, 영역마다 문단 4~6개, 계약의 필드만', () => {
+    expect(Object.keys(report)).toEqual(['sections', 'timing']);
     expect(report.sections.map((s) => s.area)).toEqual(['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION']);
     for (const section of report.sections) {
       expect(Object.keys(section).sort()).toEqual(['area', 'paragraphs', 'title']);
@@ -377,6 +555,233 @@ describe('api: 심층 리포트', () => {
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.requestReport()).toEqual({ ok: true, data: { status: 'DONE' } });
     expect(await api.getReport()).toEqual({ ok: true, data: { status: 'DONE', report } });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 계정 삭제', () => {
+  it('DELETE /account 를 본문 없이 세션 헤더와 함께 부르고, 204 는 본문을 읽지 않고 성공이다', async () => {
+    const fetchFn = jest.fn(async () => ({
+      ok: true,
+      status: 204,
+      json: async () => {
+        throw new SyntaxError('Unexpected end of JSON input');
+      },
+    })) as unknown as jest.MockedFunction<typeof fetch>;
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.deleteAccount()).toEqual({ ok: true, data: null });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/account`);
+    expect(init?.method).toBe('DELETE');
+    expect(init?.body).toBeUndefined();
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('실패는 종류를 구분해 돌려주고 다시 부르지 않는다', async () => {
+    const failed = fakeFetch(500);
+    expect(await createApi({ baseUrl: BASE, fetchFn: failed, getToken: () => 't' }).deleteAccount()).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 500,
+    });
+    expect(failed).toHaveBeenCalledTimes(1);
+    const noSession = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => null });
+    expect(await noSession.deleteAccount()).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 성공한다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.deleteAccount()).toEqual({ ok: true, data: null });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 궁합(직접 입력)', () => {
+  const synastry = fixtures.synastry;
+  const { overlay, ...stored } = synastry;
+  const direct = { name: '지우', relation: 'LOVE' as const, date: '1999-03-02', time: '08:30', placeId: 1841277 };
+  const call = (status: number, body: unknown) =>
+    createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, body), getToken: () => null });
+
+  it('POST /synastry/direct 에 { name, relation, date, time, placeId } 를 세션 헤더와 함께 보내고 겹친 휠이 든 궁합을 받는다', async () => {
+    const fetchFn = fakeFetch(200, synastry);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createDirectSynastry(direct)).toEqual({ ok: true, data: synastry });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/synastry/direct`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body))).toEqual(direct);
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('시각 "모름" 이면 placeId 키를 보내지 않는다(곳을 들고 있어도)', async () => {
+    const fetchFn = fakeFetch(200, synastry);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null });
+    await api.createDirectSynastry({ ...direct, time: null, placeId: null });
+    expect(JSON.parse(String(fetchFn.mock.calls[0][1]?.body))).toEqual({
+      name: '지우',
+      relation: 'LOVE',
+      date: '1999-03-02',
+      time: null,
+    });
+    await api.requestSynastryReport('abc', { date: '1999-03-02', time: null, placeId: 7 });
+    expect(JSON.parse(String(fetchFn.mock.calls[1][1]?.body))).toEqual({ date: '1999-03-02', time: null });
+  });
+
+  it('실패하면 서버가 준 오류 이름(code)을 함께 돌려준다', async () => {
+    expect(await call(404, { error: 'NO_PROFILE' }).createDirectSynastry(direct)).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 404,
+      code: 'NO_PROFILE',
+    });
+    expect(await call(502, { error: 'GENERATION_FAILED' }).createDirectSynastry(direct)).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 502,
+      code: 'GENERATION_FAILED',
+    });
+    expect(await call(429, { error: 'RATE_LIMITED' }).createDirectSynastry(direct)).toMatchObject({ error: 'LIMIT' });
+    // 오류 본문이 없거나 모양이 달라도 결과는 같고 code 만 없다
+    expect(await call(500, 'oops').createDirectSynastry(direct)).toEqual({ ok: false, error: 'SERVER', status: 500 });
+  });
+
+  it('궁합의 모양: 값이 없는 키(scoreLabel · overlay)는 없어도 되고, 있으면 모양이 맞아야 한다', () => {
+    expect(isSynastry(synastry)).toBe(true);
+    expect(isSynastry(stored)).toBe(true);
+    expect(isSynastry({ ...stored, scoreLabel: '다른 결의 사이' })).toBe(true);
+    const broken: unknown[] = [
+      null,
+      {},
+      { ...stored, id: 1 },
+      { ...stored, name: undefined },
+      { ...stored, relation: 'ENEMY' },
+      { ...stored, score: '82' },
+      { ...stored, scoreLabel: null },
+      { ...stored, headline: 1 },
+      { ...stored, keywords: ['a', 'b'] },
+      { ...stored, keywords: ['a', 'b', 3] },
+      { ...stored, reportStatus: 'OTHER' },
+      { ...stored, createdAt: 1 },
+      { ...stored, overlay: null },
+      { ...stored, overlay: { ...overlay, mine: 'x' } },
+      { ...stored, overlay: { ...overlay, mine: [{ body: 'SUN' }] } },
+      { ...stored, overlay: { ...overlay, mineAsc: '1' } },
+      { ...stored, overlay: { ...overlay, theirs: [{ body: 1, longitude: 1 }] } },
+      { ...stored, overlay: { ...overlay, lines: [{ mine: 'SUN', theirs: 'SUN' }] } },
+    ];
+    for (const v of broken) expect(isSynastry(v)).toBe(false);
+    const { mineAsc, ...noAsc } = overlay!;
+    expect(mineAsc).toEqual(expect.any(Number));
+    expect(isSynastry({ ...stored, overlay: noAsc })).toBe(true);
+  });
+
+  it('GET /synastry 는 목록을, GET /synastry/{id} 는 하나를 받는다', async () => {
+    const fetchFn = fakeFetch(200, fixtures.synastryList);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.listSynastries()).toEqual({ ok: true, data: fixtures.synastryList });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/synastry`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    const one = fakeFetch(200, stored);
+    const api2 = createApi({ baseUrl: BASE, fetchFn: one, getToken: () => 'session-abc' });
+    expect(await api2.getSynastry(stored.id)).toEqual({ ok: true, data: stored });
+    expect(one.mock.calls[0][0]).toBe(`${BASE}/synastry/${stored.id}`);
+    expect(await call(200, [{ id: 'x' }]).listSynastries()).toMatchObject({ ok: false, error: 'INVALID' });
+    expect(await call(404, { error: 'NOT_FOUND' }).getSynastry('nope')).toMatchObject({ error: 'SERVER', status: 404 });
+  });
+
+  it('GET /synastry/ranking?relation= 은 서버가 준 순서 그대로 받는다', async () => {
+    const ranking = [
+      { id: 'b', name: '하준', score: 55, scoreLabel: '다른 결의 사이', keywords: ['a', 'b', 'c'] },
+      { id: 'a', name: '지우', score: 82, keywords: ['a', 'b', 'c'] },
+    ];
+    const fetchFn = fakeFetch(200, ranking);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.getSynastryRanking('LOVE')).toEqual({ ok: true, data: ranking });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/synastry/ranking?relation=LOVE`);
+    expect(isSynastryRanking([{ id: 'a', name: 'n', score: 1 }])).toBe(false);
+    expect(isSynastryRanking([{ id: 'a', name: 'n', score: 1, keywords: ['a', 'b', 'c'], scoreLabel: 1 }])).toBe(false);
+    expect(isSynastryRanking([])).toBe(true);
+  });
+
+  it('POST /synastry/{id}/report 에 상대의 출생 정보를 다시 보내고 상태를 받는다', async () => {
+    const birth = { date: '1999-03-02', time: '08:30', placeId: 1841277 };
+    const fetchFn = fakeFetch(202, { status: 'WRITING' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.requestSynastryReport('abc', birth)).toEqual({ ok: true, data: { status: 'WRITING' } });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/synastry/abc/report`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body))).toEqual(birth);
+    for (const status of ['DONE', 'FAILED'])
+      expect(await call(202, { status }).requestSynastryReport('abc', birth)).toEqual({ ok: true, data: { status } });
+    expect(await call(202, { status: 'NONE' }).requestSynastryReport('abc', birth)).toMatchObject({ error: 'INVALID' });
+    expect(await call(400, { error: 'BIRTH_MISMATCH' }).requestSynastryReport('abc', birth)).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 400,
+      code: 'BIRTH_MISMATCH',
+    });
+    expect(await call(409, { error: 'PROFILE_CHANGED' }).requestSynastryReport('abc', birth)).toMatchObject({
+      status: 409,
+      code: 'PROFILE_CHANGED',
+    });
+  });
+
+  it('GET /synastry/{id}/report 는 네 가지 상태를 받고, 글은 끌림 · 대화 · 갈등 · 오래가기 순서의 네 영역이어야 한다', async () => {
+    const report = fixtures.synastryReport;
+    const fetchFn = fakeFetch(200, { status: 'DONE', report });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null });
+    expect(await api.getSynastryReport('abc')).toEqual({ ok: true, data: { status: 'DONE', report } });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/synastry/abc/report`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    for (const status of ['NONE', 'WRITING', 'FAILED'])
+      expect(await call(200, { status }).getSynastryReport('abc')).toEqual({ ok: true, data: { status } });
+    expect(report.sections.map((s) => s.area)).toEqual(['ATTRACTION', 'TALK', 'CONFLICT', 'LASTING']);
+    const [a, b, c, d] = report.sections;
+    for (const v of [
+      { status: 'DONE' },
+      { status: 'DONE', report: { sections: [a, b, c] } },
+      { status: 'DONE', report: { sections: [b, a, c, d] } },
+      { status: 'DONE', report: fixtures.report },
+      { status: 'DONE', report: { sections: [{ ...a, paragraphs: [] }, b, c, d] } },
+      { status: 'OTHER' },
+    ])
+      expect(isSynastryReportState(v)).toBe(false);
+  });
+
+  it('예시 응답은 계약의 모양이다: 목록에는 overlay 가 없고, 60 미만인 것에만 scoreLabel 이 있다', () => {
+    expect(isSynastry(synastry) && synastry.overlay !== undefined).toBe(true);
+    expect(synastry.overlay?.mine).toHaveLength(10);
+    expect(synastry.overlay?.theirs).toHaveLength(10);
+    for (const item of fixtures.synastryList) {
+      expect(isSynastry(item)).toBe(true);
+      expect('overlay' in item).toBe(false);
+      expect('scoreLabel' in item).toBe(item.score < 60);
+    }
+    expect(isSynastryReportState({ status: 'DONE', report: fixtures.synastryReport })).toBe(true);
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 답한다: 계산은 넣은 이름 · 관계 그대로, 랭킹은 그 관계만 점수순', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    const made = await api.createDirectSynastry({ ...direct, name: '도윤', relation: 'WORK' });
+    expect(made).toMatchObject({ ok: true, data: { name: '도윤', relation: 'WORK', overlay: synastry.overlay } });
+    expect(await api.listSynastries()).toEqual({ ok: true, data: fixtures.synastryList });
+    const one = await api.getSynastry(synastry.id);
+    expect(one.ok && 'overlay' in one.data).toBe(false);
+    expect(await api.getSynastry('nope')).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+    const friends = await api.getSynastryRanking('FRIEND');
+    expect(friends.ok && friends.data.map((r) => [r.name, r.score])).toEqual([
+      ['민서', 91],
+      ['서연', 77],
+    ]);
+    expect(await api.requestSynastryReport(synastry.id, direct)).toEqual({ ok: true, data: { status: 'DONE' } });
+    expect(await api.getSynastryReport(synastry.id)).toEqual({
+      ok: true,
+      data: { status: 'DONE', report: fixtures.synastryReport },
+    });
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

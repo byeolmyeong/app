@@ -50,15 +50,14 @@ export type WheelLayout = {
   bodies: { body: string; dot: Pt; label: Pt; lift: number }[];
 };
 
-export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayout {
-  const center = size / 2;
-  const rOuter = center - 1;
-  const rSign = rOuter * 0.84;
-  const rInner = rOuter * 0.5;
-  // 시각을 알 때만 상승점을 왼쪽 끝에 둔다. 모르면 양자리 0도가 왼쪽이다.
-  const showHouses = chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
-  const asc = showHouses && chart.angles ? chart.angles.asc.longitude : 0;
+/** 각도 선의 모양: 긴장(사분·충)은 점선(true), 조화(삼분·육분)는 실선(false). 합과 모르는 종류는 선을 긋지 않는다(null) */
+export function aspectDashed(type: string): boolean | null {
+  if (HARD.includes(type)) return true;
+  return SOFT.includes(type) ? false : null;
+}
 
+/** 황경을 화면 좌표로 옮긴다. asc 는 왼쪽 끝에 오는 황경이다 */
+export function wheelPolar(center: number, asc: number) {
   const at = (deg: number, r: number): Pt => {
     const t = ((180 + (deg - asc)) * Math.PI) / 180;
     return { x: center + r * Math.cos(t), y: center - r * Math.sin(t) };
@@ -68,7 +67,11 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
     const b = at(deg, to);
     return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
   };
+  return { at, line };
+}
 
+/** 별자리 고리의 12칸(경계선 · 이름 자리)과 5도 눈금 */
+export function ringMarks({ at, line }: ReturnType<typeof wheelPolar>, rSign: number, rOuter: number, size: number) {
   const signs = SIGN_ORDER.map((sign, i) => ({
     sign,
     line: line(i * 30, rSign, rOuter),
@@ -80,6 +83,46 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
     if (d % 30 === 0) continue;
     ticks.push(line(d, rSign, rSign - size * (d % 10 === 0 ? 0.018 : 0.01)));
   }
+  return { signs, ticks };
+}
+
+/** 황경 순으로 세우고, 앞의 것과 [CROWD_DEGREES] 안으로 붙었으면 lift 를 한 단씩 올린다(이름이 겹치지 않게) */
+export function liftCrowded(list: { body: string; lon: number }[]): { body: string; lon: number; lift: number }[] {
+  const sorted = [...list].sort((p, q) => p.lon - q.lon);
+  // 가장 넓게 빈 곳 다음에서 세기 시작해야 0도를 사이에 둔 이웃도 이어서 밀린다.
+  let start = 0;
+  let widest = -1;
+  sorted.forEach((p, i) => {
+    const prev = sorted[(i - 1 + sorted.length) % sorted.length];
+    const gap = (p.lon - prev.lon + 360) % 360 || (sorted.length === 1 ? 360 : 0);
+    if (gap > widest) {
+      widest = gap;
+      start = i;
+    }
+  });
+  const lifted: { body: string; lon: number; lift: number }[] = [];
+  let lift = 0;
+  for (let k = 0; k < sorted.length; k++) {
+    const p = sorted[(start + k) % sorted.length];
+    const prev = k === 0 ? null : sorted[(start + k - 1) % sorted.length];
+    lift = prev && (p.lon - prev.lon + 360) % 360 < CROWD_DEGREES ? lift + 1 : 0;
+    lifted.push({ ...p, lift });
+  }
+  return lifted;
+}
+
+export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayout {
+  const center = size / 2;
+  const rOuter = center - 1;
+  const rSign = rOuter * 0.84;
+  const rInner = rOuter * 0.5;
+  // 시각을 알 때만 상승점을 왼쪽 끝에 둔다. 모르면 양자리 0도가 왼쪽이다.
+  const showHouses = chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
+  const asc = showHouses && chart.angles ? chart.angles.asc.longitude : 0;
+
+  const polar = wheelPolar(center, asc);
+  const { at, line } = polar;
+  const { signs, ticks } = ringMarks(polar, rSign, rOuter, size);
 
   const houseLines: WheelLayout['houseLines'] = [];
   const houseNumbers: WheelLayout['houseNumbers'] = [];
@@ -100,8 +143,8 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
 
   const aspectLines: WheelLayout['aspectLines'] = [];
   for (const aspect of chart.aspects) {
-    const dashed = HARD.includes(aspect.type);
-    if (!dashed && !SOFT.includes(aspect.type)) continue; // 합과 모르는 종류는 선을 긋지 않는다
+    const dashed = aspectDashed(aspect.type);
+    if (dashed === null) continue; // 합과 모르는 종류는 선을 긋지 않는다
     const a = longitudes.get(aspect.a);
     const b = longitudes.get(aspect.b);
     if (a === undefined || b === undefined) continue;
@@ -111,33 +154,14 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
   }
 
   const rDot = rSign - size * 0.045;
-  const sorted = chart.positions
-    .map((p) => ({ body: p.body, lon: p.longitude }))
-    .sort((p, q) => p.lon - q.lon);
-  // 가장 넓게 빈 곳 다음에서 세기 시작해야 0도를 사이에 둔 이웃도 이어서 밀린다.
-  let start = 0;
-  let widest = -1;
-  sorted.forEach((p, i) => {
-    const prev = sorted[(i - 1 + sorted.length) % sorted.length];
-    const gap = (p.lon - prev.lon + 360) % 360 || (sorted.length === 1 ? 360 : 0);
-    if (gap > widest) {
-      widest = gap;
-      start = i;
-    }
-  });
-  const bodies: WheelLayout['bodies'] = [];
-  let lift = 0;
-  for (let k = 0; k < sorted.length; k++) {
-    const p = sorted[(start + k) % sorted.length];
-    const prev = k === 0 ? null : sorted[(start + k - 1) % sorted.length];
-    lift = prev && (p.lon - prev.lon + 360) % 360 < CROWD_DEGREES ? lift + 1 : 0;
-    bodies.push({
-      body: p.body,
-      dot: at(p.lon, rDot),
-      label: at(p.lon, rDot - size * 0.048 - lift * size * 0.042),
-      lift,
-    });
-  }
+  const bodies: WheelLayout['bodies'] = liftCrowded(
+    chart.positions.map((p) => ({ body: p.body, lon: p.longitude })),
+  ).map((p) => ({
+    body: p.body,
+    dot: at(p.lon, rDot),
+    label: at(p.lon, rDot - size * 0.048 - p.lift * size * 0.042),
+    lift: p.lift,
+  }));
 
   return {
     size,

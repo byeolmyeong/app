@@ -13,18 +13,25 @@ export const BIRTH_STORAGE_KEY = 'byeolmyeong.birth.v1';
 /** chart 는 profile 의 입력으로 서버가 계산해 준 차트다 */
 export type StoredBirth = { profile: BirthProfile; chart: Chart };
 
-function isBirthProfile(v: unknown): v is BirthProfile {
-  if (typeof v !== 'object' || v === null) return false;
+/**
+ * 보관된 값을 출생 정보로 읽는다. 모양이 다르면 null.
+ * 시각 "모름" 이면 곳이 없어도 되고, 예전에 함께 보관된 곳은 쓰지 않으므로 버린다(결정 020).
+ */
+function readBirthProfile(v: unknown): BirthProfile | null {
+  if (typeof v !== 'object' || v === null) return null;
   const p = v as Record<string, unknown>;
+  if (typeof p.date !== 'string') return null;
+  if (p.time === null) return { date: p.date, time: null, place: null };
   const place = p.place as Record<string, unknown> | null | undefined;
-  return (
-    typeof p.date === 'string' &&
-    (typeof p.time === 'string' || p.time === null) &&
-    typeof place === 'object' &&
-    place !== null &&
-    typeof place.id === 'number' &&
-    typeof place.name === 'string'
-  );
+  if (
+    typeof p.time !== 'string' ||
+    typeof place !== 'object' ||
+    place === null ||
+    typeof place.id !== 'number' ||
+    typeof place.name !== 'string'
+  )
+    return null;
+  return { date: p.date, time: p.time, place: { id: place.id, name: place.name } };
 }
 
 /** 보관된 값이 없거나 깨졌으면 null */
@@ -34,8 +41,9 @@ export async function loadBirth(): Promise<StoredBirth | null> {
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
-    const { profile, chart } = parsed as Record<string, unknown>;
-    return isBirthProfile(profile) && isChart(chart) ? { profile, chart } : null;
+    const { chart } = parsed as Record<string, unknown>;
+    const profile = readBirthProfile((parsed as Record<string, unknown>).profile);
+    return profile && isChart(chart) ? { profile, chart } : null;
   } catch {
     return null;
   }

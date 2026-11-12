@@ -9,27 +9,27 @@ import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
+import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
-import { ReportView } from '@/features/report/report-view';
+import { ReportView, TIMING_TAB, type ReportTab } from '@/features/report/report-view';
 import { useReport } from '@/features/report/use-report';
 import { REPORT_AREAS } from '@/lib/api';
 
 const S = strings.report;
+/** 주소의 area 로 고를 수 있는 탭 */
+const TABS: ReportTab[] = [...REPORT_AREAS, TIMING_TAB];
 
 /**
- * 심층 리포트: 서버가 쓴 네 영역(성격 · 관계 · 일 · 감정)의 긴 글. 글은 1~2분 동안 쓰이므로 요청한 뒤 쓰는 중을 보여 준다.
- * 주소의 area(예: `/report?area=RELATIONSHIP`)로 처음 보일 탭을 고른다. 다시 생성은 없다(같은 차트 = 같은 글).
+ * 심층 리포트: 서버가 쓴 네 영역(성격 · 관계 · 일 · 감정)의 긴 글과 시기(변곡점 · 구간). 글은 1~2분 동안 쓰이므로 요청한 뒤 쓰는 중을 보여 준다.
+ * 주소의 area(예: `/report?area=RELATIONSHIP`, 시기는 `/report?area=TIMING`)로 처음 보일 탭을 고른다. 다시 생성은 없다(같은 차트 = 같은 글).
  */
 export default function ReportScreen() {
   const { area } = useLocalSearchParams<{ area?: string }>();
   const { ready } = useSession();
   const { loaded, profile } = useBirthProfile();
   // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다.
-  const input = useMemo(
-    () => (ready && profile ? { date: profile.date, time: profile.time, placeId: profile.place.id } : null),
-    [ready, profile],
-  );
+  const input = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
   const { state, start } = useReport(input);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
@@ -87,7 +87,7 @@ export default function ReportScreen() {
 
   return (
     <Screen nav={nav}>
-      <ReportView report={state.report} initialArea={REPORT_AREAS.find((a) => a === area)} />
+      <ReportView report={state.report} initialArea={TABS.find((a) => a === area)} />
       <View style={styles.footer}>
         <Txt variant="label" color="gray">
           {strings.reading.disclaimer}

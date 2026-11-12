@@ -19,6 +19,52 @@ export const strings = {
     title: '마이',
     birthLabel: '출생 정보',
     editBirth: '바꾸기',
+    settings: '설정',
+  },
+  /** 설정(F9). 로그아웃 · 알림은 소셜 로그인 · 푸시가 생길 때 더한다 */
+  settings: {
+    title: '설정',
+    privacy: '개인정보 처리방침',
+    terms: '이용약관',
+    contact: '문의',
+    /** 문의 메일 주소. 소유자가 정한 임시 주소다. 바꿀 때는 여기 한 곳만 바꾼다(다른 곳에 적지 않는다) */
+    contactEmail: 'kimdonghwan913@gmail.com',
+    version: '앱 버전',
+    deleteAccount: '계정 삭제',
+    deleteSheet: {
+      title: '계정을 삭제할까요?',
+      body: '계정과 출생 정보, 받은 풀이와 리포트가 서버와 이 기기에서 모두 지워져요. 되돌릴 수 없어요.',
+      confirm: '삭제',
+      deleting: '삭제하는 중',
+      cancel: '취소',
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        OTHER: '계정을 삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+    },
+  },
+  /**
+   * 처리방침 · 약관의 글. [확인 필요] 본문은 자리표시다. 실제 문안은 소유자가 정해 이 자리의 paragraphs 를 바꾸고,
+   * 그때 placeholderNotice 를 지운다(화면에서 그 줄을 빼는 곳: src/app/settings/privacy.tsx · terms.tsx).
+   */
+  legal: {
+    placeholderNotice: '[확인 필요] 아직 확정되지 않은 임시 글입니다. 출시 전에 실제 문안으로 바뀝니다.',
+    privacy: {
+      title: '개인정보 처리방침',
+      paragraphs: [
+        '[자리표시] 수집하는 개인정보의 항목과 수집 방법이 이 자리에 들어갑니다.',
+        '[자리표시] 개인정보의 이용 목적, 보관 기간, 파기 절차가 이 자리에 들어갑니다.',
+        '[자리표시] 이용자의 권리와 행사 방법, 문의처가 이 자리에 들어갑니다.',
+      ],
+    },
+    terms: {
+      title: '이용약관',
+      paragraphs: [
+        '[자리표시] 서비스의 내용과 이용 조건이 이 자리에 들어갑니다.',
+        '[자리표시] 이용자와 운영자의 권리 · 의무가 이 자리에 들어갑니다.',
+        '[자리표시] 책임의 한계와 약관의 변경 절차가 이 자리에 들어갑니다.',
+      ],
+    },
   },
   main: {
     soon: '준비 중',
@@ -37,11 +83,27 @@ export const strings = {
         ],
       },
       {
+        key: 'relation',
+        title: '관계',
+        items: [
+          { label: '사람을 대하는 성향', path: '/report?area=RELATIONSHIP' },
+          { label: '연애에서 해 볼 만한 것', path: '/direction' },
+        ],
+      },
+      {
+        key: 'synastry',
+        title: '궁합',
+        items: [
+          { label: '상대와 궁합 보기', path: '/synastry' },
+          { label: '궁합 랭킹', path: '/synastry/ranking' },
+        ],
+      },
+      {
         key: 'timing',
         title: '시기',
         items: [
-          { label: '지금 나의 구간', path: null },
-          { label: '다가오는 변곡점', path: null },
+          { label: '지금 나의 구간', path: '/report?area=TIMING' },
+          { label: '다가오는 변곡점', path: '/report?area=TIMING' },
         ],
       },
     ],
@@ -133,6 +195,8 @@ export const strings = {
     strengths: '강점',
     cautions: '보완점',
     bullet: '·',
+    /** 방향성 "이성" 화면(`/direction`)으로 들어가는 줄(결정 023) */
+    seeDirection: '연애에서 해 볼 만한 것 보기',
     seeChart: '내 차트 보기',
     /** 앞날·건강·투자를 단정하지 않는다(golden-rules "프로젝트 규칙") */
     disclaimer: '오락과 자기 성찰을 위한 내용이에요. 앞날을 알려 주거나 전문가의 조언을 대신하지 않습니다.',
@@ -143,21 +207,170 @@ export const strings = {
     },
     retry: '다시 시도',
   },
+  /** 방향성 제시(F10)의 이성 주제. 조언형으로만 쓴다. 앞일을 단정하지 않는다(결정 023) */
+  direction: {
+    title: '연애에서 해 볼 만한 것',
+    generating: '해 볼 만한 것을 고르는 중이에요',
+    generatingNote: '내 하늘에서 연애와 닿는 자리를 글로 옮기고 있어요. 20초쯤 걸려요.',
+    failed: {
+      NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+      LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+      OTHER: '글을 받아 오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+    },
+    retry: '다시 시도',
+  },
   report: {
     title: '심층 리포트',
     checking: '리포트를 확인하고 있어요',
-    intro: '성격 · 관계 · 일 · 감정, 네 가지로 나를 길게 풀어 드려요.',
+    intro: '성격 · 관계 · 일 · 감정 · 시기, 다섯 가지로 나를 길게 풀어 드려요.',
     request: '리포트 받기',
     writing: '리포트를 쓰는 중이에요',
     writingNote: '1~2분쯤 걸려요. 화면을 나갔다가 다시 들어와도 돼요.',
     /** 영역 탭. 키는 서버가 주는 식별자다 */
-    areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정' },
+    areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정', TIMING: '시기' },
+    /**
+     * 시기 탭(결정 021). 행성 · 각도 이름을 쓰지 않고, 무슨 일이 일어난다고 단정하지 않는다("~하기 쉬운 시기").
+     * 종류 · 영역 · 크기 · 변곡점의 키는 서버가 주는 식별자다.
+     */
+    timing: {
+      nowHeading: '지금 나의 구간',
+      nowNone: '지금은 걸쳐 있는 구간이 없어요.',
+      milestoneNow: '지금 지나는 변곡점',
+      nextIntervalLabel: '다음 구간',
+      nextMilestoneLabel: '다음 변곡점',
+      milestonesDone: '네 번의 변곡점을 모두 지나왔어요.',
+      /** 날짜 뒤에 붙인다: "2027년 2월까지" · "2027년 3월부터" */
+      untilSuffix: '까지',
+      fromSuffix: '부터',
+      /** F4 가 정한 고지 문구 */
+      notice: '시기는 행성의 주기를 계산한 것이고, 무슨 일이 일어날지를 말하지 않습니다.',
+      timeUnknownNotice: '태어난 시각을 몰라서 첫인상(상승점)에 닿는 구간과 운명처럼 느껴지는 만남 구간은 뺐어요.',
+      milestonesHeading: '변곡점',
+      milestonesIntro: '누구나 비슷한 나이에 지나는 네 번의 마디예요. 해와 나이는 내 차트로 계산한 값이에요.',
+      milestoneKinds: {
+        SATURN_SQUARE: '첫 번째 변곡점',
+        SATURN_RETURN: '두 번째 변곡점',
+        URANUS_OPPOSITION: '세 번째 변곡점',
+        SECOND_SATURN_RETURN: '네 번째 변곡점',
+      },
+      nearest: '지금과 가장 가까워요',
+      timelineHeading: '나에게 오는 구간',
+      timelineIntro: '큰 변화를 먼저 보여 드려요. 지금을 기준으로 앞뒤 10년이고, 줄을 누르면 설명이 펼쳐져요.',
+      /** 접어 둔 나머지 구간(작은 변화 · 기회 · 만남)을 펴는 버튼. 뒤에 "(12개)" 가 붙는다 */
+      showAll: '작은 변화와 기회도 보기',
+      showBig: '큰 변화만 보기',
+      kinds: { CHANGE: '변화', OPPORTUNITY: '기회', FATED: '운명처럼 느껴지는 만남' },
+      /** 종류가 무엇인지 타임라인 위에 한 줄씩 적는다 */
+      kindNotes: {
+        CHANGE: '익숙한 방식이 달라지기 쉬운 시기',
+        OPPORTUNITY: '도움이 되는 사람을 만나거나 인연이 열리기 쉬운 시기',
+        FATED: '운명처럼 느껴지는 만남이 생기기 쉬운 시기',
+      },
+      areas: { PEOPLE: '사람·인연', WORK: '일', MONEY: '돈', SELF: '나 자신' },
+      sizes: { BIG: '큰 변화', SMALL: '작은 변화' },
+      now: '지금',
+      /** 뒤에 남은 개수를 붙인다: "이전 구간 더 보기 (5개)" */
+      earlier: '이전 구간 더 보기',
+      later: '이후 구간 더 보기',
+      countSuffix: '개',
+      /** 날짜와 나이의 낱말: "2026년 3월 ~ 2027년 1월", "2029년 · 만 29세" */
+      yearSuffix: '년',
+      monthSuffix: '월',
+      periodSeparator: ' ~ ',
+      agePrefix: '만 ',
+      ageSuffix: '세',
+      separator: ' · ',
+    },
     failed: {
       NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
       LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
       OTHER: '리포트를 쓰지 못했어요. 잠시 뒤 다시 시도해 주세요.',
     },
     retry: '다시 시도',
+  },
+  /** 궁합(직접 입력). 점수와 그 옆의 말은 서버가 준 것을 그대로 보여 준다(결정 010, 서버 결정 008) */
+  synastry: {
+    title: '궁합',
+    /** 관계 유형. 키는 서버가 주는 식별자다(결정 020) */
+    relations: { LOVE: '연애', FRIEND: '친구', WORK: '일', FAMILY: '가족' },
+    entry: {
+      intro: '두 사람의 하늘을 겹쳐, 나에게 이 사람이 어떤 사이인지 봐요. 상대의 출생 정보는 저장하지 않아요.',
+      relationLabel: '어떤 사이인가요',
+      nameLabel: '상대를 부를 이름',
+      namePlaceholder: '예: 지우',
+      submit: '궁합 보기',
+      calculating: '궁합을 보는 중이에요',
+      calculatingNote: '두 사람의 하늘을 겹쳐 글로 옮기고 있어요. 길면 1분쯤 걸려요.',
+      errors: {
+        relationRequired: '어떤 사이인지 골라 주세요',
+        nameRequired: '부를 이름을 적어 주세요',
+      },
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 눌러 주세요.',
+        LIMIT: '요청이 많아요. 잠시 뒤 다시 눌러 주세요.',
+        OTHER: '궁합을 보지 못했어요. 잠시 뒤 다시 눌러 주세요.',
+      },
+    },
+    result: {
+      nameSeparator: ' · ',
+      scoreCaption: '나 기준 점수',
+      scoreUnit: '점',
+      wheelHeading: '두 사람의 하늘',
+      wheelCaption: '고리 안쪽의 검은 점은 나, 바깥의 빈 점은 상대예요. 가운데 선은 두 사람의 천체가 서로 이루는 각도입니다.',
+      noWheel: '겹친 그림은 궁합을 본 직후에만 볼 수 있어요. 상대의 출생 정보를 저장하지 않기 때문이에요.',
+      getReport: '궁합 리포트 받기',
+      seeReport: '궁합 리포트 보기',
+      loading: '궁합을 불러오고 있어요',
+      notFound: '이 궁합을 찾을 수 없어요.',
+      goEntry: '궁합 보러 가기',
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+        OTHER: '궁합을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+      retry: '다시 시도',
+    },
+    report: {
+      title: '궁합 리포트',
+      checking: '리포트를 확인하고 있어요',
+      intro: '끌림 · 대화 · 갈등 · 오래가기, 네 가지로 두 사람 사이를 길게 풀어 드려요.',
+      reenter: '상대의 출생 정보는 저장하지 않아요. 리포트를 쓰려면 궁합을 볼 때 넣은 상대의 출생 정보를 다시 넣어 주세요.',
+      request: '리포트 받기',
+      writing: '리포트를 쓰는 중이에요',
+      writingNote: '1~2분쯤 걸려요. 화면을 나갔다가 다시 들어와도 돼요.',
+      /** 영역 탭. 키는 서버가 주는 식별자다 */
+      areas: { ATTRACTION: '끌림', TALK: '대화', CONFLICT: '갈등', LASTING: '오래가기' },
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+        OTHER: '리포트를 쓰지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+      mismatch: '이 궁합을 볼 때 넣은 출생 정보와 달라요. 그때와 같은 생년월일 · 시각 · 곳을 넣어 주세요.',
+      profileChanged: '이 궁합을 본 뒤에 내 출생 정보가 바뀌었어요. 궁합을 새로 본 다음 리포트를 받아 주세요.',
+      recalculate: '궁합 새로 보기',
+      retry: '다시 시도',
+    },
+    ranking: {
+      title: '궁합 랭킹',
+      keywordSeparator: ' · ',
+      loading: '랭킹을 불러오고 있어요',
+      empty: '아직 이 사이로 본 궁합이 없어요.',
+      failed: {
+        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+        OTHER: '랭킹을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      },
+    },
+    /** 지금까지 본 궁합의 목록(궁합 시작 화면 아래) */
+    past: {
+      heading: '지난 궁합',
+      seeRanking: '궁합 랭킹 보기',
+    },
+    /** 겹친 휠: 내 점과 상대 점을 한 고리에 그린 그림 */
+    overlay: {
+      wheelLabel: '두 사람의 하늘을 겹친 그림',
+      mine: '나',
+    },
   },
   detail: {
     title: '차트 자세히',
@@ -201,6 +414,16 @@ export const strings = {
         { term: '안쪽 숫자 1~12', text: '하우스예요. 하늘의 자리를 삶의 열두 영역(나, 돈, 배움, 집, 사랑, 일…)에 나눠 놓은 칸입니다. 태어난 시각을 알아야 그릴 수 있어요.' },
         { term: '가운데 선', text: '두 천체가 서로 특별한 각도를 이룰 때 잇는 선이에요. 이어진 둘은 함께 읽습니다. 실선은 잘 어울리는 각도, 점선은 서로 당기는 각도예요.' },
         { term: '왼쪽 끝', text: '태어난 순간 동쪽 지평선에 떠오르던 별자리(상승점)를 왼쪽에 둡니다. 시각을 모르면 양자리가 왼쪽에 와요.' },
+      ],
+    },
+    overlay: {
+      title: '겹친 그림 읽는 법',
+      items: [
+        { term: '가운데 고리', text: '하늘을 열두 칸으로 나눈 별자리예요. 두 사람의 점을 같은 고리에 함께 놓았습니다.' },
+        { term: '안쪽의 검은 점', text: '내가 태어난 순간 해·달·행성이 있던 자리예요. 점 옆 글자는 이름의 줄임말입니다(해, 달, 수, 금, 화, 목, 토, 천, 해왕, 명).' },
+        { term: '바깥의 빈 점', text: '상대가 태어난 순간 해·달·행성이 있던 자리예요.' },
+        { term: '가운데 선', text: '상대의 천체가 내 해·달·수성·금성·화성과 특별한 각도를 이룰 때 잇는 선이에요. 실선은 잘 어울리는 각도, 점선은 서로 당기는 각도입니다. 같은 자리에 겹친 둘은 선 없이 함께 읽어요.' },
+        { term: '왼쪽 끝의 선', text: '내가 태어난 순간 동쪽 지평선에 떠오르던 자리(상승점)예요. 내 태어난 시각을 알 때만 그립니다.' },
       ],
     },
     keyThree: {

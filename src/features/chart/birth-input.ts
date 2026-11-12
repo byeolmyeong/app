@@ -5,8 +5,11 @@
 import { strings } from '@/content/strings';
 import type { BirthInput } from '@/lib/api';
 
-/** 기기에 보관하는 출생 정보. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름") */
-export type BirthProfile = { date: string; time: string | null; place: { id: number; name: string } };
+/**
+ * 기기에 보관하는 출생 정보. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름").
+ * place 는 time 이 있으면 반드시 있고, time 이 null 이면 묻지 않으므로 null 이다(결정 020).
+ */
+export type BirthProfile = { date: string; time: string | null; place: { id: number; name: string } | null };
 
 type Parsed = { ok: true; value: string } | { ok: false; error: string };
 
@@ -96,20 +99,31 @@ export function validateBirthInput(
   const errors: BirthFormErrors = {};
   if (!date.ok) errors.date = date.error;
   if (time && !time.ok) errors.time = time.error;
-  if (!form.place) errors.place = E.placeRequired;
-  if (!date.ok || (time && !time.ok) || !form.place) return { ok: false, errors };
+  // 시각 "모름" 이면 태어난 곳을 묻지 않는다. 앞서 골라 둔 곳이 있어도 보내지도 보관하지도 않는다(결정 020).
+  const place = form.timeUnknown ? null : form.place;
+  if (!form.timeUnknown && !place) errors.place = E.placeRequired;
+  if (!date.ok || (time && !time.ok) || errors.place) return { ok: false, errors };
   const timeValue = time ? time.value : null;
   return {
     ok: true,
-    input: { date: date.value, time: timeValue, placeId: form.place.id },
-    profile: { date: date.value, time: timeValue, place: { id: form.place.id, name: form.place.name } },
+    input: { date: date.value, time: timeValue, placeId: place ? place.id : null },
+    profile: { date: date.value, time: timeValue, place: place ? { id: place.id, name: place.name } : null },
   };
 }
 
-/** 예: "2000. 6. 15. 오후 9:00 · 서울 마포구". 시각 "모름" 이면 시각을 적지 않는다. */
+/** 보관된 출생 정보를 서버 요청 모양으로. 시각 "모름" 이면 placeId 를 보내지 않는다(null) */
+export function birthInputOf(profile: BirthProfile): BirthInput {
+  return {
+    date: profile.date,
+    time: profile.time,
+    placeId: profile.time === null ? null : (profile.place?.id ?? null),
+  };
+}
+
+/** 예: "2000. 6. 15. 오후 9:00 · 서울 마포구". 시각 "모름" 이면 곳 없이 "2000. 6. 15. · 태어난 시각 모름" */
 export function formatBirthSummary(profile: BirthProfile): string {
   const [y, mo, d] = profile.date.split('-').map(Number);
-  let when = `${y}. ${mo}. ${d}.`;
-  if (profile.time) when += ` ${formatTimeDisplay(profile.time)}`;
-  return `${when} · ${profile.place.name}`;
+  const day = `${y}. ${mo}. ${d}.`;
+  if (profile.time === null) return `${day} · ${strings.home.timeLabel} ${strings.home.timeUnknownValue}`;
+  return [`${day} ${formatTimeDisplay(profile.time)}`, profile.place?.name].filter(Boolean).join(' · ');
 }

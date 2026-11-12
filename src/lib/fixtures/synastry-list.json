@@ -1,0 +1,87 @@
+[
+  {
+    "id": "0b6f3c1e-5a52-4c1d-9a41-2f6d1c7e8a10",
+    "name": "지우",
+    "relation": "LOVE",
+    "score": 82,
+    "headline": "말이 잘 통하고, 서로의 속도를 맞춰 가는 사이",
+    "keywords": [
+      "편안한 대화",
+      "닮은 취향",
+      "다른 쉬는 법"
+    ],
+    "reportStatus": "NONE",
+    "createdAt": "2026-11-11T09:30:00Z"
+  },
+  {
+    "id": "5d2a9b74-1c3e-4f80-b6a7-90e4c2d81f33",
+    "name": "민서",
+    "relation": "FRIEND",
+    "score": 91,
+    "headline": "오래 봐도 할 말이 남는 사이",
+    "keywords": [
+      "끊기지 않는 수다",
+      "같은 웃음 코드",
+      "든든한 응원"
+    ],
+    "reportStatus": "DONE",
+    "createdAt": "2026-11-10T12:05:00Z"
+  },
+  {
+    "id": "a41c7e02-88d5-4b6f-9c1a-3e5f7b9d2c64",
+    "name": "하준",
+    "relation": "LOVE",
+    "score": 55,
+    "scoreLabel": "다른 결의 사이",
+    "headline": "다르기 때문에 서로가 궁금한 사이",
+    "keywords": [
+      "새로운 자극",
+      "다른 표현 방식",
+      "천천히 맞추기"
+    ],
+    "reportStatus": "NONE",
+    "createdAt": "2026-11-09T21:40:00Z"
+  },
+  {
+    "id": "c93e1f58-2b7a-4d06-8e4c-6a1b0d5f7e92",
+    "name": "박 팀장님",
+    "relation": "WORK",
+    "score": 74,
+    "headline": "역할을 나누면 일이 빨라지는 사이",
+    "keywords": [
+      "꼼꼼한 마무리",
+      "빠른 결정",
+      "분명한 역할"
+    ],
+    "reportStatus": "WRITING",
+    "createdAt": "2026-11-08T08:15:00Z"
+  },
+  {
+    "id": "e07b4a6d-9f21-4c38-a5d3-1c8e2f6b4a05",
+    "name": "엄마",
+    "relation": "FAMILY",
+    "score": 68,
+    "headline": "말보다 챙김으로 마음을 전하는 사이",
+    "keywords": [
+      "익숙한 편안함",
+      "다른 걱정 방식",
+      "조용한 응원"
+    ],
+    "reportStatus": "FAILED",
+    "createdAt": "2026-11-07T19:00:00Z"
+  },
+  {
+    "id": "f18d5c3b-6e04-4a97-b2f1-7d9a0c4e6b21",
+    "name": "서연",
+    "relation": "FRIEND",
+    "score": 77,
+    "headline": "가만히 있어도 편한 사이",
+    "keywords": [
+      "조용한 공감",
+      "비슷한 속도",
+      "솔직한 조언"
+    ],
+    "reportStatus": "NONE",
+    "createdAt": "2026-11-06T15:20:00Z"
+  }
+]

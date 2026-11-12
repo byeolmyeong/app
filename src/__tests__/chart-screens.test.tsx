@@ -188,14 +188,62 @@ describe('출생 정보 입력(홈)', () => {
     expect(await loadBirth()).toBeNull();
   });
 
-  it('"모름" 을 고르면 time 을 null 로 보낸다', async () => {
+  it('"모름" 을 고르면 태어난 곳 칸이 사라지고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 020)', async () => {
+    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
+    expect(screen.getByTestId('place-field')).toBeTruthy();
     await fillDateAndTime('2000-06-15', null);
+    expect(screen.queryByTestId('place-field')).toBeNull();
+    expect(screen.queryByText(H.placeLabel)).toBeNull();
+    await fireEvent.press(screen.getByText(H.submit));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
+    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
+    expect(mockApi.saveProfile).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
+    expect(await loadBirth()).toEqual({
+      profile: { date: '2000-06-15', time: null, place: null },
+      chart: fixtures.chartTimeUnknown,
+    });
+  });
+
+  it('곳을 고른 뒤 "모름" 을 고르면 골라 둔 곳을 보내지 않는다', async () => {
+    mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
+    await render(<HomeScreen />);
+    await fillPlace();
+    await fillDateAndTime('2000-06-15', null);
+    expect(screen.queryByTestId('place-field')).toBeNull();
+    await fireEvent.press(screen.getByText(H.submit));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
+    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
+    expect((await loadBirth())?.profile.place).toBeNull();
+  });
+
+  it('"모름" 을 풀고 시각을 다시 넣으면 태어난 곳 칸이 나타나고, 곳을 고를 때까지 넘어가지 않는다', async () => {
+    await render(<HomeScreen />);
+    await fillDateAndTime('2000-06-15', null);
+    expect(screen.queryByTestId('place-field')).toBeNull();
+    await fireEvent.press(screen.getByText(H.timeUnknown));
+    expect(screen.getByTestId('place-field')).toBeTruthy();
+    await fillTime('PM', 9, 0);
+    await fireEvent.press(screen.getByText(H.submit));
+    expect(await screen.findByText(H.errors.placeRequired)).toBeTruthy();
+    expect(mockApi.createChart).not.toHaveBeenCalled();
     await fillPlace();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
-    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: 1841277 });
+    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: '21:00', placeId: 1841277 });
+  });
+
+  it('곳이 비었다는 오류가 떠 있어도 "모름" 을 고르면 그대로 넘어간다', async () => {
+    mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
+    await render(<HomeScreen />);
+    await fillDateAndTime('2000-06-15', '21:00');
+    await fireEvent.press(screen.getByText(H.submit));
+    expect(await screen.findByText(H.errors.placeRequired)).toBeTruthy();
+    await fireEvent.press(screen.getByText(H.timeUnknown));
+    expect(screen.queryByText(H.errors.placeRequired)).toBeNull();
+    await fireEvent.press(screen.getByText(H.submit));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
   });
 
   it('1900년 이전 날짜는 다 치자마자 오류를 보여 준다', async () => {
@@ -251,6 +299,21 @@ describe('출생 정보 입력(홈)', () => {
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).not.toHaveBeenCalled();
+  });
+
+  it('시각 "모름" 으로 보관된 값은 곳 칸 없이 복원하고, 바꾸지 않고 누르면 서버를 다시 부르지 않는다', async () => {
+    await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    await render(<BirthScreen />);
+    expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();
+    expect(screen.getByText(H.timeUnknownValue)).toBeTruthy();
+    expect(screen.queryByTestId('place-field')).toBeNull();
+    await fireEvent.press(screen.getByText(H.submit));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
+    expect(mockApi.createChart).not.toHaveBeenCalled();
+    // "모름" 을 풀면 곳 칸이 비어 나타난다
+    await fireEvent.press(screen.getByText(H.timeUnknown));
+    expect(screen.getByTestId('place-field')).toBeTruthy();
+    expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
   });
 });
 
@@ -362,6 +425,13 @@ describe('차트 자세히', () => {
     expect(screen.queryByText(strings.bodies.FORTUNE)).toBeNull();
     expect(screen.getAllByTestId('data-table-row')).toHaveLength(12);
     expect(screen.getByText(strings.chart.timeUnknownNote)).toBeTruthy();
+  });
+
+  it('곳 없이 보관된 시각 "모름" 출생 정보로도 표와 출생 정보 줄을 그린다', async () => {
+    await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    await render(<ChartDetailScreen />);
+    expect(await screen.findByText(strings.bodies.SUN)).toBeTruthy();
+    expect(screen.getByText('2000. 6. 15. · 태어난 시각 모름')).toBeTruthy();
   });
 
   it('서버가 실수로 하우스를 실어 보내도 timeKnown 이 false 면 보여 주지 않는다', async () => {

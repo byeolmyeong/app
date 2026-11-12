@@ -1,0 +1,44 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { deleteAccount } from '@/features/auth/delete-account';
+import { clearSession } from '@/features/auth/use-session';
+import { api } from '@/lib/api';
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual('@/lib/api'),
+  api: { deleteAccount: jest.fn() },
+}));
+jest.mock('@/features/auth/use-session', () => ({ clearSession: jest.fn(async () => {}) }));
+
+const mockApi = api as jest.Mocked<typeof api>;
+
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  jest.clearAllMocks();
+  await AsyncStorage.multiSet([
+    ['byeolmyeong.birth.v1', '{}'],
+    ['byeolmyeong.reading.v1', '{}'],
+    ['other-app.key', 'keep'],
+  ]);
+});
+
+describe('계정 삭제', () => {
+  it('서버가 지우면 이 앱이 기기에 둔 것과 세션을 모두 비운다', async () => {
+    mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
+    expect(await deleteAccount()).toEqual({ ok: true, data: null });
+    expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
+    // 이 앱의 키(byeolmyeong.)만 지운다
+    expect(await AsyncStorage.getAllKeys()).toEqual(['other-app.key']);
+    expect(clearSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('서버가 지우지 못하면 기기의 것은 그대로 두고 실패를 돌려준다', async () => {
+    mockApi.deleteAccount.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    expect(await deleteAccount()).toEqual({ ok: false, error: 'NETWORK' });
+    expect((await AsyncStorage.getAllKeys()).length).toBe(3);
+    expect(clearSession).not.toHaveBeenCalled();
+  });
+});

@@ -30,6 +30,37 @@ describe('기기 보관', () => {
     await AsyncStorage.setItem(BIRTH_STORAGE_KEY, JSON.stringify({ profile, chart: { timeKnown: true } }));
     expect(await loadBirth()).toBeNull();
   });
+
+  it('시각 "모름" 이면 곳 없이 보관하고 다시 읽는다(결정 020)', async () => {
+    const unknown = { date: '2000-06-15', time: null, place: null };
+    await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });
+    expect(await loadBirth()).toEqual({ profile: unknown, chart: fixtures.chartTimeUnknown });
+    // place 가 아예 없는 값도 읽는다
+    await AsyncStorage.setItem(
+      BIRTH_STORAGE_KEY,
+      JSON.stringify({ profile: { date: '2000-06-15', time: null }, chart: fixtures.chartTimeUnknown }),
+    );
+    expect(await loadBirth()).toEqual({ profile: unknown, chart: fixtures.chartTimeUnknown });
+  });
+
+  it('예전에 보관된 값(시각 "모름" + 곳)도 읽는다. 쓰지 않는 곳은 버린다', async () => {
+    await AsyncStorage.setItem(
+      BIRTH_STORAGE_KEY,
+      JSON.stringify({ profile: { ...profile, time: null }, chart: fixtures.chartTimeUnknown }),
+    );
+    expect(await loadBirth()).toEqual({
+      profile: { date: '2000-06-15', time: null, place: null },
+      chart: fixtures.chartTimeUnknown,
+    });
+  });
+
+  it('시각이 있는데 곳이 없는 값은 버린다', async () => {
+    await AsyncStorage.setItem(
+      BIRTH_STORAGE_KEY,
+      JSON.stringify({ profile: { date: '2000-06-15', time: '21:00', place: null }, chart: fixtures.chart }),
+    );
+    expect(await loadBirth()).toBeNull();
+  });
 });
 
 describe('useBirthProfile', () => {

@@ -27,3 +27,13 @@ export async function saveToken(token: string): Promise<void> {
     // 메모리의 토큰으로 계속 쓴다.
   }
 }
+
+/** 지우지 못해도 던지지 않는다. 지워진 계정의 토큰은 서버가 받지 않고, 그때 새로 받아 바꿔 둔다 */
+export async function deleteToken(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } catch {
+    // 남은 토큰은 다음 401 에서 바뀐다.
+  }
+}

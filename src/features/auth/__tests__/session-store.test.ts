@@ -11,6 +11,9 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
     saveToken: jest.fn(async (token: string) => {
       kept = token;
     }),
+    deleteToken: jest.fn(async () => {
+      kept = null;
+    }),
     setApiToken: jest.fn(),
     ...overrides,
   } satisfies SessionStoreDeps;
@@ -88,6 +91,22 @@ describe('개발용 세션', () => {
     expect(await store.refresh()).toBe(false);
     expect(store.getSnapshot()).toEqual({ token: null, ready: true });
     expect(deps.setApiToken).toHaveBeenLastCalledWith(null);
+  });
+
+  it('비우면 보관된 토큰을 지우고 토큰 없이 남는다. 새로 받는 것은 다음 401 이나 다음에 켤 때다', async () => {
+    const { deps, store, kept } = setup({ stored: 'kept-token' });
+    await store.start();
+    const listener = jest.fn();
+    store.subscribe(listener);
+    await store.clear();
+    expect(kept()).toBeNull();
+    expect(store.getSnapshot()).toEqual({ token: null, ready: true });
+    expect(deps.setApiToken).toHaveBeenLastCalledWith(null);
+    expect(listener).toHaveBeenCalled();
+    expect(deps.createDevSession).not.toHaveBeenCalled();
+    // 그 뒤 서버가 401 을 주면 새로 받는다
+    expect(await store.refresh()).toBe(true);
+    expect(store.getSnapshot()).toEqual({ token: 'dev-token', ready: true });
   });
 
   it('바뀌면 듣는 쪽에 알린다', async () => {

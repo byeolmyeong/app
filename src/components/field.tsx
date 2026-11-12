@@ -50,9 +50,13 @@ export function Field({ label, hint, error, children }: FieldProps) {
   );
 }
 
-/** 치는 입력칸. 회색으로 채운 높이 56 칸이고, 포커스면 초록 테두리, 틀렸으면 오류 테두리. */
+/**
+ * 치는 입력칸. 회색으로 채운 높이 56 칸이고, 포커스면 초록 테두리, 틀렸으면 오류 테두리.
+ * `multiline` 이면 여러 줄 높이의 칸이 되고 글은 위에서부터 적힌다.
+ */
 export function FieldInput({
   invalid = false,
+  multiline = false,
   style,
   onFocus,
   onBlur,
@@ -60,10 +64,11 @@ export function FieldInput({
 }: TextInputProps & { invalid?: boolean }) {
   const [focused, setFocused] = useState(false);
   return (
-    <View style={[styles.box, focused && styles.focused, invalid && styles.invalid]}>
+    <View style={[styles.box, multiline && styles.area, focused && styles.focused, invalid && styles.invalid]}>
       <TextInput
+        multiline={multiline}
         placeholderTextColor={Colors.hint}
-        style={[styles.input, style]}
+        style={[styles.input, multiline && styles.areaInput, style]}
         onFocus={(e) => {
           setFocused(true);
           onFocus?.(e);
@@ -156,6 +161,8 @@ const styles = StyleSheet.create({
     borderWidth: LineWidth,
     borderColor: 'transparent',
   },
+  area: { height: Sizes.textArea, paddingVertical: Spacing.md },
+  areaInput: { flex: 1, textAlignVertical: 'top' },
   focused: { borderColor: Colors.primary },
   invalid: { borderColor: Colors.danger },
   select: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

@@ -103,6 +103,8 @@ export const LineWidth = 1;
 export const Sizes = {
   buttonHeight: 56,
   inputHeight: 56,
+  /** 여러 줄을 적는 입력칸(문의 내용)의 높이 */
+  textArea: 160,
   navHeight: 48,
   /** 화면 머리의 차트 표식 */
   mark: 28,

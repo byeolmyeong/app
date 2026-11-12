@@ -3,7 +3,7 @@ import { processColor, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
 import { DataTable } from '@/components/data-table';
-import { Field } from '@/components/field';
+import { Field, FieldInput } from '@/components/field';
 import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
 import { ChartMark } from '@/components/chart-mark';
@@ -241,5 +241,21 @@ describe('ListRow', () => {
   it('이름의 색을 고를 수 있다(지우는 줄)', async () => {
     await render(<ListRow label="계정 삭제" color="danger" onPress={() => {}} />);
     expect(StyleSheet.flatten(screen.getByText('계정 삭제').props.style).color).toBe(Colors.danger);
+  });
+});
+
+describe('FieldInput: 여러 줄', () => {
+  it('multiline 이면 칸이 여러 줄 높이가 되고 글은 위에서 시작한다', async () => {
+    await render(<FieldInput multiline placeholder="길게" />);
+    const input = screen.getByPlaceholderText('길게');
+    expect(StyleSheet.flatten(input.parent?.props.style)).toMatchObject({ height: Sizes.textArea });
+    expect(StyleSheet.flatten(input.props.style)).toMatchObject({ textAlignVertical: 'top' });
+  });
+
+  it('한 줄 칸의 높이는 그대로 56 이다', async () => {
+    await render(<FieldInput placeholder="짧게" />);
+    expect(StyleSheet.flatten(screen.getByPlaceholderText('짧게').parent?.props.style)).toMatchObject({
+      height: Sizes.inputHeight,
+    });
   });
 });

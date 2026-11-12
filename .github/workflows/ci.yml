@@ -1,0 +1,31 @@
+# 올릴 때마다 /verify 표의 1~3번(타입·린트, 테스트, 웹 빌드)을 돌린다.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: 타입
+        run: npx tsc --noEmit
+      - name: 린트
+        run: npx expo lint
+      - name: 테스트
+        run: npm test
+      - name: 웹 빌드
+        run: npx expo export --platform web

@@ -3,6 +3,7 @@
  * 계약에 없는 필드는 여기서 만들지 않는다. 어긋나면 서버 저장소의 계약 표를 먼저 고친다.
  * 출생 정보와 세션 토큰은 로그에 남기지 않는다(이 파일은 아무것도 기록하지 않는다).
  */
+import { appClient, type AppClient } from '@/lib/app-client';
 import { fixtures } from '@/lib/fixtures';
 
 // ── 계약의 타입 ────────────────────────────────────────────────────────────
@@ -228,6 +229,19 @@ export type InquiryInput = { category: InquiryCategory; body: string; replyEmail
 
 /** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */
 export type InquiryCreated = { id: string };
+
+/**
+ * `GET /app-config` 의 한 플랫폼 몫(결정 027). minVersion 은 점으로 나눈 숫자("1.2.0")이고 null 이면 아무도 막지 않는다.
+ * message 는 관리자가 적은 안내(그냥 글자). blockNow 는 서버가 426 으로 바로 거절할지의 스위치다(앱은 판정에 쓰지 않는다).
+ */
+export type PlatformConfig = {
+  minVersion: string | null;
+  storeUrl: string | null;
+  message: string | null;
+  blockNow: boolean;
+};
+
+export type AppConfig = { ios: PlatformConfig; android: PlatformConfig };
 
 // ── 결과 ───────────────────────────────────────────────────────────────────
 
@@ -509,8 +523,20 @@ const isReportRequest = (v: unknown): v is ReportRequest =>
 
 const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
 
-const isDevSession = (v: unknown): v is DevSession =>
-  isObject(v) && typeof v.token === 'string' && v.token.length > 0;
+const isNullableString = (v: unknown): v is string | null => typeof v === 'string' || v === null;
+
+const isPlatformConfig = (v: unknown): v is PlatformConfig =>
+  isObject(v) &&
+  isNullableString(v.minVersion) &&
+  isNullableString(v.storeUrl) &&
+  isNullableString(v.message) &&
+  typeof v.blockNow === 'boolean';
+
+export function isAppConfig(v: unknown): v is AppConfig {
+  return isObject(v) && isPlatformConfig(v.ios) && isPlatformConfig(v.android);
+}
+
+const isDevSession = (v: unknown): v is DevSession => isObject(v) && typeof v.token === 'string' && v.token.length > 0;
 
 /** `PUT /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
@@ -530,14 +556,24 @@ export type ApiConfig = {
   fetchFn?: typeof fetch;
   /** 개발용 가짜 서버. 켜면 서버를 부르지 않고 fixtures 로 답한다 */
   useFixtures?: boolean;
+  /** 네이티브 앱의 플랫폼과 버전. 있으면 모든 요청에 버전 헤더를 붙인다. 웹은 없다(결정 027) */
+  client?: AppClient | null;
+  /** 서버가 426 `UPDATE_REQUIRED` 로 거절했을 때 부른다 */
+  onUpdateRequired?: () => void;
 };
 
 type RequestOptions<T> = {
   body?: unknown;
   validate: (v: unknown) => v is T;
-  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`) */
+  /** false 면 세션 헤더를 붙이지 않고 401 에도 세션을 다시 받지 않는다(`GET /places`·`POST /auth/dev`·`GET /app-config`) */
   auth?: boolean;
 };
+
+/** `{ error }` 로 오는 이름: 이 버전의 앱은 더 받지 않는다(상태 426) */
+const UPDATE_REQUIRED = 'UPDATE_REQUIRED';
+
+/** 가짜 서버의 설정. 아무도 막지 않는다 */
+const FIXTURE_PLATFORM_CONFIG: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
 
 /** 가짜 서버가 주는 세션 토큰 */
 const FIXTURE_TOKEN = 'fixture-session';
@@ -558,6 +594,10 @@ export function createApi(config: ApiConfig) {
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
     const token = auth ? config.getToken() : null;
     if (token) headers.Authorization = `Bearer ${token}`;
+    if (config.client) {
+      headers['X-App-Platform'] = config.client.platform;
+      headers['X-App-Version'] = config.client.version;
+    }
 
     let response: Response;
     try {
@@ -581,6 +621,7 @@ export function createApi(config: ApiConfig) {
       // 오류 본문 `{ error }` 의 이름만 읽는다. 본문이 없거나 모양이 달라도 결과는 같다.
       const body: unknown = await response.json().catch(() => null);
       const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
+      if (status === 426 && code.code === UPDATE_REQUIRED) config.onUpdateRequired?.();
       return { ok: false, error: 'SERVER', status, ...code };
     }
 
@@ -601,6 +642,13 @@ export function createApi(config: ApiConfig) {
     async listPlaces(): Promise<ApiResult<Place[]>> {
       if (config.useFixtures) return { ok: true, data: fixtures.places };
       return request('GET', '/places', { validate: isPlaceList, auth: false });
+    },
+
+    /** `GET /app-config` 플랫폼별 최소 버전 · 스토어 주소 · 안내(결정 027). 세션이 필요 없다 */
+    async getAppConfig(): Promise<ApiResult<AppConfig>> {
+      if (config.useFixtures)
+        return { ok: true, data: { ios: FIXTURE_PLATFORM_CONFIG, android: FIXTURE_PLATFORM_CONFIG } };
+      return request('GET', '/app-config', { validate: isAppConfig, auth: false });
     },
 
     /** `POST /charts` 출생 정보로 차트를 받는다 */
@@ -750,10 +798,19 @@ export function setSessionRefresher(refresher: (() => Promise<boolean>) | null) 
   sessionRefresher = refresher;
 }
 
+let updateRequiredHandler: (() => void) | null = null;
+
+/** 서버가 426 `UPDATE_REQUIRED` 로 거절했을 때 할 일. features/update 가 등록한다(결정 027). */
+export function setUpdateRequiredHandler(handler: (() => void) | null) {
+  updateRequiredHandler = handler;
+}
+
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
   getToken: () => sessionToken,
   refreshSession: async () => (sessionRefresher ? sessionRefresher() : false),
   useFixtures: process.env.EXPO_PUBLIC_USE_FIXTURES === '1',
+  client: appClient,
+  onUpdateRequired: () => updateRequiredHandler?.(),
 });

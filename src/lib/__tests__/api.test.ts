@@ -1,5 +1,6 @@
 import {
   createApi,
+  isAppConfig,
   isChart,
   isDirection,
   isPlaceList,
@@ -546,7 +547,8 @@ describe('api: 심층 리포트', () => {
       expect(Object.keys(section).sort()).toEqual(['area', 'paragraphs', 'title']);
       expect(section.paragraphs.length).toBeGreaterThanOrEqual(4);
       expect(section.paragraphs.length).toBeLessThanOrEqual(6);
-      for (const paragraph of section.paragraphs) expect(Object.keys(paragraph).sort()).toEqual(['basis', 'body', 'title']);
+      for (const paragraph of section.paragraphs)
+        expect(Object.keys(paragraph).sort()).toEqual(['basis', 'body', 'title']);
     }
   });
 
@@ -843,6 +845,126 @@ describe('api: 문의하기', () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.createInquiry(inquiry)).toMatchObject({ ok: true, data: { id: expect.any(String) } });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('api: 앱 버전 헤더와 강제 업데이트(결정 027)', () => {
+  const platformConfig = {
+    minVersion: '1.2.0',
+    storeUrl: 'https://store.example.test/app',
+    message: null,
+    blockNow: false,
+  };
+  const appConfig = { ios: platformConfig, android: { ...platformConfig, minVersion: null, storeUrl: null } };
+
+  it('네이티브 앱이면 모든 요청에 X-App-Platform · X-App-Version 을 붙인다', async () => {
+    const fetchFn = fakeFetch(200, fixtures.chart);
+    const api = createApi({
+      baseUrl: BASE,
+      fetchFn,
+      getToken: () => 'token-1',
+      client: { platform: 'ios', version: '1.0.0' },
+    });
+    await api.createChart(input);
+    expect(headersOf(fetchFn)).toMatchObject({
+      'X-App-Platform': 'ios',
+      'X-App-Version': '1.0.0',
+      Authorization: 'Bearer token-1',
+    });
+
+    // 세션이 필요 없는 요청에도 붙인다.
+    const fetchPlaces = fakeFetch(200, []);
+    const android = createApi({
+      baseUrl: BASE,
+      fetchFn: fetchPlaces,
+      getToken: () => null,
+      client: { platform: 'android', version: '2.3.4' },
+    });
+    await android.listPlaces();
+    expect(headersOf(fetchPlaces)).toMatchObject({ 'X-App-Platform': 'android', 'X-App-Version': '2.3.4' });
+  });
+
+  it('웹(client 가 없다)이면 버전 헤더를 보내지 않는다', async () => {
+    for (const client of [null, undefined]) {
+      const fetchFn = fakeFetch(200, fixtures.chart);
+      const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, client });
+      await api.createChart(input);
+      expect(Object.keys(headersOf(fetchFn)).filter((name) => name.startsWith('X-App-'))).toEqual([]);
+    }
+  });
+
+  it('GET /app-config 를 세션 헤더 없이 부르고 플랫폼별 설정을 받는다', async () => {
+    const fetchFn = fakeFetch(200, appConfig);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1' });
+    expect(await api.getAppConfig()).toEqual({ ok: true, data: appConfig });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/app-config`);
+    expect(fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    expect(headersOf(fetchFn).Authorization).toBeUndefined();
+  });
+
+  it('GET /app-config 가 401 이어도 세션을 다시 받지 않는다', async () => {
+    const refreshSession = jest.fn(async () => true);
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => null, refreshSession });
+    expect((await api.getAppConfig()).ok).toBe(false);
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
+
+  it('설정의 모양: 두 플랫폼이 모두 있고, 값은 글자 또는 null, blockNow 는 참 · 거짓이어야 한다', () => {
+    expect(isAppConfig(appConfig)).toBe(true);
+    expect(isAppConfig({ ios: { ...platformConfig, message: '점검이 있었어요' }, android: platformConfig })).toBe(true);
+    expect(isAppConfig(null)).toBe(false);
+    expect(isAppConfig([])).toBe(false);
+    expect(isAppConfig({ ios: platformConfig })).toBe(false);
+    expect(isAppConfig({ ios: platformConfig, android: null })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, minVersion: 120 } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, minVersion: undefined } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, storeUrl: 1 } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, message: {} } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, blockNow: 'true' } })).toBe(false);
+    const { blockNow: _blockNow, ...withoutBlockNow } = platformConfig;
+    expect(isAppConfig({ ...appConfig, android: withoutBlockNow })).toBe(false);
+  });
+
+  it('모양이 다른 설정은 INVALID, 실패는 종류대로 돌려주고 다시 부르지 않는다', async () => {
+    const bad = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ios: {} }), getToken: () => null });
+    expect(await bad.getAppConfig()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    const fetchFn = fakeFetch(503);
+    const down = createApi({ baseUrl: BASE, fetchFn, getToken: () => null });
+    expect(await down.getAppConfig()).toEqual({ ok: false, error: 'SERVER', status: 503 });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('어느 호출이든 426 UPDATE_REQUIRED 를 받으면 알리고, 결과는 code 와 함께 실패다', async () => {
+    const onUpdateRequired = jest.fn();
+    const fetchFn = fakeFetch(426, { error: 'UPDATE_REQUIRED' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'token-1', onUpdateRequired });
+    expect(await api.createReading()).toEqual({ ok: false, error: 'SERVER', status: 426, code: 'UPDATE_REQUIRED' });
+    expect(onUpdateRequired).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    await api.getAppConfig();
+    expect(onUpdateRequired).toHaveBeenCalledTimes(2);
+  });
+
+  it('426 이라도 UPDATE_REQUIRED 가 아니거나 다른 상태의 UPDATE_REQUIRED 면 알리지 않는다', async () => {
+    const onUpdateRequired = jest.fn();
+    for (const fetchFn of [
+      fakeFetch(426),
+      fakeFetch(426, { error: 'OTHER' }),
+      fakeFetch(400, { error: 'UPDATE_REQUIRED' }),
+    ]) {
+      const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, onUpdateRequired });
+      expect((await api.createReading()).ok).toBe(false);
+    }
+    expect(onUpdateRequired).not.toHaveBeenCalled();
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 아무도 막지 않는 설정을 준다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    const r = await api.getAppConfig();
+    expect(r.ok && [r.data.ios.minVersion, r.data.android.minVersion]).toEqual([null, null]);
+    expect(r.ok && isAppConfig(r.data)).toBe(true);
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

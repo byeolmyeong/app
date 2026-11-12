@@ -123,6 +123,43 @@ export const strings = {
       },
     ],
   },
+  /** 문의하기(결정 024). 종류의 키는 서버가 받는 식별자다. 적은 내용과 이메일은 기기에 남기지 않는다 */
+  inquiry: {
+    title: '문의하기',
+    intro: '궁금한 점이나 불편했던 점을 적어 보내 주세요.',
+    categoryLabel: '어떤 문의인가요',
+    categories: { ACCOUNT: '계정', READING: '풀이/리포트', SYNASTRY: '궁합', BUG: '오류 신고', OTHER: '기타' },
+    bodyLabel: '문의 내용',
+    bodyPlaceholder: '어느 화면에서 무슨 일이 있었는지 적어 주시면 도움이 돼요.',
+    bodyHint: '10자 이상 적어 주세요.',
+    /** 글자 수: "12 / 2000자" */
+    countSeparator: ' / ',
+    countUnit: '자',
+    emailLabel: '답장 받을 이메일',
+    emailPlaceholder: '선택 사항이에요',
+    emailHint: '답장이 필요할 때만 적어 주세요.',
+    submit: '보내기',
+    sending: '보내는 중',
+    errors: {
+      categoryRequired: '문의 종류를 골라 주세요',
+      bodyTooShort: '10자 이상 적어 주세요',
+      bodyTooLong: '2000자까지 적을 수 있어요',
+      emailFormat: '이메일 주소를 다시 확인해 주세요',
+    },
+    /** INVALID_BODY · INVALID_EMAIL 은 서버가 오류 본문에 적어 주는 이름이다 */
+    failed: {
+      NETWORK: '인터넷 연결을 확인하고 다시 눌러 주세요.',
+      LIMIT: '문의를 여러 번 보내셨어요. 잠시 뒤 다시 보내 주세요.',
+      INVALID_BODY: '문의 내용을 다시 확인해 주세요. 10자부터 2000자까지 보낼 수 있어요.',
+      INVALID_EMAIL: '이메일 주소를 다시 확인해 주세요.',
+      OTHER: '문의를 보내지 못했어요. 잠시 뒤 다시 눌러 주세요.',
+    },
+    done: {
+      title: '문의를 보냈어요',
+      body: '보내 주신 내용을 잘 받았어요.',
+      back: '설정으로 돌아가기',
+    },
+  },
   main: {
     soon: '준비 중',
     readingLabel: '나의 별명',

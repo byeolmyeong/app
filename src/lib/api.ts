@@ -219,6 +219,16 @@ export type SynastryReportState =
 /** `POST /synastry/{id}/report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
 export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
+/** 문의의 종류(결정 024). 계정 · 풀이/리포트 · 궁합 · 오류 신고 · 기타 */
+export const INQUIRY_CATEGORIES = ['ACCOUNT', 'READING', 'SYNASTRY', 'BUG', 'OTHER'] as const;
+export type InquiryCategory = (typeof INQUIRY_CATEGORIES)[number];
+
+/** `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~2000자, replyEmail 은 답장을 받지 않으면 null */
+export type InquiryInput = { category: InquiryCategory; body: string; replyEmail: string | null };
+
+/** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */
+export type InquiryCreated = { id: string };
+
 // ── 결과 ───────────────────────────────────────────────────────────────────
 
 /**
@@ -497,6 +507,8 @@ const partnerBirthBody = (birth: BirthInput) => ({
 const isReportRequest = (v: unknown): v is ReportRequest =>
   isObject(v) && (v.status === 'WRITING' || v.status === 'DONE');
 
+const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
+
 const isDevSession = (v: unknown): v is DevSession =>
   isObject(v) && typeof v.token === 'string' && v.token.length > 0;
 
@@ -650,6 +662,18 @@ export function createApi(config: ApiConfig) {
     async deleteAccount(): Promise<ApiResult<null>> {
       if (config.useFixtures) return { ok: true, data: null };
       return request('DELETE', '/account', { validate: (v): v is null => v === null });
+    },
+
+    /**
+     * `POST /inquiries` 문의를 보낸다(결정 024). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` ·
+     * `INVALID_BODY` · `INVALID_EMAIL`). 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용과 주소는 어디에도 남기지 않는다.
+     */
+    async createInquiry(input: InquiryInput): Promise<ApiResult<InquiryCreated>> {
+      if (config.useFixtures) return { ok: true, data: { id: 'fixture-inquiry' } };
+      return request('POST', '/inquiries', {
+        body: { category: input.category, body: input.body, replyEmail: input.replyEmail },
+        validate: isInquiryCreated,
+      });
     },
 
     /**

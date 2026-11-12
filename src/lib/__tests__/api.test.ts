@@ -785,3 +785,64 @@ describe('api: 궁합(직접 입력)', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });
+
+describe('api: 문의하기', () => {
+  const inquiry = { category: 'BUG' as const, body: '리포트 화면이 열리지 않아요.', replyEmail: null };
+
+  it('POST /inquiries 에 종류 · 내용 · 답장 주소(없으면 null)를 세션 헤더와 함께 보내고, 201 의 식별자를 받는다', async () => {
+    const fetchFn = fakeFetch(201, { id: '0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
+    expect(await api.createInquiry(inquiry)).toEqual({
+      ok: true,
+      data: { id: '0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10' },
+    });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`${BASE}/inquiries`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(init?.body as string)).toEqual({
+      category: 'BUG',
+      body: '리포트 화면이 열리지 않아요.',
+      replyEmail: null,
+    });
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
+  });
+
+  it('답장 주소가 있으면 그대로 보낸다', async () => {
+    const fetchFn = fakeFetch(201, { id: 'a' });
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
+    await api.createInquiry({ ...inquiry, replyEmail: 'me@example.test' });
+    expect(JSON.parse(fetchFn.mock.calls[0][1]?.body as string).replyEmail).toBe('me@example.test');
+  });
+
+  it('400 은 서버가 적은 이름을 code 로, 429 는 한도 결과로 돌려주고 다시 부르지 않는다', async () => {
+    const call = (status: number, body?: unknown) => {
+      const fetchFn = fakeFetch(status, body);
+      return { fetchFn, api: createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }) };
+    };
+    const bad = call(400, { error: 'INVALID_EMAIL' });
+    expect(await bad.api.createInquiry(inquiry)).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 400,
+      code: 'INVALID_EMAIL',
+    });
+    expect(bad.fetchFn).toHaveBeenCalledTimes(1);
+    expect(await call(429, { error: 'RATE_LIMITED' }).api.createInquiry(inquiry)).toEqual({
+      ok: false,
+      error: 'LIMIT',
+      status: 429,
+    });
+  });
+
+  it('식별자가 없는 성공 응답은 INVALID 다', async () => {
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(201, {}), getToken: () => 't' });
+    expect(await api.createInquiry(inquiry)).toEqual({ ok: false, error: 'INVALID', status: 201 });
+  });
+
+  it('가짜 서버를 켜면 fetch 없이 성공한다', async () => {
+    const fetchFn = fakeFetch(500);
+    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
+    expect(await api.createInquiry(inquiry)).toMatchObject({ ok: true, data: { id: expect.any(String) } });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});

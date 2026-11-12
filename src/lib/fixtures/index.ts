@@ -6,15 +6,18 @@
  * - chart.json: 서버(계획 태스크 15)가 2000-06-15 21:00 · 서울특별시 마포구로 준 실제 응답이다(2026-11-11).
  * - chart-time-unknown.json: 같은 날짜·장소에 시각 null 로 받은 실제 응답. 하우스·상승점·중천·행운점·버텍스가 없다.
  * - reading.json: 글은 시안의 예시 문장이다.
- * - report.json: 심층 리포트의 네 영역(성격 · 관계 · 일 · 감정). 글은 계약의 모양에 맞춰 쓴 예시 문장이다. 시기는 아직 없다.
+ * - report.json: 심층 리포트의 네 영역(성격 · 관계 · 일 · 감정)과 시기(`timing`: 변곡점 넷, 구간 23개, 오늘은 2026-11-11).
+ *   글과 날짜는 계약의 모양에 맞춰 쓴 예시다(서버가 계산한 값이 아니다).
+ * - report-timing-time-unknown.json: 시각 모름일 때의 시기 예시. 운명적 만남 구간과 돈 영역이 없다. `reportTimeUnknown` 이 쓴다.
  * - 궁합(`Synastry`)·공유 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
  */
-import type { Chart, Place, Reading, Report } from '@/lib/api';
+import type { Chart, Place, Reading, Report, ReportTiming } from '@/lib/api';
 
 import chartTimeUnknown from './chart-time-unknown.json';
 import chart from './chart.json';
 import places from './places.json';
 import reading from './reading.json';
+import reportTimingTimeUnknown from './report-timing-time-unknown.json';
 import report from './report.json';
 
 export const fixtures = {
@@ -23,4 +26,5 @@ export const fixtures = {
   chartTimeUnknown: chartTimeUnknown as Chart,
   reading: reading as Reading,
   report: report as Report,
+  reportTimeUnknown: { sections: report.sections, timing: reportTimingTimeUnknown as ReportTiming } as Report,
 };

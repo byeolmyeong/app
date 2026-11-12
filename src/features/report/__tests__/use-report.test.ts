@@ -24,8 +24,14 @@ const noProfile: ApiResult<ReportRequest> = { ok: false, error: 'SERVER', status
 /** 확인 주기만큼 시간을 보낸다 */
 const tick = (times = 1) => act(async () => void (await jest.advanceTimersByTimeAsync(REPORT_POLL_MS * times)));
 
+/** 예시 리포트의 "지금" 이 만들어진 날(한국 날짜)의 낮 */
+const SAME_DAY = new Date(`${report.timing.current.date}T03:00:00Z`);
+/** 예시 리포트를 받은 다음 날에 서버가 줄 리포트: 글은 같고 "지금" 의 날짜만 다르다 */
+const nextDay = '2026-11-12';
+const reportNextDay = { ...report, timing: { ...report.timing, current: { ...report.timing.current, date: nextDay } } };
+
 beforeEach(async () => {
-  jest.useFakeTimers();
+  jest.useFakeTimers({ now: SAME_DAY });
   await AsyncStorage.clear();
   jest.clearAllMocks();
   mockApi.getReport.mockResolvedValue(got('NONE'));
@@ -100,7 +106,7 @@ describe('useReport', () => {
     expect(mockApi.getReport).toHaveBeenCalledTimes(2);
   });
 
-  it('다 쓴 리포트를 기기에 두어, 같은 출생 정보로 다시 열면 서버를 부르지 않는다', async () => {
+  it('다 쓴 리포트를 기기에 두어, 같은 출생 정보로 같은 날 다시 열면 서버를 부르지 않는다', async () => {
     mockApi.getReport.mockResolvedValue(done);
     const first = await renderHook(() => useReport(input));
     await waitFor(() => expect(first.result.current.state.status).toBe('done'));
@@ -108,6 +114,52 @@ describe('useReport', () => {
     const second = await renderHook(() => useReport({ ...input }));
     await waitFor(() => expect(second.result.current.state).toEqual({ status: 'done', report }));
     expect(mockApi.getReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('한국 날짜로 같은 날이면 자정 직전(한국 23:59)에도 서버를 부르지 않는다', async () => {
+    const key = JSON.stringify([input.date, input.time, input.placeId]);
+    await AsyncStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify({ key, report }));
+    jest.setSystemTime(new Date(`${report.timing.current.date}T14:59:00Z`));
+    const { result } = await renderHook(() => useReport(input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', report }));
+    await tick();
+    expect(mockApi.getReport).not.toHaveBeenCalled();
+  });
+
+  it('보관된 리포트의 "지금" 이 오늘 것이 아니면 보관본을 먼저 보여 주고, 한 번 다시 받아 바꾸고 보관한다', async () => {
+    const key = JSON.stringify([input.date, input.time, input.placeId]);
+    await AsyncStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify({ key, report }));
+    // 한국 날짜로 다음 날 00:01
+    jest.setSystemTime(new Date(`${report.timing.current.date}T15:01:00Z`));
+    let answer: (r: ApiResult<ReportState>) => void = () => {};
+    mockApi.getReport.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const { result } = await renderHook(() => useReport(input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', report }));
+    await waitFor(() => expect(mockApi.getReport).toHaveBeenCalledTimes(1));
+    await act(async () => answer({ ok: true, data: { status: 'DONE', report: reportNextDay } }));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', report: reportNextDay }));
+    expect(JSON.parse((await AsyncStorage.getItem(REPORT_STORAGE_KEY)) as string).report.timing.current.date).toBe(
+      nextDay,
+    );
+    await tick(3);
+    expect(mockApi.getReport).toHaveBeenCalledTimes(1);
+    expect(mockApi.requestReport).not.toHaveBeenCalled();
+  });
+
+  it('다시 받지 못했거나 다 쓴 리포트가 오지 않으면 보관본을 그대로 보여 준다', async () => {
+    const key = JSON.stringify([input.date, input.time, input.placeId]);
+    for (const answer of [{ ok: false, error: 'NETWORK' } as const, got('NONE'), got('FAILED'), got('WRITING')]) {
+      await AsyncStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify({ key, report }));
+      jest.setSystemTime(new Date(`${nextDay}T03:00:00Z`));
+      mockApi.getReport.mockClear();
+      mockApi.getReport.mockResolvedValue(answer);
+      const view = await renderHook(() => useReport(input));
+      await waitFor(() => expect(mockApi.getReport).toHaveBeenCalledTimes(1));
+      await tick(2);
+      expect(view.result.current.state).toEqual({ status: 'done', report });
+      expect(mockApi.getReport).toHaveBeenCalledTimes(1);
+      await view.unmount();
+    }
   });
 
   it('출생 정보가 달라지면 보관된 리포트를 쓰지 않고 서버에 확인한다', async () => {

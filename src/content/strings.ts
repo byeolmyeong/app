@@ -86,8 +86,8 @@ export const strings = {
         key: 'timing',
         title: '시기',
         items: [
-          { label: '지금 나의 구간', path: null },
-          { label: '다가오는 변곡점', path: null },
+          { label: '지금 나의 구간', path: '/report?area=TIMING' },
+          { label: '다가오는 변곡점', path: '/report?area=TIMING' },
         ],
       },
     ],
@@ -192,12 +192,62 @@ export const strings = {
   report: {
     title: '심층 리포트',
     checking: '리포트를 확인하고 있어요',
-    intro: '성격 · 관계 · 일 · 감정, 네 가지로 나를 길게 풀어 드려요.',
+    intro: '성격 · 관계 · 일 · 감정 · 시기, 다섯 가지로 나를 길게 풀어 드려요.',
     request: '리포트 받기',
     writing: '리포트를 쓰는 중이에요',
     writingNote: '1~2분쯤 걸려요. 화면을 나갔다가 다시 들어와도 돼요.',
     /** 영역 탭. 키는 서버가 주는 식별자다 */
-    areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정' },
+    areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정', TIMING: '시기' },
+    /**
+     * 시기 탭(결정 021). 행성 · 각도 이름을 쓰지 않고, 무슨 일이 일어난다고 단정하지 않는다("~하기 쉬운 시기").
+     * 종류 · 영역 · 크기 · 변곡점의 키는 서버가 주는 식별자다.
+     */
+    timing: {
+      nowHeading: '지금 나의 구간',
+      nowNone: '지금은 걸쳐 있는 구간이 없어요.',
+      milestoneNow: '지금 지나는 변곡점',
+      nextIntervalLabel: '다음 구간',
+      nextMilestoneLabel: '다음 변곡점',
+      milestonesDone: '네 번의 변곡점을 모두 지나왔어요.',
+      /** 날짜 뒤에 붙인다: "2027년 2월까지" · "2027년 3월부터" */
+      untilSuffix: '까지',
+      fromSuffix: '부터',
+      /** F4 가 정한 고지 문구 */
+      notice: '시기는 행성의 주기를 계산한 것이고, 무슨 일이 일어날지를 말하지 않습니다.',
+      timeUnknownNotice: '태어난 시각을 몰라서 첫인상(상승점)에 닿는 구간과 운명처럼 느껴지는 만남 구간은 뺐어요.',
+      milestonesHeading: '변곡점',
+      milestonesIntro: '누구나 비슷한 나이에 지나는 네 번의 마디예요. 해와 나이는 내 차트로 계산한 값이에요.',
+      milestoneKinds: {
+        SATURN_SQUARE: '첫 번째 변곡점',
+        SATURN_RETURN: '두 번째 변곡점',
+        URANUS_OPPOSITION: '세 번째 변곡점',
+        SECOND_SATURN_RETURN: '네 번째 변곡점',
+      },
+      nearest: '지금과 가장 가까워요',
+      timelineHeading: '나에게 오는 구간',
+      timelineIntro: '지금을 기준으로 앞뒤 10년을 먼저 보여 드려요. 줄을 누르면 설명이 펼쳐져요.',
+      kinds: { CHANGE: '변화', OPPORTUNITY: '기회', FATED: '운명처럼 느껴지는 만남' },
+      /** 종류가 무엇인지 타임라인 위에 한 줄씩 적는다 */
+      kindNotes: {
+        CHANGE: '익숙한 방식이 달라지기 쉬운 시기',
+        OPPORTUNITY: '도움이 되는 사람을 만나거나 인연이 열리기 쉬운 시기',
+        FATED: '운명처럼 느껴지는 만남이 생기기 쉬운 시기',
+      },
+      areas: { PEOPLE: '사람·인연', WORK: '일', MONEY: '돈', SELF: '나 자신' },
+      sizes: { BIG: '큰 변화', SMALL: '작은 변화' },
+      now: '지금',
+      /** 뒤에 남은 개수를 붙인다: "이전 구간 더 보기 (5개)" */
+      earlier: '이전 구간 더 보기',
+      later: '이후 구간 더 보기',
+      countSuffix: '개',
+      /** 날짜와 나이의 낱말: "2026년 3월 ~ 2027년 1월", "2029년 · 만 29세" */
+      yearSuffix: '년',
+      monthSuffix: '월',
+      periodSeparator: ' ~ ',
+      agePrefix: '만 ',
+      ageSuffix: '세',
+      separator: ' · ',
+    },
     failed: {
       NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
       LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',

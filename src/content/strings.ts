@@ -87,7 +87,7 @@ export const strings = {
         title: '관계',
         items: [
           { label: '사람을 대하는 성향', path: '/report?area=RELATIONSHIP' },
-          { label: '연애에서 해 볼 만한 것', path: null },
+          { label: '연애에서 해 볼 만한 것', path: '/direction' },
         ],
       },
       {
@@ -195,9 +195,23 @@ export const strings = {
     strengths: '강점',
     cautions: '보완점',
     bullet: '·',
+    /** 방향성 "이성" 화면(`/direction`)으로 들어가는 줄(결정 023) */
+    seeDirection: '연애에서 해 볼 만한 것 보기',
     seeChart: '내 차트 보기',
     /** 앞날·건강·투자를 단정하지 않는다(golden-rules "프로젝트 규칙") */
     disclaimer: '오락과 자기 성찰을 위한 내용이에요. 앞날을 알려 주거나 전문가의 조언을 대신하지 않습니다.',
+    failed: {
+      NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
+      LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+      OTHER: '글을 받아 오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+    },
+    retry: '다시 시도',
+  },
+  /** 방향성 제시(F10)의 이성 주제. 조언형으로만 쓴다. 앞일을 단정하지 않는다(결정 023) */
+  direction: {
+    title: '연애에서 해 볼 만한 것',
+    generating: '해 볼 만한 것을 고르는 중이에요',
+    generatingNote: '내 하늘에서 연애와 닿는 자리를 글로 옮기고 있어요. 20초쯤 걸려요.',
     failed: {
       NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
       LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',

@@ -3,7 +3,7 @@ type: decision
 tags: [화면 구성, 홈, 카테고리, 관계, 궁합]
 status: active
 last_reviewed: 2026-11-11
-superseded_by:
+superseded_by: 023-direction-love-own-screen.md ("연애에서 해 볼 만한 것 → 준비 중" 줄만. 나머지는 유효)
 ---
 # 022. 홈에 관계 · 궁합 칸을 다시 올린다
 

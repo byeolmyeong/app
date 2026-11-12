@@ -12,12 +12,14 @@
  * - synastry.json: `POST /synastry/direct` 의 응답 예시(겹친 휠 `overlay` 포함). 내 쪽 위치는 chart.json 의 값이고 상대 쪽과 글은 지어낸 예시다.
  * - synastry-list.json: `GET /synastry` 의 예시(새것부터, `overlay` 없음). 60점 미만인 것에만 `scoreLabel` 이 있다.
  * - synastry-report.json: 궁합 리포트의 네 영역(끌림 · 대화 · 갈등 · 오래가기). 글은 예시 문장이고 근거는 내 쪽 요소뿐이다.
+ * - direction.json: `POST /directions`(이성)의 응답 예시. 한 줄 제목과 해 볼 만한 것 3개. 글은 조언형으로 쓴 예시 문장이다.
  * - 초대·공유 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
  */
-import type { Chart, Place, Reading, Report, ReportTiming, Synastry, SynastryReport } from '@/lib/api';
+import type { Chart, Direction, Place, Reading, Report, ReportTiming, Synastry, SynastryReport } from '@/lib/api';
 
 import chartTimeUnknown from './chart-time-unknown.json';
 import chart from './chart.json';
+import direction from './direction.json';
 import places from './places.json';
 import reading from './reading.json';
 import reportTimingTimeUnknown from './report-timing-time-unknown.json';
@@ -33,6 +35,7 @@ export const fixtures = {
   reading: reading as Reading,
   report: report as Report,
   reportTimeUnknown: { sections: report.sections, timing: reportTimingTimeUnknown as ReportTiming } as Report,
+  direction: direction as Direction,
   synastry: synastry as Synastry,
   synastryList: synastryList as Synastry[],
   synastryReport: synastryReport as SynastryReport,

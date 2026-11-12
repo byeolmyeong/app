@@ -71,6 +71,16 @@ export type Reading = {
   shareId: string;
 };
 
+/** 방향성 제시의 주제. 지금 서버가 받는 것은 이성(`LOVE`) 하나다 */
+export type DirectionTopic = 'LOVE';
+
+/** 방향성 제시: 한 줄 제목과 해 볼 만한 것 3개. 항목의 title 은 실천 한 줄, basis 는 `Reading` 과 같은 말(1개 이상) */
+export type Direction = {
+  topic: DirectionTopic;
+  title: string;
+  items: { title: string; body: string; basis: string[] }[];
+};
+
 /** 심층 리포트의 글 영역. 서버는 이 순서로 네 영역을 모두 준다. 다섯째 영역인 시기는 `Report.timing` 으로 따로 온다 */
 export const REPORT_AREAS = ['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
 export type ReportArea = (typeof REPORT_AREAS)[number];
@@ -346,6 +356,28 @@ const isTiming = (v: unknown): v is ReportTiming =>
   v.intervals.every(isInterval) &&
   isTimingCurrent(v.current);
 
+const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+
+/** 항목은 정확히 3개이고, 제목·본문은 빈 글이 아니며, 근거는 항목마다 하나 이상이어야 한다 */
+export function isDirection(v: unknown): v is Direction {
+  return (
+    isObject(v) &&
+    v.topic === 'LOVE' &&
+    isText(v.title) &&
+    Array.isArray(v.items) &&
+    v.items.length === 3 &&
+    v.items.every(
+      (item) =>
+        isObject(item) &&
+        isText(item.title) &&
+        isText(item.body) &&
+        Array.isArray(item.basis) &&
+        item.basis.length > 0 &&
+        item.basis.every(isText),
+    )
+  );
+}
+
 /**
  * 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 시기(timing)도 계약의 모양이어야 한다.
  * 시기가 생기기 전에 받아 기기에 둔 리포트는 여기서 걸러진다. 그 밖의 계약에 없는 필드는 보지 않는다.
@@ -588,6 +620,15 @@ export function createApi(config: ApiConfig) {
     async createReading(): Promise<ApiResult<Reading>> {
       if (config.useFixtures) return { ok: true, data: fixtures.reading };
       return request('POST', '/readings', { validate: isReading });
+    },
+
+    /**
+     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)를 받는다. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
+     * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
+     */
+    async createDirection(topic: DirectionTopic): Promise<ApiResult<Direction>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.direction };
+      return request('POST', '/directions', { body: { topic }, validate: isDirection });
     },
 
     /**

@@ -3,7 +3,7 @@ type: decision
 tags: [강제 업데이트, 앱 버전, app-config, 426, 루트 레이아웃]
 status: active
 last_reviewed: 2026-11-12
-superseded_by:
+superseded_by: 030-maintenance-notice.md ("웹에서는 확인하지 않는다" 만 — 웹도 점검 때문에 `GET /app-config` 를 받는다. 나머지는 유효)
 ---
 # 027. 최소 버전보다 낮은 앱은 "업데이트가 필요해요" 화면으로 막는다(하던 일은 끊지 않는다)
 

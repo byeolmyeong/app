@@ -36,13 +36,13 @@ app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇
   reading.tsx · report.tsx · direction.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · settings/(설정 · 자주 묻는 질문 · 문의하기 · 처리방침 · 약관)
 features/            기능별 로직과 기능 전용 부품
   auth/              세션(개발용 세션 → 나중에 소셜 로그인), 세션 토큰 보관, 로그인 전 가드, 계정 삭제(확인 시트 · 기기 저장 비움)
-  chart/             차트 휠·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) (서버가 준 값만 그린다)
+  chart/             차트 휠·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
   reading/           요약 해석 요청 상태·문단 부품
   report/            심층 리포트·변곡점 타임라인
-  synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts)
+  synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts). 궁합 지우기(delete-synastry.ts · 확인 시트 synastry-delete-sheet.tsx)
   direction/         방향성 제시(이성 · 미래 · 궁합)의 요청 상태·글 부품. 기기 보관은 이성만(결정 023 · 026)
   support/           자주 묻는 질문을 받아 오는 상태(use-faqs.ts, 메모리에만 5분) · 목록, 문의하기의 입력 확인(inquiry.ts) · 보내는 상태 · 종류 칩(결정 024 · 028)
-  update/            강제 업데이트(결정 027): 버전 비교(version.ts) · 판정(update-store.ts) · 루트를 감싸는 문과 바쁨 등록(update-gate.tsx) · 막는 화면(update-required.tsx)
+  update/            강제 업데이트(결정 027)와 점검 안내(결정 030): 버전 비교(version.ts) · 둘의 판정(update-store.ts) · 루트를 감싸는 문과 바쁨 등록(update-gate.tsx) · 막는 화면(update-required.tsx · maintenance-notice.tsx)
   share/             공유 카드(9:16, 서버가 준 card 만으로 그린다)·공유 버튼과 시트·공유 주소·이미지와 링크 보내기(앱 share-actions.ts, 웹 share-actions.web.ts)·공유 페이지의 카드 받기
 components/          공용 부품(버튼·입력 줄·표·차트 표식·시트·탭…). 기능을 모른다
 constants/theme.ts   디자인 값의 단일 출처
@@ -70,6 +70,7 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
 - 세션(브랜딩 뒤): 구글·애플·카카오에서 받은 토큰을 `POST /auth/login` 에 보내 세션 토큰을 받는다. 같은 `features/auth` 자리에서 바꾼다.
 - 세션 토큰은 기기 보안 저장소에만 두고, 요청마다 `Authorization: Bearer <token>` 헤더로 보낸다.
 - 출생 정보: 입력 화면이 차트를 받은 뒤 세션이 있으면 `PUT /profile` 로 서버에도 저장한다. 요약 해석은 서버가 이 값으로 쓴다. 시각이 "모름"(`time: null`)이면 태어난 곳을 묻지 않고 `placeId: null` 을 보내며, 기기에도 곳 없이(`place: null`) 보관한다(결정 020).
+- 출생 정보 되살리기(결정 029): 홈(`/`)이 기기 저장소를 읽었는데 출생 정보가 없고 세션 토큰이 있으면 `GET /profile` 을 한 번 부른다(`features/chart/use-birth-restore.ts`). 200 이면 그 입력으로 `POST /charts` 를 받고, 시각을 알면 `GET /places` 에서 `placeId` 의 이름을 찾아(못 찾으면 이름을 비워 두고 식별자만) 입력 화면과 같은 `saveBirth` 로 기기에 둔 뒤 홈(카테고리)을 그린다. `PUT /profile` 은 다시 하지 않는다. 확인하는 동안(세션을 기다릴 때 포함)에는 "불러오는 중이에요" 만 보인다. 404 `NO_PROFILE` · 그 밖의 실패 · 차트를 받지 못함이면 입력 화면이다. 기기에 출생 정보가 있거나 세션이 없으면 부르지 않고, 가짜 서버는 404 로 답한다. 공유 페이지에서는 하지 않는다(홈이 아니다). 글(풀이 · 리포트 · 방향성)은 따로 되살리지 않는다 — 그 화면들이 서버에 묻고 서버가 저장된 글을 준다.
 - 글: 세션이 있어야 요청한다. 요약 해석(`POST /readings`, 본문 없음)은 바로 받아 출생 정보별로 기기에 보관하고, 다시 열 때는 보관본을 쓴다. 401 이면 세션을 한 번 다시 받는다. 리포트는 202 를 받은 뒤 상태를 확인하거나 알림으로 완성을 안다. 다 쓴 리포트도 기기에 보관해 바로 보여 주되, 시기의 "지금 나의 구간"(`timing.current`)은 서버가 그날 날짜로 만들므로 보관본의 `current.date` 가 기기의 오늘(한국 날짜)과 다르면 `GET /reports/me` 를 한 번 조용히 다시 부른다(결정 021). 시기 탭은 서버가 준 날짜 글자를 비교해 "지금 앞뒤 10년" 을 거르고 시작한 해로 묶기만 한다(`features/report/timing.ts`).
 - 계정 삭제: 설정의 확인 시트 → `DELETE /account`(204) → 성공했을 때만 기기 저장소에서 이 앱의 키(`byeolmyeong.` 으로 시작하는 것 전부)와 보안 저장소의 세션 토큰을 지우고 첫 화면(`/`, 출생 정보 입력)으로 간다. 실패하면 기기의 것은 건드리지 않는다. 기능이 기기에 새로 두는 키는 `byeolmyeong.<이름>.v<판>` 으로 짓는다(그래야 삭제 때 함께 지워진다).
 - 방향성 제시(이성): `/direction` 을 열 때만 `POST /directions`(`{ topic: "LOVE" }`)를 부른다(결정 023). 요약 해석 화면과 홈은 부르지 않고 들어가는 줄만 둔다. 서버가 글을 기다렸다 답해 처음에는 20초쯤 걸린다(그동안 기다리는 화면). 받은 글은 요약 해석과 같은 모양의 키(출생 정보별)로 기기에 두고(`features/direction/use-direction.ts`), 있으면 세션을 기다리지 않고 바로 보여 준다. 404 면 기기의 내 출생 정보를 `PUT /profile` 한 뒤 한 번만 더 요청하고, 502 는 "다시 시도" 를 보여 준다. 항목이 정확히 3개가 아니거나 근거가 빈 응답은 쓰지 않는다(`isDirection`).
@@ -80,13 +81,17 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
   - 결과 `/synastry/<id>`: 메모리에 있으면 그것으로(휠 있음), 없으면 `GET /synastry/{id}` 로(휠 없음) 그린다. 점수와 점수 옆의 말(`scoreLabel`)은 받은 그대로다.
   - 리포트 `/synastry/<id>/report`: `GET /synastry/{id}/report` 로 상태를 보고, 요청(`POST`)에는 상대의 출생 정보를 다시 보낸다 — 메모리에 있으면 그 값, 없으면 화면에서 다시 입력받는다. `BIRTH_MISMATCH` 는 다시 입력, `PROFILE_CHANGED` 는 궁합을 새로 보게 한다. 리포트의 글은 기기에 보관하지 않는다.
   - 랭킹 `/synastry/ranking` 과 지난 궁합 목록은 서버가 준 순서대로만 그린다.
+  - 지우기: 결과 화면의 "이 궁합 지우기" → 확인 시트 → `DELETE /synastry/{id}`(204. 서버가 그 궁합의 리포트 · 방향성 글도 지운다. 공유 링크는 남는다). 성공했거나 이미 없으면(404) 메모리의 방금 계산한 결과가 그 궁합일 때 버리고(`forgetFresh`), 떠 있는 랭킹 · 지난 궁합 목록이 서버에서 다시 받게 알린 뒤(`features/synastry/delete-synastry.ts`. 앱이 줄을 골라 빼지 않는다) 화면을 `/synastry` 로 바꾼다(replace). 실패하면 시트에 안내를 적고 아무것도 바꾸지 않는다(다시 누를 때만 다시 요청). 지우는 곳은 결과 화면 하나다(목록 · 랭킹의 줄에는 없다).
   - 화면 조립은 `app/synastry/` 가 한다: 출생 정보 칸(`features/chart/birth-fields.tsx`)과 겹친 휠(`features/chart/overlay-wheel.tsx`)은 `chart` 의 것이고 `features/synastry` 는 이를 import 하지 않는다(의존 규칙).
 - 문의하기(결정 024): `/settings/inquiry` 에서 종류 · 내용 · 답장 받을 이메일을 적으면 앱이 서버와 같은 규칙으로 먼저 확인하고(`features/support/inquiry.ts`: 종류 필수, 내용은 앞뒤 공백을 뗀 뒤 유니코드 코드 포인트로 10~2000자, 이메일은 비우거나 공백 없이 `@` 하나와 점 있는 도메인) `POST /inquiries`(`{ category, body, replyEmail }`, 이메일이 비면 `null`)로 보낸다. 201 `{ id }` 면 완료 상태를 보여 준다. 실패하면 안내만 보여 주고 적은 것은 그대로 둔다(스스로 다시 보내지 않는다). 429(한 계정에 한 시간 5번, 판정은 서버)는 "잠시 뒤 다시" 로 안내한다. 적은 내용과 이메일은 화면의 메모리에만 있다 — 기기 저장소와 로그에 두지 않는다.
 - 자주 묻는 질문(결정 028): `/settings/faq` 를 열면 `GET /faqs`(세션 없이)로 `[{ id, question, answer }]` 를 받아 서버가 준 순서대로 그린다. 항목마다 비지 않은 글자 셋을 확인하고 하나라도 어긋나면 목록 전체를 받지 않는다(실패 안내와 "다시 시도"). 빈 목록이면 문의하기로 가는 줄을 보여 준다. 받은 목록은 메모리에만 5분 두고(`features/support/use-faqs.ts`) 기기에는 보관하지 않는다. 답은 그냥 글자로 그린다. 가짜 서버는 예시 두 줄(`lib/fixtures/faqs.json`)을 준다.
 - 버전 헤더(결정 027): 네이티브 앱은 모든 요청에 `X-App-Platform: ios|android` · `X-App-Version: <expo 설정의 version>` 을 붙인다(`lib/app-client.ts` → `lib/api.ts`). 웹은 붙이지 않는다.
-- 강제 업데이트(결정 027): 루트 레이아웃의 `UpdateGate`(`features/update`)가 앱이 켜질 때와 앞으로 돌아올 때(AppState `active`) `GET /app-config`(세션 없이)를 받아, 내 플랫폼의 `minVersion` 보다 내 버전이 낮으면 화면들(스택) 대신 "업데이트가 필요해요" 를 그린다(`message` 가 있으면 그 글, `storeUrl` 이 있으면 여는 버튼). 받지 못했거나 `minVersion` 이 null 이거나 읽을 수 없으면 막지 않는다. 웹과 가짜 서버에서는 막지 않는다. 판정은 메모리에만 있다.
+- 강제 업데이트(결정 027): 루트 레이아웃의 `UpdateGate`(`features/update`)가 앱이 켜질 때와 앞으로 돌아올 때(AppState `active`) `GET /app-config`(세션 없이)를 받아, 내 플랫폼의 `minVersion` 보다 내 버전이 낮으면 화면들(스택) 대신 "업데이트가 필요해요" 를 그린다(`message` 가 있으면 그 글, `storeUrl` 이 있으면 여는 버튼). 받지 못했거나 `minVersion` 이 null 이거나 읽을 수 없으면 막지 않는다. 웹과 가짜 서버에서는 막지 않는다(웹도 설정은 받는다 — 점검 때문에. 결정 030). 판정은 메모리에만 있다.
   - 바쁨: 화면이 `useGenerationBusy`(만드는 중 · 이 화면에서 방금 받은 결과) 나 `useUpdateBusy`(조건이 참인 동안)로 등록한다. 등록한 화면이 하나라도 떠 있으면 막는 것을 미루고, 그 화면이 사라지면 막는다. 등록하는 화면: `/reading` · `/report`(리포트 자체와, 시기 탭 끝의 방향성(미래) 글을 기다리는 동안) · `/direction` · `/synastry` · `/synastry/<식별자>`(겹친 휠이 있을 때) · `/synastry/<식별자>/direction` · `/synastry/<식별자>/report` · `/settings/inquiry`(내용이나 이메일을 적어 둔 동안).
   - 426: 어느 호출이든 426 `{ error: "UPDATE_REQUIRED" }` 를 받으면 `lib/api.ts` 가 등록된 처리기(`setUpdateRequiredHandler`)를 부르고, 문은 바쁨과 상관없이 바로 막는다(앱을 끌 때까지). 그 호출의 결과는 `SERVER` 실패(`status: 426`, `code: "UPDATE_REQUIRED"`)다.
+- 점검 안내(결정 030): 같은 문이 같은 설정의 `maintenance: { active, message }` 를 본다(웹 포함. 키가 없는 옛 서버의 응답은 "점검 중이 아니다"). `active` 이면 화면들 대신 "점검 중이에요"(`features/update/maintenance-notice.tsx`: `message` 가 있으면 그 글, "다시 확인" 버튼)를 그리고, 업데이트 화면보다 먼저다. "다시 확인" 과 앞으로 돌아올 때의 확인이 성공해 `active: false` 이면 스스로 풀려 화면들이 다시 그려진다. 확인이 실패하면 앞의 판정을 그대로 둔다. 바쁨은 강제 업데이트와 같이 미룬다.
+  - 503: 어느 호출이든 503 `{ error: "MAINTENANCE" }` 를 받으면 `lib/api.ts` 가 등록된 처리기(`setMaintenanceHandler`)를 부르고, 문은 바쁨과 상관없이 바로 점검 화면을 그린 뒤 안내를 받으러 설정을 한 번 묻는다. 426 과 달리 붙박이가 아니다 — 그 뒤의 확인(버튼 · 앞으로 돌아올 때)이 `active: false` 이면 풀린다. 다만 503 이 스스로 부른 그 한 번의 확인으로는 풀지 않는다(설정과 503 이 어긋날 때 풀렸다 막혔다를 되풀이하지 않게). 그 호출의 결과는 `SERVER` 실패(`status: 503`, `code: "MAINTENANCE"`)다.
+  - 공유 페이지(`/s/…`)도 문 안에 있어 세션 없이 같은 화면을 본다.
 - 공유(결정 025, 서버 결정 012): 화면의 "공유하기"(`features/share/share-entry.tsx`)가 시트를 열 때 `POST /shares` 를 부른다(화면을 여는 것만으로는 부르지 않는다). 본문은 `{ kind: "READING" }` · `{ kind: "SCORE", synastryId, myName }` · `{ kind: "RANKING", relation, showNames }` · `{ kind: "NEXT_TURN" }` 이고, 받은 `{ shareId, card }` 의 `card` 로 카드를 그리고 `shareId` 로 주소 `<웹 주소>/s/<shareId>` 를 만든다(웹 주소는 `EXPO_PUBLIC_WEB_URL`, 없으면 웹에서는 지금 주소의 origin, 둘 다 없으면 링크 버튼을 누를 수 없다).
   - 들어가는 곳: 요약 해석(`/reading`) · 궁합 결과(`/synastry/<id>`) · 궁합 랭킹(`/synastry/ranking`, 고른 관계 탭 · 줄이 있을 때만) · 리포트 시기 탭(다음 변곡점이 있을 때만. `features/report` 는 `share` 를 import 하지 않고 화면이 버튼을 넣어 준다).
   - 궁합 점수 카드는 시트가 먼저 "내 이름"(앞뒤 공백을 뗀 1~20자)을 받는다. 마지막 이름은 메모리에만 둔다. 랭킹 카드의 "이름 그대로 보이기" 는 꺼진 채로 시작하고 바꾸면 다시 요청한다. 이니셜은 서버가 만든다(앱은 이름을 줄이지 않는다).
@@ -105,6 +110,9 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
 - 출생 정보와 세션 토큰을 로그·분석 이벤트에 남기지 않는다.
 - 문의에 적은 내용과 답장 받을 이메일을 기기 저장소 · 로그에 남기지 않는다. 문의 메일 주소를 앱과 문서에 적지 않는다(결정 024).
 - 자주 묻는 질문의 글을 앱에 싣지 않고 기기에 보관하지 않는다. 받은 답을 HTML · 마크다운으로 해석하지 않는다(결정 028).
+- 기기에 출생 정보가 있으면 서버의 값으로 덮어쓰지 않는다. 되살리지 못해도 입력을 막지 않는다(결정 029).
+- 궁합은 서버가 지웠다고 답한 뒤에만 화면에서 치운다(미리 지운 것처럼 그리지 않는다).
+- 점검 안내는 확인하지 못하면 막지 않고, 점검이 끝나면 앱을 끄지 않아도 풀린다(결정 030).
 - 강제 업데이트는 확인하지 못하면 막지 않고, 하던 일(만드는 중 · 방금 받은 결과 · 적어 둔 문의)을 끊지 않는다. 서버의 426 만 바로 막는다. 앱 버전을 시간 간격으로 다시 묻지 않는다(결정 027).
 - 공유 카드와 공유 페이지에는 서버가 준 `card` 의 값만 그린다. 차트 · 출생 정보 · 근거 · 리포트 본문을 넣지 않는다. 궁합 점수 카드의 내 이름을 기기 저장소에 두지 않는다(결정 025).
 - 알림 허용은 리포트 요청이나 초대 링크 생성 직후에만 묻는다.

@@ -58,3 +58,6 @@ export function groupByYear(intervals: TimingInterval[]): { year: string; interv
   }
   return groups;
 }
+
+/** 큰 변화 구간. 크기는 서버가 정해 준다(변화 구간에만 있다) */
+export const isBigChange = (interval: TimingInterval) => interval.kind === 'CHANGE' && interval.size === 'BIG';

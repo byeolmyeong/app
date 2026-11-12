@@ -41,7 +41,7 @@ describe('홈', () => {
     expect(screen.queryByTestId('home-category')).toBeNull();
   });
 
-  it('출생 정보가 있으면 카테고리 네 칸을 이 순서로 보여 준다: 나 · 관계 · 궁합 · 시기(결정 021)', async () => {
+  it('출생 정보가 있으면 카테고리 네 칸을 이 순서로 보여 준다: 나 · 관계 · 궁합 · 시기(결정 022)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     expect(await screen.findAllByTestId('home-category')).toHaveLength(4);

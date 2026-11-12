@@ -2,7 +2,7 @@
 type: architecture
 tags: [앱 아키텍처, 화면 흐름, 서버 호출, 기기 저장, 디렉터리 구조, 의존 규칙, 개발용 세션]
 status: active
-last_reviewed: 2026-11-11
+last_reviewed: 2026-11-12
 ---
 # 앱 아키텍처
 
@@ -41,12 +41,14 @@ features/            기능별 로직과 기능 전용 부품
   report/            심층 리포트·변곡점 타임라인
   synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts)
   direction/         방향성 제시(지금은 이성 주제)의 요청 상태·기기 보관·글 부품
-  support/           자주 묻는 질문 목록, 문의하기의 입력 확인(inquiry.ts) · 보내는 상태 · 종류 칩(결정 024)
+  support/           자주 묻는 질문을 받아 오는 상태(use-faqs.ts, 메모리에만 5분) · 목록, 문의하기의 입력 확인(inquiry.ts) · 보내는 상태 · 종류 칩(결정 024 · 028)
+  update/            강제 업데이트(결정 027): 버전 비교(version.ts) · 판정(update-store.ts) · 루트를 감싸는 문과 바쁨 등록(update-gate.tsx) · 막는 화면(update-required.tsx)
   share/             공유 카드(9:16 이미지)·공유 시트
 components/          공용 부품(버튼·입력 줄·표·차트 표식·시트·탭…). 기능을 모른다
 constants/theme.ts   디자인 값의 단일 출처
 content/strings.ts   문구의 단일 출처
-lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타입 · lib/fixtures/ 응답 예시
+lib/api.ts           서버 호출(세션 헤더 · 버전 헤더, 결과 종류)과 계약 타입 · lib/fixtures/ 응답 예시
+lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹은 null
 ```
 - 기능 폴더 안에서 훅은 `use-<이름>.ts`, 부품은 `<이름>.tsx`, 테스트는 `__tests__/`.
 - 화면을 렌더하는 테스트는 `src/__tests__/` 에 둔다. `app/` 안에 두면 라우트가 되고, `features/` 에 두면 `app` 을 import 해 의존 규칙에 걸린다.
@@ -76,7 +78,12 @@ lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타�
   - 리포트 `/synastry/<id>/report`: `GET /synastry/{id}/report` 로 상태를 보고, 요청(`POST`)에는 상대의 출생 정보를 다시 보낸다 — 메모리에 있으면 그 값, 없으면 화면에서 다시 입력받는다. `BIRTH_MISMATCH` 는 다시 입력, `PROFILE_CHANGED` 는 궁합을 새로 보게 한다. 리포트의 글은 기기에 보관하지 않는다.
   - 랭킹 `/synastry/ranking` 과 지난 궁합 목록은 서버가 준 순서대로만 그린다.
   - 화면 조립은 `app/synastry/` 가 한다: 출생 정보 칸(`features/chart/birth-fields.tsx`)과 겹친 휠(`features/chart/overlay-wheel.tsx`)은 `chart` 의 것이고 `features/synastry` 는 이를 import 하지 않는다(의존 규칙).
-- 문의하기(결정 024): `/settings/inquiry` 에서 종류 · 내용 · 답장 받을 이메일을 적으면 앱이 서버와 같은 규칙으로 먼저 확인하고(`features/support/inquiry.ts`: 종류 필수, 내용은 앞뒤 공백을 뗀 뒤 유니코드 코드 포인트로 10~2000자, 이메일은 비우거나 공백 없이 `@` 하나와 점 있는 도메인) `POST /inquiries`(`{ category, body, replyEmail }`, 이메일이 비면 `null`)로 보낸다. 201 `{ id }` 면 완료 상태를 보여 준다. 실패하면 안내만 보여 주고 적은 것은 그대로 둔다(스스로 다시 보내지 않는다). 429(한 계정에 한 시간 5번, 판정은 서버)는 "잠시 뒤 다시" 로 안내한다. 적은 내용과 이메일은 화면의 메모리에만 있다 — 기기 저장소와 로그에 두지 않는다. 자주 묻는 질문(`/settings/faq`)은 서버를 부르지 않고 `strings.faq` 의 글을 그린다.
+- 문의하기(결정 024): `/settings/inquiry` 에서 종류 · 내용 · 답장 받을 이메일을 적으면 앱이 서버와 같은 규칙으로 먼저 확인하고(`features/support/inquiry.ts`: 종류 필수, 내용은 앞뒤 공백을 뗀 뒤 유니코드 코드 포인트로 10~2000자, 이메일은 비우거나 공백 없이 `@` 하나와 점 있는 도메인) `POST /inquiries`(`{ category, body, replyEmail }`, 이메일이 비면 `null`)로 보낸다. 201 `{ id }` 면 완료 상태를 보여 준다. 실패하면 안내만 보여 주고 적은 것은 그대로 둔다(스스로 다시 보내지 않는다). 429(한 계정에 한 시간 5번, 판정은 서버)는 "잠시 뒤 다시" 로 안내한다. 적은 내용과 이메일은 화면의 메모리에만 있다 — 기기 저장소와 로그에 두지 않는다.
+- 자주 묻는 질문(결정 028): `/settings/faq` 를 열면 `GET /faqs`(세션 없이)로 `[{ id, question, answer }]` 를 받아 서버가 준 순서대로 그린다. 항목마다 비지 않은 글자 셋을 확인하고 하나라도 어긋나면 목록 전체를 받지 않는다(실패 안내와 "다시 시도"). 빈 목록이면 문의하기로 가는 줄을 보여 준다. 받은 목록은 메모리에만 5분 두고(`features/support/use-faqs.ts`) 기기에는 보관하지 않는다. 답은 그냥 글자로 그린다. 가짜 서버는 예시 두 줄(`lib/fixtures/faqs.json`)을 준다.
+- 버전 헤더(결정 027): 네이티브 앱은 모든 요청에 `X-App-Platform: ios|android` · `X-App-Version: <expo 설정의 version>` 을 붙인다(`lib/app-client.ts` → `lib/api.ts`). 웹은 붙이지 않는다.
+- 강제 업데이트(결정 027): 루트 레이아웃의 `UpdateGate`(`features/update`)가 앱이 켜질 때와 앞으로 돌아올 때(AppState `active`) `GET /app-config`(세션 없이)를 받아, 내 플랫폼의 `minVersion` 보다 내 버전이 낮으면 화면들(스택) 대신 "업데이트가 필요해요" 를 그린다(`message` 가 있으면 그 글, `storeUrl` 이 있으면 여는 버튼). 받지 못했거나 `minVersion` 이 null 이거나 읽을 수 없으면 막지 않는다. 웹과 가짜 서버에서는 막지 않는다. 판정은 메모리에만 있다.
+  - 바쁨: 화면이 `useGenerationBusy`(만드는 중 · 이 화면에서 방금 받은 결과) 나 `useUpdateBusy`(조건이 참인 동안)로 등록한다. 등록한 화면이 하나라도 떠 있으면 막는 것을 미루고, 그 화면이 사라지면 막는다. 등록하는 화면: `/reading` · `/report` · `/direction` · `/synastry` · `/synastry/<식별자>`(겹친 휠이 있을 때) · `/synastry/<식별자>/report` · `/settings/inquiry`(내용이나 이메일을 적어 둔 동안).
+  - 426: 어느 호출이든 426 `{ error: "UPDATE_REQUIRED" }` 를 받으면 `lib/api.ts` 가 등록된 처리기(`setUpdateRequiredHandler`)를 부르고, 문은 바쁨과 상관없이 바로 막는다(앱을 끌 때까지). 그 호출의 결과는 `SERVER` 실패(`status: 426`, `code: "UPDATE_REQUIRED"`)다.
 - 서버 오류의 이름: 실패 결과의 `code` 에 오류 본문 `{ error }` 의 값이 온다(`lib/api.ts`). 화면이 가려 쓰는 것은 `BIRTH_MISMATCH` · `PROFILE_CHANGED` 와 문의하기의 `INVALID_BODY` · `INVALID_EMAIL` 뿐이다.
 - 서버가 준비되기 전에는 `lib/fixtures/` 의 응답 예시로 화면을 만든다.
 
@@ -87,6 +94,8 @@ lib/api.ts           서버 호출(세션 헤더, 결과 종류)과 계약 타�
 - 직접 입력한 궁합 상대의 출생 정보와 겹친 휠 자료를 기기 저장소에 두지 않는다(메모리에만, 방금 계산한 것 하나). 궁합 점수 옆의 말은 서버가 준 것만 붙이고 앱이 점수 구간을 판정하지 않는다.
 - 출생 정보와 세션 토큰을 로그·분석 이벤트에 남기지 않는다.
 - 문의에 적은 내용과 답장 받을 이메일을 기기 저장소 · 로그에 남기지 않는다. 문의 메일 주소를 앱과 문서에 적지 않는다(결정 024).
+- 자주 묻는 질문의 글을 앱에 싣지 않고 기기에 보관하지 않는다. 받은 답을 HTML · 마크다운으로 해석하지 않는다(결정 028).
+- 강제 업데이트는 확인하지 못하면 막지 않고, 하던 일(만드는 중 · 방금 받은 결과 · 적어 둔 문의)을 끊지 않는다. 서버의 426 만 바로 막는다. 앱 버전을 시간 간격으로 다시 묻지 않는다(결정 027).
 - 알림 허용은 리포트 요청이나 초대 링크 생성 직후에만 묻는다.
 
 ## 관련

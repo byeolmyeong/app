@@ -97,23 +97,32 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/report');
   });
 
-  it('아직 없는 기능의 타일은 흐리게 보이고 눌러도 열리지 않는다', async () => {
+  it('"시기" 타일을 누르면 두 항목이 시트로 올라오고, 둘 다 리포트의 시기 탭(/report?area=TIMING)으로 간다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
-    // 타일은 순서로 고른다: 나 · 시기. 시기는 통째로 준비 중이다
+    // 타일은 순서로 고른다: 나 · 시기. 둘 다 누를 수 있다
     expect(screen.getAllByTestId('home-category').map((t) => t.props.accessibilityState.disabled)).toEqual([
       false,
-      true,
+      false,
     ]);
-    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
-    expect(screen.queryByTestId('sheet-dim')).toBeNull();
-    expect(router.push).not.toHaveBeenCalled();
+    for (const label of ['지금 나의 구간', '다가오는 변곡점']) {
+      (router.push as jest.Mock).mockClear();
+      await fireEvent.press(screen.getAllByTestId('home-category')[1]);
+      await fireEvent.press(await screen.findByText(label));
+      expect(router.push).toHaveBeenCalledTimes(1);
+      expect(router.push).toHaveBeenCalledWith('/report?area=TIMING');
+    }
+    expect(screen.queryByText(M.soon)).toBeNull();
   });
 
-  it('홈에서 리포트의 특정 영역으로 바로 가는 항목은 없다', () => {
+  it('홈에서 리포트의 특정 영역으로 바로 가는 항목은 시기뿐이다(결정 021)', () => {
     const paths = M.categories.flatMap((c) => c.items.map((item) => item.path as string | null));
-    expect(paths.filter((path) => path?.startsWith('/report'))).toEqual(['/report']);
+    expect(paths.filter((path) => path?.startsWith('/report'))).toEqual([
+      '/report',
+      '/report?area=TIMING',
+      '/report?area=TIMING',
+    ]);
   });
 
   it('아래에 탭 두 개가 있다: 홈 · 마이. 누르면 그 화면으로 바꾼다', async () => {

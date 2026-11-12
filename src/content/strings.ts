@@ -40,8 +40,8 @@ export const strings = {
         key: 'timing',
         title: '시기',
         items: [
-          { label: '지금 나의 구간', path: null },
-          { label: '다가오는 변곡점', path: null },
+          { label: '지금 나의 구간', path: '/report?area=TIMING' },
+          { label: '다가오는 변곡점', path: '/report?area=TIMING' },
         ],
       },
     ],

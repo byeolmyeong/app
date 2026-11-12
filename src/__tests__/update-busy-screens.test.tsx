@@ -8,6 +8,7 @@ import DirectionScreen from '@/app/direction';
 import ReadingScreen from '@/app/reading';
 import ReportScreen from '@/app/report';
 import InquiryScreen from '@/app/settings/inquiry';
+import SynastryDirectionScreen from '@/app/synastry/[id]/direction';
 import SynastryResultScreen from '@/app/synastry/[id]/index';
 import SynastryReportScreen from '@/app/synastry/[id]/report';
 import SynastryEntryScreen from '@/app/synastry/index';
@@ -34,6 +35,7 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     createReading: jest.fn(),
     createDirection: jest.fn(),
+    createSynastryDirection: jest.fn(),
     getReport: jest.fn(),
     requestReport: jest.fn(),
     createDirectSynastry: jest.fn(),
@@ -206,6 +208,37 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     await render(gate(<SynastryResultScreen />));
     expect(await screen.findByText(S.result.noWheel)).toBeTruthy();
     await comeBackToUpdateRequired();
+    expect(blocked()).toBe(true);
+  });
+
+  it('시기 탭의 방향성(미래): 글을 기다리는 중에는 미루고, 글이 오면 막는다(리포트는 받아 둔 것)', async () => {
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
+    let resolve: (r: ApiResult<typeof fixtures.directionFuture>) => void = () => {};
+    mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
+    await render(gate(<ReportScreen />));
+    expect(await screen.findByText(strings.direction.future.generating)).toBeTruthy();
+    await comeBackToUpdateRequired();
+    expect(blocked()).toBe(false);
+
+    await act(async () => resolve({ ok: true, data: fixtures.directionFuture }));
+    await waitFor(() => expect(blocked()).toBe(true));
+  });
+
+  it('궁합의 방향성: 기다리는 중과 방금 받은 글이 떠 있는 동안 미루고, 화면에서 나오면 막는다', async () => {
+    mockParams.mockReturnValue({ id: made.id });
+    let resolve: (r: ApiResult<typeof fixtures.directionSynastry>) => void = () => {};
+    mockApi.createSynastryDirection.mockReturnValue(new Promise((r) => (resolve = r)));
+    const view = await render(gate(<SynastryDirectionScreen />));
+    expect(await screen.findByText(strings.direction.synastry.generating)).toBeTruthy();
+    await comeBackToUpdateRequired();
+    expect(blocked()).toBe(false);
+
+    await act(async () => resolve({ ok: true, data: fixtures.directionSynastry }));
+    expect(await screen.findByText(fixtures.directionSynastry.title)).toBeTruthy();
+    expect(blocked()).toBe(false);
+
+    await view.rerender(home);
     expect(blocked()).toBe(true);
   });
 

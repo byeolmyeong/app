@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -16,8 +17,20 @@ const S = strings.direction.future;
  * 기다리는 중과 실패는 이 칸 안에서만 보여 준다(시기의 나머지는 그대로 보인다). 글은 이성 화면과 같은 부품으로 그린다.
  * input 은 내 출생 정보이고, 세션이 준비되기 전에는 null 이다.
  */
-export function FutureDirection({ input }: { input: BirthInput | null }) {
+export function FutureDirection({
+  input,
+  onLoadingChange,
+}: {
+  input: BirthInput | null;
+  /** 글을 기다리는 중인지가 바뀔 때 알린다(화면이 강제 업데이트를 미루는 데 쓴다 — 결정 027) */
+  onLoadingChange?: (loading: boolean) => void;
+}) {
   const { state, retry } = useFutureDirection(input);
+  const loading = state.status === 'loading';
+  useEffect(() => {
+    onLoadingChange?.(loading);
+    return () => onLoadingChange?.(false);
+  }, [loading, onLoadingChange]);
   return (
     <View testID="future-direction" style={styles.root}>
       <SectionHead title={S.heading} />

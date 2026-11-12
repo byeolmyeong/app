@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -16,7 +16,7 @@ import { FutureDirection } from '@/features/direction/future-direction';
 import { ReportView, TIMING_TAB, type ReportTab } from '@/features/report/report-view';
 import { useReport } from '@/features/report/use-report';
 import { ShareEntry } from '@/features/share/share-entry';
-import { useGenerationBusy } from '@/features/update/update-gate';
+import { useGenerationBusy, useUpdateBusy } from '@/features/update/update-gate';
 import { REPORT_AREAS } from '@/lib/api';
 
 const S = strings.report;
@@ -37,6 +37,9 @@ export default function ReportScreen() {
   const { state, start } = useReport(input);
   // 쓰는 중이거나 방금 다 쓰인 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
   useGenerationBusy(state.status === 'writing', state.status === 'done');
+  // 시기 탭 끝의 방향성(미래) 글을 기다리는 동안에도 미룬다.
+  const [futureLoading, setFutureLoading] = useState(false);
+  useUpdateBusy(futureLoading);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
 
   if (loaded && !profile)
@@ -102,7 +105,7 @@ export default function ReportScreen() {
             <ShareEntry target={{ kind: 'NEXT_TURN' }} label={strings.share.openNextTurn} />
           ) : undefined
         }
-        timingEnd={<FutureDirection input={input} />}
+        timingEnd={<FutureDirection input={input} onLoadingChange={setFutureLoading} />}
       />
       <View style={styles.footer}>
         <Txt variant="label" color="gray">

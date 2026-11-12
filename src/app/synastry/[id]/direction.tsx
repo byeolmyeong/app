@@ -13,6 +13,7 @@ import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
 import type { BirthProfile } from '@/features/chart/birth-input';
 import { goBackOrHome } from '@/features/chart/chart-empty';
 import { DirectionView } from '@/features/direction/direction-view';
+import { useGenerationBusy } from '@/features/update/update-gate';
 import { useSynastryDirection } from '@/features/direction/use-synastry-direction';
 import { freshOf } from '@/features/synastry/fresh-synastry';
 import type { BirthInput } from '@/lib/api';
@@ -31,6 +32,8 @@ export default function SynastryDirectionScreen() {
   /** 방금 계산한 궁합이면 입력 화면에서 넣은 값이 메모리에 있다 */
   const remembered = synastryId ? (freshOf(synastryId)?.birth ?? null) : null;
   const { state, submit, retry } = useSynastryDirection(ready ? synastryId : null, remembered);
+  // 글을 기다리는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
+  useGenerationBusy(state.status === 'loading', state.status === 'done');
   /** 이 화면에서 다시 넣은 상대의 출생 정보. 거절됐을 때 칸을 다시 채우는 데만 쓴다(메모리) */
   const [typed, setTyped] = useState<BirthProfile | null>(null);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;

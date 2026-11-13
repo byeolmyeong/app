@@ -1,7 +1,8 @@
 /**
  * 시기 탭이 서버가 준 날짜 글자(YYYY-MM-DD)를 적고 거르고 묶는 방법.
  * 앱은 천체도 해도 나이도 계산하지 않는다. 받은 글자를 잘라 적고, 글자끼리 비교할 뿐이다.
- * 하나뿐인 날짜 일은 계약이 정한 "지금 앞뒤 10년" 거르기다(서버 저장소 docs/architecture.md "시기").
+ * 날짜 일은 둘뿐이다: 계약이 정한 "지금 앞뒤 10년" 거르기(서버 저장소 docs/architecture.md "시기")와,
+ * 오늘의 해 글자 다음 해의 이름표로 "올해 · 내년" 을 묶는 것(결정 031). 오늘은 서버의 `current.date` 다.
  */
 import { strings } from '@/content/strings';
 import type { TimingInterval } from '@/lib/api';
@@ -44,6 +45,27 @@ export function splitByWindow(intervals: TimingInterval[], today: string) {
     earlier: intervals.filter((i) => i.to < lo),
     around: intervals.filter((i) => i.to >= lo && i.from <= hi),
     later: intervals.filter((i) => i.from > hi),
+  };
+}
+
+/** 오늘의 해 글자 다음 해의 이름표: "2026-11-11" → "2027". 묶는 기준과 묶음 제목에만 쓴다(결정 031) */
+export const nextYearLabel = (today: string) => String(Number(yearOf(today)) + 1);
+
+/**
+ * 오늘(today = 서버의 `current.date`)을 기준으로 다섯으로 나눈다(결정 031). 날짜 글자끼리 비교할 뿐이고 받은 순서를 지킨다.
+ * 지난 것(past) · 지금 걸친 것(ongoing) · 올해 남은 기간에 시작(thisYear) · 내년에 시작(nextYear) · 내년 뒤에 시작(ahead).
+ * 변곡점과 구간이 함께 쓴다.
+ */
+export function splitByNow<P extends { from: string; to: string }>(items: P[], today: string) {
+  const thisYear = yearOf(today);
+  const nextYear = nextYearLabel(today);
+  const nextYearEnd = `${nextYear}-12-31`;
+  return {
+    past: items.filter((i) => i.to < today),
+    ongoing: items.filter((i) => i.from <= today && i.to >= today),
+    thisYear: items.filter((i) => i.from > today && yearOf(i.from) === thisYear),
+    nextYear: items.filter((i) => yearOf(i.from) === nextYear),
+    ahead: items.filter((i) => i.from > nextYearEnd),
   };
 }
 

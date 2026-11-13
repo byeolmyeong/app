@@ -331,11 +331,20 @@ export const strings = {
     /** 영역 탭. 키는 서버가 주는 식별자다 */
     areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정', TIMING: '시기' },
     /**
-     * 시기 탭(결정 021). 행성 · 각도 이름을 쓰지 않고, 무슨 일이 일어난다고 단정하지 않는다("~하기 쉬운 시기").
-     * 종류 · 영역 · 크기 · 변곡점의 키는 서버가 주는 식별자다.
+     * 시기 탭(결정 021 · 031). 행성 · 각도 이름을 쓰지 않고, 무슨 일이 일어난다고 단정하지 않는다("~하기 쉬운 시기").
+     * 종류 · 영역 · 크기 · 변곡점의 키는 서버가 주는 식별자다. 앱이 셈한 "몇 년 뒤" 같은 숫자를 적지 않는다.
      */
     timing: {
-      nowHeading: '지금 나의 구간',
+      /** 네 부분의 제목과 한 줄 설명(결정 031) */
+      sections: {
+        now: { heading: '지금', intro: '오늘 내가 지나고 있는 시기예요.' },
+        near: {
+          heading: '올해 · 내년',
+          intro: '오늘부터 내년 끝까지 걸치는 시기를 빠짐없이 모았어요. 줄을 누르면 설명이 펼쳐져요.',
+        },
+        ahead: { heading: '앞으로', intro: '내년 뒤에 오는 시기예요. 다음 변곡점과 큰 변화를 먼저 보여 드려요.' },
+        past: { heading: '지나온 시기', intro: '이미 지나온 변곡점과 구간이에요. 새것부터 보여 드려요.' },
+      },
       nowNone: '지금은 걸쳐 있는 구간이 없어요.',
       milestoneNow: '지금 지나는 변곡점',
       nextIntervalLabel: '다음 구간',
@@ -347,8 +356,23 @@ export const strings = {
       /** F4 가 정한 고지 문구 */
       notice: '시기는 행성의 주기를 계산한 것이고, 무슨 일이 일어날지를 말하지 않습니다.',
       timeUnknownNotice: '태어난 시각을 몰라서 첫인상(상승점)에 닿는 구간과 운명처럼 느껴지는 만남 구간은 뺐어요.',
-      milestonesHeading: '변곡점',
-      milestonesIntro: '누구나 비슷한 나이에 지나는 네 번의 마디예요. 해와 나이는 내 차트로 계산한 값이에요.',
+      /** 올해 · 내년의 묶음. 해 글자(서버가 준 오늘의 해와 그다음 해) 뒤에 붙인다: "2026년 남은 기간에 시작" · "2027년에 시작" */
+      nearOngoing: '지금 지나는 중',
+      nearThisYearSuffix: '년 남은 기간에 시작',
+      nearNextYearSuffix: '년에 시작',
+      nearThisYearNoneSuffix: '년 남은 기간에 새로 시작하는 구간은 없어요.',
+      nearNextYearNoneSuffix: '년에 새로 시작하는 구간은 없어요.',
+      /** 만 42 · 58세가 누구에게나 보이는 까닭. 나이는 F4 가 정한 마디의 나이를 옮긴 것이다(계산하지 않는다) */
+      milestonesNote:
+        '변곡점은 누구나 비슷한 나이(만 21 · 29 · 42 · 58세 무렵)에 한 번씩 지나는 네 번의 마디예요. 그래서 누구에게나 이 나이가 보여요. 정확한 해는 내 차트로 계산한 값이에요.',
+      laterMilestonesLabel: '그 뒤의 변곡점',
+      aheadIntervalsLabel: '내년 뒤에 시작하는 구간',
+      aheadNone: '내년 뒤에 시작하는 구간은 없어요.',
+      pastShow: '지나온 시기 보기',
+      pastHide: '지나온 시기 접기',
+      pastMilestonesLabel: '지나온 변곡점',
+      pastIntervalsLabel: '지나온 구간',
+      pastNone: '아직 지나온 변곡점이나 구간이 없어요.',
       milestoneKinds: {
         SATURN_SQUARE: '첫 번째 변곡점',
         SATURN_RETURN: '두 번째 변곡점',
@@ -356,13 +380,11 @@ export const strings = {
         SECOND_SATURN_RETURN: '네 번째 변곡점',
       },
       nearest: '지금과 가장 가까워요',
-      timelineHeading: '나에게 오는 구간',
-      timelineIntro: '큰 변화를 먼저 보여 드려요. 지금을 기준으로 앞뒤 10년이고, 줄을 누르면 설명이 펼쳐져요.',
       /** 접어 둔 나머지 구간(작은 변화 · 기회 · 만남)을 펴는 버튼. 뒤에 "(12개)" 가 붙는다 */
       showAll: '작은 변화와 기회도 보기',
       showBig: '큰 변화만 보기',
       kinds: { CHANGE: '변화', OPPORTUNITY: '기회', FATED: '운명처럼 느껴지는 만남' },
-      /** 종류가 무엇인지 타임라인 위에 한 줄씩 적는다 */
+      /** 종류가 무엇인지 올해 · 내년의 목록 위에 한 줄씩 적는다 */
       kindNotes: {
         CHANGE: '익숙한 방식이 달라지기 쉬운 시기',
         OPPORTUNITY: '도움이 되는 사람을 만나거나 인연이 열리기 쉬운 시기',

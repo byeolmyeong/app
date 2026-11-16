@@ -1,4 +1,11 @@
-import { formatMonth, formatPeriod, groupByYear, splitByWindow } from '@/features/report/timing';
+import {
+  formatMonth,
+  formatPeriod,
+  groupByYear,
+  nextYearLabel,
+  splitByNow,
+  splitByWindow,
+} from '@/features/report/timing';
 import type { TimingInterval } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -82,5 +89,65 @@ describe('시기: 시작한 해로 묶기', () => {
       ['2026', ['b', 'c']],
       ['2028', ['d']],
     ]);
+  });
+});
+
+describe('시기: 다음 해의 이름표', () => {
+  it('서버가 준 오늘(current.date)의 해 글자 다음 해를 글자로 준다', () => {
+    expect(nextYearLabel('2026-11-11')).toBe('2027');
+    expect(nextYearLabel('2026-12-31')).toBe('2027');
+    expect(nextYearLabel('2099-01-01')).toBe('2100');
+    expect(nextYearLabel('1999-06-15')).toBe('2000');
+  });
+});
+
+describe('시기: 지난 것 · 지금 · 올해 · 내년 · 앞으로 나누기', () => {
+  const split = (list: TimingInterval[], today: string) => {
+    const s = splitByNow(list, today);
+    return [ids(s.past), ids(s.ongoing), ids(s.thisYear), ids(s.nextYear), ids(s.ahead)];
+  };
+
+  it('예시 리포트(오늘 2026-11-11)를 다섯으로 나눈다. 하나도 빠지거나 겹치지 않는다', () => {
+    const s = splitByNow(intervals, current.date);
+    expect(ids(s.past)).toEqual(['i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7', 'i8', 'i9', 'i10']);
+    expect(ids(s.ongoing)).toEqual(['i11', 'i12']);
+    expect(ids(s.thisYear)).toEqual([]);
+    expect(ids(s.nextYear)).toEqual(['i13']);
+    expect(ids(s.ahead)).toEqual(['i14', 'i15', 'i16', 'i17', 'i18', 'i19', 'i20', 'i21', 'i22', 'i23']);
+    expect([...s.past, ...s.ongoing, ...s.thisYear, ...s.nextYear, ...s.ahead]).toEqual(intervals);
+    // 지금 걸친 것은 서버가 준 current.intervals 와 같다
+    expect(ids(s.ongoing)).toEqual(ids(current.intervals));
+  });
+
+  it('경계의 날짜는 글자 비교로 가른다: 오늘 끝나는 것 · 오늘 시작하는 것은 지금, 내년 마지막 날에 시작하면 내년', () => {
+    const list = [
+      interval('어제 끝남', '2026-01-01', '2026-11-10'),
+      interval('오늘 끝남', '2026-01-01', '2026-11-11'),
+      interval('오늘 시작', '2026-11-11', '2029-01-01'),
+      interval('내일 시작', '2026-11-12', '2026-11-20'),
+      interval('올해 마지막 날 시작', '2026-12-31', '2030-01-01'),
+      interval('내년 첫날 시작', '2027-01-01', '2027-01-02'),
+      interval('내년 마지막 날 시작', '2027-12-31', '2040-01-01'),
+      interval('내후년 첫날 시작', '2028-01-01', '2028-02-01'),
+    ];
+    expect(split(list, '2026-11-11')).toEqual([
+      ['어제 끝남'],
+      ['오늘 끝남', '오늘 시작'],
+      ['내일 시작', '올해 마지막 날 시작'],
+      ['내년 첫날 시작', '내년 마지막 날 시작'],
+      ['내후년 첫날 시작'],
+    ]);
+  });
+
+  it('오늘이 그해의 마지막 날이어도 내년은 다음 해 글자다', () => {
+    const list = [interval('a', '2027-01-01', '2027-02-01'), interval('b', '2028-01-01', '2028-02-01')];
+    expect(split(list, '2026-12-31')).toEqual([[], [], [], ['a'], ['b']]);
+  });
+
+  it('변곡점도 같은 방법으로 나눈다(from · to 만 본다)', () => {
+    const s = splitByNow(fixtures.report.timing.milestones, current.date);
+    expect(s.past.map((m) => m.kind)).toEqual(['SATURN_SQUARE']);
+    expect(s.ahead.map((m) => m.kind)).toEqual(['SATURN_RETURN', 'URANUS_OPPOSITION', 'SECOND_SATURN_RETURN']);
+    expect([...s.ongoing, ...s.thisYear, ...s.nextYear]).toEqual([]);
   });
 });

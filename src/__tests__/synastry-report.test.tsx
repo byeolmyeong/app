@@ -86,6 +86,8 @@ describe('궁합 리포트(/synastry/[id]/report)', () => {
 
     await fireEvent.press(screen.getByText(R.request));
     expect(await screen.findByText(R.writing)).toBeTruthy();
+    // 기다리는 동안 생각하는 별이(결정 035)
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText(R.writingNote)).toBeTruthy();
     expect(mockApi.requestSynastryReport).toHaveBeenCalledTimes(1);
     expect(mockApi.requestSynastryReport).toHaveBeenCalledWith(id, partner);

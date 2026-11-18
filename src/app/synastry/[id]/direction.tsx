@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
+import { StatusView } from '@/components/status-view';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -51,12 +52,7 @@ export default function SynastryDirectionScreen() {
   if (state.status === 'loading')
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="heading">{S.generating}</Txt>
-          <Txt variant="table" color="gray">
-            {S.generatingNote}
-          </Txt>
-        </View>
+        <StatusView state="think" title={S.generating} note={S.generatingNote} />
       </Screen>
     );
 
@@ -67,19 +63,17 @@ export default function SynastryDirectionScreen() {
     if (error === 'PROFILE_CHANGED')
       return (
         <Screen nav={nav}>
-          <View style={styles.status}>
-            <Txt variant="body">{S.profileChanged}</Txt>
+          <StatusView state="error" title={S.profileChanged}>
             <Button label={S.recalculate} onPress={() => router.replace('/synastry')} />
-          </View>
+          </StatusView>
         </Screen>
       );
     if (error === 'NOT_FOUND')
       return (
         <Screen nav={nav}>
-          <View style={styles.status}>
-            <Txt variant="body">{strings.synastry.result.notFound}</Txt>
+          <StatusView state="error" title={strings.synastry.result.notFound}>
             <Button label={strings.synastry.result.goEntry} onPress={() => router.replace('/synastry')} />
-          </View>
+          </StatusView>
         </Screen>
       );
     // 보낸 출생 정보가 거절됐으면 다시 입력받는다. 그 밖의 실패는 방금 보낸 것을 그대로 다시 보낸다.
@@ -94,10 +88,9 @@ export default function SynastryDirectionScreen() {
       );
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="body">{error === 'NETWORK' || error === 'LIMIT' ? S.failed[error] : S.failed.OTHER}</Txt>
+        <StatusView state="error" title={error === 'NETWORK' || error === 'LIMIT' ? S.failed[error] : S.failed.OTHER}>
           <Button label={S.retry} onPress={retry} />
-        </View>
+        </StatusView>
       </Screen>
     );
   }

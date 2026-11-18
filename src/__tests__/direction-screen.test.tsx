@@ -46,6 +46,8 @@ describe('방향성 제시(이성) 화면', () => {
     mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
     await render(<DirectionScreen />);
     expect(await screen.findByText(D.generating)).toBeTruthy();
+    // 기다리는 동안 생각하는 별이(결정 035)
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText(D.generatingNote)).toBeTruthy();
     expect(screen.queryByText(direction.title)).toBeNull();
     await act(async () => resolve(ok));

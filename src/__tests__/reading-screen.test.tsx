@@ -45,6 +45,8 @@ describe('요약 해석 화면', () => {
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.generating)).toBeTruthy();
+    // 기다리는 동안 생각하는 별이(결정 035)
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByText(reading.headline)).toBeNull();
     await act(async () => resolve({ ok: true, data: reading }));
 
@@ -101,6 +103,7 @@ describe('요약 해석 화면', () => {
     mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502 });
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.failed.OTHER)).toBeTruthy();
+    expect(screen.getByTestId('byeoli-face-error', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByText(reading.headline)).toBeNull();
     expect(mockApi.createReading).toHaveBeenCalledTimes(1);
     await fireEvent.press(screen.getByText(R.retry));
@@ -154,6 +157,7 @@ describe('요약 해석 화면', () => {
     await AsyncStorage.clear();
     await render(<ReadingScreen />);
     expect(await screen.findByText(strings.chart.empty)).toBeTruthy();
+    expect(screen.getByTestId('byeoli-face-empty', { includeHiddenElements: true })).toBeTruthy();
     await waitFor(() => expect(mockApi.createReading).not.toHaveBeenCalled());
     await fireEvent.press(screen.getByText(strings.chart.goHome));
     expect(router.replace).toHaveBeenCalledWith('/');

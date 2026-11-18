@@ -3,17 +3,18 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { Button } from '@/components/button';
+import { Byeoli } from '@/components/byeoli';
 import { ListRow } from '@/components/list-row';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { SectionLabel } from '@/components/section-label';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
-import { CardRadius, Colors, Spacing } from '@/constants/theme';
+import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { AccountDeleteSheet } from '@/features/auth/account-delete-sheet';
 import { formatBirthSummary } from '@/features/chart/birth-input';
-import { ChartEmpty } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 
@@ -52,7 +53,16 @@ export default function MyScreen() {
           <TextLink label={M.editBirth} onPress={() => router.push('/birth')} />
         </View>
       ) : (
-        <ChartEmpty />
+        // 출생 정보가 없으면 카드 자리에 쉬는 중 별이와 넣으러 가는 버튼(결정 034 · 035)
+        <View style={styles.emptyCard}>
+          <View style={styles.emptyTop}>
+            <Txt variant="body" color="gray" style={styles.text}>
+              {strings.chart.empty}
+            </Txt>
+            <Byeoli state="empty" size={Sizes.byeoliSmall} />
+          </View>
+          <Button label={strings.chart.goHome} onPress={() => router.replace('/')} />
+        </View>
       )}
       <View style={styles.group}>
         <SectionLabel>{M.help}</SectionLabel>
@@ -87,5 +97,7 @@ const styles = StyleSheet.create({
     borderRadius: CardRadius,
   },
   text: { flex: 1, gap: Spacing.xxs },
+  emptyCard: { marginTop: Spacing.md, padding: Spacing.lg, gap: Spacing.sm, backgroundColor: Colors.fill, borderRadius: CardRadius },
+  emptyTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   group: { gap: Spacing.xs, marginTop: Spacing.xs },
 });

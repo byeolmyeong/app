@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
+import { StatusView } from '@/components/status-view';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -43,24 +44,16 @@ export default function DirectionScreen() {
   if (state.status === 'loading')
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="heading">{S.generating}</Txt>
-          <Txt variant="table" color="gray">
-            {S.generatingNote}
-          </Txt>
-        </View>
+        <StatusView state="think" title={S.generating} note={S.generatingNote} />
       </Screen>
     );
 
   if (state.status === 'failed')
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="body">
-            {state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}
-          </Txt>
+        <StatusView state="error" title={state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}>
           <Button label={S.retry} onPress={retry} />
-        </View>
+        </StatusView>
       </Screen>
     );
 
@@ -77,6 +70,5 @@ export default function DirectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  status: { gap: Spacing.md, paddingTop: Spacing.lg },
   footer: { paddingTop: Spacing.lg },
 });

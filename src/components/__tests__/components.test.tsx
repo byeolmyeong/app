@@ -12,6 +12,7 @@ import { Paragraph } from '@/components/paragraph';
 import { SectionLabel } from '@/components/section-label';
 import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
+import { StatusView } from '@/components/status-view';
 import { Txt } from '@/components/txt';
 import { Colors, FontFamily, FontWeight, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -339,5 +340,27 @@ describe('브랜드 그림(결정 035)', () => {
     await render(<GlowShape shape={shape} size={64} />);
     const glow = screen.getByTestId(`glow-${shape}`, { includeHiddenElements: true });
     expect(glow.props['aria-hidden']).toBe(true);
+  });
+});
+
+describe('StatusView', () => {
+  it('별이 · 제목 · 설명 · 버튼을 가운데에 놓는다. 생각 중의 제목은 문단 제목 단계다', async () => {
+    const onPress = jest.fn();
+    await render(
+      <StatusView state="think" title="짓는 중" note="1분쯤 걸려요">
+        <Button label="다시 시도" onPress={onPress} />
+      </StatusView>,
+    );
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByText('짓는 중').props.style)).toMatchObject({ ...Typography.heading, textAlign: 'center' });
+    expect(screen.getByText('1분쯤 걸려요')).toBeTruthy();
+    await fireEvent.press(screen.getByText('다시 시도'));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('실패 · 빈 화면의 제목은 본문 단계다', async () => {
+    await render(<StatusView state="error" title="불러오지 못했어요" />);
+    expect(screen.getByTestId('byeoli-face-error', { includeHiddenElements: true })).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByText('불러오지 못했어요').props.style)).toMatchObject(Typography.body);
   });
 });

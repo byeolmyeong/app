@@ -61,6 +61,8 @@ describe('방향성 제시 — 궁합(/synastry/[id]/direction)', () => {
     mockApi.createSynastryDirection.mockReturnValue(new Promise((r) => (resolve = r)));
     await render(<SynastryDirectionScreen />);
     expect(await screen.findByText(D.generating)).toBeTruthy();
+    // 기다리는 동안 생각하는 별이(결정 035)
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText(D.generatingNote)).toBeTruthy();
     expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
     expect(mockApi.createSynastryDirection).toHaveBeenCalledTimes(1);

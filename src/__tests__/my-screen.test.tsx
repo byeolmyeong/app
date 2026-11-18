@@ -77,6 +77,7 @@ describe('마이(/my) — 설정을 합쳤다(결정 034)', () => {
     await AsyncStorage.clear();
     await render(<MyScreen />);
     expect(await screen.findByText(strings.chart.empty)).toBeTruthy();
+    expect(screen.getByTestId('byeoli-face-empty', { includeHiddenElements: true })).toBeTruthy();
     for (const label of [S.faq, S.inquiry, S.privacy, S.terms, S.version, S.deleteAccount]) expect(screen.getByText(label)).toBeTruthy();
     expect(screen.getByText(strings.tabs.home)).toBeTruthy();
     expect(screen.queryByText(M.birthLabel)).toBeNull();

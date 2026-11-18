@@ -113,6 +113,20 @@ describe('마이(/my) — 설정을 합쳤다(결정 034)', () => {
   });
 });
 
+describe('마이를 불러오는 동안', () => {
+  it('기기 저장소를 읽는 동안에도 아래 탭이 보인다', async () => {
+    // 읽기가 끝나지 않은 채로 둔다
+    const pending = jest.spyOn(AsyncStorage, 'getItem').mockReturnValue(new Promise(() => {}));
+    try {
+      await render(<MyScreen />);
+      expect(screen.queryByText(S.faq)).toBeNull();
+      expect(screen.getByText(strings.tabs.home)).toBeTruthy();
+    } finally {
+      pending.mockRestore();
+    }
+  });
+});
+
 describe('처리방침 · 약관 글 화면', () => {
   it.each([
     ['처리방침', PrivacyScreen, strings.legal.privacy],
@@ -151,8 +165,19 @@ describe('계정 삭제', () => {
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
     expect(await AsyncStorage.getAllKeys()).toEqual([]);
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledTimes(1);
-    // 쌓인 화면(마이 · 설정)을 걷어 내고 첫 화면만 남긴다
+    // 마이 아래에 쌓인 화면이 있으면 걷어 내고 첫 화면만 남긴다
     expect(router.dismissAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('마이가 탭으로 열려 걷어 낼 화면이 없으면 걷지 않고 첫 화면으로 바꾼다(뒤로 가기로 마이에 돌아갈 수 없다)', async () => {
+    (router.canDismiss as jest.Mock).mockReturnValue(false);
+    mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
+    await render(<MyScreen />);
+    await fireEvent.press(await screen.findByText(S.deleteAccount));
+    await fireEvent.press(await screen.findByText(D.confirm));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    expect(router.dismissAll).not.toHaveBeenCalled();
+    (router.canDismiss as jest.Mock).mockReturnValue(true);
   });
 
   it('삭제하는 동안에는 다시 누를 수 없다', async () => {

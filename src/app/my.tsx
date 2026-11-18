@@ -36,9 +36,11 @@ export default function MyScreen() {
     router.replace('/');
   }
 
-  if (!loaded) return <Screen nav={nav}>{null}</Screen>;
+  const tabs = <MainTabs active="my" />;
+  // 기기 저장소를 읽는 동안에도 아래 탭은 그대로 둔다(출생 정보가 있든 없든 탭이 보인다)
+  if (!loaded) return <Screen nav={nav} footer={tabs}>{null}</Screen>;
   return (
-    <Screen nav={nav} footer={<MainTabs active="my" />}>
+    <Screen nav={nav} footer={tabs}>
       {profile ? (
         <View style={styles.card}>
           <View style={styles.text}>

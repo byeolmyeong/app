@@ -42,6 +42,10 @@ beforeEach(async () => {
 });
 
 describe('문의하기(/settings/inquiry)', () => {
+  it('보낸 뒤의 버튼 이름은 도착지를 말하지 않는다(온 곳 — 마이 · 자주 묻는 질문 — 으로 돌아간다)', () => {
+    expect(I.done.back).toBe('돌아가기');
+  });
+
   it('종류 다섯 가지 · 내용 · 답장 받을 이메일 · 보내기 버튼을 보여 준다', async () => {
     await render(<InquiryScreen />);
     expect(screen.getByText(I.title)).toBeTruthy();

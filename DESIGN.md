@@ -48,7 +48,7 @@ last_reviewed: 2026-11-18
 - 차트 전용 부품은 `src/features/chart/`: `ChartWheel`(SVG 휠, 좌표는 `wheel-layout.ts`), `OverlayWheel`(궁합의 겹친 휠, 좌표는 `overlay-layout.ts`. 나는 고리 안쪽의 채운 점, 상대는 바깥의 빈 점 — 색이 아니라 자리와 모양으로 가른다), `BirthFields`(출생 정보 세 칸. 내 입력과 궁합의 상대 입력이 함께 쓴다), `KeyThree`, `BodyCell`.
 - 궁합 전용 부품은 `src/features/synastry/`: `RelationChips`(관계 유형 칩, 고른 칩은 `primarySoft` 바탕과 주색 테두리), `SynastrySummary`(점수 · 한 줄 요약 · 키워드), `SynastryRow`(랭킹 · 지난 궁합의 한 줄), `SynastryReportView`, `SynastryDeleteSheet`(궁합을 지울지 묻는 시트. 계정 삭제 시트와 같은 꼴: 빨강 버튼 + 취소). 결과 화면에서 지우기로 들어가는 것은 맨 아래의 글자 링크(`TextLink`)다.
 - 공유 카드(9:16, `src/features/share/share-card.tsx`): 화면과 같은 어두운 바탕에 글자만. 머리에 짧은 주색 줄과 앱 이름, 가운데에 서버가 준 카드의 글과 숫자, 아래에 한 줄 소개. 차트 · 출생 정보 · 근거는 넣지 않는다(결정 025). 미리보기 · 저장하는 이미지 · 공유 페이지가 같은 부품이다. 공유 버튼은 보조 버튼(`line`)이고 하단 시트를 연다.
-- 화면 좌우 여백 20. 웹 넓은 화면에서는 가운데에 앱 화면 폭(`Sizes.maxContentWidth`, 480) 한 단만 보이고 그 밖은 흰색(`canvas`)이며 옅은 선으로 나뉜다. 글자와 부품 크기는 넓은 화면에서도 같다. 시트도 그 폭 안에서만 올라온다.
+- 화면 좌우 여백 20. 웹 넓은 화면에서는 가운데에 앱 화면 폭(`Sizes.maxContentWidth`, 480) 한 단만 보이고 그 밖은 흰색(`canvas`)이며 옅은 선으로 나뉜다(앱의 태블릿·폴드에서는 바깥도 바탕색). 글자와 부품 크기는 넓은 화면에서도 같다. 브라우저가 그리는 것(색 체계·위쪽 줄·자동 완성)은 웹 루트 HTML `src/app/+html.tsx` 가 정한다. 시트도 그 폭 안에서만 올라온다.
 - 애니메이션: 시트가 올라오고 내려가는 것만. 그 외 없음.
 - 아이콘: 선으로 그린 작은 것만(아래 화살표, 체크). 뒤로 가기는 글자(←)다.
 

@@ -2,7 +2,7 @@
 type: product
 tags: [1.0.0, 기능 명세, 핵심 기능, 출시 범위, 화면 목록, 방향성 제시, 투두, 조각, 레벨업]
 status: active
-last_reviewed: 2026-11-12
+last_reviewed: 2026-11-18
 ---
 # 1.0.0 기능 명세
 
@@ -22,8 +22,8 @@ last_reviewed: 2026-11-12
 - 궁합: 나 기준 점수(40~100)와 궁합 랭킹, 초대 링크. 공유 카드는 요약 해석·궁합 점수·랭킹·다음 변곡점. 결정: docs/decisions/010-synastry-score-ranking-share-cards.md
 - 방향성 제시(F10): 1.0.0 에 전체 무료로 주고 추후 같은 기능을 유료로 바꾼다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
 - 푸시 알림: 이벤트 알림만(초대 수락, 리포트 완성).
-- 앱 이름: "별명"을 바꾼다(새 이름은 브랜딩에서). 대표 문구도 새로 정한다. 결정: docs/decisions/013-rename-app.md
-- 디자인: "천문도" 방향. 종이·먹·금, 글꼴은 고운바탕·Pretendard·IBM Plex Mono. 결정: docs/decisions/016-design-direction-observatory.md
+- 앱 이름: "별명" 그대로(별이 지어 준 이름). 대표 문구는 새로 정한다. 결정: docs/decisions/032-keep-name-byeolmyeong.md
+- 디자인: 어두운 밤하늘 바탕 · 푸른 보라 하나 · Pretendard(400·500·600). 빛·유리는 브랜드 자리에만. 차트는 눈금 원과 가는 선(016). 결정: docs/decisions/033-brand-dark-design-system.md · 원칙: DESIGN.md
 - 1.1.0: 광고(결과 전 15초)와 990원 광고 제거, 인앱결제, 방향성 제시 유료화, 투두·조각·레벨업(F11)과 대표 문구 "조각을 모은다", 친구창, 친구끼리 3~5명 그룹 궁합. 결정: docs/decisions/007-friends-chat-shared-room.md, docs/decisions/008-ads-and-ad-removal.md, docs/decisions/015-ad-before-results-15s.md
 
 ## 계산과 글의 역할 분담

@@ -12,7 +12,7 @@ export type RelationChipsProps = {
   invalid?: boolean;
 };
 
-/** 관계 유형(연애 · 친구 · 일 · 가족)을 고르는 칩 한 줄. 고른 칩은 옅은 초록 바탕과 초록 테두리다. */
+/** 관계 유형(연애 · 친구 · 일 · 가족)을 고르는 칩 한 줄. 고른 칩은 옅은 주색 바탕과 주색 테두리다. */
 export function RelationChips({ value, onChange, invalid = false }: RelationChipsProps) {
   return (
     <View style={styles.row}>
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   invalid: { borderColor: Colors.danger },
-  on: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
+  on: { backgroundColor: Colors.primarySoft, borderColor: Colors.primary },
   onText: { fontWeight: '700' },
 });

@@ -8,12 +8,12 @@ export type ButtonVariant = 'primary' | 'line' | 'danger';
 export type ButtonProps = {
   label: string;
   onPress: () => void;
-  /** primary 초록 바탕(한 화면에 하나) · line 옅은 회색 바탕의 보조 · danger 오류·삭제 */
+  /** primary 주색(푸른 보라) 바탕(한 화면에 하나) · line 채운 면(fill) 바탕의 보조 · danger 오류·삭제 */
   variant?: ButtonVariant;
   disabled?: boolean;
 };
 
-const textColor: Record<ButtonVariant, ColorName> = { primary: 'ink', line: 'ink', danger: 'paper' };
+const textColor: Record<ButtonVariant, ColorName> = { primary: 'ink', line: 'ink', danger: 'ink' };
 
 /** 높이 56, 모서리 12, 글씨가 가운데인 버튼. 누를 수 없을 때는 회색으로 바뀐다. */
 export function Button({ label, onPress, variant = 'primary', disabled = false }: ButtonProps) {

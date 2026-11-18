@@ -384,7 +384,7 @@ function MilestoneTags({ milestone, nearest }: { milestone: TimingMilestone; nea
 
 /**
  * 변곡점의 작은 줄: 몇 번째인지 · 서버가 준 해와 만 나이 · 기간 · 제목. 누르면 본문이 펼쳐진다.
- * near(올해 · 내년에 걸친 것)는 초록 테두리로 눈에 띄게, later(더 뒤)는 보통 줄, past(지난 것)는 흐린 글씨다.
+ * near(올해 · 내년에 걸친 것)는 주색 테두리로 눈에 띄게, later(더 뒤)는 보통 줄, past(지난 것)는 흐린 글씨다.
  */
 function MilestoneRow({
   milestone,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     borderRadius: CardRadius,
     borderWidth: LineWidth,
     borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight,
+    backgroundColor: Colors.primarySoft,
   },
   nearMilestone: {
     gap: Spacing.xxs,
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius,
     borderWidth: LineWidth,
     borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight,
+    backgroundColor: Colors.primarySoft,
   },
   subhead: { paddingTop: Spacing.xs },
   list: { gap: Spacing.sm },
@@ -518,6 +518,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.fill,
     overflow: 'hidden',
   },
-  chipOn: { backgroundColor: Colors.primaryLight },
+  chipOn: { backgroundColor: Colors.primarySoft },
   row: { gap: Spacing.xxs, paddingVertical: Spacing.sm, borderBottomWidth: LineWidth, borderBottomColor: Colors.hair },
 });

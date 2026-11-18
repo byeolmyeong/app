@@ -1,44 +1,42 @@
 /**
- * 디자인 값의 단일 출처. 둥근 중립 디자인 시스템(docs/decisions/018-design-system-from-didit.md):
- * 흰 바탕, 중립 회색, Pretendard, 주색은 초록 하나. 화면과 부품은 색·글자·간격을 여기서만 가져온다.
- * 디자인이 바뀌면 이 파일을 통째로 바꾼다.
+ * 디자인 값의 단일 출처. 별명 브랜딩(docs/decisions/033-brand-dark-design-system.md):
+ * 어두운 바탕, 밝은 글씨, Pretendard, 주색은 푸른 보라 하나. 화면과 부품은 색·글자·간격을 여기서만 가져온다.
+ * 부품 모양(크기·모서리)은 결정 018 그대로다. 디자인이 바뀌면 이 파일을 통째로 바꾼다.
  */
 import type { TextStyle } from 'react-native';
 
-/** 색. 화면은 흰 바탕·중립 회색·초록 하나, 공유 카드는 밤·밤 위의 금. */
+/** 색. 면 세 단(바탕·떠 있는 면·채운 면), 글씨 네 단(본문·보조·안내·비활성), 푸른 보라 하나. 대비는 바탕 위 기준. */
 export const Colors = {
-  /** 화면·시트·칩의 바탕 */
-  paper: '#FFFFFF',
-  /** 화면 밖, 넓은 웹 화면의 여백 */
+  /** 화면·칩·공유 카드의 바탕 */
+  paper: '#0D0E12',
+  /** 바탕 위에 떠 있는 면: 하단 시트 */
+  raised: '#16171D',
+  /** 화면 밖, 넓은 웹 화면의 여백(흰색 그대로, 2026-11-11 소유자 확정) */
   canvas: '#FFFFFF',
-  /** 본문 글씨 */
-  ink: '#191919',
-  /** 보조 글씨 */
-  gray: '#6A6A6A',
-  /** 도움말, 입력 전 안내 글씨 */
-  hint: '#989898',
-  /** 고르지 않은 것, 비활성 아이콘·글씨 */
-  muted: '#C6C6C6',
+  /** 본문 글씨, 주색·빨강 위의 글씨. 대비 17.4 */
+  ink: '#F2F3F7',
+  /** 보조 글씨. 대비 8.5 */
+  gray: '#A9ABB7',
+  /** 도움말, 입력 전 안내 글씨. 대비 4.8 */
+  hint: '#7C7E8A',
+  /** 고르지 않은 것, 비활성 아이콘·글씨, 시트 손잡이. 대비 2.4(일부러 흐리게) */
+  muted: '#4D4F5A',
   /** 테두리, 구분선, 비활성 버튼 바탕 */
-  hair: '#E6E6E6',
-  /** 입력칸 바탕 */
-  fill: '#F6F6F6',
-  /** 주색(초록) 하나. 주 버튼, 고른 것, 포커스 테두리, "지금" */
-  primary: '#3DDB99',
-  /** 고른 칩의 옅은 초록 바탕 */
-  primaryLight: '#ECFBF5',
-  /** 밤 · 공유 카드 바탕 */
-  night: '#0F1220',
-  /** 밤 위의 금 · 공유 카드의 점·선 */
-  nightGold: '#E0A45A',
-  /** 오류 · 삭제 */
-  danger: '#F73838',
+  hair: '#2A2B33',
+  /** 입력칸·보조 버튼·카드의 바탕 */
+  fill: '#1C1D24',
+  /** 주색(푸른 보라) 하나. 주 버튼, 고른 것, 포커스 테두리, "지금". 대비 3.6, 그 위 ink 4.8 */
+  primary: '#4752FF',
+  /** 고른 칩의 옅은 푸른 보라 바탕 */
+  primarySoft: '#1D2050',
+  /** 오류 · 삭제. 대비 4.9, 그 위 ink 3.5 */
+  danger: '#E5484D',
 } as const;
 
 export type ColorName = keyof typeof Colors;
 
-/** 시트 뒤를 가리는 막. 검정 40%. */
-export const DimColor = 'rgba(0,0,0,0.4)';
+/** 시트 뒤를 가리는 막. 검정 60%(어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
+export const DimColor = 'rgba(0,0,0,0.6)';
 
 /** 글꼴은 Pretendard 하나. 굵기는 fontWeight 로 고른다(src/app/_layout.tsx 에서 적재). */
 export const FontFamily = 'Pretendard';
@@ -135,7 +133,7 @@ export const Sizes = {
   /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
   shareCardWidth: 220,
   sharePageCardWidth: 280,
-  /** 공유 카드 머리의 초록 줄 */
+  /** 공유 카드 머리의 주색 줄 */
   shareCardBarWidth: 24,
   shareCardBarHeight: 4,
   /** 시트 위의 손잡이 줄 */

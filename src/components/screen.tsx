@@ -13,7 +13,7 @@ export type ScreenProps = {
 };
 
 /**
- * 모든 화면의 바탕. 흰색, 좌우 여백 20.
+ * 모든 화면의 바탕. 어두운 바탕색(Colors.paper), 좌우 여백 20.
  * 넓은 웹 화면에서는 가운데에 앱 화면 폭의 한 단만 보이고, 그 밖은 흰색이며 옅은 선으로 나뉜다.
  */
 export function Screen({ nav, footer, children }: ScreenProps) {

@@ -12,7 +12,7 @@ export type CategoryChipsProps = {
   invalid?: boolean;
 };
 
-/** 문의 종류를 고르는 칩. 궁합의 관계 유형 칩과 같은 모양이고(고른 칩은 옅은 초록), 다섯 개라 줄을 넘기면 다음 줄로 간다. */
+/** 문의 종류를 고르는 칩. 궁합의 관계 유형 칩과 같은 모양이고(고른 칩은 옅은 주색), 다섯 개라 줄을 넘기면 다음 줄로 간다. */
 export function CategoryChips({ value, onChange, invalid = false }: CategoryChipsProps) {
   return (
     <View style={styles.row}>
@@ -50,6 +50,6 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   invalid: { borderColor: Colors.danger },
-  on: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
+  on: { backgroundColor: Colors.primarySoft, borderColor: Colors.primary },
   onText: { fontWeight: '700' },
 });

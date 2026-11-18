@@ -94,7 +94,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             {/* 키보드 포커스를 받지 않는다. 받으면 웹에서 화면 전체에 포커스 테두리가 그려진다 */}
             <Pressable testID="sheet-dim" focusable={false} tabIndex={-1} style={styles.dimPress} onPress={onClose} />
           </Animated.View>
-          <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+          <Animated.View testID="sheet-panel" style={[styles.sheet, { transform: [{ translateY }] }]}>
             {title ? (
               <View style={styles.head}>
                 <Txt variant="heading" style={styles.title}>
@@ -104,7 +104,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             ) : null}
             {children}
             <View testID="sheet-drag" style={styles.dragArea} {...pan.panHandlers}>
-              <View style={styles.handle} />
+              <View testID="sheet-handle" style={styles.handle} />
             </View>
           </Animated.View>
         </View>
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   dim: { ...StyleSheet.absoluteFill, backgroundColor: DimColor },
   dimPress: { flex: 1, outlineWidth: 0 },
   sheet: {
-    backgroundColor: Colors.paper,
+    backgroundColor: Colors.raised,
     borderTopLeftRadius: SheetRadius,
     borderTopRightRadius: SheetRadius,
     paddingHorizontal: ScreenPaddingX,
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     width: Sizes.handleWidth,
     height: Sizes.handleHeight,
     borderRadius: Sizes.handleHeight,
-    backgroundColor: Colors.hair,
+    backgroundColor: Colors.muted,
   },
   head: { justifyContent: 'center' },
   title: { textAlign: 'center' },

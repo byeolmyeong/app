@@ -82,7 +82,6 @@ describe('홈', () => {
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
     expect(screen.getByTestId('brand-mark')).toBeTruthy();
-    expect(screen.queryByTestId('chart-mark')).toBeNull();
     const hidden = { includeHiddenElements: true };
     const shapes = screen.getAllByTestId(/^glow-/, hidden).map((node) => node.props.testID);
     expect(shapes).toEqual(['glow-star', 'glow-flame', 'glow-heart', 'glow-moon']);

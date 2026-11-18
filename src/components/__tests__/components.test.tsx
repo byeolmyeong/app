@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AccessibilityInfo, Animated, processColor, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/button';
@@ -9,7 +9,6 @@ import { Field, FieldInput } from '@/components/field';
 import { GlowShape } from '@/components/glow';
 import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
-import { ChartMark } from '@/components/chart-mark';
 import { SectionLabel } from '@/components/section-label';
 import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
@@ -161,16 +160,6 @@ describe('DataTable', () => {
     await render(<DataTable columns={columns} rows={rows} header={false} />);
     expect(screen.queryByText('천체')).toBeNull();
     expect(screen.getByText('태양')).toBeTruthy();
-  });
-});
-
-describe('ChartMark', () => {
-  it('눈금 원과 주색 점 하나로 된 표식을 그린다', async () => {
-    await render(<ChartMark />);
-    expect(screen.getByTestId('chart-mark')).toBeTruthy();
-    expect(screen.getByLabelText(strings.appName)).toBeTruthy();
-    // react-native-svg 는 색을 { type: 0, payload: 숫자 } 로 바꿔 넘긴다
-    expect(screen.getByTestId('chart-mark-dot').props.fill).toEqual({ type: 0, payload: processColor(Colors.primary) });
   });
 });
 

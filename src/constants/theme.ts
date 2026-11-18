@@ -153,8 +153,6 @@ export const Sizes = {
   /** 여러 줄을 적는 입력칸(문의 내용)의 높이 */
   textArea: 160,
   navHeight: 48,
-  /** 화면 머리의 차트 표식 */
-  mark: 28,
   /** 화면 머리 양옆 칸의 너비 */
   navSide: 48,
   checkbox: 24,

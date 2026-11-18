@@ -46,7 +46,7 @@ last_reviewed: 2026-11-18
 - 앱 설정: `app.json` 의 `userInterfaceStyle: dark`, 스플래시 바탕은 `paper` 와 같은 색.
 
 ## 컴포넌트·레이아웃
-- 공용 부품은 `src/components/` 에만 둔다: `Txt`(글자 단계·색), `Button`(높이 56·모서리 12·글씨 가운데. 주 `primary` 푸른 보라 · 보조 `line` 채운 면 · 빨강 `danger`, 누를 수 없으면 `hair` 바탕에 흐린 글씨), `Field`(라벨 위 · 칸 · 도움말이나 오류 아래) 와 그 안의 `FieldInput`(치는 칸) · `FieldSelect`(눌러서 고르는 칸, 오른쪽 아래 화살표), `Checkbox`(체크 표시), `Sheet`, `ScrollPicker`(드럼롤 한 열), `DataTable`, `ChartMark`, `SectionLabel`, `Paragraph`(글의 문단: 근거 줄 · 제목 · 본문. 요약 해석과 심층 리포트가 함께 쓴다). 화면 뼈대: `Screen`, `NavBar`, `Tabs`, `TextLink`.
+- 공용 부품은 `src/components/` 에만 둔다: `Txt`(글자 단계·색), `Button`(높이 56·모서리 12·글씨 가운데. 주 `primary` 푸른 보라 · 보조 `line` 채운 면 · 빨강 `danger`, 누를 수 없으면 `hair` 바탕에 흐린 글씨), `Field`(라벨 위 · 칸 · 도움말이나 오류 아래) 와 그 안의 `FieldInput`(치는 칸) · `FieldSelect`(눌러서 고르는 칸, 오른쪽 아래 화살표), `Checkbox`(체크 표시), `Sheet`, `ScrollPicker`(드럼롤 한 열), `DataTable`, `SectionLabel`, `Paragraph`(글의 문단: 근거 줄 · 제목 · 본문. 요약 해석과 심층 리포트가 함께 쓴다). 화면 뼈대: `Screen`, `NavBar`, `Tabs`, `TextLink`. 브랜드 그림(결정 035): `BrandMark`(로고), `Byeoli`(별이), `GlowShape`(빛나는 모양) — 브랜드 자리에서만.
 - 입력칸: 높이 56, 모서리 12, 채운 면(`fill`). 포커스면 주색 테두리, 틀렸으면 빨강 테두리.
 - 하단 시트(`Sheet`): 바탕보다 한 단 떠 있는 면(`raised`). 아래와 양옆은 화면에 붙고 위쪽 모서리만 24. 위에 손잡이 줄(`muted`), 가운데 제목. 뒤의 막(검정 60%)은 제자리에서 서서히 어두워지고 시트만 올라온다. 바깥을 누르거나 위쪽을 잡고 끌어내리면 닫힌다.
 - 차트 전용 부품은 `src/features/chart/`: `ChartWheel`(SVG 휠, 좌표는 `wheel-layout.ts`), `OverlayWheel`(궁합의 겹친 휠, 좌표는 `overlay-layout.ts`. 나는 고리 안쪽의 채운 점, 상대는 바깥의 빈 점 — 색이 아니라 자리와 모양으로 가른다), `BirthFields`(출생 정보 세 칸. 내 입력과 궁합의 상대 입력이 함께 쓴다), `KeyThree`, `BodyCell`.

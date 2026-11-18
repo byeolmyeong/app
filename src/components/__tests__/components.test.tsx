@@ -19,7 +19,8 @@ describe('테마', () => {
     expect(Colors).toEqual({
       paper: '#0D0E12',
       raised: '#16171D',
-      canvas: '#FFFFFF',
+      // 화면 밖 여백: 웹 넓은 화면만 흰색이고, 앱(태블릿·폴드)은 바탕색이다. jest 는 앱(ios)으로 돈다
+      canvas: '#0D0E12',
       ink: '#F2F3F7',
       gray: '#A9ABB7',
       hint: '#7C7E8A',

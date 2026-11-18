@@ -1,18 +1,23 @@
 /**
  * 디자인 값의 단일 출처. 별명 브랜딩(docs/decisions/033-brand-dark-design-system.md):
  * 어두운 바탕, 밝은 글씨, Pretendard, 주색은 푸른 보라 하나. 화면과 부품은 색·글자·간격을 여기서만 가져온다.
- * 부품 모양(크기·모서리)은 결정 018 그대로다. 디자인이 바뀌면 이 파일을 통째로 바꾼다.
+ * 부품 모양(크기·모서리)은 결정 018 그대로이고, 웹 넓은 화면의 앱 폭만 480 이다(결정 033). 디자인이 바뀌면 이 파일을 통째로 바꾼다.
  */
-import type { TextStyle } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
+
+const paper = '#0D0E12';
 
 /** 색. 면 세 단(바탕·떠 있는 면·채운 면), 글씨 네 단(본문·보조·안내·비활성), 푸른 보라 하나. 대비는 바탕 위 기준. */
 export const Colors = {
   /** 화면·칩·공유 카드의 바탕 */
-  paper: '#0D0E12',
+  paper,
   /** 바탕 위에 떠 있는 면: 하단 시트 */
   raised: '#16171D',
-  /** 화면 밖, 넓은 웹 화면의 여백(흰색 그대로, 2026-11-11 소유자 확정) */
-  canvas: '#FFFFFF',
+  /**
+   * 앱 화면 폭(Sizes.maxContentWidth) 밖의 여백. 웹 넓은 화면은 흰색(2026-11-11 소유자 확정),
+   * 앱(태블릿·폴드 안쪽 화면)은 바탕과 같은 색이라 양옆에 흰 띠가 생기지 않는다.
+   */
+  canvas: Platform.OS === 'web' ? '#FFFFFF' : paper,
   /** 본문 글씨, 주색·빨강 위의 글씨. 대비 17.4 */
   ink: '#F2F3F7',
   /** 보조 글씨. 대비 8.5 */

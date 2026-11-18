@@ -98,7 +98,7 @@ last_reviewed: 2026-11-18
 - 실행 패턴: 혼자
 - 결과 요약: ADR 032(이름 유지 · 이름 풀이)·033(어두운 브랜딩) · 013 은 superseded, 018·025 는 대체 표시 · 원본 `docs/raw/2026-11-18-figma-brand.md` + 그림 2장 · CLAUDE.md·README·product.md 의 가칭 제거.
 
-### 2. dark-color-tokens  · 상태: 대기
+### 2. dark-color-tokens  · 상태: 완료
 - 읽을 것: `src/constants/theme.ts`, `src/components/__tests__/components.test.tsx`(색 기대값 20~33줄, 버튼 63~71줄), `src/components/button.tsx`, `src/components/sheet.tsx`, `app.json`, 이 계획의 "내 결정" 색 표
 - 할 것:
   - 테스트 먼저: components.test.tsx 의 `Colors` 기대값을 새 표로 바꾸고(`raised`·`primarySoft` 추가, `primaryLight`·`night`·`nightGold` 제거), 빨강 버튼 글씨가 `Colors.ink` 인지 보는 기대를 더한다 → `npm test -- components` 실패 확인.
@@ -111,7 +111,7 @@ last_reviewed: 2026-11-18
 - 하지 말 것: 부품 모양(크기·모서리·여백) 바꾸기, 브랜드 빛 색을 theme.ts 에 미리 넣기. 이유: 범위 밖, 쓰지 않는 값.
 - 검증: `npm test` → 실패 0 · `npx tsc --noEmit` → exit 0 · `grep -rn "primaryLight\|nightGold\|Colors.night" src` → 0줄
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `Colors` 를 결정 033 의 값으로(`raised`·`primarySoft` 새로, `primaryLight`·`night`·`nightGold` 없앰), 막 60%, 시트 바탕 `raised`·손잡이 `muted`, 빨강 버튼 글씨 `ink`, `app.json` 화면 모드 dark·스플래시 바탕 `#0D0E12`. "초록" 이 적힌 주석 9곳을 "주색" 으로.
 
 ### 3. typography-scale  · 상태: 대기
 - 읽을 것: `src/constants/theme.ts`(`Typography`·`FontFamily`), `src/app/_layout.tsx`(`useFonts`), components.test.tsx 42~43줄, 이 계획의 "내 결정" 글자 표, `grep -rn "fontWeight" src` 결과(부품 15곳 + SVG 4곳)
@@ -178,5 +178,24 @@ docs/raw/2026-11-18-figma-brand.md
 docs/raw/2026-11-18-figma-brand:
 glass-star.png  glow-icons.png
 $ grep -n "가칭" CLAUDE.md README.md docs/product.md
+(출력 없음, exit 1)
+```
+
+### 태스크 2
+- 결정: 시트 손잡이 색 `hair` → `muted` — `hair` 는 떠 있는 면 위 대비 1.3 이라 손잡이가 안 보인다 — 틀리면 한 줄.
+- 결정: 시트 바탕·손잡이에 `testID`(`sheet-panel`·`sheet-handle`)를 달았다 — 테스트가 색을 확인하려면 잡을 곳이 필요하다 — 틀리면 테스트만 바뀐다.
+- 결정: "초록" · "흰색" 이 적혀 틀리게 된 주석 9곳을 "주색" · "어두운 바탕색" 으로 고쳤다(값은 안 바뀜) — 주석이 틀리면 다음 사람이 옛 색을 믿는다 — 비용 없음.
+```
+$ npx jest src/components/__tests__/components.test.tsx   (theme.ts 고치기 전)
+  ● 테마 › 어두운 바탕·밝은 글씨·푸른 보라 주색을 갖는다(결정 033)
+  ● Button › 주·빨강 버튼의 글씨는 밝은 본문색이다(어두운 바탕, 결정 033)
+  ● Sheet › 시트는 바탕보다 한 단 떠 있는 면이고 손잡이는 그 위에서 보인다(결정 033)
+Tests:       3 failed, 21 passed, 24 total
+$ npx jest   (고친 뒤)
+Test Suites: 48 passed, 48 total
+Tests:       714 passed, 714 total
+$ npx tsc --noEmit
+tsc exit 0
+$ grep -rn "primaryLight\|nightGold\|Colors.night" src
 (출력 없음, exit 1)
 ```

@@ -13,6 +13,13 @@ export const strings = {
     none: '—',
   },
   /** 홈(카테고리 화면). 구성은 docs/decisions/019-home-categories.md */
+  /** 로그인 · 가입(결정 034). 버튼 모양은 디자이너가 브랜드 규칙(카카오 노랑 · 애플 HIG)으로 다시 그린다 */
+  login: {
+    google: '구글로 계속하기',
+    apple: 'Apple로 계속하기',
+    kakao: '카카오로 계속하기',
+    signingIn: '로그인하는 중이에요',
+  },
   /** 아래 탭(결정 019) */
   tabs: { home: '홈', my: '마이' },
   my: {

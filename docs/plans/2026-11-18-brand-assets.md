@@ -75,12 +75,12 @@ last_reviewed: 2026-11-18
 - 검증: share-card 테스트(종류별 표정 이미지 · 로고 · 글), 웹에서 "이미지 저장" PNG 가 화면 카드와 같은지 한 번 열어 본다.
 - 결과 요약:
 
-### 5. icon-splash  · 상태: 대기
+### 5. icon-splash  · 상태: 완료
 - 읽을 것: `app.json`, `assets/images/`, `assets/expo.icon/`
 - 할 것: `assets/brand/app-icon.svg` · `splash.svg`(별이 기본 + 로고) · `adaptive-foreground.svg` · `adaptive-monochrome.svg`, `scripts/render-brand.mjs` 로 PNG(아이콘 1024, 적응형 앞 · 단색 432, 스플래시 그림, 파비콘 48). `app.json`: `ios.icon` 빼기(위 PNG 공용), 안드로이드 적응형 바탕색 `#0D0E12`, 스플래시 그림 · 폭. `assets/expo.icon` 지우기.
 - 하지 말 것: 손으로 그린 PNG 섞기(원본은 SVG 하나).
 - 검증: `file assets/images/*.png` 크기 확인, `npx expo export --platform web` exit 0, 파비콘이 웹에서 보임
-- 결과 요약:
+- 결과 요약: `assets/brand/` SVG 5개(앱 아이콘 · 적응형 뒤 · 앞 · 단색 · 스플래시), `scripts/render-brand.mjs` 로 PNG 6장, `app.json`(iOS 아이콘 묶음 빼기 · 적응형 바탕 `#0D0E12` · 스플래시 폭 160), `assets/expo.icon` 삭제.
 
 ### 6. verify  · 상태: 대기
 - 할 것: `/verify` 표, 웹 390 스크린샷(스플래시 그림 · 홈 · 짓는 중 · 실패 · 빈 화면), 리뷰어(깨끗한 컨텍스트).
@@ -150,3 +150,19 @@ exit 0
 ```
 - 결정: 궁합 리포트에서 다시 보낼 수 없는 실패(상대 출생 정보를 다시 받아야 함)와 출생 정보 불일치처럼 아래에 입력 칸이 붙는 경우는 별이를 넣지 않고 그대로 뒀다 — 가운데로 채우는 상태 화면이 입력 칸을 밀어낸다 — 입력 칸 위에 작은 별이를 넣으려면 그 블록만 바꾸면 된다.
 - 결정: 마이는 `ChartEmpty`(가운데 큰 별이) 대신 작은 별이가 든 카드 — 아래 줄들을 밀어내지 않게. 이 카드의 별이 확인 테스트는 구현과 같은 단계에서 넣어 실패를 먼저 보지 못했다.
+
+### 태스크 5
+```
+$ node scripts/render-brand.mjs
+app-icon.svg → assets/images/icon.png (1024×1024)
+app-icon.svg → assets/images/favicon.png (48×48)
+adaptive-background.svg → assets/images/android-icon-background.png (512×512)
+adaptive-foreground.svg → assets/images/android-icon-foreground.png (512×512)
+adaptive-monochrome.svg → assets/images/android-icon-monochrome.png (432×432)
+splash.svg → assets/images/splash-icon.png (800×1120)
+$ npx expo export --platform web → exit 0 (favicon.ico 15KB)
+$ npx jest → Test Suites: 48 passed · Tests: 731 passed
+```
+- 결정: 적응형 아이콘 뒤는 색 하나 대신 앱 아이콘과 같은 밤색 그라데이션 PNG 로 — app.json 의 모양을 그대로 두고 앱 아이콘과 같은 바탕이 되게 — `backgroundColor` 는 PNG 가 없을 때의 값으로 `#0D0E12`.
+- 결정: 적응형 아이콘 앞은 빛무리까지 안전 영역(지름의 61%) 안에 들어가게 0.75 배로 — 처음 0.62 배는 둥근 마스크 안에서 작아 보였다.
+- 결정: SVG 원본은 시안의 그리는 함수로 한 번 만들었다(같은 모양). 앞으로 고칠 때는 SVG 를 직접 고친다.

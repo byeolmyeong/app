@@ -4,7 +4,6 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import MyScreen from '@/app/my';
-import SettingsScreen from '@/app/settings/index';
 import { strings } from '@/content/strings';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
 import { api, createApi, type ApiResult, type BirthInput } from '@/lib/api';
@@ -216,11 +215,11 @@ describe('출생 정보 되살리기(결정 029)', () => {
   it('계정을 지운 뒤에는 입력 화면이 보인다: 세션이 비어 묻지 않고, 새 세션으로 물어도 서버에 없다', async () => {
     await saveBirth({ profile: { date: known.date, time: null, place: null }, chart: fixtures.chartTimeUnknown });
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
-    const settings = await render(<SettingsScreen />);
-    await fireEvent.press(screen.getByText(strings.settings.deleteAccount));
+    const my = await render(<MyScreen />);
+    await fireEvent.press(await screen.findByText(strings.settings.deleteAccount));
     await fireEvent.press(await screen.findByText(strings.settings.deleteSheet.confirm));
     await waitFor(async () => expect(await loadBirth()).toBeNull());
-    await settings.unmount();
+    await my.unmount();
 
     const first = await render(<HomeScreen />);
     expect(await formShown()).toBeTruthy();

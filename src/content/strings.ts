@@ -15,15 +15,17 @@ export const strings = {
   /** 홈(카테고리 화면). 구성은 docs/decisions/019-home-categories.md */
   /** 아래 탭(결정 019) */
   tabs: { home: '홈', my: '마이' },
+  /** 마이: 출생 정보와 설정의 줄을 한 화면에(결정 034) */
   my: {
     title: '마이',
     birthLabel: '출생 정보',
     editBirth: '바꾸기',
-    settings: '설정',
+    /** 줄 묶음의 제목 */
+    help: '도움',
+    info: '약관 · 정보',
   },
-  /** 설정(F9). 로그아웃 · 알림은 소셜 로그인 · 푸시가 생길 때 더한다 */
+  /** 마이에 펼치는 설정의 줄(F9, 결정 034). 로그아웃 · 알림은 소셜 로그인 · 푸시가 생길 때 더한다 */
   settings: {
-    title: '설정',
     privacy: '개인정보 처리방침',
     terms: '이용약관',
     faq: '자주 묻는 질문',
@@ -131,7 +133,7 @@ export const strings = {
     done: {
       title: '문의를 보냈어요',
       body: '보내 주신 내용을 잘 받았어요.',
-      back: '설정으로 돌아가기',
+      back: '마이로 돌아가기',
     },
   },
   main: {

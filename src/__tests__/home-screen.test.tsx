@@ -72,9 +72,20 @@ describe('홈', () => {
     expect(StyleSheet.flatten(rows[0].props.style).justifyContent).toBe('space-between');
     // 아이콘 자리에 좌우 여백이 없어야 끝이 맞는다
     const icon = StyleSheet.flatten(screen.getAllByTestId('home-category-icon')[0].props.style);
-    expect(icon.width).toBe(Sizes.categoryIcon);
+    expect(icon.width).toBe(Sizes.homeTile);
     // 설명 글이나 "준비 중" 딱지는 타일에 없다
     expect(screen.queryByText(M.soon)).toBeNull();
+  });
+
+  it('머리에 로고가 있고, 칸마다 빛나는 모양이 있다: 나 별 · 관계 불꽃 · 궁합 하트 · 시기 달(결정 035)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findAllByTestId('home-category');
+    expect(screen.getByTestId('brand-mark')).toBeTruthy();
+    expect(screen.queryByTestId('chart-mark')).toBeNull();
+    const hidden = { includeHiddenElements: true };
+    const shapes = screen.getAllByTestId(/^glow-/, hidden).map((node) => node.props.testID);
+    expect(shapes).toEqual(['glow-star', 'glow-flame', 'glow-heart', 'glow-moon']);
   });
 
   it('"나" 타일을 누르면 그 칸의 항목이 시트로 올라오고, 거기서 풀이 글과 차트로 간다', async () => {
@@ -202,6 +213,8 @@ describe('홈의 내용(아이콘 줄 아래)', () => {
     await fireEvent.press(await screen.findByText(M.readingCta));
     expect(router.push).toHaveBeenCalledWith('/reading');
     expect(screen.queryByText(fixtures.reading.headline)).toBeNull();
+    // 아직 없을 때는 쉬는 중 별이가 카드에 있다(결정 035)
+    expect(screen.getByTestId('byeoli-face-empty', { includeHiddenElements: true })).toBeTruthy();
   });
 
   it('다른 출생 정보로 받은 풀이는 보여 주지 않는다', async () => {

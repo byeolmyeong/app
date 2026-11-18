@@ -10,7 +10,7 @@ const TICKS = Array.from({ length: 12 }, (_, i) => (i * Math.PI) / 6);
 /** 서버 렌더링과 브라우저의 소수점 차이로 하이드레이션이 어긋나지 않게 둘째 자리에서 자른다 */
 const round = (n: number) => Math.round(n * 100) / 100;
 
-/** 화면 머리의 표식. 눈금 원과 금색 점 하나. 앱 이름이 정해지기 전까지 도장을 대신한다(결정 016). */
+/** 화면 머리의 표식. 눈금 원과 주색 점 하나(결정 016 의 모양, 색은 결정 033). */
 export function ChartMark() {
   const size = Sizes.mark;
   const c = size / 2;

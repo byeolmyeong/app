@@ -23,7 +23,7 @@ export type DataTableProps = {
   header?: boolean;
 };
 
-/** 옛 달력의 표처럼 읽히는 수치 표. 머리줄 아래 먹 선, 줄마다 옅은 선. */
+/** 옛 달력의 표처럼 읽히는 수치 표. 머리줄 아래 본문색 선, 줄마다 옅은 선. */
 export function DataTable({ columns, rows, header = true }: DataTableProps) {
   return (
     <View>

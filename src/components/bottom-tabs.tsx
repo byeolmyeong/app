@@ -7,7 +7,7 @@ import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme
 export type BottomTab<K extends string> = {
   key: K;
   label: string;
-  /** 색을 받아 아이콘을 그린다. 고른 탭은 진한 색, 나머지는 옅은 색 */
+  /** 색을 받아 아이콘을 그린다. 고른 탭은 본문색(ink), 나머지는 흐린 색 */
   icon: (color: string) => ReactNode;
 };
 

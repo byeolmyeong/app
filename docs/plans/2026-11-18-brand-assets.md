@@ -36,11 +36,11 @@ last_reviewed: 2026-11-18
 
 ## 태스크
 
-### 1. adr-brand-assets  · 상태: 대기
+### 1. adr-brand-assets  · 상태: 완료
 - 읽을 것: `docs/decisions/033-brand-dark-design-system.md`, `DESIGN.md` "브랜드 자리와 브랜드 그림" · "쓰지 않는 것" · "애니메이션"
 - 할 것: `docs/decisions/035-brand-assets-byeoli.md`(시안 선택 · 브랜드 자리 확장 · 별이 · 움직임 예외 · 아이콘 PNG 하나). DESIGN.md 의 해당 절을 고친다(브랜드 자리에 홈 아이콘 · 캐릭터 화면, 애니메이션 예외, 별이 상태 넷과 쓰는 곳).
 - 검증: ADR 035 가 033 을 가리키고 DESIGN.md 가 035 를 가리킨다.
-- 결과 요약:
+- 결과 요약: ADR 035(로고 B · 앱 아이콘 B · 빛나는 카드 · 별이 · 브랜드 자리 · 움직임 예외 · SVG 원본), 033 머리에 대체 표시, DESIGN.md 의 브랜드 자리 · 로고 · 앱 아이콘 · 별이 · 금지 · 애니메이션 · 아이콘 줄.
 
 ### 2. brand-parts  · 상태: 대기
 - 읽을 것: 시안 페이지의 그리는 법(네 갈래 별 · 불꽃 · 하트 · 달 · 유리 구슬 · 얼굴), `src/constants/theme.ts`, `src/components/chart-mark.tsx`(react-native-svg 쓰는 예)
@@ -105,3 +105,12 @@ last_reviewed: 2026-11-18
 
 ## 실행 기록
 - 2026-11-18 승인. 같은 날 공유 카드 시안에서 B(별이와 함께)를 골라("좋은데?? B로 하자") 태스크 4b 를 더했다.
+
+### 태스크 1
+- 결정: 리뷰어가 마이 브랜치의 작업 폴더를 읽는 동안 브랜드 작업은 git worktree `../.wt-app-brand`(브랜치 `feat/brand-assets`, `feat/my-flatten-settings` 위)에서 한다 — 리뷰 중 파일이 바뀌지 않게 — 마이 쪽을 고치면 이 브랜치를 다시 올린다.
+```
+$ grep -c "035" DESIGN.md
+3
+$ sed -n 6p docs/decisions/033-brand-dark-design-system.md
+superseded_by: 035-brand-assets-byeoli.md (브랜드 자리의 범위 — 홈 아이콘 · 별이 화면 · 공유 카드를 더함. 나머지는 유효)
+```

@@ -126,13 +126,13 @@ last_reviewed: 2026-11-18
 - 실행 패턴: 혼자
 - 결과 요약: `FontWeight`(regular·medium·semibold) 추가, `Typography` 를 새 표·자간 규칙으로, 부품·차트 17개 파일의 숫자 굵기를 `FontWeight` 로(700 → semibold), Bold·ExtraBold 파일과 적재 제거.
 
-### 3b. web-width-480  · 상태: 대기
+### 3b. web-width-480  · 상태: 완료
 - 읽을 것: `src/constants/theme.ts`(`Sizes.maxContentWidth`), `grep -rn "maxContentWidth" src`, components.test.tsx 의 `Sizes` 기대값
 - 할 것: 테스트 먼저(`maxContentWidth: 480`) → 실패 확인 → `Sizes.maxContentWidth` 390 → 480, 주석의 "390" 을 고친다. 휴대폰(폭 480 미만)에서는 화면 폭 그대로라 달라지는 것이 없다.
 - 하지 말 것: 글자 크기·부품 크기를 넓은 화면에서 따로 키우기. 이유: 소유자가 고른 것은 "폭만 넓히기".
 - 검증: `npm test` → 실패 0 · 웹 넓은 화면 스크린샷에서 가운데 단이 480
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `Sizes.maxContentWidth` 390 → 480. 화면 · 시트 · 태어난 곳 고르기가 이 값 하나를 쓴다.
 
 ### 4. design-doc  · 상태: 대기
 - 읽을 것: `DESIGN.md`, ADR 033, 이 계획의 "내 결정"
@@ -226,3 +226,16 @@ Pretendard-LICENSE.txt  Pretendard-Medium.otf  Pretendard-Regular.otf  Pretendar
 
 ### 태스크 3b 추가 (2026-11-18)
 - 소유자가 웹 화면을 보고 "웹에서는 모바일 뷰긴 하지만 좀 더 크게 해야 하지 않을까" 라고 물었다. 두 길(폭만 480 으로 넓히기 · 통째로 1.15배 확대)을 보여 주고 폭 480 을 추천했고, 소유자가 "그러자" 로 골랐다. 2026-11-11 메모(폭 480 확정)와도 맞는다.
+
+### 태스크 3b
+```
+$ npx jest src/components/__tests__/components.test.tsx   (theme.ts 고치기 전)
+    -   "maxContentWidth": 480,
+    +   "maxContentWidth": 390,
+Tests:       1 failed, 23 passed, 24 total
+$ npx jest   (고친 뒤)
+Test Suites: 48 passed, 48 total
+Tests:       714 passed, 714 total
+$ npx tsc --noEmit
+tsc exit 0
+```

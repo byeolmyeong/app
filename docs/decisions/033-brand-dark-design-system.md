@@ -3,7 +3,7 @@ type: decision
 tags: [디자인, 디자인 시스템, 브랜딩, 색, 타이포그래피, 어두운 바탕]
 status: active
 last_reviewed: 2026-11-18
-superseded_by:
+superseded_by: 035-brand-assets-byeoli.md (브랜드 자리의 범위 — 홈 아이콘 · 별이 화면 · 공유 카드를 더함. 나머지는 유효)
 ---
 # 033. 화면은 어두운 바탕 · 푸른 보라 하나 · Pretendard 세 굵기로 바꾼다
 

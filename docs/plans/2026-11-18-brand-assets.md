@@ -54,19 +54,19 @@ last_reviewed: 2026-11-18
 - 검증: `npm test` 실패 0 · `npx tsc --noEmit && npx expo lint` exit 0
 - 결과 요약: `BrandColors` · `Sizes.brandMarkHeight/byeoli/byeoliSmall/homeTile`, `glow.tsx`(모양 경로 · `useSvgIds` · `GlowDefs` · `GlowLayers` · `Sparkle` · `GlowShape`), `byeoli.tsx`(표정 넷 · 움직임 · 동작 줄이기), `brand-mark.tsx`(레터링 · 작을 때 주색 고리).
 
-### 3. home-brand  · 상태: 대기
+### 3. home-brand  · 상태: 완료
 - 읽을 것: `src/app/index.tsx`, `src/features/home/home-categories.tsx`, `src/features/home/home-reading-card.tsx`, `src/__tests__/home-screen.test.tsx`
 - 할 것: 홈 머리의 `ChartMark` → `BrandMark`(높이 20). 카테고리 아이콘 넷 → 빛나는 카드(나 별 · 관계 불꽃 · 궁합 하트 · 시기 달, 카드는 살짝 기울임). "아직 별명을 짓지 않았어요" 카드에 쉬는 중 별이(작게).
 - 하지 말 것: 카테고리 시트 · 순서 · 문구 바꾸기.
 - 검증: `npm test` 실패 0, 홈 스크린샷
-- 결과 요약:
+- 결과 요약: 홈 머리 `BrandMark`(높이 20), 카테고리 넷 빛나는 카드(`GlowShape` + 기운 카드), 빈 풀이 카드에 쉬는 중 별이. 안 쓰게 된 `ChartMark` · `Sizes.mark` 삭제(따로 커밋).
 
-### 4. status-byeoli  · 상태: 대기
+### 4. status-byeoli  · 상태: 완료
 - 읽을 것: `src/app/reading.tsx`(60~82줄), `src/app/direction.tsx`, `src/app/synastry/[id]/direction.tsx`, `src/app/synastry/[id]/report.tsx`, `src/features/chart/chart-empty.tsx`, 각 화면 테스트
 - 할 것: `src/components/status-view.tsx`: `StatusView({ state: 'think' | 'error' | 'empty', title, note?, action? })` — 별이 + 제목 + 설명 + 버튼을 가운데에. 위 네 화면의 짓는 중 · 실패 블록과 `ChartEmpty` 를 이것으로 바꾼다. 문구는 그대로.
 - 하지 말 것: 화면의 상태 판단(언제 짓는 중인지) 바꾸기.
 - 검증: `npm test` 실패 0, 기다리는 화면 · 실패 화면 스크린샷
-- 결과 요약:
+- 결과 요약: `StatusView`(별이 + 제목 + 설명 + 버튼). 풀이 · 방향성 · 궁합 방향성 · 궁합 리포트의 짓는 중 · 실패와 `ChartEmpty` 를 바꿨다. 마이의 출생 정보 없음은 작은 별이가 든 카드.
 
 ### 4b. share-card-byeoli  · 상태: 대기
 - 읽을 것: 공유 카드 시안 https://claude.ai/artifact/7HrHnKwEWBM2A3ovwxPqiL 의 B, `src/features/share/share-card.tsx`, `src/features/share/share-actions.web.ts`, `docs/decisions/025-share-cards-light-typographic.md`, `src/features/share/__tests__/`
@@ -128,3 +128,25 @@ Tests:       726 passed, 726 total
 $ npx tsc --noEmit && npx expo lint
 exit 0
 ```
+
+### 태스크 3
+```
+$ npx jest src/__tests__/home-screen.test.tsx   (고치기 전)
+Tests:       3 failed, 17 passed, 20 total
+$ npx jest   (고친 뒤, ChartMark 삭제 뒤)
+Test Suites: 48 passed · Tests: 726 passed
+```
+- 결정: 홈 머리가 로고로 바뀌어 쓰는 곳이 없어진 `ChartMark` 와 `Sizes.mark` 를 지웠다(별도 refactor 커밋) — 안 쓰는 부품은 바로 지운다 — 되살리려면 커밋 하나를 되돌린다.
+- 웹 스크린샷(390, 개발 서버 8085)에서 로고 · 빛나는 카드 · 쉬는 중 별이가 그려지고 콘솔 에러 0.
+
+### 태스크 4
+```
+$ npx jest (화면 4개 · 부품 테스트, 고치기 전)
+  ● Test suite failed to run (status-view 없음) 외 화면 테스트 실패
+$ npx jest   (고친 뒤)
+Test Suites: 48 passed · Tests: 731 passed
+$ npx tsc --noEmit && npx expo lint
+exit 0
+```
+- 결정: 궁합 리포트에서 다시 보낼 수 없는 실패(상대 출생 정보를 다시 받아야 함)와 출생 정보 불일치처럼 아래에 입력 칸이 붙는 경우는 별이를 넣지 않고 그대로 뒀다 — 가운데로 채우는 상태 화면이 입력 칸을 밀어낸다 — 입력 칸 위에 작은 별이를 넣으려면 그 블록만 바꾸면 된다.
+- 결정: 마이는 `ChartEmpty`(가운데 큰 별이) 대신 작은 별이가 든 카드 — 아래 줄들을 밀어내지 않게. 이 카드의 별이 확인 테스트는 구현과 같은 단계에서 넣어 실패를 먼저 보지 못했다.

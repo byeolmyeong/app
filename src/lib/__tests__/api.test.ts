@@ -234,7 +234,7 @@ describe('api: 개발용 세션과 출생 정보 저장', () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     const session = await api.createDevSession();
-    expect(session.ok && session.data.token.length).toBeGreaterThan(0);
+    expect(session.ok && session.data.token?.length).toBeGreaterThan(0);
     expect(await api.saveProfile(profile)).toEqual({ ok: true, data: profile });
     expect(fetchFn).not.toHaveBeenCalled();
   });

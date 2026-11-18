@@ -38,7 +38,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
   function fetchToken(): Promise<boolean> {
     fetching ??= (async () => {
       const r = await deps.createDevSession();
-      if (r.ok) await deps.saveToken(r.data.token);
+      if (r.ok && r.data.token) await deps.saveToken(r.data.token);
       set(r.ok ? r.data.token : null);
       return r.ok;
     })().finally(() => {

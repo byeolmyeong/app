@@ -34,12 +34,13 @@ describe('테마', () => {
   });
 
   it('웹 넓은 화면의 앱 폭 밖은 바탕보다 한 단 어두운 색이다(2026-11-18 소유자)', () => {
+    // 테마를 웹으로 다시 불러온다(격리된 모듈에서 Platform.OS 만 웹으로 바꾼다)
     jest.isolateModules(() => {
-      const { Platform } = require('react-native');
+      const { Platform } = jest.requireActual<typeof import('react-native')>('react-native');
       const original = Platform.OS;
       Platform.OS = 'web';
       try {
-        const web = require('@/constants/theme');
+        const web = jest.requireActual<typeof import('@/constants/theme')>('@/constants/theme');
         expect(web.Colors.canvas).toBe('#08090B');
         expect(web.Colors.canvas).not.toBe(web.Colors.paper);
       } finally {

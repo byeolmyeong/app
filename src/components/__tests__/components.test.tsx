@@ -51,7 +51,7 @@ describe('테마', () => {
     expect(Object.values(Spacing).slice(0, 7)).toEqual([4, 8, 12, 16, 24, 32, 48]);
     expect(Radius).toBe(12);
     expect(SheetRadius).toBe(24);
-    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 56, maxContentWidth: 390 });
+    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 56, maxContentWidth: 480 });
   });
 });
 

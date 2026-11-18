@@ -154,41 +154,41 @@ last_reviewed: 2026-11-18
 - 실행 패턴: 혼자
 - 결과 요약: 서버 `d60bd14` — `KakaoOAuth.unlink`(설정 `byeolmyeong.auth.kakao.{admin-key,api-url}`), `AccountRepository.identity`, `AuthService.deleteAccount` 순서: 애플 철회 → 카카오 연결 끊기 → 삭제.
 
-### A1. app-decision-and-docs · 상태: 대기
+### A1. app-decision-and-docs · 상태: 완료
 - 읽을 것: S1 의 계약(서버 `docs/architecture.md`), 이 파일 "내 결정", `CLAUDE.md` 규칙 절, `docs/architecture.md` auth 줄, `docs/release-1.0.0.md` F7, `.env.example`
 - 할 것: `docs/decisions/034-social-login-platforms.md`(플랫폼별 방법: 구글 — 웹 GIS · 앱 `@react-native-google-signin/google-signin`, 애플 — iOS `expo-apple-authentication` · 웹 Apple JS · 안드로이드 없음, 카카오 — 앱 네이티브 SDK · 웹 인가 코드, 웹 세션은 httpOnly 쿠키, 개발용 세션 유지). `CLAUDE.md` "세션 토큰은 기기 보안 저장소에만" 줄을 "앱은 기기 보안 저장소, 웹은 서버의 httpOnly 쿠키(앱 코드가 토큰을 만지지 않는다)"로. release F7 의 [확인 필요]를 "출생일로 서버가 판정"으로. `.env.example` 에 사용자 준비의 `EXPO_PUBLIC_*` 이름. 앱 계획 `docs/plans/2026-11-10-app-1.0.0.md` 태스크 4 에 이 파일 링크 한 줄.
 - 주는 것: 결정 034
 - 하지 말 것: 코드. 이유: 결정이 먼저다.
 - 검증: `grep -n "httpOnly" CLAUDE.md docs/decisions/034-*.md` → 두 곳
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 앱 `c80dcbe` — 결정 034(플랫폼별 방법 표 · 웹 쿠키 · 가입 흐름 · 로그아웃 · 개발용 세션 유지), CLAUDE.md 세션 토큰 규칙, architecture 세션 흐름, release F7, `.env.example` 의 `EXPO_PUBLIC_*` 다섯, 1.0.0 계획 태스크 4 → 이 파일.
 
-### A2. native-build-setup · 상태: 대기 (사용자 준비 1 · 5 필요)
+### A2. native-build-setup · 상태: 완료
 - 읽을 것: `app.json`, AGENTS.md "Building with EAS", Expo 문서 apple-authentication(v58) · google-authentication 가이드 · 카카오 RN 라이브러리 문서(`@react-native-seoul/kakao-login` — SDK 58 · 새 아키텍처 지원과 Expo config plugin 을 먼저 확인)
 - 할 것: `app.json` 에 `ios.bundleIdentifier` · `android.package`(사용자 준비 1), `ios.usesAppleSignIn: true`. `app.config.ts` 가 `app.json` 을 읽고 `EXPO_PUBLIC_*` 로 플러그인 설정을 얹는다(구글 `iosUrlScheme`, 카카오 네이티브 앱 키). `npx expo install expo-apple-authentication @react-native-google-signin/google-signin @react-native-seoul/kakao-login`. `eas.json` 에 `development` 프로필(개발 빌드 · 내부 배포).
 - 주는 것: 개발 빌드가 가능한 설정
 - 하지 말 것: `ios/` · `android/` 를 손으로 만들기. 이유: CNG 생성물이다. 카카오 라이브러리가 SDK 58 에서 안 되면 억지로 맞추기 — 그때는 "결정:" 을 남기고 카카오도 웹 방식(인가 코드)으로 바꾼다.
 - 검증: `npx expo config --type public` 에 세 플러그인과 번들 ID. `npx expo-doctor@1.21.6` 문제 0. `npx tsc --noEmit && npx expo lint` 통과
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 앱 `52a21c5` — 패키지 다섯(`expo-apple-authentication` · `@react-native-google-signin/google-signin` · `@react-native-seoul/kakao-login` · `expo-build-properties` · `expo-dev-client`), `app.json`(번들 ID · 패키지 `com.byeolmyeong.app`, `usesAppleSignIn`, 애플 플러그인), `app.config.ts`(값이 있을 때만 구글 · 카카오 플러그인), `eas.json`(`development` · `development-simulator`).
 
-### A3. api-client-auth · 상태: 대기
+### A3. api-client-auth · 상태: 완료
 - 읽을 것: S1 계약, `src/lib/api.ts`, `src/lib/__tests__/`(fetch 흉내 방식)
 - 할 것: `src/lib/api.ts` 에 `login(credential: ProviderCredential)`, `signup(signupToken: string, birth: BirthInput)`, `getSession()`, `logout()`. `ProviderCredential` = `{ provider: 'GOOGLE', idToken } | { provider: 'APPLE', idToken, authorizationCode? } | { provider: 'KAKAO', idToken } | { provider: 'KAKAO', code, redirectUri }`. 웹(`Platform.OS === 'web'`)은 모든 요청에 `credentials: 'include'` 를 붙이고 `cookie: true` 를 보내며 Authorization 헤더를 쓰지 않는다. 응답은 쓰기 전에 모양을 검사한다. `createDevSession` 도 웹이면 `cookie: true`.
 - 주는 것: 위 네 함수와 `ProviderCredential` · `LoginResult`(`{ status: 'SIGNED_IN', token: string | null } | { status: 'SIGNUP_REQUIRED', signupToken }`) 타입
 - 하지 말 것: 웹에서 토큰을 어디든 저장. 이유: 쿠키가 들고 있다.
 - 검증: 테스트 먼저 — 웹은 credentials include · 헤더 없음, 앱은 Bearer, 두 응답 모양, 403 `UNDER_AGE` 를 오류 코드로 돌려줌. `npm test -- api` 통과
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 앱 `9f22291` — `lib/api.ts`: `ProviderCredential` · `LoginResult` · `SignupResult`, `api.login` · `api.signup` · `api.getSession` · `api.logout`, `ApiConfig.cookieSession`(앱 인스턴스는 웹일 때 true), 401 의 `code`, `DevSession.token: string | null`.
 
-### A4. session-store-auth · 상태: 대기
+### A4. session-store-auth · 상태: 완료
 - 읽을 것: A3 결과, `src/features/auth/session-store.ts` · `use-session.ts` · `token-storage.ts` 와 그 테스트
 - 할 것: `Session` 을 `{ status: 'checking' | 'signedOut' | 'signedIn' | 'signingUp', token: string | null }` 로. `start()`: 개발용 켜짐 → 지금처럼, 앱 → 보관 토큰 + `getSession()`, 웹 → `getSession()`(쿠키). `signIn(credential)` → SIGNED_IN 이면 토큰 보관(앱) · `signedIn`, SIGNUP_REQUIRED 면 가입권을 메모리에 두고 `signingUp`. `completeSignup(birth)` → 성공 `signedIn`, `UNDER_AGE` 면 가입권을 버리고 `signedOut` 과 그 사유. `signOut()` → `logout()` 후 토큰 삭제 · `signedOut`. 401 은 개발용일 때만 다시 받고, 아니면 `signedOut`. `useAuth()` 훅을 `use-session.ts` 에서 낸다.
 - 주는 것: `useAuth(): { status, signIn, completeSignup, signOut, lastError }`
 - 하지 말 것: 만 14세를 앱에서 계산. 이유: 서버가 판정한다(golden rules).
 - 검증: 테스트 먼저 — 로그인 성공 시 토큰 저장, 로그아웃 시 삭제, 새 사용자 → signingUp → signedIn, 만 14세 미만 → signedOut, 401 → signedOut. `npm test -- auth` 통과
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 앱 `2dd073c` — `session-store.ts`: `Session { status, token, ready, lastError }` · `SessionStatus` · `SignInOutcome`, `signIn` · `completeSignup` · `signOut` · `refresh` · `clear`. `use-session.ts`: `useAuth()`(status · lastError · signIn · completeSignup · signOut), `getSession()`, `useSession(start)`.
 
 ### A5. web-provider-credentials · 상태: 대기
 - 읽을 것: A3 의 `ProviderCredential`, 구글 GIS(https://developers.google.com/identity/gsi/web/guides/overview), Apple JS(`appleid.auth.js`, 팝업 방식), 카카오 인가 코드 요청(REST)
@@ -321,3 +321,59 @@ last_reviewed: 2026-11-18
 - 결정: 어드민 키가 없으면 카카오를 부르지 않고 `event=kakao_unlink_failed reason=NoAdminKey` 로그 — 계정은 지운다 — 틀리면 비용: 없음.
 - 빨강: `./gradlew test --tests '*KakaoOAuthClient*' --tests '*SocialLogin*'` → `34 tests completed, 3 failed`.
 - 초록: `./gradlew build` → `BUILD SUCCESSFUL in 2m 16s`, 테스트 479개 실패 0.
+
+### A1 (2026-11-18, 앱 브랜치 `feat/social-login`, 워크트리 `../.wt-app-login`, `c80dcbe`)
+- 결정: release F7 의 "웹·iOS·Android 모두에서 셋 다" 를 "Android 는 구글·카카오" 로 고쳤다 — 계획의 "내 결정"(안드로이드 애플 없음)을 소유자가 승인했다 — 틀리면 비용: 안드로이드 애플(서버 리디렉트 경로 + 앱 웹 방식).
+- 결정: 계획 파일을 따로 먼저 커밋했다(`e1e7265`, `docs(plans)`) — 계획과 결정 문서를 한 커밋에 섞지 않는다.
+- 검증 `grep -n "httpOnly" CLAUDE.md docs/decisions/034-*.md` → CLAUDE.md:45, 034:8 · 034:27.
+
+### A2 (2026-11-18, 앱 `52a21c5`)
+- 확인: npm 레지스트리 — `@react-native-seoul/kakao-login` 6.0.4(2026-08, README 에 Expo 설정: 플러그인 `kakaoAppKey` + `expo-build-properties` 의 카카오 Maven 저장소, 개발 빌드만, `login()` 결과에 `idToken`), `@react-native-google-signin/google-signin` 17.0.0(2026-10, peer `expo >=52.0.40`), `expo-apple-authentication` 58.0.3. 대안 `@react-native-kakao/*` 3.2.0 도 살아 있다 — 계획대로 seoul 판을 쓴다.
+- 결정: 노드는 `.nvmrc` 의 22 를 쓴다(셸 기본은 20 이라 `~/.nvm/versions/node/v22.21.1/bin` 을 앞에 둔다).
+- 결정: `expo-dev-client` 를 더 들였다(계획에 없음) — `eas.json` 의 개발 빌드 프로필(`developmentClient`)에 필요하다 — 틀리면 비용: 패키지 하나.
+- 결정: `npx expo install` 이 `app.json` 에 넣은 플러그인 셋(구글 · 카카오 · build-properties, 옵션 없음)을 빼고 `app.config.ts` 에서 값이 있을 때만 넣는다 — 구글 플러그인은 `iosUrlScheme` 없이 설정 읽기에서 예외, 카카오는 `kakaoundefined` 스킴을 만든다 — 틀리면 비용: 값 없는 빌드에서 그 공급자 로그인 불가(의도).
+- 결정: `eas.json` 에 `development-simulator`(iOS 시뮬레이터) 프로필도 뒀다 — 등록한 아이폰이 없어도 확인할 수 있게 — 틀리면 비용: 없음.
+- 결정: CLAUDE.md 명령어에 기기 개발 빌드 한 줄(51줄).
+- 검증 `npx expo config --type public`: 값 없이 → `com.byeolmyeong.app com.byeolmyeong.app True`, 플러그인 `[… 'expo-apple-authentication']`. 가짜 값과 함께 → 구글 `iosUrlScheme: com.googleusercontent.apps.123-abc` · 카카오 `kakaoAppKey` · build-properties 카카오 저장소.
+- 검증 `npx tsc --noEmit` exit 0, `npx expo lint` exit 0, `npx expo export --platform web` 성공.
+- 미달(기존): `npx expo-doctor@1.21.6` → `1 check failed` — "packages match versions required by installed Expo SDK" 의 패치 버전 12개(`expo` 58.0.23→58.0.26, `expo-router`, `expo-web-browser` 58.0.7→58.1.0, `jest-expo` 등). 모두 이번에 들인 것이 아니다. 따로 올릴지 소유자에게 묻는다(계획의 "문제 0" 은 이것 말고 충족).
+- 주의: 첫 `npm test` 에서 5개 실패(스위트 4) → 같은 코드로 두 번 더 돌려 712개 모두 통과. 원인 미확인 — 같은 시각 서버 리뷰어가 Gradle 을 돌리던 부하로 인한 타임아웃으로 추정한다.
+
+### A3 (2026-11-18, 앱 `9f22291`)
+- 결정: 웹 판정은 `createApi` 의 `cookieSession` 설정 하나로 하고 앱 인스턴스가 `Platform.OS === 'web'` 를 넣는다 — 테스트가 플랫폼을 흉내 내지 않고 설정으로 시험한다 — 틀리면 비용: 없음.
+- 결정: 웹에서는 서버가 토큰을 본문에 넣어 보내도 버린다(`token: null`) — "앱 코드가 웹에서 토큰을 만지지 않는다"(결정 034) — 틀리면 비용: 없음.
+- 결정: 401 응답도 오류 이름(`code`)을 읽는다 — 로그인 · 가입은 `INVALID_ID_TOKEN` · `INVALID_CODE` · `SIGNUP_EXPIRED` 로 갈린다. 기존 401 결과의 모양은 본문이 없으면 그대로다 — 틀리면 비용: 없음.
+- 결정: `DevSession.token` 을 `string | null` 로 바꾸며 `session-store.ts` 의 저장 한 줄을 `r.data.token` 이 있을 때만으로 고쳤다(타입 맞춤, 상태 설계는 A4) · 기존 테스트 한 줄(`token?.length`)도 타입만 맞췄다(단언은 그대로).
+- 빨강: `npx jest src/lib/__tests__/api-auth.test.ts` → `Tests: 11 failed, 11 total`.
+- 초록: `npx tsc --noEmit` 0 · `npx expo lint` 0 · `npm test` → `Tests: 723 passed, 723 total`.
+
+### A4 (2026-11-18, 앱 `2dd073c`)
+- 결정: `Session` 에 `ready` · `token` 을 남기고 `status` · `lastError` 를 더했다 — 화면 열한 곳이 `ready` 를 쓴다. 계획의 모양(`{ status, token }`)보다 넓다 — 틀리면 비용: 없음.
+- 결정: 로그인 여부를 `token !== null` 로 보던 두 곳(`src/app/index.tsx` 되살리기, `src/features/chart/birth-form.tsx` 서버 저장)을 `status === 'signedIn'` 으로 바꿨다 — 웹은 쿠키 세션이라 토큰이 언제나 null 이다 — 틀리면 비용: 웹에서 출생 정보가 서버에 저장되지 않는다(이 수정이 없으면).
+- 결정: 앱이 켤 때 서버에 닿지 못하면(네트워크 · 서버 오류) 보관된 토큰을 믿고 로그인 상태로 둔다. 웹은 확인에 실패하면 로그인 전으로 둔다 — 앱은 기기에 토큰이 있어 다음 401 에서 바로잡히고, 웹은 믿을 것이 없다 — 틀리면 비용: 한 줄.
+- 결정: 소셜 로그인 중 401 은 다시 받지 않고 로그인 전이 된다(`refresh` 가 false). 개발용은 지금처럼 새로 받는다.
+- 결정: 계정을 지운 뒤(`clear`)에는 개발용이어도 로그인 전이 된다(전에는 토큰 없이 두었다가 다음 401 에 새로 받았다). 개발용 빌드의 로그인 화면에서 다시 들어가는 길은 A7 이 정한다.
+- 결정: 리뷰 초점 5(웹에서 다른 탭이 열려 있을 때)는 이번에 화면이 다시 보일 때 `getSession()` 을 부르지 않는다 — 다른 탭은 다음 요청의 401 로 로그인 전이 된다 — 틀리면 비용: 앞으로 돌아올 때 확인 한 번(AppState/visibility).
+- 일괄 변경: 화면 테스트 16개 파일의 세션 흉내 45곳을 새 모양으로 옮겼다(토큰 있음 → `signedIn`, null+준비 → `signedOut`, 준비 전 → `checking`). 처음 쓴 정규식이 줄을 넘겨 `restore-birth.test.tsx` 의 타입 표기를 삼켜 되돌리고 줄을 넘지 않는 식으로 다시 했다.
+- 빨강: `npx jest src/features/auth` → `Tests: 23 failed, 6 passed, 29 total`.
+- 초록: `npx tsc --noEmit` 0 · `npx expo lint` 0 · `npm test` → `Tests: 734 passed, 734 total`.
+
+### 서버 독립 리뷰(2026-11-18, S1~S8 뒤 · `reviewer` 지시로 깨끗한 컨텍스트)
+- 결과: 차단 0 · 수정 3 · 제안 13. 리뷰어가 `./gradlew build --rerun-tasks` 479개 통과를 다시 확인하고, 실제 구글 JWKS · 빌드한 jar · 임시 Postgres 로 시험했다.
+- 처리(서버 `fe1ed6b` · `668e4e8` · `19dfdf1` · `360f2f6`, 각 수정은 실패하는 테스트를 먼저 보고 고쳤다 — 빨강 `99 tests completed, 13 failed`):
+  - 1 수정 · 고침: 모르는 kid 로 키 다시 받기 한도(`RateLimitReachedException`)에 걸린 토큰이 502 였다 → 401(알림은 400). 키 받기 타임아웃 0.5초 → 연결 2초 · 읽기 3초.
+  - 2 수정 · 고침: `.env` 는 여러 줄 값을 못 읽는데 `.env.example` 이 .p8 을 "줄바꿈 포함" 이라 안내 → 한 줄 `\n` 으로 안내, 값이 있는데 못 읽으면 `apple_private_key_invalid reason=Empty`, 설정이 없어 철회 못 함은 `apple_revoke_failed reason=NotConfigured`.
+  - 3 수정 · 고침: 결정 021 이 "배포 전 확인 2 · 3 이 풀린다" 고 잘못 적었다 → 3 만 해결, 2(개발용 로그인 기동 안전장치)는 아직(호스팅 결정 020 의 배포 전 안전장치 계획). 계획에도 적었다.
+  - 4 고침(문서): `SESSION_COOKIE_SECURE=` 빈 값이면 서버가 안 뜬다 — 안내만 고쳤다(기존 `AUTH_DEV_ENABLED=` 와 같은 방식).
+  - 5 고침: 늦게 되풀이된 `consent-revoked` 가 새 세션까지 지웠다 → `event_time` 보다 먼저 생긴 세션만.
+  - 6 고침: `/auth/login` · `/auth/signup` 주소별 분당 30(`auth-per-minute`). 주의: 주소는 `remoteAddr` 라 Caddy 뒤에서는 전달 헤더 설정이 없으면 모든 요청이 한 주소다(기존 제한들도 같다) — 배포 작업에 알린다.
+  - 7 고침: 대상이 여럿이면 `azp` 가 우리여야 한다.
+  - 8 고침: 남은 가입권으로 다시 가입하면 기존 출생 정보를 덮고 감사 `CREATED` 를 또 남겼다 → 계정이 있으면 세션만.
+  - 9 미룸: 만료 가입권의 애플 토큰을 철회하지 않고 버린다 · 다음 가입권을 넣을 때만 치운다 — 정리 일꾼이 필요하다. 결정: 미룬다 — 가입권의 수명이 30분이고 담긴 것은 공급자 식별자 · 애플 토큰뿐 — 틀리면 비용: 가입을 그만둔 애플 사용자의 앱 연결이 애플 쪽에 남는다.
+  - 10 미룸(불확실): 쿠키 이름 `__Host-` 접두사(형제 서브도메인 XSS 로 쿠키 심기) — 접두사는 Secure 가 필수라 로컬 http 와 이름이 갈린다. 결정: 미룬다 — 공격은 같은 도메인의 다른 화면 XSS 가 전제 — 틀리면 비용: 쿠키 이름 바꾸기(계약 · 앱은 이름을 모른다).
+  - 11 · 12 · 13 · 14 고침: 계정 삭제가 쿠키도 지운다 · 공급자 정리의 예상 밖 예외에도 계정 삭제 · 애플 계정 삭제 알림의 감사 행위자 SYSTEM · 점검 중에도 애플 알림.
+  - 15 고침: Origin 검사 GET · HEAD 문서, 알림 본문이 JSON 아니면 400 `INVALID_REQUEST` 문서, 카카오 400 만 `INVALID_CODE`(401 · 403 은 502), 키 타임아웃.
+  - 16 받아들임: 결정 021 에 결정이 여럿 묶였다 — 이미 활성이라 다음 결정부터 나눈다.
+- 리뷰가 "보지 못한 것" 으로 남긴 것 중 소유자에게 물을 것: 가입 뒤 설정에서 생년월일을 만 14세 미만으로 고쳐도 막지 않는다(`PUT /profile`) · 연결 끊기 · 철회 실패 로그에 다시 처리할 식별자가 없다(토큰 · 계정 식별자를 로그에 남기지 않는 규칙 때문).
+- 관찰: `AdminAppConfigApiIntegrationTest` 의 한 단언(`updatedAt.isAfter(before)`)이 한 번 실패 → 혼자 두 번 통과. JVM 시계와 DB 컨테이너 시계를 견주는 기존 테스트라 흔들린다(이번 변경과 무관). 손대지 않았다.
+- 초록: `./gradlew build` → `BUILD SUCCESSFUL in 2m 48s`, 테스트 489개 실패 0.

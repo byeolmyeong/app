@@ -1,9 +1,9 @@
 ---
 type: decision
 tags: [앱 이름, 브랜딩, 상표]
-status: active
+status: superseded
 last_reviewed: 2026-11-11
-superseded_by:
+superseded_by: 032-keep-name-byeolmyeong.md
 ---
 # 013. 앱 이름 "별명"을 바꾼다 (새 이름은 브랜딩에서 정한다)
 

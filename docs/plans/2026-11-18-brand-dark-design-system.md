@@ -84,7 +84,7 @@ last_reviewed: 2026-11-18
 
 ## 태스크
 
-### 1. brand-decisions  · 상태: 대기
+### 1. brand-decisions  · 상태: 완료
 - 읽을 것: `docs/decisions/013-rename-app.md`, `018-design-system-from-didit.md`, `025-share-cards-light-typographic.md`, `docs/product.md` "이름" 절, `CLAUDE.md` 1줄, `README.md` 3줄, 이 계획의 "인터뷰 결과"·"내 결정"
 - 할 것:
   - `docs/raw/2026-11-18-brand-figma/` 에 시안 그림 2장(png)과 `README.md`(Figma 주소·노드·로고 글꼴·뽑은 색)를 둔다.
@@ -96,7 +96,7 @@ last_reviewed: 2026-11-18
 - 하지 말 것: 기존 ADR 본문 고쳐 쓰기. 이유: golden-rules "대체 표시만".
 - 검증: `ls docs/decisions/03[23]-*.md docs/raw/2026-11-18-brand-figma/` → 파일 4개 이상 · `grep -n "가칭" CLAUDE.md README.md docs/product.md` → 0줄
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: ADR 032(이름 유지 · 이름 풀이)·033(어두운 브랜딩) · 013 은 superseded, 018·025 는 대체 표시 · 원본 `docs/raw/2026-11-18-figma-brand.md` + 그림 2장 · CLAUDE.md·README·product.md 의 가칭 제거.
 
 ### 2. dark-color-tokens  · 상태: 대기
 - 읽을 것: `src/constants/theme.ts`, `src/components/__tests__/components.test.tsx`(색 기대값 20~33줄, 버튼 63~71줄), `src/components/button.tsx`, `src/components/sheet.tsx`, `app.json`, 이 계획의 "내 결정" 색 표
@@ -167,3 +167,16 @@ last_reviewed: 2026-11-18
 ## 실행 기록
 - 2026-11-18 승인. 시안 페이지(https://claude.ai/artifact/F9bt6ViFrYiZ8otixKMUUi)를 보고 "승인".
 - 결정: 웹 넓은 화면의 바깥은 흰색 그대로 — 시안에서 물었으나 답이 없어 정해 둔 값(2026-11-11)을 따른다 — 틀리면 `Colors.canvas` 한 줄을 바꾸면 된다.
+
+### 태스크 1
+- 결정: 원본 경로를 `docs/raw/2026-11-18-figma-brand.md`(+ 같은 이름 폴더에 그림)로 — docs/raw/README.md 의 파일명 규칙(`날짜-출처-slug.md`)을 따랐다 — 틀리면 경로만 옮기면 된다.
+```
+$ ls docs/decisions/03[23]-*.md docs/raw/2026-11-18-figma-brand*
+docs/decisions/032-keep-name-byeolmyeong.md
+docs/decisions/033-brand-dark-design-system.md
+docs/raw/2026-11-18-figma-brand.md
+docs/raw/2026-11-18-figma-brand:
+glass-star.png  glow-icons.png
+$ grep -n "가칭" CLAUDE.md README.md docs/product.md
+(출력 없음, exit 1)
+```

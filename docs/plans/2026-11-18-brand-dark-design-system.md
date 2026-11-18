@@ -113,7 +113,7 @@ last_reviewed: 2026-11-18
 - 실행 패턴: 혼자
 - 결과 요약: `Colors` 를 결정 033 의 값으로(`raised`·`primarySoft` 새로, `primaryLight`·`night`·`nightGold` 없앰), 막 60%, 시트 바탕 `raised`·손잡이 `muted`, 빨강 버튼 글씨 `ink`, `app.json` 화면 모드 dark·스플래시 바탕 `#0D0E12`. "초록" 이 적힌 주석 9곳을 "주색" 으로.
 
-### 3. typography-scale  · 상태: 대기
+### 3. typography-scale  · 상태: 완료
 - 읽을 것: `src/constants/theme.ts`(`Typography`·`FontFamily`), `src/app/_layout.tsx`(`useFonts`), components.test.tsx 42~43줄, 이 계획의 "내 결정" 글자 표, `grep -rn "fontWeight" src` 결과(부품 15곳 + SVG 4곳)
 - 할 것:
   - 테스트 먼저: components.test.tsx 의 `Typography.display` 기대를 `{ fontSize: 28, lineHeight: 38, fontWeight: '500' }` 로, 굵기가 400·500·600 만인지 모든 단계를 도는 기대를 더한다 → 실패 확인.
@@ -123,6 +123,14 @@ last_reviewed: 2026-11-18
 - 주는 것: `FontWeight`.
 - 하지 말 것: 글자 크기를 표와 다르게 키우기, 새 글꼴 더하기. 이유: 화면 배치가 깨진다·소유자가 고르지 않았다.
 - 검증: `npm test` → 실패 0 · `grep -rnE "fontWeight[=:] ?['\"]" src | grep -v constants/theme.ts` → 0줄 · `ls assets/fonts` → Regular·Medium·SemiBold·LICENSE 4개
+- 실행 패턴: 혼자
+- 결과 요약: `FontWeight`(regular·medium·semibold) 추가, `Typography` 를 새 표·자간 규칙으로, 부품·차트 17개 파일의 숫자 굵기를 `FontWeight` 로(700 → semibold), Bold·ExtraBold 파일과 적재 제거.
+
+### 3b. web-width-480  · 상태: 대기
+- 읽을 것: `src/constants/theme.ts`(`Sizes.maxContentWidth`), `grep -rn "maxContentWidth" src`, components.test.tsx 의 `Sizes` 기대값
+- 할 것: 테스트 먼저(`maxContentWidth: 480`) → 실패 확인 → `Sizes.maxContentWidth` 390 → 480, 주석의 "390" 을 고친다. 휴대폰(폭 480 미만)에서는 화면 폭 그대로라 달라지는 것이 없다.
+- 하지 말 것: 글자 크기·부품 크기를 넓은 화면에서 따로 키우기. 이유: 소유자가 고른 것은 "폭만 넓히기".
+- 검증: `npm test` → 실패 0 · 웹 넓은 화면 스크린샷에서 가운데 단이 480
 - 실행 패턴: 혼자
 - 결과 요약:
 
@@ -199,3 +207,22 @@ tsc exit 0
 $ grep -rn "primaryLight\|nightGold\|Colors.night" src
 (출력 없음, exit 1)
 ```
+
+### 태스크 3
+```
+$ npx jest src/components/__tests__/components.test.tsx   (theme.ts 고치기 전)
+  ● 테마 › 글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다
+Tests:       1 failed, 23 passed, 24 total
+$ npx jest   (고친 뒤)
+Test Suites: 48 passed, 48 total
+Tests:       714 passed, 714 total
+$ npx tsc --noEmit
+tsc exit 0
+$ grep -rnE "fontWeight[=:] ?['\"]" src | grep -v constants/theme.ts | grep -v __tests__
+(출력 없음, exit 1)
+$ ls assets/fonts
+Pretendard-LICENSE.txt  Pretendard-Medium.otf  Pretendard-Regular.otf  Pretendard-SemiBold.otf
+```
+
+### 태스크 3b 추가 (2026-11-18)
+- 소유자가 웹 화면을 보고 "웹에서는 모바일 뷰긴 하지만 좀 더 크게 해야 하지 않을까" 라고 물었다. 두 길(폭만 480 으로 넓히기 · 통째로 1.15배 확대)을 보여 주고 폭 480 을 추천했고, 소유자가 "그러자" 로 골랐다. 2026-11-11 메모(폭 480 확정)와도 맞는다.

@@ -29,6 +29,7 @@
 ## 명령어 (Node 22)
 - 개발: `npx expo start --web` · 빌드: `npx expo export --platform web` · 테스트: `npm test` · 린트/타입: `npx tsc --noEmit && npx expo lint`
 - 패키지 설치: `npx expo install <패키지>` 만. 환경 변수 이름은 루트 `.env.example`
+- 기기 개발 빌드(소셜 로그인은 Expo Go 에서 안 된다, 결정 034): `npx eas-cli@latest build --profile development`(iOS 시뮬레이터는 `development-simulator`). 공급자 값은 `.env` 의 `EXPO_PUBLIC_*` → `app.config.ts`
 
 ## 도구 (.claude/)
 - 스킬 `/plan-feature`(킷 제공): 한 커밋을 넘는 요청은 바로 만들지 않는다. `docs/plans/`에 계획 파일 → 승인 → 실행 → 검증.

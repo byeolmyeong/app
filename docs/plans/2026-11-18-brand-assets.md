@@ -42,7 +42,7 @@ last_reviewed: 2026-11-18
 - 검증: ADR 035 가 033 을 가리키고 DESIGN.md 가 035 를 가리킨다.
 - 결과 요약: ADR 035(로고 B · 앱 아이콘 B · 빛나는 카드 · 별이 · 브랜드 자리 · 움직임 예외 · SVG 원본), 033 머리에 대체 표시, DESIGN.md 의 브랜드 자리 · 로고 · 앱 아이콘 · 별이 · 금지 · 애니메이션 · 아이콘 줄.
 
-### 2. brand-parts  · 상태: 대기
+### 2. brand-parts  · 상태: 완료
 - 읽을 것: 시안 페이지의 그리는 법(네 갈래 별 · 불꽃 · 하트 · 달 · 유리 구슬 · 얼굴), `src/constants/theme.ts`, `src/components/chart-mark.tsx`(react-native-svg 쓰는 예)
 - 할 것:
   - `theme.ts` 에 `BrandColors`(빛 · 빛의 심 · 옅은 보라 · 구슬 청록 · 테두리 무지갯빛 멈춤점 · 카드 바탕).
@@ -52,7 +52,7 @@ last_reviewed: 2026-11-18
   - 테스트 먼저(`components.test.tsx`): 상태별 얼굴 testID, BrandMark 의 접근성 이름, 동작 줄이기에서 움직임 없음.
 - 주는 것: `GlowShape` · `GlassOrb` · `Byeoli` · `BrandMark` · `BrandColors`.
 - 검증: `npm test` 실패 0 · `npx tsc --noEmit && npx expo lint` exit 0
-- 결과 요약:
+- 결과 요약: `BrandColors` · `Sizes.brandMarkHeight/byeoli/byeoliSmall/homeTile`, `glow.tsx`(모양 경로 · `useSvgIds` · `GlowDefs` · `GlowLayers` · `Sparkle` · `GlowShape`), `byeoli.tsx`(표정 넷 · 움직임 · 동작 줄이기), `brand-mark.tsx`(레터링 · 작을 때 주색 고리).
 
 ### 3. home-brand  · 상태: 대기
 - 읽을 것: `src/app/index.tsx`, `src/features/home/home-categories.tsx`, `src/features/home/home-reading-card.tsx`, `src/__tests__/home-screen.test.tsx`
@@ -113,4 +113,18 @@ $ grep -c "035" DESIGN.md
 3
 $ sed -n 6p docs/decisions/033-brand-dark-design-system.md
 superseded_by: 035-brand-assets-byeoli.md (브랜드 자리의 범위 — 홈 아이콘 · 별이 화면 · 공유 카드를 더함. 나머지는 유효)
+```
+
+### 태스크 2
+- 결정: 움직임은 `react-native-reanimated` 대신 React Native 의 `Animated` 와 `AccessibilityInfo` 로 — 시트가 이미 같은 방식이고 테스트 준비가 따로 필요 없다 — 틀리면 `byeoli.tsx` 의 `useLoop` 하나만 바꾸면 된다.
+- 결정: `GlassOrb` 부품은 만들지 않았다 — 앱 안에서 쓰는 곳이 없다(구슬은 로고 받침과 앱 아이콘 · 스플래시 PNG 에만) — 공유 카드나 다른 화면에 필요해지면 만든다.
+- 결정: 별이 · 빛 모양은 `aria-hidden` 이라 테스트에서 `includeHiddenElements` 로 찾는다.
+```
+$ npx jest src/components/__tests__/components.test.tsx   (부품 만들기 전)
+  ● Test suite failed to run   (Cannot find module '@/components/brand-mark')
+$ npx jest   (만든 뒤)
+Test Suites: 48 passed, 48 total
+Tests:       726 passed, 726 total
+$ npx tsc --noEmit && npx expo lint
+exit 0
 ```

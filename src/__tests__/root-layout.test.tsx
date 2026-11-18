@@ -7,7 +7,7 @@ import { useSession } from '@/features/auth/use-session';
 jest.mock('expo-router', () => ({ Stack: () => null, useSegments: jest.fn(() => []) }));
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() }));
-jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ token: null, ready: false })) }));
+jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null })) }));
 
 const mockSegments = useSegments as jest.Mock;
 

@@ -36,7 +36,7 @@ jest.mock('expo-router', () => {
   const { Text: T } = jest.requireActual('react-native');
   return { Stack: () => <T>앱의 화면들</T>, useSegments: () => [] };
 });
-jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ token: null, ready: true })) }));
+jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })) }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 const mockSetHandler = setUpdateRequiredHandler as jest.Mock;

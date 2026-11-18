@@ -23,9 +23,9 @@ jest.mock('@/lib/api', () => ({
   api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  getSession: jest.fn(() => ({ token: null, ready: true })),
+  getSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),
   // 홈은 세션이 없으면 서버에 저장된 출생 정보를 묻지 않고 입력부터 받는다(결정 029).
-  useSession: jest.fn(() => ({ token: null, ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -39,7 +39,7 @@ beforeEach(async () => {
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
   mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
-  mockGetSession.mockReturnValue({ token: null, ready: true });
+  mockGetSession.mockReturnValue({ status: 'signedOut' as const, token: null, ready: true, lastError: null });
 });
 
 /** 시트가 닫혀 화면에서 사라질 때까지 기다린다(닫히는 움직임이 끝나야 사라진다) */
@@ -168,7 +168,7 @@ describe('출생 정보 입력(홈)', () => {
   });
 
   it('세션이 있으면 차트를 받은 뒤 출생 정보를 서버에도 저장한다(PUT /profile)', async () => {
-    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
@@ -179,7 +179,7 @@ describe('출생 정보 입력(홈)', () => {
   });
 
   it('서버에 출생 정보를 저장하지 못하면 안내를 보여 주고 보관도 이동도 하지 않는다', async () => {
-    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'NETWORK' });
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
@@ -191,7 +191,7 @@ describe('출생 정보 입력(홈)', () => {
   });
 
   it('"모름" 을 고르면 태어난 곳 칸이 사라지고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 020)', async () => {
-    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
     expect(screen.getByTestId('place-field')).toBeTruthy();

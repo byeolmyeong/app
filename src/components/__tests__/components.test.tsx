@@ -33,6 +33,21 @@ describe('테마', () => {
     });
   });
 
+  it('웹 넓은 화면의 앱 폭 밖은 바탕보다 한 단 어두운 색이다(2026-11-18 소유자)', () => {
+    jest.isolateModules(() => {
+      const { Platform } = require('react-native');
+      const original = Platform.OS;
+      Platform.OS = 'web';
+      try {
+        const web = require('@/constants/theme');
+        expect(web.Colors.canvas).toBe('#08090B');
+        expect(web.Colors.canvas).not.toBe(web.Colors.paper);
+      } finally {
+        Platform.OS = original;
+      }
+    });
+  });
+
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
       'display', 'title', 'heading', 'button', 'body', 'table', 'label', 'mono', 'number', 'picker',

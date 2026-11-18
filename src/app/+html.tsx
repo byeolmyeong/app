@@ -30,7 +30,7 @@ export default function Root({ children }: PropsWithChildren) {
   );
 }
 
-// 넓은 화면의 바깥은 흰색(canvas), 휴대폰 폭에서는 앱 바탕색. 자동 완성 색은 칸의 채운 면과 본문 글씨로 덮는다.
+// 넓은 화면의 바깥은 canvas(한 단 어두운 밤색), 휴대폰 폭에서는 앱 바탕색. 자동 완성 색은 칸의 채운 면과 본문 글씨로 덮는다.
 const darkCss = `
 html,body{background-color:${Colors.canvas}}
 @media (max-width:${Sizes.maxContentWidth}px){html,body{background-color:${Colors.paper}}}

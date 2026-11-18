@@ -14,10 +14,10 @@ export const Colors = {
   /** 바탕 위에 떠 있는 면: 하단 시트 */
   raised: '#16171D',
   /**
-   * 앱 화면 폭(Sizes.maxContentWidth) 밖의 여백. 웹 넓은 화면은 흰색(2026-11-11 소유자 확정),
-   * 앱(태블릿·폴드 안쪽 화면)은 바탕과 같은 색이라 양옆에 흰 띠가 생기지 않는다.
+   * 앱 화면 폭(Sizes.maxContentWidth) 밖의 여백. 웹 넓은 화면은 바탕보다 한 단 어두운 밤색이고(2026-11-18 소유자),
+   * 앱(태블릿·폴드 안쪽 화면)은 바탕과 같은 색이다.
    */
-  canvas: Platform.OS === 'web' ? '#FFFFFF' : paper,
+  canvas: Platform.OS === 'web' ? '#08090B' : paper,
   /** 본문 글씨, 주색·빨강 위의 글씨. 대비 17.4 */
   ink: '#F2F3F7',
   /** 보조 글씨. 대비 8.5 */

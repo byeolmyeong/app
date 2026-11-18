@@ -10,8 +10,8 @@ const S = strings.share;
 const C = fixtures.shareCards;
 /** 카드에 그려진 글자 전부(그린 순서) */
 const texts = () => screen.getAllByText(/[\s\S]+/).map((node) => [node.props.children].flat().join(''));
-/** 어느 카드에나 있는 것: 앱 이름과 한 줄 소개 */
-const frame = (inner: string[]) => [strings.appName, ...inner, S.tagline];
+/** 어느 카드에나 있는 글: 카드의 값 다음에 한 줄 소개(앱 이름은 로고 그림이다, 결정 036) */
+const frame = (inner: string[]) => [...inner, S.tagline];
 
 describe('공유 카드', () => {
   it('요약 해석 카드는 한 줄 총평과 키워드 셋만 그린다', async () => {
@@ -60,5 +60,24 @@ describe('공유 카드', () => {
     await render(<ShareCardView card={C.reading} width={180} />);
     const { width, height } = StyleSheet.flatten(screen.getByTestId('share-card-frame').props.style);
     expect([width, height]).toEqual([180, 320]);
+  });
+
+  it('위에 별이, 아래에 로고(앱 이름으로 읽힌다)가 있고, 별이의 표정은 카드 종류로만 정한다(결정 036)', async () => {
+    const face = (id: string) => screen.queryByTestId(id, { includeHiddenElements: true });
+    const cases: [ShareCard, string][] = [
+      [C.reading, 'share-byeoli-default'],
+      [C.score, 'share-byeoli-happy'],
+      [{ ...C.score, score: 12, scoreLabel: '다른 결의 사이' }, 'share-byeoli-happy'],
+      [{ kind: 'RANKING', relation: 'LOVE', entries: [{ name: '지우', score: 80 }] }, 'share-byeoli-default'],
+      [C.nextTurn, 'share-byeoli-think'],
+    ];
+    for (const [card, expected] of cases) {
+      const view = await render(<ShareCardView card={card} />);
+      expect(face(expected)).toBeTruthy();
+      for (const other of ['share-byeoli-default', 'share-byeoli-happy', 'share-byeoli-think'].filter((id) => id !== expected))
+        expect(face(other)).toBeNull();
+      expect(screen.getByLabelText(strings.appName)).toBeTruthy();
+      await view.unmount();
+    }
   });
 });

@@ -14,7 +14,7 @@ export default function RootLayout() {
   // 공유 페이지(/s/…)는 로그인 없이 열리는 화면이라 그 안에서는 시작하지 않는다(결정 025).
   const [first] = useSegments();
   useSession(first !== 's');
-  // 한 가족 이름 아래 굵기별 파일을 올린다. 굵기는 fontWeight 로 고른다.
+  // 한 가족 이름 아래 굵기별 파일을 올린다. 굵기는 400 · 500 · 600 세 가지만 쓴다(theme.ts FontWeight, 결정 033).
   const [loaded, error] = useFonts([
     {
       fontFamily: FontFamily,
@@ -22,8 +22,6 @@ export default function RootLayout() {
         { path: require('@/assets/fonts/Pretendard-Regular.otf'), weight: 400, style: 'normal' },
         { path: require('@/assets/fonts/Pretendard-Medium.otf'), weight: 500, style: 'normal' },
         { path: require('@/assets/fonts/Pretendard-SemiBold.otf'), weight: 600, style: 'normal' },
-        { path: require('@/assets/fonts/Pretendard-Bold.otf'), weight: 700, style: 'normal' },
-        { path: require('@/assets/fonts/Pretendard-ExtraBold.otf'), weight: 800, style: 'normal' },
       ],
     },
   ]);

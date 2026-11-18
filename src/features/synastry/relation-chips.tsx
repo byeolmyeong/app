@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Radius, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { RELATIONS, type Relation } from '@/lib/api';
 
@@ -52,5 +52,5 @@ const styles = StyleSheet.create({
   },
   invalid: { borderColor: Colors.danger },
   on: { backgroundColor: Colors.primarySoft, borderColor: Colors.primary },
-  onText: { fontWeight: '700' },
+  onText: { fontWeight: FontWeight.semibold },
 });

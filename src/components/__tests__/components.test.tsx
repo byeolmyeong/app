@@ -11,7 +11,7 @@ import { SectionLabel } from '@/components/section-label';
 import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, FontFamily, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontFamily, FontWeight, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 describe('테마', () => {
@@ -37,11 +37,17 @@ describe('테마', () => {
       'display', 'title', 'heading', 'button', 'body', 'table', 'label', 'mono', 'number', 'picker',
     ]);
     expect(Object.values(Typography).every((t) => t.fontFamily === FontFamily)).toBe(true);
-    expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 39, fontWeight: '700' });
+    expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 38, fontWeight: '500' });
     expect(Typography.button).toMatchObject({ fontSize: 16, fontWeight: '600' });
-    expect(Typography.body).toMatchObject({ fontSize: 15, lineHeight: 23 });
-    // 글자 사이는 크기의 -2%
-    expect(Typography.body.letterSpacing).toBeCloseTo(-0.3);
+    expect(Typography.body).toMatchObject({ fontSize: 15, lineHeight: 24, fontWeight: '400' });
+    // 자간: 20 이상 -2%, 15~18 -1%, 14 이하 0(결정 033)
+    expect(Typography.display.letterSpacing).toBeCloseTo(-0.56);
+    expect(Typography.body.letterSpacing).toBeCloseTo(-0.15);
+    expect(Typography.label.letterSpacing).toBe(0);
+    // 굵기는 400 · 500 · 600 세 가지만(결정 033). 700 이상 글꼴 파일은 싣지 않는다
+    expect(FontWeight).toEqual({ regular: '400', medium: '500', semibold: '600' });
+    const weights: string[] = Object.values(FontWeight);
+    expect(Object.values(Typography).every((t) => weights.includes(t.fontWeight))).toBe(true);
     expect(Object.values(Spacing).slice(0, 7)).toEqual([4, 8, 12, 16, 24, 32, 48]);
     expect(Radius).toBe(12);
     expect(SheetRadius).toBe(24);

@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 export type InfoItem = { term: string; text: string };
@@ -65,5 +65,5 @@ const styles = StyleSheet.create({
   scroll: { maxHeight: Sizes.infoSheetHeight, flexGrow: 0 },
   items: { gap: Spacing.md },
   item: { gap: Spacing.xxs },
-  term: { fontWeight: '600' },
+  term: { fontWeight: FontWeight.semibold },
 });

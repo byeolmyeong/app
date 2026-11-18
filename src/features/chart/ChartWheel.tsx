@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg';
 
-import { Colors, FontFamily, Sizes } from '@/constants/theme';
+import { Colors, FontFamily, FontWeight, Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { wheelLayout } from '@/features/chart/wheel-layout';
@@ -78,7 +78,7 @@ export function ChartPicture({ chart, size, named = true }: ChartPictureProps) {
             x={50}
             y={91}
             fontSize={9}
-            fontWeight="700"
+            fontWeight={FontWeight.semibold}
             fill={Colors.ink}>
             {signName}
           </SvgText>
@@ -109,7 +109,7 @@ export function ChartWheel({ chart }: ChartWheelProps) {
           <Line key={`sl${s.sign}`} {...s.line} stroke={Colors.ink} strokeWidth={1.2} />
         ))}
         {w.signs.map((s) => (
-          <SvgText key={`st${s.sign}`} {...text} {...s.label} fontSize={w.signFontSize} fontWeight="600" fill={Colors.ink}>
+          <SvgText key={`st${s.sign}`} {...text} {...s.label} fontSize={w.signFontSize} fontWeight={FontWeight.semibold} fill={Colors.ink}>
             {label(strings.signs, s.sign)}
           </SvgText>
         ))}
@@ -157,7 +157,7 @@ export function ChartWheel({ chart }: ChartWheelProps) {
           />
         ))}
         {w.bodies.map((b) => (
-          <SvgText key={`l${b.body}`} {...text} {...b.label} fontSize={w.labelFontSize} fontWeight="700" fill={Colors.ink}>
+          <SvgText key={`l${b.body}`} {...text} {...b.label} fontSize={w.labelFontSize} fontWeight={FontWeight.semibold} fill={Colors.ink}>
             {label(strings.bodiesShort, b.body)}
           </SvgText>
         ))}

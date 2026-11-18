@@ -38,37 +38,51 @@ export type ColorName = keyof typeof Colors;
 /** 시트 뒤를 가리는 막. 검정 60%(어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(0,0,0,0.6)';
 
-/** 글꼴은 Pretendard 하나. 굵기는 fontWeight 로 고른다(src/app/_layout.tsx 에서 적재). */
+/** 글꼴은 Pretendard 하나(src/app/_layout.tsx 에서 적재). */
 export const FontFamily = 'Pretendard';
+
+/**
+ * 굵기는 세 가지만(결정 033). 어두운 바탕의 밝은 글씨는 번져 보여 700 이상은 쓰지 않고, 그 글꼴 파일도 싣지 않는다.
+ * 글자 단계에 없는 굵기가 필요한 곳(고른 탭·칩의 글씨 등)도 여기서 가져온다.
+ */
+export const FontWeight = {
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+} as const satisfies Record<string, TextStyle['fontWeight']>;
+
+type Weight = (typeof FontWeight)[keyof typeof FontWeight];
 
 const tabular: TextStyle['fontVariant'] = ['tabular-nums'];
 
-/** 글자 사이는 모든 단계에서 글자 크기의 -2% */
-const type = (fontSize: number, lineHeight: number, fontWeight: TextStyle['fontWeight']) =>
-  ({ fontFamily: FontFamily, fontSize, lineHeight, fontWeight, letterSpacing: fontSize * -0.02 }) as const;
+/** 자간은 크기에 따라: 20 이상 -2%, 15~18 -1%, 14 이하 0. 작은 글씨까지 좁히면 어두운 바탕에서 뭉쳐 보인다. */
+const tracking = (fontSize: number) => (fontSize >= 20 ? fontSize * -0.02 : fontSize >= 15 ? fontSize * -0.01 : 0);
+
+const type = (fontSize: number, lineHeight: number, fontWeight: Weight) =>
+  ({ fontFamily: FontFamily, fontSize, lineHeight, fontWeight, letterSpacing: tracking(fontSize) }) as const;
 
 /** 글자 단계. 크기/줄높이 · 굵기. */
 export const Typography = {
-  /** 홈 제목, 한 줄 총평 */
-  display: type(28, 39, '700'),
+  /** 홈 제목, 한 줄 총평. 로고처럼 크고 가볍게 */
+  display: type(28, 38, FontWeight.medium),
   /** 화면 제목, 구간 제목 */
-  title: type(24, 34, '700'),
+  title: type(24, 34, FontWeight.semibold),
   /** 시트 제목, 문단 제목 */
-  heading: type(18, 25, '600'),
+  heading: type(18, 26, FontWeight.semibold),
   /** 버튼 글씨 */
-  button: type(16, 24, '600'),
-  /** 본문, 입력칸의 값 */
-  body: type(15, 23, '400'),
+  button: type(16, 24, FontWeight.semibold),
+  /** 본문, 입력칸의 값. 긴 글을 어두운 바탕에서 읽으니 줄 간격 1.6 */
+  body: type(15, 24, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
-  table: { ...type(14, 20, '500'), fontVariant: tabular },
+  table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
   /** 도움말, 오류, 작은 라벨 */
-  label: type(12, 16, '500'),
+  label: type(12, 17, FontWeight.medium),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
-  mono: { ...type(12, 16, '500'), fontVariant: tabular },
+  mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
   /** 점수, 순위 */
-  number: { ...type(24, 34, '600'), fontVariant: tabular },
+  number: { ...type(24, 32, FontWeight.medium), fontVariant: tabular },
   /** 드럼롤 선택의 한 줄 */
-  picker: { ...type(20, 30, '600'), fontVariant: tabular },
+  picker: { ...type(20, 28, FontWeight.medium), fontVariant: tabular },
 } as const satisfies Record<string, TextStyle>;
 
 export type TypographyName = keyof typeof Typography;

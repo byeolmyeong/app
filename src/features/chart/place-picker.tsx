@@ -6,7 +6,7 @@ import Svg, { Path } from 'react-native-svg';
 import { NavBar } from '@/components/nav-bar';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import type { Place } from '@/lib/api';
 
@@ -162,5 +162,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: LineWidth,
     borderBottomColor: Colors.fill,
   },
-  bold: { fontWeight: '600' },
+  bold: { fontWeight: FontWeight.semibold },
 });

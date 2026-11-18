@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
 
 export type BottomTab<K extends string> = {
   key: K;
@@ -54,5 +54,5 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.hair,
   },
   tab: { flex: 1, height: Sizes.tabBarHeight, alignItems: 'center', justifyContent: 'center', gap: Spacing.xxs / 2 },
-  label: { fontWeight: '700' },
+  label: { fontWeight: FontWeight.semibold },
 });

@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
+import { FontWeight } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 export type BodyCellProps = {
@@ -33,6 +34,6 @@ export function BodyCell({ name, retrograde = false, meaning }: BodyCellProps) {
 }
 
 const styles = StyleSheet.create({
-  name: { fontWeight: '700' },
-  mark: { fontWeight: '500' },
+  name: { fontWeight: FontWeight.semibold },
+  mark: { fontWeight: FontWeight.medium },
 });

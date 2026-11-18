@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Spacing } from '@/constants/theme';
 
 export type DataTableColumn = {
   key: string;
@@ -64,5 +64,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs },
   headerRow: { paddingBottom: Spacing.xxs, borderBottomWidth: LineWidth, borderBottomColor: Colors.ink },
   bodyRow: { paddingVertical: Spacing.xs, borderBottomWidth: LineWidth, borderBottomColor: Colors.hair },
-  bold: { fontWeight: '700' },
+  bold: { fontWeight: FontWeight.semibold },
 });

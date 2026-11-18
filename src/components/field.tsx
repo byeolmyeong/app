@@ -13,7 +13,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Radius, Sizes, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing, Typography } from '@/constants/theme';
 
 export type FieldProps = {
   label: string;
@@ -166,6 +166,6 @@ const styles = StyleSheet.create({
   focused: { borderColor: Colors.primary },
   invalid: { borderColor: Colors.danger },
   select: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  input: { ...Typography.body, fontWeight: '500', color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
-  value: { fontWeight: '500' },
+  input: { ...Typography.body, fontWeight: FontWeight.medium, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  value: { fontWeight: FontWeight.medium },
 });

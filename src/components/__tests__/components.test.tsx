@@ -1,9 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { processColor, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, processColor, StyleSheet } from 'react-native';
 
+import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/button';
+import { Byeoli } from '@/components/byeoli';
 import { DataTable } from '@/components/data-table';
 import { Field, FieldInput } from '@/components/field';
+import { GlowShape } from '@/components/glow';
 import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
 import { ChartMark } from '@/components/chart-mark';
@@ -299,5 +302,53 @@ describe('FieldInput: 여러 줄', () => {
     expect(StyleSheet.flatten(screen.getByPlaceholderText('짧게').parent?.props.style)).toMatchObject({
       height: Sizes.inputHeight,
     });
+  });
+});
+
+describe('브랜드 그림(결정 035)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('로고(BrandMark)는 앱 이름으로 읽히고, 높이에 맞춰 가로가 정해진다', async () => {
+    await render(<BrandMark height={20} />);
+    const mark = screen.getByLabelText(strings.appName);
+    expect(mark.props.accessibilityRole).toBe('image');
+    expect(StyleSheet.flatten(mark.props.style)).toMatchObject({ height: 20 });
+    expect(StyleSheet.flatten(mark.props.style).width).toBeGreaterThan(30);
+  });
+
+  it.each(['default', 'think', 'empty', 'error'] as const)('별이 "%s" 는 그 표정을 그린다', async (state) => {
+    await render(<Byeoli state={state} size={120} />);
+    // 별이는 화면 읽기에서 숨긴 장식이라 숨긴 것까지 찾는다
+    const hidden = { includeHiddenElements: true };
+    expect(screen.getByTestId(`byeoli-face-${state}`, hidden)).toBeTruthy();
+    for (const other of ['default', 'think', 'empty', 'error'].filter((s) => s !== state))
+      expect(screen.queryByTestId(`byeoli-face-${other}`, hidden)).toBeNull();
+  });
+
+  it('별이는 장식이라 화면 읽기에서 숨는다(상태는 옆의 제목 글이 말한다)', async () => {
+    await render(<Byeoli state="default" size={120} />);
+    const byeoli = screen.getByTestId('byeoli', { includeHiddenElements: true });
+    expect(byeoli.props['aria-hidden']).toBe(true);
+    expect(byeoli.props.importantForAccessibility).toBe('no-hide-descendants');
+  });
+
+  it('동작 줄이기가 꺼져 있으면 생각 중 별이가 돌고, 켜져 있으면 움직이지 않는다', async () => {
+    const loop = jest.spyOn(Animated, 'loop');
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const moving = await render(<Byeoli state="think" size={120} />);
+    await waitFor(() => expect(loop).toHaveBeenCalled());
+    await moving.unmount();
+
+    loop.mockClear();
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    await render(<Byeoli state="think" size={120} />);
+    await waitFor(() => expect(AccessibilityInfo.isReduceMotionEnabled).toHaveBeenCalled());
+    expect(loop).not.toHaveBeenCalled();
+  });
+
+  it.each(['star', 'flame', 'heart', 'moon'] as const)('빛나는 모양 "%s" 를 그린다', async (shape) => {
+    await render(<GlowShape shape={shape} size={64} />);
+    const glow = screen.getByTestId(`glow-${shape}`, { includeHiddenElements: true });
+    expect(glow.props['aria-hidden']).toBe(true);
   });
 });

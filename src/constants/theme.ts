@@ -40,6 +40,36 @@ export const Colors = {
 
 export type ColorName = keyof typeof Colors;
 
+/**
+ * 브랜드 그림(로고 · 별이 · 홈 아이콘 · 앱 아이콘)의 색. 브랜드 자리에서만 쓰고 버튼 · 입력칸 같은 부품에는 쓰지 않는다(결정 033 · 035).
+ * 빛나는 모양은 빛무리(glow) → 번짐(glowMid) → 옅은 보라(glowSoft) → 흰 심(core) 순으로 겹친다.
+ */
+export const BrandColors = {
+  /** 빛: Figma 원본의 불꽃 · 별 · 하트가 빛나는 색 */
+  glow: '#3843F4',
+  glowMid: '#4F5BFF',
+  glowSoft: '#9AA3FF',
+  /** 빛의 심. 별이의 몸 */
+  core: '#F4F7FF',
+  /** 구슬 테두리의 무지갯빛: 옅은 청록 → 주색 → 구슬 청록 → 옅은 보라 */
+  rimLight: '#9AE8FF',
+  glass: '#00C8E2',
+  rimViolet: '#C9B8FF',
+  /** 유리 구슬 속 */
+  glassDeep: '#1C2A6B',
+  glassNight: '#101642',
+  /** 별이의 눈 */
+  eye: '#161A3E',
+  /** 쉬는 중 · 머쓱한 별이의 몸과 빛무리 */
+  rest: '#DCE2F5',
+  dim: '#7A8098',
+  dimGlow: '#5A6075',
+  /** 홈 아이콘 카드 */
+  tileTop: '#17181F',
+  tileBottom: '#0E0F14',
+  tileLine: '#262833',
+} as const;
+
 /** 시트 뒤를 가리는 막. 검정 60%(어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(0,0,0,0.6)';
 
@@ -162,4 +192,9 @@ export const Sizes = {
   pickerRow: 36,
   pickerRows: 5,
   pickerWidth: 72,
+  /** 브랜드 그림: 홈 머리의 로고 높이 · 별이(화면 가운데 · 카드 안) · 홈 아이콘 카드 */
+  brandMarkHeight: 20,
+  byeoli: 160,
+  byeoliSmall: 72,
+  homeTile: 64,
 } as const;

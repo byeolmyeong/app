@@ -65,7 +65,7 @@ last_reviewed: 2026-11-19
 - 하지 말 것: 039 본문을 고쳐 쓰지 않는다. 이유: 결정은 대체 표시만 한다(골든 룰).
 - 검증: `ls docs/decisions | sort | uniq -d` → 비어 있음, 새 파일의 번호가 원격 어느 브랜치에도 없음
 
-### 2. strings-onboarding · 상태: 대기
+### 2. strings-onboarding · 상태: 완료
 - 읽을 것: `src/content/strings.ts`, 피그마 보드 문구
 - 할 것: `strings.intro`(세 장의 제목 · 본문 · 건너뛰기 · 다음 · 시작하기), `strings.terms`(제목 · 안내 · 모두 동의 · 항목 넷 · 마케팅 설명 · 보기), `strings.nickname`(제목 · 안내 "프로필과 닉네임은 나중에 마이에서 바꿀 수 있어요." · 자리 글자 · 규칙 안내 "한글 · 영문으로 2~10자" · 오류 "한글 · 영문만 쓸 수 있어요." · "이미 있는 닉네임이에요." · 프로필 8종의 접근성 이름(화면에는 안 보임)), `strings.birthSheet`(곳 검색 자리 글자 "동네 이름으로 찾기" — 예시 없이 · 시 · 도), `strings.making`(제목 · 순환 문구 셋). `login.kakao` → "카카오 로그인", `login.google` → "Google 계정으로 계속하기". `login.subtitle` · `ageNotice` · `signupGuide` 는 쓰는 곳이 없어지면 지운다.
 - 주는 것: 위 키 이름
@@ -156,4 +156,5 @@ last_reviewed: 2026-11-19
 
 ## 실행 기록
 - 2026-11-19 승인. 브랜치를 `feat/onboarding-design` 으로 바꾸고 develop `03a8bb3` 위로 옮김. 결정 039 와 이메일 범위 요청(그 계획 태스크 3)을 쓰려고 `origin/feat/social-email-nickname` 을 합침(`846bf4e`). 서버 짝: 서버 저장소 `feat/signup-terms-push-avatar`.
-- 태스크 1(결정 041): 전 — 039 "가입 한 화면" · 034 "소개 · 약관 화면 없음" · 020 "시각 모름이면 곳 칸 없음" → 후 — `docs/decisions/041-stepped-onboarding.md`(단계식 가입 · 약관 넷 · 닉네임 2~10자 중복 불가 · 프로필 8종 · 로그인 버튼 16px(애플 예외) · 소개 처음 한 번 · 곳 시트 · 별명 짓는 중), 039 · 034 · 020 앞머리 `superseded_by` 한 줄. 확인: `git fetch --all` 뒤 모든 원격 브랜치에 041 0건(040 은 origin/feat/analytics), `ls docs/decisions | sort | uniq -d` 0줄, 번호 앞 세 자리 중복 0줄. 커밋: (이 커밋)
+- 태스크 1(결정 041): 전 — 039 "가입 한 화면" · 034 "소개 · 약관 화면 없음" · 020 "시각 모름이면 곳 칸 없음" → 후 — `docs/decisions/041-stepped-onboarding.md`(단계식 가입 · 약관 넷 · 닉네임 2~10자 중복 불가 · 프로필 8종 · 로그인 버튼 16px(애플 예외) · 소개 처음 한 번 · 곳 시트 · 별명 짓는 중), 039 · 034 · 020 앞머리 `superseded_by` 한 줄. 확인: `git fetch --all` 뒤 모든 원격 브랜치에 041 0건(040 은 origin/feat/analytics), `ls docs/decisions | sort | uniq -d` 0줄, 번호 앞 세 자리 중복 0줄. 커밋: 890d32e
+- 태스크 2(문구): 전 — `login.kakao` "카카오로 계속하기" · `login.google` "구글로 계속하기", 온보딩 문구 없음 → 후 — "카카오 로그인" · "Google 계정으로 계속하기", `strings.intro` · `steps` · `terms` · `nickname`(프로필 8종 화면 읽기 이름 포함) · `birthSheet` · `making`, `login.tagline` · `login.emailRequired`, `home.timeUnknownNote` · `home.errors.underAge`. `login.subtitle` · `ageNotice` · `signupGuide` 는 아직 로그인 · 가입 화면이 써서 태스크 5 · 8 에서 지운다. 확인: `npx tsc --noEmit` exit 0, `grep -rn "카카오로 계속하기\|구글로 계속하기" src` 0건, `npx expo lint` exit 0, `npx jest src/features/auth src/__tests__/login-screen` 10 묶음 53 통과. 커밋: (이 커밋)

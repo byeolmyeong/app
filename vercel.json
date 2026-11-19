@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npx expo export -p web",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/s/:shareId",
+      "destination": "/s/[shareId]"
+    },
+    {
+      "source": "/synastry/:id/report",
+      "destination": "/synastry/[id]/report"
+    },
+    {
+      "source": "/synastry/:id/direction",
+      "destination": "/synastry/[id]/direction"
+    },
+    {
+      "source": "/synastry/:id",
+      "destination": "/synastry/[id]"
+    }
+  ]
+}

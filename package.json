@@ -58,6 +58,9 @@
     "test": "jest"
   },
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "jest": {
     "preset": "jest-expo",
     "moduleNameMapper": {

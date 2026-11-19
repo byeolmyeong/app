@@ -1,7 +1,7 @@
 import { CONSTELLATIONS } from '@/features/chart/constellations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import ReadingScreen from '@/app/reading';
 import { strings } from '@/content/strings';
@@ -16,6 +16,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
+  useLocalSearchParams: jest.fn(() => ({})),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -40,13 +41,32 @@ beforeEach(async () => {
 });
 
 describe('요약 해석 화면', () => {
+  it('짓는 중에도 홈에서 들어왔으면 뒤로 가기(화면 머리)가 있다. 가입 직후에만 머리 없이(보드 9, 리뷰 A6)', async () => {
+    let resolve: (r: ApiResult<Reading>) => void = () => {};
+    mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+    const view = await render(<ReadingScreen />);
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    await view.unmount();
+
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({});
+    await act(async () => resolve({ ok: true, data: reading }));
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+  });
+
   it('생성 중에는 진행 상태를 보여 주고, 받으면 서버가 준 글을 그대로 보여 준다', async () => {
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.generating)).toBeTruthy();
-    // 기다리는 동안 생각하는 별이(결정 035)
-    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
+    // 기다리는 동안 "별명 짓는 중"(결정 042 보드 9): 움직이는 그림과 안내 문구, "길면 1분쯤" 은 없다
+    expect(screen.getByTestId('making-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByText(strings.making.lines[0], { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByText(/1분/)).toBeNull();
     expect(screen.queryByText(reading.headline)).toBeNull();
     await act(async () => resolve({ ok: true, data: reading }));
 

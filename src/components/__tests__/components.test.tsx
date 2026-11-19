@@ -5,7 +5,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/button';
 import { Byeoli } from '@/components/byeoli';
 import { DataTable } from '@/components/data-table';
-import { Field, FieldInput } from '@/components/field';
+import { Field, FieldInput, FieldSelect } from '@/components/field';
 import { GlowShape } from '@/components/glow';
 import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
@@ -30,7 +30,11 @@ describe('테마', () => {
       muted: '#4D4F5A',
       hair: '#2A2B33',
       fill: '#1C1D24',
+      sheetFill: '#1F2027',
+      handle: '#3A3B42',
+      fieldOff: '#121318',
       primary: '#4752FF',
+      accentText: '#9AA3FF',
       primarySoft: '#1D2050',
       danger: '#E5484D',
     });
@@ -54,8 +58,11 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'title', 'heading', 'button', 'body', 'table', 'label', 'mono', 'number', 'picker',
+      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
     ]);
+    // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 042 시안)
+    expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
+    expect(Typography.lead).toMatchObject({ fontSize: 15, lineHeight: 23, fontWeight: '400' });
     expect(Object.values(Typography).every((t) => t.fontFamily === FontFamily)).toBe(true);
     expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 38, fontWeight: '500' });
     expect(Typography.button).toMatchObject({ fontSize: 16, fontWeight: '600' });
@@ -71,7 +78,7 @@ describe('테마', () => {
     expect(Object.values(Spacing).slice(0, 7)).toEqual([4, 8, 12, 16, 24, 32, 48]);
     expect(Radius).toBe(12);
     expect(SheetRadius).toBe(24);
-    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 56, maxContentWidth: 480 });
+    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 52, maxContentWidth: 480 });
   });
 });
 
@@ -93,7 +100,7 @@ describe('Button', () => {
     expect((await bg('primary')).backgroundColor).toBe(Colors.primary);
     expect((await bg('line')).backgroundColor).toBe(Colors.fill);
     expect((await bg('danger')).backgroundColor).toBe(Colors.danger);
-    expect((await bg('primary', true)).backgroundColor).toBe(Colors.hair);
+    expect((await bg('primary', true)).backgroundColor).toBe(Colors.fill);
     expect((await bg('primary')).borderRadius).toBe(12);
   });
 
@@ -180,6 +187,20 @@ describe('Sheet', () => {
     expect(screen.getByText('시트 내용')).toBeTruthy();
   });
 
+  it('시험에서는 닫히는 움직임(220ms)을 기다리지 않고 바로 치운다(jest.setup.js — 부하에서 시간 제한에 걸리지 않게)', async () => {
+    const view = await render(
+      <Sheet visible onClose={() => {}}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    await view.rerender(
+      <Sheet visible={false} onClose={() => {}}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    expect(screen.queryByText('시트 내용')).toBeNull();
+  });
+
   it('바깥 어두운 곳을 누르면 onClose 를 부른다', async () => {
     const onClose = jest.fn();
     await render(
@@ -198,7 +219,7 @@ describe('Sheet', () => {
       </Sheet>,
     );
     expect(StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).backgroundColor).toBe(Colors.raised);
-    expect(StyleSheet.flatten(screen.getByTestId('sheet-handle').props.style).backgroundColor).toBe(Colors.muted);
+    expect(StyleSheet.flatten(screen.getByTestId('sheet-handle').props.style).backgroundColor).toBe(Colors.handle);
   });
 });
 
@@ -233,7 +254,7 @@ describe('ScrollPicker', () => {
     expect(screen.getByTestId('hour-12').props.accessibilityState.selected).toBe(true);
     // 굴려서 뒤쪽 벌의 3 에 멈춰도 값은 3 이다
     await fireEvent.scroll(screen.getByTestId('hour-scroll'), {
-      nativeEvent: { contentOffset: { y: (24 + 2) * 36 } },
+      nativeEvent: { contentOffset: { y: (24 + 2) * Sizes.pickerRow } },
     });
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(3));
   });
@@ -279,6 +300,30 @@ describe('ListRow', () => {
   });
 });
 
+describe('입력칸의 커서 · 고르는 칸의 화살표(비교 B4 · B5)', () => {
+  it('치는 칸의 커서 · 선택 색은 주색이다', async () => {
+    await render(<FieldInput placeholder="칸" />);
+    const input = screen.getByPlaceholderText('칸');
+    expect(input.props.selectionColor).toBe(Colors.primary);
+    expect(input.props.cursorColor).toBe(Colors.primary);
+  });
+
+  it('고르는 칸의 화살표는 시트가 열려도 아래를 향한 채다', async () => {
+    await render(<FieldSelect testID="sel" placeholder="고르기" open onPress={() => {}} />);
+    expect(StyleSheet.flatten(screen.getByTestId('field-select-arrow').props.style)?.transform).toBeUndefined();
+    expect(screen.getByTestId('sel').props.accessibilityState).toMatchObject({ expanded: true });
+  });
+
+  it('제목이 있는 시트는 위 여백 36(손잡이와 제목 사이 22)', async () => {
+    await render(
+      <Sheet visible title="제목" onClose={() => {}}>
+        <Txt>내용</Txt>
+      </Sheet>,
+    );
+    expect(StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).paddingTop).toBe(36);
+  });
+});
+
 describe('FieldInput: 여러 줄', () => {
   it('multiline 이면 칸이 여러 줄 높이가 되고 글은 위에서 시작한다', async () => {
     await render(<FieldInput multiline placeholder="길게" />);
@@ -287,7 +332,7 @@ describe('FieldInput: 여러 줄', () => {
     expect(StyleSheet.flatten(input.props.style)).toMatchObject({ textAlignVertical: 'top' });
   });
 
-  it('한 줄 칸의 높이는 그대로 56 이다', async () => {
+  it('한 줄 칸의 높이는 입력칸 높이(52, 결정 042 시안)다', async () => {
     await render(<FieldInput placeholder="짧게" />);
     expect(StyleSheet.flatten(screen.getByPlaceholderText('짧게').parent?.props.style)).toMatchObject({
       height: Sizes.inputHeight,

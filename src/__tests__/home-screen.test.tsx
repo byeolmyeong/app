@@ -269,6 +269,7 @@ describe('출생 정보 바꾸기(/birth)', () => {
     await render(<BirthScreen />);
     expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();
     expect(screen.getByText('오후 9:00')).toBeTruthy();
-    expect(screen.getByText('서울특별시 마포구')).toBeTruthy();
+    // 칸에는 짧은 시 · 도 이름으로 적는다(결정 042 시안)
+    expect(screen.getByText('서울 마포구')).toBeTruthy();
   });
 });

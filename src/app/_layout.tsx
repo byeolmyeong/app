@@ -7,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { useSession } from '@/features/auth/use-session';
+import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { UpdateGate } from '@/features/update/update-gate';
 
 SplashScreen.preventAutoHideAsync();
@@ -14,11 +15,14 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
   // 공유 페이지(/s/…)는 로그인 없이 열리는 화면이라 그 안에서는 시작하지 않는다(결정 025).
-  const [first] = useSegments();
+  const segments: string[] = useSegments();
+  const [first, second] = segments;
   const session = useSession(first !== 's');
+  // 소개 3장은 이 기기에서 처음 한 번만(결정 042). 기기 저장소에서 읽는다.
+  const introSeen = useIntroSeen(first !== 's');
   // 로그인 전 가드(결정 034): 로그인 · 가입 · 공유 페이지 말고는 로그인해야 들어온다. 보내는 동안과 확인 중에는 화면을 가린다.
-  const target = guardRedirect(session.status, first);
-  const covered = guardCovers(session.status, first);
+  const target = guardRedirect(session.status, first, introSeen, second);
+  const covered = guardCovers(session.status, first, introSeen, second);
   useEffect(() => {
     if (target) router.replace(target);
   }, [target]);

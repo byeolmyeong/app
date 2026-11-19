@@ -7,7 +7,7 @@ import type { BirthInput } from '@/lib/api';
 
 /**
  * 기기에 보관하는 출생 정보. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름").
- * place 는 time 이 있으면 반드시 있고, time 이 null 이면 묻지 않으므로 null 이다(결정 020).
+ * place 는 time 이 있으면 반드시 있고, time 이 null 이면 고른 경우에만 있다(결정 042 — 서버에는 보내지 않는다).
  */
 export type BirthProfile = { date: string; time: string | null; place: { id: number; name: string } | null };
 
@@ -99,14 +99,15 @@ export function validateBirthInput(
   const errors: BirthFormErrors = {};
   if (!date.ok) errors.date = date.error;
   if (time && !time.ok) errors.time = time.error;
-  // 시각 "모름" 이면 태어난 곳을 묻지 않는다. 앞서 골라 둔 곳이 있어도 보내지도 보관하지도 않는다(결정 020).
-  const place = form.timeUnknown ? null : form.place;
+  // 시각을 몰라도 태어난 곳 칸은 받는다(결정 042). 그때는 없어도 되고, 골랐으면 기기에만 두고 서버에는 보내지 않는다
+  // (시각이 없으면 서버가 곳을 읽지 않는다, 결정 020 의 서버 계약).
+  const place = form.place;
   if (!form.timeUnknown && !place) errors.place = E.placeRequired;
   if (!date.ok || (time && !time.ok) || errors.place) return { ok: false, errors };
   const timeValue = time ? time.value : null;
   return {
     ok: true,
-    input: { date: date.value, time: timeValue, placeId: place ? place.id : null },
+    input: { date: date.value, time: timeValue, placeId: place && timeValue !== null ? place.id : null },
     profile: { date: date.value, time: timeValue, place: place ? { id: place.id, name: place.name } : null },
   };
 }

@@ -35,7 +35,7 @@ describe('/auth/kakao', () => {
     mockSignIn.mockResolvedValue('signingUp');
     const { rerender } = await render(<KakaoReturn />);
     await rerender(<KakaoReturn />);
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/signup'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/signup/terms'));
     expect(mockSignIn).toHaveBeenCalledTimes(1);
     expect(mockSignIn).toHaveBeenCalledWith({ provider: 'KAKAO', code: 'c-new', redirectUri: 'https://byeolmyeong.com/auth/kakao' });
   });

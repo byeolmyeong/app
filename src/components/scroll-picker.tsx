@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, Radius, Sizes } from '@/constants/theme';
+import { Colors, Sizes } from '@/constants/theme';
 
 export type ScrollPickerItem<V extends string | number> = { value: V; label: string };
 
@@ -23,6 +23,8 @@ export type ScrollPickerProps<V extends string | number> = {
   loop?: boolean;
   /** 열의 너비. 기본은 `Sizes.pickerWidth` */
   width?: number;
+  /** 가운데 줄 뒤의 띠를 이 열에 그린다. 여러 열을 한 띠로 묶을 때는 끄고 부모가 그린다 */
+  band?: boolean;
   /** 줄마다 `${testID}-${value}`, 굴리는 영역에 `${testID}-scroll` 로 붙는다. loop 이면 가운데 벌의 줄에만 붙는다 */
   testID?: string;
 };
@@ -33,6 +35,8 @@ const PAD = ROW * Math.floor(Sizes.pickerRows / 2);
 const SETTLE_MS = 120;
 /** 마우스를 이만큼 넘게 움직이면 누른 것이 아니라 끈 것으로 본다 */
 const DRAG_SLOP = 4;
+/** 가운데에서 멀어질수록 흐리게(가운데 · 한 줄 · 두 줄 이상, 결정 042 시안) */
+const FADE = [1, 0.45, 0.2];
 
 const isWeb = Platform.OS === 'web';
 // 웹에서는 브라우저의 스크롤 맞춤으로 줄에 딱 멈추게 한다(React Native 의 snapToInterval 은 웹에 없다).
@@ -52,6 +56,7 @@ export function ScrollPicker<V extends string | number>({
   onChange,
   loop = false,
   width = Sizes.pickerWidth,
+  band = true,
   testID,
 }: ScrollPickerProps<V>) {
   const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -160,7 +165,7 @@ export function ScrollPicker<V extends string | number>({
 
   return (
     <View style={[styles.column, { width }, webGrab]} {...mouseHandlers}>
-      <View pointerEvents="none" style={styles.band} />
+      {band ? <View pointerEvents="none" style={styles.band} /> : null}
       <ScrollView
         ref={ref}
         testID={testID ? `${testID}-scroll` : undefined}
@@ -181,7 +186,10 @@ export function ScrollPicker<V extends string | number>({
             accessibilityState={{ selected: index === center }}
             onPress={() => onPressRow(index)}
             style={[styles.row, webSnapRow]}>
-            <Txt variant="picker" numberOfLines={1} color={index === center ? 'ink' : 'muted'}>
+            <Txt
+              variant={index === center ? 'pickerOn' : 'picker'}
+              numberOfLines={1}
+              style={{ opacity: FADE[Math.min(FADE.length - 1, Math.abs(index - center))] }}>
               {item.label}
             </Txt>
           </Pressable>
@@ -200,8 +208,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: ROW,
-    borderRadius: Radius,
-    backgroundColor: Colors.fill,
+    borderRadius: Sizes.pickerBandRadius,
+    backgroundColor: Colors.sheetFill,
   },
   content: { paddingVertical: PAD },
   row: { height: ROW, alignItems: 'center', justifyContent: 'center' },

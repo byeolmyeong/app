@@ -28,7 +28,7 @@ export default function KakaoReturnScreen() {
       return;
     }
     void signIn({ provider: 'KAKAO', code: result.code, redirectUri: webOrigin() + KAKAO_RETURN_PATH }).then((outcome) =>
-      router.replace(outcome === 'signedIn' ? '/' : outcome === 'signingUp' ? '/signup' : '/login'),
+      router.replace(outcome === 'signedIn' ? '/' : outcome === 'signingUp' ? '/signup/terms' : '/login'),
     );
     // key 가 code · state · error 를 모두 담는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps

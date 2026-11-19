@@ -1,6 +1,6 @@
-import { useId } from 'react';
-import { View } from 'react-native';
-import Svg, { Circle, Defs, FeGaussianBlur, Filter, G, Path, RadialGradient, Stop } from 'react-native-svg';
+import { useId, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Svg, { Circle, Defs, FeGaussianBlur, Filter, G, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { BrandColors } from '@/constants/theme';
 
@@ -129,6 +129,48 @@ export function GlowShape({ shape, size, dim = false }: GlowShapeProps) {
         <GlowDefs ids={ids} />
         <GlowLayers d={shapePath(shape)} ids={ids} dim={dim} />
       </Svg>
+    </View>
+  );
+}
+
+export type GlowBackdropProps = {
+  /** 가운데 색(BrandColors.backdrop · backdropDim) */
+  color: string;
+  /** 이 비율(가운데에서 가장 먼 모서리까지를 1)에서 바탕색으로 다 사라진다 */
+  extent: number;
+  /** 원의 가운데 높이(0 위 ~ 1 아래) */
+  centerY?: number;
+};
+
+/**
+ * 브랜드 자리 바탕의 옅은 빛(결정 042 시안의 `radial-gradient(circle at 50% y, color 0%, 투명 extent)`). 칸을 가득 채워 뒤에 깔고,
+ * 크기를 잰 뒤에 그린다. 장식이라 화면 읽기에서 숨긴다.
+ */
+export function GlowBackdrop({ color, extent, centerY = 0.5 }: GlowBackdropProps) {
+  const id = `backdrop${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const cx = size ? size.width / 2 : 0;
+  const cy = size ? size.height * centerY : 0;
+  const r = size ? Math.hypot(Math.max(cx, size.width - cx), Math.max(cy, size.height - cy)) : 0;
+  return (
+    <View
+      testID="glow-backdrop"
+      aria-hidden
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      style={StyleSheet.absoluteFill}
+      onLayout={(e) => setSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}>
+      {size && r > 0 ? (
+        <Svg width={size.width} height={size.height}>
+          <Defs>
+            <RadialGradient id={id} cx={cx} cy={cy} r={r} gradientUnits="userSpaceOnUse">
+              <Stop offset="0" stopColor={color} stopOpacity={1} />
+              <Stop offset={String(extent)} stopColor={color} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Rect width={size.width} height={size.height} fill={`url(#${id})`} />
+        </Svg>
+      ) : null}
     </View>
   );
 }

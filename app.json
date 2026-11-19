@@ -47,6 +47,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "05ea3dcf-a78c-41f2-b4dc-e819760a054b"
+      }
+    },
+    "owner": "monkeygardens-team"
   }
 }

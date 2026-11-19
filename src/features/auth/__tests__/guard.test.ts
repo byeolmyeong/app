@@ -53,7 +53,7 @@ describe('guardRedirect', () => {
     expect(guardRedirect('signingUp', 'signup')).toBeNull();
   });
 
-  it('가입 중에도 약관 단계의 "보기" 가 여는 이용약관 · 처리방침은 열린다(다른 설정 화면은 아니다)', () => {
+  it('가입 중에도 약관 단계의 "보기" 가 여는 이용약관 · 처리방침 · 마케팅 수신 동의 약관은 열린다(다른 설정 화면은 아니다)', () => {
     expect(guardRedirect('signingUp', 'settings', true, 'terms')).toBeNull();
     expect(guardRedirect('signingUp', 'settings', true, 'privacy')).toBeNull();
     expect(guardRedirect('signingUp', 'settings', true, 'marketing')).toBeNull();

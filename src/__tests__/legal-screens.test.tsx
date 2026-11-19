@@ -58,7 +58,7 @@ describe('약관 글 화면', () => {
   it.each([
     ['개인정보 처리방침', PrivacyScreen],
     ['마케팅 정보 수신 동의 약관', MarketingScreen],
-  ])('%s: 글 안의 연락처는 글로만 적고 메일 앱을 여는 링크(mailto)는 두지 않는다(결정 024 · 042)', async (_name, Component) => {
+  ])('%s: 글 안의 연락처는 글로만 적고 메일 앱을 여는 링크(mailto)는 두지 않는다(결정 024 · 043)', async (_name, Component) => {
     await render(<Component />);
     expect(screen.getAllByText(legalInfo.contact, { exact: false }).length).toBeGreaterThan(0);
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/mailto/);

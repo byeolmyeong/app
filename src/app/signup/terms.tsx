@@ -24,7 +24,7 @@ const T = strings.terms;
 type Key = 'terms' | 'privacy' | 'push' | 'marketing';
 type Agreed = Record<Key, boolean>;
 
-/** 줄의 순서 · 필수 여부 · "보기" 가 여는 화면(마케팅은 처리방침의 수집 · 이용 목적) */
+/** 줄의 순서 · 필수 여부 · "보기" 가 여는 화면(마케팅은 마케팅 정보 수신 동의 약관, 결정 043) */
 const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '/settings/privacy' | '/settings/marketing'; label: string } }[] = [
   { key: 'terms', required: true, view: { href: '/settings/terms', label: T.viewLabels.terms } },
   { key: 'privacy', required: true, view: { href: '/settings/privacy', label: T.viewLabels.privacy } },

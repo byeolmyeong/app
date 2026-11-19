@@ -69,6 +69,15 @@ describe('validateBirthInput', () => {
     expect(r.ok && r.input.time).toBeNull();
   });
 
+  it('시각 "모름" 이어도 고른 곳은 기기에 둔다. 서버에는 보내지 않는다(placeId null — 서버가 읽지 않는다, 결정 041)', () => {
+    const r = validateBirthInput({ dateText: '2000-06-15', timeText: '', timeUnknown: true, place }, today);
+    expect(r).toEqual({
+      ok: true,
+      input: { date: '2000-06-15', time: null, placeId: null },
+      profile: { date: '2000-06-15', time: null, place },
+    });
+  });
+
   it('시각 "모름" 이면 태어난 곳이 없어도 되고, placeId 와 보관할 곳은 null 이다(결정 020)', () => {
     const r = validateBirthInput({ dateText: '2000-06-15', timeText: '', timeUnknown: true, place: null }, today);
     expect(r).toEqual({
@@ -78,10 +87,10 @@ describe('validateBirthInput', () => {
     });
   });
 
-  it('시각 "모름" 이면 앞서 골라 둔 곳이 있어도 보내지도 보관하지도 않는다', () => {
+  it('시각 "모름" 이면 앞서 고른 시각 · 곳을 보내지 않는다(곳은 기기에만 남는다, 결정 041)', () => {
     const r = validateBirthInput({ dateText: '2000-06-15', timeText: '21:00', timeUnknown: true, place }, today);
     expect(r.ok && r.input).toEqual({ date: '2000-06-15', time: null, placeId: null });
-    expect(r.ok && r.profile.place).toBeNull();
+    expect(r.ok && r.profile.place).toEqual(place);
   });
 
   it('시각을 넣었으면 태어난 곳이 필수다', () => {

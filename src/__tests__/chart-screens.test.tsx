@@ -8,7 +8,6 @@ import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import { strings } from '@/content/strings';
 import { getSession } from '@/features/auth/use-session';
-import { BirthForm } from '@/features/chart/birth-form';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -49,7 +48,7 @@ const sheetClosed = () => waitFor(() => expect(screen.queryByTestId('sheet-dim')
 /** 고르기 화면이 닫혀 사라질 때까지 기다린다 */
 const pickerClosed = () => waitFor(() => expect(screen.queryByTestId('place-picker')).toBeNull());
 
-/** 치지 않고 고른다: 태어난 곳 칸을 누르면 고르기 화면이 가득 차고, 시·도 → 시·군·구 를 고르면 닫힌다 */
+/** 치지 않고 고른다: 태어난 곳 칸을 누르면 시트가 올라오고, 시·도 칩 → 시·군·구 를 고르면 닫힌다(결정 041) */
 async function fillPlace() {
   await fireEvent.press(screen.getByTestId('place-field'));
   await fireEvent.press(await screen.findByText('서울'));
@@ -67,10 +66,13 @@ async function fillTime(period: 'AM' | 'PM', hour: number, minute: number) {
   await sheetClosed();
 }
 
+/** 시각 칸 이름 줄 오른쪽의 "모름" 체크(결정 041) */
+const pressUnknown = () => fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
+
 /** 생년월일을 치고, 시각은 오후 9:00(21:00)을 고르거나 null 이면 "모름" 을 누른다 */
 async function fillDateAndTime(date: string, time: '21:00' | null) {
   await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), date);
-  if (time === null) await fireEvent.press(screen.getByText(H.timeUnknown));
+  if (time === null) await pressUnknown();
   else await fillTime('PM', 9, 0);
 }
 
@@ -79,7 +81,7 @@ describe('출생 정보 입력(홈)', () => {
     await render(<HomeScreen />);
     expect(screen.getByPlaceholderText(H.datePlaceholder)).toBeTruthy();
     expect(screen.getByText(H.timePlaceholder)).toBeTruthy();
-    expect(screen.getByText(H.timeUnknown)).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: H.timeUnknown })).toBeTruthy();
     expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
     // 숫자만 쳐도 꼴이 맞춰진다
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '20000615');
@@ -107,39 +109,39 @@ describe('출생 정보 입력(홈)', () => {
     expect((await screen.findByTestId('time-hour-7')).props.accessibilityState.selected).toBe(true);
   });
 
-  it('"모름" 을 고르면 시각 칸은 누를 수 없고 "모름" 이라고 적힌다', async () => {
+  it('"모름" 을 고르면 시각 칸은 누를 수 없고 "모름" 이라고 적히며 안내가 붙는다', async () => {
     await render(<HomeScreen />);
-    await fireEvent.press(screen.getByText(H.timeUnknown));
-    expect(screen.getByText(H.timeUnknownValue)).toBeTruthy();
+    await pressUnknown();
+    // 체크 옆 글자와 칸의 값 둘 다 "모름"
+    expect(screen.getAllByText(H.timeUnknownValue)).toHaveLength(2);
+    expect(screen.getByText(H.timeUnknownNote)).toBeTruthy();
     await fireEvent.press(screen.getByTestId('time-field'));
     expect(screen.queryByText(H.timeConfirm)).toBeNull();
   });
 
-  it('태어난 곳은 화면을 가득 채우는 고르기 화면에서 고른다: 왼쪽 시·도, 오른쪽 그 시·도의 시·군·구', async () => {
+  it('태어난 곳은 아래에서 올라오는 시트에서 고른다: 시·도 칩 → 그 시·도의 시·군·구(결정 041)', async () => {
     await render(<HomeScreen />);
     // 열기 전에는 고르는 줄이 화면에 없다
     expect(screen.queryByTestId('place-option')).toBeNull();
     await fireEvent.press(screen.getByTestId('place-field'));
-    // 열자마자 시·도 17개와 첫 시·도(서울)의 구 25개가 함께 보인다
+    // 열면 시·도 칩 17개만 보인다
     expect(await screen.findByText('경기')).toBeTruthy();
     expect(screen.getAllByTestId('place-region')).toHaveLength(17);
-    expect(screen.getAllByTestId('place-option')).toHaveLength(25);
-    // 다른 시·도를 누르면 오른쪽만 바뀐다
+    expect(screen.queryAllByTestId('place-option')).toHaveLength(0);
+    // 시·도를 누르면 그 시·군·구 목록, 뒤로 가면 다시 칩
     await fireEvent.press(screen.getByText('부산'));
     expect(screen.getAllByTestId('place-option')).toHaveLength(16);
+    await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
     await fireEvent.press(screen.getByText('서울'));
     await fireEvent.press(screen.getByText('마포구'));
-    // 고르면 닫히고 고른 곳이 칸에 적힌다
+    // 고르면 닫히고 고른 곳이 칸에 짧은 이름으로 적힌다
     await pickerClosed();
-    expect(screen.getByText('서울특별시 마포구')).toBeTruthy();
-    // 다시 열면 고른 시·도의 목록부터 보인다
+    expect(screen.getByText('서울 마포구')).toBeTruthy();
+    // 하위 시·군·구가 없는 세종은 칩을 누르면 바로 정해진다
     await fireEvent.press(screen.getByTestId('place-field'));
-    expect(await screen.findByText('마포구')).toBeTruthy();
-    // 하위 시·군·구가 없는 세종은 오른쪽에 한 줄만 있다
-    await fireEvent.press(screen.getByText('세종'));
-    expect(screen.getAllByTestId('place-option')).toHaveLength(1);
-    await fireEvent.press(screen.getByText('세종특별자치시'));
+    await fireEvent.press(await screen.findByText('세종'));
     await pickerClosed();
+    expect(screen.getByText('세종')).toBeTruthy();
     await fillDateAndTime('2000-06-15', '21:00');
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() =>
@@ -147,11 +149,11 @@ describe('출생 정보 입력(홈)', () => {
     );
   });
 
-  it('고르기 화면에서 뒤로 가면 고르지 않고 닫힌다', async () => {
+  it('시트 바깥을 누르면 고르지 않고 닫힌다', async () => {
     await render(<HomeScreen />);
     await fireEvent.press(screen.getByTestId('place-field'));
     expect(await screen.findByText('경기')).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText(strings.common.backLabel));
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
     await pickerClosed();
     expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
   });
@@ -202,14 +204,13 @@ describe('출생 정보 입력(홈)', () => {
     expect(await loadBirth()).toBeNull();
   });
 
-  it('"모름" 을 고르면 태어난 곳 칸이 사라지고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 020)', async () => {
+  it('"모름" 을 고르면 태어난 곳 칸은 그대로 있되 없어도 되고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 041)', async () => {
     mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
     expect(screen.getByTestId('place-field')).toBeTruthy();
     await fillDateAndTime('2000-06-15', null);
-    expect(screen.queryByTestId('place-field')).toBeNull();
-    expect(screen.queryByText(H.placeLabel)).toBeNull();
+    expect(screen.getByTestId('place-field')).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
@@ -220,23 +221,21 @@ describe('출생 정보 입력(홈)', () => {
     });
   });
 
-  it('곳을 고른 뒤 "모름" 을 고르면 골라 둔 곳을 보내지 않는다', async () => {
+  it('곳을 고른 뒤 "모름" 을 고르면 골라 둔 곳을 서버에 보내지 않는다(기기에는 남는다, 결정 041)', async () => {
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
     await fillPlace();
     await fillDateAndTime('2000-06-15', null);
-    expect(screen.queryByTestId('place-field')).toBeNull();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
-    expect((await loadBirth())?.profile.place).toBeNull();
+    expect((await loadBirth())?.profile.place).toEqual(profile.place);
   });
 
-  it('"모름" 을 풀고 시각을 다시 넣으면 태어난 곳 칸이 나타나고, 곳을 고를 때까지 넘어가지 않는다', async () => {
+  it('"모름" 을 풀고 시각을 다시 넣으면 곳을 고를 때까지 넘어가지 않는다', async () => {
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', null);
-    expect(screen.queryByTestId('place-field')).toBeNull();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await pressUnknown();
     expect(screen.getByTestId('place-field')).toBeTruthy();
     await fillTime('PM', 9, 0);
     await fireEvent.press(screen.getByText(H.submit));
@@ -254,7 +253,7 @@ describe('출생 정보 입력(홈)', () => {
     await fillDateAndTime('2000-06-15', '21:00');
     await fireEvent.press(screen.getByText(H.submit));
     expect(await screen.findByText(H.errors.placeRequired)).toBeTruthy();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await pressUnknown();
     expect(screen.queryByText(H.errors.placeRequired)).toBeNull();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
@@ -309,25 +308,21 @@ describe('출생 정보 입력(홈)', () => {
     await render(<BirthScreen />);
     expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();
     expect(screen.getByText('오후 9:00')).toBeTruthy();
-    expect(await screen.findByText('서울특별시 마포구')).toBeTruthy();
+    expect(await screen.findByText('서울 마포구')).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).not.toHaveBeenCalled();
   });
 
-  it('시각 "모름" 으로 보관된 값은 곳 칸 없이 복원하고, 바꾸지 않고 누르면 서버를 다시 부르지 않는다', async () => {
+  it('시각 "모름" 으로 보관된 값은 빈 곳 칸으로 복원하고, 바꾸지 않고 누르면 서버를 다시 부르지 않는다', async () => {
     await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
     await render(<BirthScreen />);
     expect(await screen.findByDisplayValue('2000-06-15')).toBeTruthy();
-    expect(screen.getByText(H.timeUnknownValue)).toBeTruthy();
-    expect(screen.queryByTestId('place-field')).toBeNull();
+    expect(screen.getByRole('checkbox', { name: H.timeUnknown }).props.accessibilityState).toMatchObject({ checked: true });
+    expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
     await fireEvent.press(screen.getByText(H.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/reading'));
     expect(mockApi.createChart).not.toHaveBeenCalled();
-    // "모름" 을 풀면 곳 칸이 비어 나타난다
-    await fireEvent.press(screen.getByText(H.timeUnknown));
-    expect(screen.getByTestId('place-field')).toBeTruthy();
-    expect(screen.getByText(H.placePlaceholder)).toBeTruthy();
   });
 });
 
@@ -497,24 +492,5 @@ describe('설명 버튼', () => {
     await fireEvent.press(screen.getByText(strings.detail.tabs.aspects));
     await fireEvent.press(screen.getByTestId('info-detail'));
     expect(await screen.findByText(HELP.aspects.title)).toBeTruthy();
-  });
-});
-
-describe('출생 정보 입력의 submit(가입 마지막 단계, 결정 034)', () => {
-  it('submit 이 있으면 차트를 받지 않고 검증한 값으로 부르며, 돌려준 안내를 보여 준다', async () => {
-    const submit = jest.fn(async () => '안내 글');
-    const save = jest.fn(async () => {});
-    await render(<BirthForm stored={null} save={save} submit={submit} />);
-    await fillDateAndTime('1995-05-05', null);
-    await fireEvent.press(screen.getByText(H.submit));
-    expect(await screen.findByText('안내 글')).toBeTruthy();
-    expect(submit).toHaveBeenCalledWith({
-      input: { date: '1995-05-05', time: null, placeId: null },
-      profile: expect.objectContaining({ date: '1995-05-05', time: null }),
-    });
-    expect(mockApi.createChart).not.toHaveBeenCalled();
-    expect(mockApi.saveProfile).not.toHaveBeenCalled();
-    expect(save).not.toHaveBeenCalled();
-    expect(router.push).not.toHaveBeenCalled();
   });
 });

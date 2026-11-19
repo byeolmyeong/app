@@ -106,12 +106,14 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
     expect(selected()).toEqual([false, false, false, true]);
   });
 
-  it('"태어난 시각을 몰라요" 를 고르면 태어난 곳 칸이 사라지고, 풀면 다시 나타난다', async () => {
+  it('시각 "모름" 을 고르면 시각 칸이 흐려지고 안내가 붙되 태어난 곳 칸은 그대로다(결정 041), 풀면 다시 고를 수 있다', async () => {
     await render(<SynastryEntryScreen />);
-    await fireEvent.press(await screen.findByText(H.timeUnknown));
-    expect(screen.queryByTestId('place-field')).toBeNull();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(await screen.findByRole('checkbox', { name: H.timeUnknown }));
+    expect(screen.getByTestId('time-field').props.accessibilityState).toMatchObject({ disabled: true });
+    expect(screen.getByText(H.timeUnknownNote)).toBeTruthy();
     expect(screen.getByTestId('place-field')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
+    expect(screen.getByTestId('time-field').props.accessibilityState).toMatchObject({ disabled: false });
   });
 
   it('관계 · 이름 · 날짜 · 시각 · 곳이 비어 있으면 칸마다 알리고 서버를 부르지 않는다', async () => {
@@ -125,7 +127,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
     expect(mockApi.createDirectSynastry).not.toHaveBeenCalled();
     // 빈칸뿐인 이름도 받지 않는다
     await fillBasics('연애', '   ');
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     expect(screen.getByText(S.entry.errors.nameRequired)).toBeTruthy();
     expect(mockApi.createDirectSynastry).not.toHaveBeenCalled();
@@ -151,7 +153,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
     await render(<SynastryEntryScreen />);
     await fillBasics('가족', '엄마');
     await fillTimeAndPlace();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalled());
     expect(mockApi.createDirectSynastry).toHaveBeenCalledWith({
@@ -168,7 +170,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
     mockApi.createDirectSynastry.mockReturnValue(new Promise((resolve) => (finish = resolve)));
     await render(<SynastryEntryScreen />);
     await fillBasics();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     expect(await screen.findByText(S.entry.calculating)).toBeTruthy();
     // 길면 1분쯤 걸린다고 알린다
@@ -191,7 +193,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
     });
     await render(<SynastryEntryScreen />);
     await fillBasics('친구', '민서');
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     expect(await screen.findByText(S.entry.failed.OTHER)).toBeTruthy();
     expect(screen.getByDisplayValue('민서')).toBeTruthy();
@@ -210,7 +212,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
       .mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
     await render(<SynastryEntryScreen />);
     await fillBasics();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     expect(await screen.findByText(S.entry.failed.NETWORK)).toBeTruthy();
     await fireEvent.press(screen.getByText(S.entry.submit));
@@ -221,7 +223,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
     mockApi.createDirectSynastry.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
     await render(<SynastryEntryScreen />);
     await fillBasics();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/synastry/${made.id}`));
     expect(mockApi.saveProfile).toHaveBeenCalledWith(mine);
@@ -231,7 +233,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
   it('상대의 출생 정보와 겹친 휠은 기기에 보관하지 않고 메모리에만 둔다', async () => {
     await render(<SynastryEntryScreen />);
     await fillBasics();
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     await waitFor(() => expect(router.push).toHaveBeenCalled());
     // 방금 계산한 것은 메모리에 있다(휠과 리포트 요청에 쓴다)

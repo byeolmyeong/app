@@ -169,7 +169,7 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     await fireEvent.press(await screen.findByText('연애'));
     await fireEvent.changeText(screen.getByPlaceholderText(S.entry.namePlaceholder), '지우');
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '19990302');
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     expect(await screen.findByText(S.entry.calculating)).toBeTruthy();
     await comeBackToUpdateRequired();

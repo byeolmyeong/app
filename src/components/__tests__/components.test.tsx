@@ -58,7 +58,7 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'mono', 'number', 'picker',
+      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'mono', 'number', 'picker', 'pickerOn',
     ]);
     // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 041 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
@@ -240,7 +240,7 @@ describe('ScrollPicker', () => {
     expect(screen.getByTestId('hour-12').props.accessibilityState.selected).toBe(true);
     // 굴려서 뒤쪽 벌의 3 에 멈춰도 값은 3 이다
     await fireEvent.scroll(screen.getByTestId('hour-scroll'), {
-      nativeEvent: { contentOffset: { y: (24 + 2) * 36 } },
+      nativeEvent: { contentOffset: { y: (24 + 2) * Sizes.pickerRow } },
     });
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(3));
   });

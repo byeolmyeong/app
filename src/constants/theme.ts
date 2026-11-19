@@ -206,8 +206,9 @@ export const Typography = {
   mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
   /** 점수, 순위 */
   number: { ...type(24, 32, FontWeight.medium), fontVariant: tabular },
-  /** 드럼롤 선택의 한 줄 */
-  picker: { ...type(20, 28, FontWeight.medium), fontVariant: tabular },
+  /** 드럼롤 선택의 한 줄과 가운데(고른) 줄(결정 041 시안) */
+  picker: { ...type(20, 28, FontWeight.regular), fontVariant: tabular },
+  pickerOn: { ...type(22, 28, FontWeight.semibold), fontVariant: tabular },
 } as const satisfies Record<string, TextStyle>;
 
 export type TypographyName = keyof typeof Typography;
@@ -273,8 +274,14 @@ export const Sizes = {
   chevronSmall: 18,
   /** 고르는 칩(궁합의 관계 유형)의 높이 */
   chipHeight: 48,
-  /** 태어난 곳 고르기: 왼쪽 시·도 칸의 너비 */
-  regionPaneWidth: 112,
+  /** 태어난 곳 시트(결정 041 시안): 검색 칸 · 시 · 도 칩 높이 · 목록 한 줄 · 시트가 화면 위에서 떨어진 거리(목록일 때) · 아래 흐림 */
+  searchHeight: 48,
+  placeRow: 56,
+  placeSheetTop: 64,
+  placeFade: 64,
+  /** 작은 아이콘(검색 · 체크) · 검색 지우기 단추와 그 안의 X */
+  icon: 20,
+  clearIcon: 10,
   /** 설명(물음표) 버튼의 지름 · 설명 시트에서 글이 굴러가는 영역의 최대 높이 */
   infoButton: 20,
   infoSheetHeight: 360,
@@ -284,10 +291,11 @@ export const Sizes = {
   /** 시트 위의 손잡이 줄(결정 041 시안) */
   handleWidth: 40,
   handleHeight: 4,
-  /** 드럼롤 선택: 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 */
-  pickerRow: 36,
+  /** 드럼롤 선택(결정 041 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
+  pickerRow: 44,
   pickerRows: 5,
-  pickerWidth: 72,
+  pickerWidth: 76,
+  pickerBandRadius: 10,
   /** 프로필 그림(결정 041 시안): 닉네임 단계 위 가운데 · 고르기 시트 · 연필 표시 · 고른 표시 */
   avatarLarge: 88,
   avatarPick: 64,

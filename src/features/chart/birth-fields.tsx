@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { Checkbox } from '@/components/checkbox';
+import { CheckBox } from '@/components/checkbox';
 import { Field, FieldInput, FieldSelect } from '@/components/field';
 import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Spacing } from '@/constants/theme';
+import { Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import {
   formatDateTyping,
@@ -20,7 +20,7 @@ import {
   type BirthProfile,
   type TimePick,
 } from '@/features/chart/birth-input';
-import { PlacePicker } from '@/features/chart/place-picker';
+import { PlaceSheet, placeLabel } from '@/features/chart/place-sheet';
 import { api, type Place } from '@/lib/api';
 
 const S = strings.home;
@@ -109,6 +109,15 @@ export function useBirthFields(initial?: BirthProfile | null) {
     return v.ok ? v : null;
   }
 
+  /** 서버가 거절한 이유를 생년월일 칸 아래에 띄운다(가입의 만 14세 미만, 보드 8-4). 날짜를 고치면 지워진다 */
+  function setDateError(message: string) {
+    setErrors((e) => ({ ...e, date: message }));
+  }
+
+  /** 다 채웠는가(가입 단계의 버튼을 켤 때): 날짜를 다 쳤고 틀리지 않았으며, 시각을 골랐거나 "모름", 시각이 있으면 곳도 */
+  const complete =
+    dateText.length === DATE_LENGTH && !errors.date && (timeUnknown || timeText !== '') && (timeUnknown || place !== null);
+
   return {
     dateText,
     timeText,
@@ -128,16 +137,18 @@ export function useBirthFields(initial?: BirthProfile | null) {
     onTimeUnknown,
     onPickPlace,
     validate,
+    setDateError,
+    complete,
   };
 }
 
 export type BirthFieldsControl = ReturnType<typeof useBirthFields>;
 
 /**
- * 출생 정보 세 칸. 한 화면에 생년월일 · 태어난 시각("모름") · 태어난 곳이 모두 보인다.
- * 시각 "모름" 을 고르면 태어난 곳 칸은 사라지고 묻지 않는다(계산에 쓰이지 않는다. 결정 020).
- * 생년월일은 숫자를 치고, 시각은 칸을 누르면 아래에서 올라오는 드럼롤 시트에서,
- * 곳은 화면을 가득 채우는 고르기 화면(`PlacePicker`)에서 고른다.
+ * 출생 정보 세 칸(결정 041 시안 보드 8). 한 화면에 생년월일 · 태어난 시각 · 태어난 곳이 모두 보인다.
+ * 시각 "모름" 은 시각 칸 이름 줄 오른쪽의 작은 체크다. 켜면 시각 칸이 흐려지고 안내가 붙는다. 태어난 곳 칸은 그대로 받는다.
+ * 생년월일은 숫자를 치고, 시각은 칸을 누르면 아래에서 올라오는 드럼롤 시트에서(오전/오후 · 시 · 분, 같은 폭),
+ * 곳은 아래에서 올라오는 시트(`PlaceSheet` — 검색 · 시 · 도 칩 → 시 · 군 · 구)에서 고른다.
  */
 export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
   const timeError = !c.timeUnknown && c.errors.time ? S.errors.timeRequired : undefined;
@@ -155,62 +166,80 @@ export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
             accessibilityLabel={S.dateLabel}
           />
         </Field>
-        <View style={styles.timeGroup}>
-          <Field label={S.timeLabel} error={timeError}>
-            <FieldSelect
-              testID="time-field"
-              value={c.timeUnknown ? S.timeUnknownValue : formatTimeDisplay(c.timeText) || undefined}
-              placeholder={S.timePlaceholder}
-              disabled={c.timeUnknown}
-              open={c.sheet === 'time'}
-              invalid={Boolean(timeError)}
-              onPress={c.onOpenTime}
-            />
-          </Field>
-          <Checkbox label={S.timeUnknown} checked={c.timeUnknown} onChange={c.onTimeUnknown} />
-        </View>
-        {c.timeUnknown ? null : (
-          <Field label={S.placeLabel} error={c.errors.place}>
-            <FieldSelect
-              testID="place-field"
-              value={c.place?.name || undefined}
-              placeholder={S.placePlaceholder}
-              invalid={Boolean(c.errors.place)}
-              open={c.sheet === 'place'}
-              onPress={() => c.setSheet('place')}
-            />
-          </Field>
-        )}
+        <Field
+          label={S.timeLabel}
+          labelRight={
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityLabel={S.timeUnknown}
+              accessibilityState={{ checked: c.timeUnknown }}
+              hitSlop={Spacing.xs}
+              onPress={() => c.onTimeUnknown(!c.timeUnknown)}
+              style={styles.unknown}>
+              <CheckBox checked={c.timeUnknown} size={Sizes.checkSmall} />
+              <Txt variant="captionStrong" color={c.timeUnknown ? 'ink' : 'gray'}>
+                {S.timeUnknownValue}
+              </Txt>
+            </Pressable>
+          }
+          hint={c.timeUnknown ? S.timeUnknownNote : undefined}
+          error={timeError}>
+          <FieldSelect
+            testID="time-field"
+            value={c.timeUnknown ? S.timeUnknownValue : formatTimeDisplay(c.timeText) || undefined}
+            placeholder={S.timePlaceholder}
+            disabled={c.timeUnknown}
+            open={c.sheet === 'time'}
+            invalid={Boolean(timeError)}
+            onPress={c.onOpenTime}
+          />
+        </Field>
+        <Field label={S.placeLabel} error={c.errors.place}>
+          <FieldSelect
+            testID="place-field"
+            value={(c.place && placeLabel(c.place.name)) || undefined}
+            placeholder={S.placePlaceholder}
+            invalid={Boolean(c.errors.place)}
+            open={c.sheet === 'place'}
+            onPress={() => c.setSheet('place')}
+          />
+        </Field>
       </View>
 
-      <Sheet visible={c.sheet === 'time'} onClose={() => c.setSheet(null)} title={S.timeSheetTitle}>
-        <View style={styles.pickers}>
-          <ScrollPicker
-            testID="time-period"
-            items={PERIODS}
-            value={c.timeDraft.period}
-            onChange={(period) => c.setTimeDraft((d) => ({ ...d, period }))}
-          />
-          <ScrollPicker
-            testID="time-hour"
-            loop
-            items={HOURS}
-            value={c.timeDraft.hour}
-            onChange={(hour) => c.setTimeDraft((d) => ({ ...d, hour }))}
-          />
-          <Txt variant="picker">{strings.common.timeColon}</Txt>
-          <ScrollPicker
-            testID="time-minute"
-            loop
-            items={MINUTES}
-            value={c.timeDraft.minute}
-            onChange={(minute) => c.setTimeDraft((d) => ({ ...d, minute }))}
-          />
+      <Sheet visible={c.sheet === 'time'} onClose={() => c.setSheet(null)} title={S.timeSheetTitle} gap={Spacing.md}>
+        <View style={styles.timeBody}>
+          <View style={styles.pickers}>
+            <View pointerEvents="none" style={styles.band} />
+            <ScrollPicker
+              testID="time-period"
+              band={false}
+              items={PERIODS}
+              value={c.timeDraft.period}
+              onChange={(period) => c.setTimeDraft((d) => ({ ...d, period }))}
+            />
+            <ScrollPicker
+              testID="time-hour"
+              band={false}
+              loop
+              items={HOURS}
+              value={c.timeDraft.hour}
+              onChange={(hour) => c.setTimeDraft((d) => ({ ...d, hour }))}
+            />
+            <Txt variant="pickerOn">{strings.common.timeColon}</Txt>
+            <ScrollPicker
+              testID="time-minute"
+              band={false}
+              loop
+              items={MINUTES}
+              value={c.timeDraft.minute}
+              onChange={(minute) => c.setTimeDraft((d) => ({ ...d, minute }))}
+            />
+          </View>
+          <Button label={S.timeConfirm} onPress={c.onConfirmTime} />
         </View>
-        <Button label={S.timeConfirm} onPress={c.onConfirmTime} />
       </Sheet>
 
-      <PlacePicker
+      <PlaceSheet
         visible={c.sheet === 'place'}
         places={c.places}
         failed={c.placesFailed}
@@ -223,8 +252,27 @@ export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
   );
 }
 
+const PICKER_HEIGHT = Sizes.pickerRow * Sizes.pickerRows;
+
 const styles = StyleSheet.create({
   fields: { gap: Spacing.lg },
-  timeGroup: { gap: Spacing.xs },
-  pickers: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xxs },
+  unknown: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xxs + Spacing.hairline },
+  timeBody: { gap: Spacing.md + Spacing.xxs },
+  pickers: {
+    height: PICKER_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xxs,
+  },
+  /** 세 열을 가로지르는 가운데 줄 뒤의 띠 */
+  band: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: Sizes.pickerRow * Math.floor(Sizes.pickerRows / 2),
+    height: Sizes.pickerRow,
+    borderRadius: Sizes.pickerBandRadius,
+    backgroundColor: Colors.sheetFill,
+  },
 });

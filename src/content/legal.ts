@@ -1,8 +1,8 @@
 /**
- * 이용약관 · 개인정보 처리방침 · 마케팅 정보 수신 동의 약관의 글. 앱 화면(/settings/terms · /settings/privacy · /settings/marketing)이 여기서 나온다(결정 042).
+ * 이용약관 · 개인정보 처리방침 · 마케팅 정보 수신 동의 약관의 글. 앱 화면(/settings/terms · /settings/privacy · /settings/marketing)이 여기서 나온다(결정 043).
  * 랜딩 저장소 app/data/legal.ts(byeolmyeong.com/terms · /privacy · /marketing-terms)의 사본이다. 글 · 구조(LegalDocument) · 값이 글자 하나까지 같다.
  * 글을 바꾸면 랜딩 `app/data/legal.ts` 와 앱 `src/content/legal.ts` 를 함께 바꾸고, 약관 버전(앱 `src/content/legal-versions.ts`, 서버 `byeolmyeong.legal.*-version`)을 올린다.
- * 화면 문구가 아니라 법적 글이라 `strings` 에 두지 않는다. 연락처 메일 주소는 이 글(처리방침 · 마케팅 약관) 안에만 있다(결정 024 의 예외, 결정 042).
+ * 화면 문구가 아니라 법적 글이라 `strings` 에 두지 않는다. 연락처 메일 주소는 이 글(처리방침 · 마케팅 약관) 안에만 있다(결정 024 의 예외, 결정 043).
  * 사실의 근거와 고치는 순서는 랜딩 파일의 머리 주석에 있다.
  */
 

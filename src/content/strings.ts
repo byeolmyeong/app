@@ -142,7 +142,7 @@ export const strings = {
     },
   },
   /**
-   * 약관 · 처리방침 · 마케팅 수신 동의 화면(`TextPage`)의 글 밖 표시. 글 자체는 랜딩과 같은 원본 `src/content/legal.ts` 에 있다(결정 042).
+   * 약관 · 처리방침 · 마케팅 수신 동의 화면(`TextPage`)의 글 밖 표시. 글 자체는 랜딩과 같은 원본 `src/content/legal.ts` 에 있다(결정 043).
    */
   legal: {
     /** 글머리 목록(ul)의 표시 */

@@ -8,7 +8,7 @@ import { strings } from '@/content/strings';
 
 const L = strings.legal;
 
-// 앱 안의 약관 · 처리방침 · 마케팅 수신 동의(결정 042). 글은 랜딩(byeolmyeong.com)과 같은 원본 `src/content/legal.ts` 에서 온다.
+// 앱 안의 약관 · 처리방침 · 마케팅 수신 동의(결정 043). 글은 랜딩(byeolmyeong.com)과 같은 원본 `src/content/legal.ts` 에서 온다.
 describe('약관 글 화면', () => {
   it.each([
     ['이용약관', TermsScreen, terms],

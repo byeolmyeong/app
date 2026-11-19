@@ -64,7 +64,7 @@ last_reviewed: 2026-11-19
 - 할 것: `develop` 을 `origin/main` 에서 만들어 올리고, PR #22 의 목표를 `develop` 으로. CLAUDE.md · golden-rules 의 브랜치 줄은 이미 `develop` 을 보호 브랜치로 적고 있다.
 - 검증: `gh pr view 22 --json baseRefName` → develop
 
-### 5. first-deploy  · 상태: 진행(스테이징 완료, 운영 대기)
+### 5. first-deploy  · 상태: 완료(웹 두 곳 열림. 로그인은 서버 첫 배포 뒤)
 - 할 것: 이 브랜치의 미리보기 배포 → 주소 확인. PR 들이 `develop` 에 합쳐지면 스테이징 배포 확인. 운영은 `develop` → `main` 을 소유자가 합칠 때.
 - 검증: 미리보기 주소에서 화면이 뜬다(서버가 없으면 "인터넷 연결을 확인하고…" 오류 화면이 정상), 파비콘 · 어두운 바탕 · 콘솔 에러(서버 연결 실패 말고) 0, 스크린샷.
 
@@ -112,3 +112,11 @@ $ curl https://app.staging.byeolmyeong.com/login → 200
 - 소유자 "일단 배포를 하자": 최신 코드(이 브랜치, 소셜 로그인 · 브랜드 포함)로 `vercel deploy --prod` → https://byeolmyeong-32djg5vp5-swyp-fad73311.vercel.app (Production URL https://app.byeolmyeong.com). 정식으로는 GitHub 연결 뒤 `main` 에서 자동으로 올라간다.
 - 결정: 스테이징 서버는 서버 쪽이 만든 `api-staging.byeolmyeong.com`(A 134.185.114.131)을 따른다 — Preview 의 `EXPO_PUBLIC_API_URL` 을 덮어쓰고 다시 배포, 스테이징 번들에서 `https://api-staging.byeolmyeong.com` 확인 — 처음 `api.staging` 으로 적은 문서도 고쳤다.
 - 서버 확인(2026-11-19): `api.byeolmyeong.com`(168.110.120.209) · `api-staging.byeolmyeong.com`(134.185.114.131) 모두 443 · 80 연결 안 됨 — 서버 쪽 HTTPS · 방화벽 확인 필요.
+
+### 운영 도메인 (2026-11-19)
+- 소유자가 Cloudflare 에 `app` CNAME(DNS 전용)을 넣음 → `vercel domains verify` valid · 인증서 `app.byeolmyeong.com` 발급 → `vercel alias set` 으로 운영 배포를 가리킴.
+```
+$ curl --resolve app.byeolmyeong.com:443:216.150.16.193 https://app.byeolmyeong.com/login → 200 (인증서 확인 0), color-scheme dark
+```
+- 이 맥의 DNS 캐시가 기록 없던 때의 답을 기억해 한동안 "Could not resolve host" — 외부 DNS(1.1.1.1)로는 바로 열림.
+- 서버 HTTPS: 서버 저장소의 첫 배포(태스크 8 · 9)는 "배포 전 안전장치" 계획 뒤로 묶여 있다. 소유자가 엔진엑스를 물었다가 Caddy 유지로 정함. 서버 작업 세션(byeolmyeong-a8)에 웹 주소 · ALLOWED_ORIGINS · 소셜 로그인 설정 요청을 보냄.

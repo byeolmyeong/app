@@ -12,7 +12,7 @@ import { useReduceMotion } from '@/components/byeoli';
 import { GlowBackdrop } from '@/components/glow';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { BackdropShape, BrandColors, Colors, LineWidth, MakingTwinkles, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const M = strings.making;
@@ -116,7 +116,7 @@ export function MakingView({ nav }: MakingViewProps) {
   return (
     <Screen scroll={false} nav={nav}>
       <View style={styles.body}>
-        <GlowBackdrop color={BrandColors.backdropDim} extent={0.56} centerY={0.42} />
+        <GlowBackdrop color={BrandColors.backdropDim} extent={BackdropShape.making.extent} centerY={BackdropShape.making.centerY} />
         <View testID="making-art" aria-hidden importantForAccessibility="no-hide-descendants" style={styles.art}>
           <Animated.View
             testID="making-glow"
@@ -232,9 +232,9 @@ const styles = StyleSheet.create({
   },
   twinkleSmall: { width: Sizes.makingTwinkleSmall, height: Sizes.makingTwinkleSmall },
   // 시안의 반짝임 자리(그림 칸 기준)
-  twinkleA: { left: 14, top: 40 },
-  twinkleB: { right: 8, top: 170 },
-  twinkleC: { left: 60, bottom: 6 },
+  twinkleA: MakingTwinkles[0],
+  twinkleB: MakingTwinkles[1],
+  twinkleC: MakingTwinkles[2],
   byeoli: { position: 'absolute', left: (ART - Sizes.byeoli) / 2, top: (ART - Sizes.byeoli) / 2 },
   byeoliImage: { width: Sizes.byeoli, height: Sizes.byeoli },
   title: { marginTop: Spacing.xl, textAlign: 'center' },

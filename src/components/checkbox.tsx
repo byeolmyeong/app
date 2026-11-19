@@ -54,7 +54,7 @@ export type CheckBoxProps = {
  * 누르는 줄(역할 · 이름 · 상태)은 쓰는 쪽이 정한다.
  */
 export function CheckBox({ checked, size, round = false }: CheckBoxProps) {
-  const mark = size - 6;
+  const mark = size - Sizes.checkMarkInset;
   return (
     <View
       style={[

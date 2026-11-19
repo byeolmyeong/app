@@ -22,6 +22,10 @@ export type SheetProps = {
   title?: string;
   /** 제목과 내용 사이 · 내용끼리의 간격. 기본은 24 */
   gap?: number;
+  /** 시트의 높이를 정한다(태어난 곳: 화면에서 위 222 · 64 를 뺀 높이). 없으면 내용만큼 */
+  height?: number;
+  /** 아래 여백 없이 내용이 화면 바닥까지 닿는다(목록 아래 흐림이 바닥에 붙게) */
+  flush?: boolean;
   children: ReactNode;
 };
 
@@ -41,7 +45,7 @@ const noCaret = (Platform.OS === 'web' ? { caretColor: 'transparent', outlineWid
  * 뒤의 막은 제자리에서 서서히 어두워지고 시트만 올라온다. 위쪽을 잡고 아래로 끌어내리면 닫힌다.
  * 넓은 웹 화면에서도 앱 화면 폭 안에서만 어두워지고 올라온다.
  */
-export function Sheet({ visible, onClose, title, gap, children }: SheetProps) {
+export function Sheet({ visible, onClose, title, gap, height, flush = false, children }: SheetProps) {
   /** 닫히는 움직임이 끝나 화면에서 치웠는가 */
   const [hidden, setHidden] = useState(!visible);
   if (visible && hidden) setHidden(false);
@@ -96,7 +100,16 @@ export function Sheet({ visible, onClose, title, gap, children }: SheetProps) {
             {/* 키보드 포커스를 받지 않는다. 받으면 웹에서 화면 전체에 포커스 테두리가 그려진다 */}
             <Pressable testID="sheet-dim" focusable={false} tabIndex={-1} style={styles.dimPress} onPress={onClose} />
           </Animated.View>
-          <Animated.View testID="sheet-panel" style={[styles.sheet, gap !== undefined && { gap }, { transform: [{ translateY }] }]}>
+          <Animated.View
+            testID="sheet-panel"
+            style={[
+              styles.sheet,
+              title ? styles.titled : null,
+              gap !== undefined && { gap },
+              height !== undefined && { height },
+              flush && styles.flush,
+              { transform: [{ translateY }] },
+            ]}>
             {title ? (
               <View style={styles.head}>
                 <Txt variant="sheetTitle" style={styles.title}>
@@ -130,6 +143,9 @@ const styles = StyleSheet.create({
     paddingBottom: Sizes.stepBottom,
     gap: Spacing.lg,
   },
+  /** 제목이 있는 시트: 손잡이(위 10 + 4)와 제목 사이 22(결정 041 시안) */
+  titled: { paddingTop: Sizes.sheetTitleTop },
+  flush: { paddingBottom: 0 },
   /** 시트 맨 위의, 잡고 끌 수 있는 영역 */
   dragArea: {
     position: 'absolute',

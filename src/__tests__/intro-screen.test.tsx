@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import IntroScreen from '@/app/intro';
 import { strings } from '@/content/strings';
@@ -49,6 +50,25 @@ describe('소개를 봤는지', () => {
 });
 
 describe('소개 화면', () => {
+  it('제목은 피그마 보드처럼 한 줄 — 줄을 억지로 나누지 않는다(비교 B1)', () => {
+    expect(S.slides.map((slide) => slide.title.includes('\n'))).toEqual([false, false, false]);
+  });
+
+  it('하트 · 달은 보드의 그림(0~100 칸) 비율대로 — 카드 안에서 하트 96 · 달 100 칸을 꽉 채운다(비교 B2)', async () => {
+    await render(<IntroScreen />);
+    for (const [id, size] of [['intro-heart', 96], ['intro-moon', 100]] as const) {
+      const art = screen.getByTestId(id, { includeHiddenElements: true });
+      expect(art.props.width).toBe(size);
+      expect(art.props.viewBox ?? art.props.vbWidth).toBeTruthy();
+    }
+  });
+
+  it('시기 줄의 글자 줄높이는 16(비교 B11)', async () => {
+    await render(<IntroScreen />);
+    const label = screen.getByText(S.timeline.now);
+    expect(StyleSheet.flatten(label.props.style).lineHeight).toBe(16);
+  });
+
   it('처음 뜨는 순간 본 것으로 적는다(건너뛰기 · 시작하기를 기다리지 않는다)', async () => {
     await render(<IntroScreen />);
     await waitFor(async () => expect(await AsyncStorage.getItem(INTRO_SEEN_KEY)).not.toBeNull());

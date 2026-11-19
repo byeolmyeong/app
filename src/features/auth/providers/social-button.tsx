@@ -6,7 +6,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { SocialButtonStyle as B } from '@/constants/theme';
+import { LineWidth, SocialButtonStyle as B } from '@/constants/theme';
 
 export type SocialProvider = 'KAKAO' | 'APPLE' | 'GOOGLE';
 
@@ -33,7 +33,7 @@ function KakaoSymbol() {
 /** 애플 로고(17:20) */
 function AppleLogo() {
   return (
-    <Svg width={17} height={B.logo} viewBox="0 0 17 20">
+    <Svg width={B.apple.logoWidth} height={B.logo} viewBox="0 0 17 20">
       <Path
         fill={B.apple.logo}
         d="M14.2 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2.1-.9-3.4-.9-1.8 0-3.4 1-4.3 2.6-1.8 3.2-.5 7.9 1.3 10.5.9 1.3 1.9 2.7 3.3 2.6 1.3-.1 1.8-.8 3.4-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.2-2.6 1-1.5 1.4-2.9 1.4-3-.1 0-2.8-1.1-2.9-4.2zM11.6 3c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   },
   KAKAO: { backgroundColor: B.kakao.background },
   APPLE: { backgroundColor: B.apple.background },
-  GOOGLE: { backgroundColor: B.google.background, borderWidth: 1, borderColor: B.google.border },
+  GOOGLE: { backgroundColor: B.google.background, borderWidth: LineWidth, borderColor: B.google.border },
   disabled: { opacity: B.disabledOpacity },
   logo: {
     position: 'absolute',
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   /** 테두리(1) 안쪽에서 재므로 한 칸 덜 들어가야 바깥 기준 16 · 가운데가 된다 */
-  logoInBorder: { left: B.logoInset - 1, top: (B.height - B.logo) / 2 - 1 },
+  logoInBorder: { left: B.logoInset - LineWidth, top: (B.height - B.logo) / 2 - LineWidth },
   text: { ...B.text },
 });
 

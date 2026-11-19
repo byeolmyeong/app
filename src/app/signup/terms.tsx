@@ -129,7 +129,7 @@ export default function TermsStep() {
             const view = item.view;
             return (
               <View key={item.key}>
-                {item.key === 'push' ? <View style={styles.groupGap} /> : null}
+                {item.key === 'push' ? <View testID="terms-group-gap" style={styles.groupGap} /> : null}
                 <View style={styles.row}>
                   <Pressable
                     accessibilityRole="checkbox"
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   allOn: { borderColor: Colors.primary },
   items: { paddingTop: Spacing.xs, paddingHorizontal: Spacing.md },
-  groupGap: { height: Spacing.xs },
+  groupGap: { height: Sizes.termsGroupGap },
   row: { height: ROW, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   check: { flex: 1, height: ROW, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   label: { flex: 1 },

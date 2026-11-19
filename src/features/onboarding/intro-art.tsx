@@ -1,14 +1,14 @@
 /**
  * 소개 3장의 그림(결정 041 시안 보드 2 · 3 · 4): 별이 · 별이와 하트 카드 · 달 카드와 시기 줄.
  * 브랜드 자리라 빛나는 그림을 쓴다(결정 035). 별이의 기본 · 반가운 얼굴은 그림(PNG)에만 있어 공유 카드의 그림을 그대로 쓰고,
- * 하트 · 달은 `GlowShape` 다. 장식이라 화면 읽기에서 숨긴다(시기 줄의 글자만 읽힌다).
+ * 하트 · 달은 보드의 그림(0~100 칸, 빛 · 번짐 · 흰 심 세 겹)을 그대로 그린다. 장식이라 화면 읽기에서 숨긴다(시기 줄의 글자만 읽힌다).
  */
+import { useId } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, FeGaussianBlur, Filter, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
-import { GlowShape } from '@/components/glow';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, IntroArtLayout, LineWidth, Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const ART = {
@@ -16,12 +16,41 @@ const ART = {
   byeoliHappy: require('@/assets/images/share/byeoli-happy.png'),
 };
 
-/** 시안의 그림 크기(그림 안의 자리는 그림의 일부라 여기 둔다) */
-const CARD = { width: 136, height: 172, radius: 22, art: 120, heart: 96 };
-const MOON_CARD = { width: 148, height: 184, moon: 100 };
-const PAIR = { width: 300, height: 240, top: 30, left: 22, right: 142 };
-const TIMELINE = { width: 300, height: 14, line: 2, dot: 10, now: 14 };
+const { card: CARD, moonCard: MOON_CARD, pair: PAIR, timeline: TIMELINE } = IntroArtLayout;
 const cardShadow = `0 0 48px ${BrandColors.cardShadow}`;
+
+/** 보드의 하트 · 달(0~100 칸). 빛(번짐 큰 것) · 번짐 작은 것은 같은 모양, 흰 심은 조금 안쪽 모양이다 */
+const SHAPES = {
+  heart: {
+    glow: 'M50 84 C22 64 12 48 12 35 C12 23 21 15 32 15 C40 15 46 20 50 27 C54 20 60 15 68 15 C79 15 88 23 88 35 C88 48 78 64 50 84 Z',
+    core: 'M50 80 C25 62 16 47 16 35.5 C16 25 24 18.5 33 18.5 C40.5 18.5 46 23 50 30 C54 23 59.5 18.5 67 18.5 C76 18.5 84 25 84 35.5 C84 47 75 62 50 80 Z',
+  },
+  moon: {
+    glow: 'M58 14 A36 36 0 1 0 86 68 A28 28 0 1 1 58 14 Z',
+    core: 'M56 18 A32 32 0 1 0 82 66 A26 26 0 1 1 56 18 Z',
+  },
+} as const;
+
+/** 카드 안의 빛나는 하트 · 달(보드 그대로: 번짐 8 · 2.4 위에 흰 심) */
+function CardShape({ shape, size }: { shape: keyof typeof SHAPES; size: number }) {
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const d = SHAPES[shape];
+  return (
+    <Svg testID={`intro-${shape}`} width={size} height={size} viewBox="0 0 100 100">
+      <Defs>
+        <Filter id={`big${id}`} x="-50%" y="-50%" width="200%" height="200%">
+          <FeGaussianBlur stdDeviation={8} />
+        </Filter>
+        <Filter id={`small${id}`} x="-20%" y="-20%" width="140%" height="140%">
+          <FeGaussianBlur stdDeviation={2.4} />
+        </Filter>
+      </Defs>
+      <Path d={d.glow} fill={BrandColors.glow} filter={`url(#big${id})`} />
+      <Path d={d.glow} fill={BrandColors.glowMid} filter={`url(#small${id})`} />
+      <Path d={d.core} fill={BrandColors.core} />
+    </Svg>
+  );
+}
 
 export function IntroArt({ index }: { index: number }) {
   if (index === 0)
@@ -37,7 +66,7 @@ export function IntroArt({ index }: { index: number }) {
           <Image source={ART.byeoliHappy} accessible={false} style={styles.cardArt} />
         </View>
         <View style={[styles.card, styles.cardRight]}>
-          <GlowShape shape="heart" size={CARD.heart} />
+          <CardShape shape="heart" size={CARD.heart} />
         </View>
       </View>
     );
@@ -45,7 +74,7 @@ export function IntroArt({ index }: { index: number }) {
   return (
     <View style={styles.timing}>
       <View aria-hidden importantForAccessibility="no-hide-descendants" style={[styles.card, styles.moonCard]}>
-        <GlowShape shape="moon" size={MOON_CARD.moon} />
+        <CardShape shape="moon" size={MOON_CARD.moon} />
       </View>
       <View style={styles.timeline}>
         <View aria-hidden importantForAccessibility="no-hide-descendants" style={styles.track}>
@@ -64,11 +93,11 @@ export function IntroArt({ index }: { index: number }) {
           <View style={styles.dot} />
         </View>
         <View style={styles.labels}>
-          <Txt variant="label" color="hint">
+          <Txt variant="micro" color="hint">
             {T.past}
           </Txt>
-          <Txt variant="label">{T.now}</Txt>
-          <Txt variant="label" color="hint">
+          <Txt variant="micro">{T.now}</Txt>
+          <Txt variant="micro" color="hint">
             {T.ahead}
           </Txt>
         </View>
@@ -94,9 +123,9 @@ const styles = StyleSheet.create({
   cardLeft: { position: 'absolute', left: PAIR.left, top: PAIR.top, transform: [{ rotate: '-9deg' }] },
   cardRight: { position: 'absolute', left: PAIR.right, top: PAIR.top, transform: [{ rotate: '8deg' }] },
   cardArt: { width: CARD.art, height: CARD.art },
-  timing: { alignItems: 'center', gap: Spacing.xl + Spacing.xxs },
+  timing: { alignItems: 'center', gap: IntroArtLayout.artGap },
   moonCard: { width: MOON_CARD.width, height: MOON_CARD.height, transform: [{ rotate: '-6deg' }] },
-  timeline: { width: TIMELINE.width, gap: Spacing.xs + 2 },
+  timeline: { width: TIMELINE.width, gap: TIMELINE.gap },
   track: { height: TIMELINE.height, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   line: { position: 'absolute', left: TIMELINE.dot / 2, top: (TIMELINE.height - TIMELINE.line) / 2 },
   dot: { width: TIMELINE.dot, height: TIMELINE.dot, borderRadius: TIMELINE.dot / 2, backgroundColor: Colors.muted },

@@ -100,7 +100,7 @@ export const SocialButtonStyle = {
   text: { fontSize: 16, lineHeight: 20, fontWeight: '500' },
   disabledOpacity: 0.4,
   kakao: { background: '#FEE500', symbol: '#000000', text: 'rgba(0,0,0,0.85)' },
-  apple: { background: '#FFFFFF', logo: '#000000', text: '#000000', letterSpacing: -0.16 },
+  apple: { background: '#FFFFFF', logo: '#000000', text: '#000000', letterSpacing: -0.16, logoWidth: 17 },
   google: {
     background: '#131314',
     border: '#8E918F',
@@ -139,6 +139,33 @@ export const AvatarColors = {
   7: { top: '#202A86', bottom: '#0E1240', glow: '#4F5BFF' },
   8: { top: '#141A44', bottom: '#07091C', glow: '#00C8E2' },
 } as const;
+
+/**
+ * 브랜드 자리 바탕의 옅은 빛 모양(결정 041 시안의 radial-gradient): 사라지는 자리(가운데에서 가장 먼 모서리까지를 1) · 가운데 높이.
+ * 소개는 장마다 가운데 높이가 다르다(셋째 장은 그림이 위로 올라간다).
+ */
+export const BackdropShape = {
+  intro: { extent: 0.62, centerY: [0.5, 0.5, 0.44] },
+  login: { extent: 0.6, centerY: 0.46 },
+  making: { extent: 0.56, centerY: 0.42 },
+} as const;
+
+/** 소개 둘째 · 셋째 장 그림의 자리(결정 041 시안 보드 3 · 4) */
+export const IntroArtLayout = {
+  card: { width: 136, height: 172, radius: 22, art: 120, heart: 96 },
+  moonCard: { width: 148, height: 184, moon: 100 },
+  pair: { width: 300, height: 240, top: 30, left: 22, right: 142 },
+  /** 달 카드와 시기 줄 사이 · 시기 줄(선 · 점 · 글자 사이) */
+  artGap: 36,
+  timeline: { width: 300, height: 14, line: 2, dot: 10, now: 14, gap: 10 },
+} as const;
+
+/** 별명 짓는 중의 반짝임 셋의 자리(그림 칸 260 기준, 결정 041 시안 보드 9) */
+export const MakingTwinkles = [
+  { left: 14, top: 40 },
+  { right: 8, top: 170 },
+  { left: 60, bottom: 6 },
+] as const;
 
 /** 시트 뒤를 가리는 막. 밤색 66%(결정 041 시안. 어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(4,5,8,0.66)';
@@ -202,6 +229,8 @@ export const Typography = {
   note: type(13, 19, FontWeight.regular),
   /** 도움말, 오류, 작은 라벨 */
   label: type(12, 17, FontWeight.medium),
+  /** 소개 셋째 장의 시기 줄 글자(결정 041 시안) */
+  micro: type(12, 16, FontWeight.medium),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
   mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
   /** 점수, 순위 */
@@ -257,6 +286,8 @@ export const Sizes = {
   checkSmall: 18,
   checkRadius: 6,
   checkBorder: 1.5,
+  /** 체크 칸보다 체크 표시가 작은 만큼(24 → 18 · 20 → 14 · 18 → 12) */
+  checkMarkInset: 6,
   /** 그 사람의 하늘 그림: 풀이 글 머리 · 홈 카드 */
   readingPicture: 200,
   homePicture: 64,
@@ -272,11 +303,14 @@ export const Sizes = {
   /** 약관의 "모두 동의" 줄 · "보기" 옆 작은 화살표(결정 041 시안) */
   agreeAllRow: 60,
   chevronSmall: 18,
+  /** 약관의 필수 둘과 선택 둘 사이(피그마 17) */
+  termsGroupGap: 17,
   /** 고르는 칩(궁합의 관계 유형)의 높이 */
   chipHeight: 48,
-  /** 태어난 곳 시트(결정 041 시안): 검색 칸 · 시 · 도 칩 높이 · 목록 한 줄 · 시트가 화면 위에서 떨어진 거리(목록일 때) · 아래 흐림 */
+  /** 태어난 곳 시트(결정 041 시안): 검색 칸 · 시 · 도 칩 높이 · 목록 한 줄 · 시트가 화면 위에서 떨어진 거리(시 · 도일 때 · 목록일 때) · 아래 흐림 */
   searchHeight: 48,
   placeRow: 56,
+  placeSheetTopRegions: 222,
   placeSheetTop: 64,
   placeFade: 64,
   /** 작은 아이콘(검색 · 체크) · 검색 지우기 단추와 그 안의 X */
@@ -288,9 +322,11 @@ export const Sizes = {
   /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
   shareCardWidth: 220,
   sharePageCardWidth: 280,
-  /** 시트 위의 손잡이 줄(결정 041 시안) */
+  /** 시트 위의 손잡이 줄(결정 041 시안) · 제목이 있는 시트의 위 여백(손잡이 위 10 + 4 + 제목까지 22) · 제목 줄의 뒤로 화살표 */
   handleWidth: 40,
   handleHeight: 4,
+  sheetTitleTop: 36,
+  sheetBackIcon: 22,
   /** 드럼롤 선택(결정 041 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
   pickerRow: 44,
   pickerRows: 5,
@@ -304,6 +340,8 @@ export const Sizes = {
   avatarCheck: 22,
   avatarCheckIcon: 12,
   avatarRing: 3,
+  /** 로그인 위쪽의 로고 그림(결정 041 시안 보드 5) */
+  loginLogo: 260,
   /** 별명 짓는 중(결정 041 시안): 그림 칸 · 뒤 빛 · 안쪽 궤도가 칸에서 들어간 거리 · 궤도의 점 · 반짝임 · 안내 줄 높이 */
   makingArt: 260,
   makingGlowInset: 40,

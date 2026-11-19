@@ -18,17 +18,14 @@ import { Button } from '@/components/button';
 import { GlowBackdrop } from '@/components/glow';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
+import { BackdropShape, BrandColors, Colors, ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { IntroArt } from '@/features/onboarding/intro-art';
 import { markIntroSeen } from '@/features/onboarding/intro-seen';
 
 const S = strings.intro;
 const COUNT = S.slides.length;
-/** 시안의 바탕 빛이 사라지는 자리(가운데에서 가장 먼 모서리까지를 1) */
-const GLOW_EXTENT = 0.62;
-/** 셋째 장은 그림이 위로 올라가 빛의 가운데도 조금 위다 */
-const GLOW_CENTER = [0.5, 0.5, 0.44];
+const GLOW = BackdropShape.intro;
 
 export default function IntroScreen() {
   const [index, setIndex] = useState(0);
@@ -75,7 +72,7 @@ export default function IntroScreen() {
         {S.slides.map((slide, i) => (
           <View key={slide.title} style={[styles.page, width > 0 && { width }]}>
             <View style={styles.art}>
-              <GlowBackdrop color={BrandColors.backdrop} extent={GLOW_EXTENT} centerY={GLOW_CENTER[i]} />
+              <GlowBackdrop color={BrandColors.backdrop} extent={GLOW.extent} centerY={GLOW.centerY[i]} />
               <IntroArt index={i} />
             </View>
             <View style={styles.text}>

@@ -1,4 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Dimensions, StyleSheet } from 'react-native';
+
+import { Colors } from '@/constants/theme';
 
 import { strings } from '@/content/strings';
 import { PlaceSheet, placeLabel } from '@/features/chart/place-sheet';
@@ -102,6 +105,39 @@ describe('태어난 곳 시트', () => {
     expect(screen.getByText(strings.home.placeLoadFailed)).toBeTruthy();
     await fireEvent.press(screen.getByText(strings.home.placeRetry));
     expect(onRetry).toHaveBeenCalled();
+  });
+});
+
+describe('태어난 곳 시트의 크기(비교 B6 · B7)', () => {
+  const panel = () => StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style);
+
+  it('시 · 도일 때 시트의 위는 222, 목록 · 검색일 때는 64 — 높이는 화면에서 그만큼 뺀 것이고 아래 여백이 없다', async () => {
+    const { height } = Dimensions.get('window');
+    await open();
+    expect(panel()).toMatchObject({ height: height - 222, paddingBottom: 0 });
+    await fireEvent.press(screen.getByText('서울'));
+    expect(panel()).toMatchObject({ height: height - 64, paddingBottom: 0 });
+  });
+
+  it('시 · 군 · 구는 가나다순, 한 줄은 57(56 + 선 1), 검색 칸과 첫 줄 사이는 8', async () => {
+    await open();
+    await fireEvent.press(screen.getByText('서울'));
+    const rows = screen.getAllByTestId('place-option');
+    expect(rows.slice(0, 4).map((row) => row.props.accessibilityLabel)).toEqual(['강남구', '강동구', '강북구', '강서구']);
+    expect(StyleSheet.flatten(rows[0].props.style).minHeight).toBe(57);
+    expect(StyleSheet.flatten(screen.getByTestId('place-list').props.style).marginTop).toBe(8);
+  });
+
+  it('검색 결과는 서버 순서 그대로다(시 · 도 순)', async () => {
+    await open();
+    await fireEvent.changeText(search(), '중구');
+    expect(screen.getAllByTestId('place-option')[0].props.accessibilityLabel).toBe('서울 중구');
+  });
+
+  it('검색 칸의 커서는 주색이다(시트의 숨긴 커서를 물려받지 않는다)', async () => {
+    await open();
+    expect(search().props.selectionColor).toBe(Colors.primary);
+    expect(search().props.cursorColor).toBe(Colors.primary);
   });
 });
 

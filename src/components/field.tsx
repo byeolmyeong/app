@@ -1,15 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import {
-  Animated,
-  Easing,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-  type TextInputProps,
-  type TextStyle,
-} from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps, type TextStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
@@ -83,6 +73,8 @@ export function FieldInput({
       <TextInput
         multiline={multiline}
         placeholderTextColor={Colors.hint}
+        selectionColor={Colors.primary}
+        cursorColor={Colors.primary}
         style={[styles.input, empty && styles.placeholder, trailing ? styles.inputFlex : null, multiline && styles.areaInput, style]}
         onFocus={(e) => {
           setFocused(true);
@@ -99,9 +91,6 @@ export function FieldInput({
   );
 }
 
-/** 고르는 칸의 화살표가 도는 시간 */
-const ARROW_TURN_MS = 200;
-
 export type FieldSelectProps = {
   /** 고른 값. 없으면 placeholder 를 흐리게 보여 준다 */
   value?: string;
@@ -114,7 +103,7 @@ export type FieldSelectProps = {
   testID?: string;
 };
 
-/** 눌러서 고르는 입력칸. 모양은 `FieldInput` 과 같고 오른쪽에 아래 화살표가 있다. 누르면 하단 시트를 연다. */
+/** 눌러서 고르는 입력칸. 모양은 `FieldInput` 과 같고 오른쪽에 아래 화살표가 있다(시트가 열려도 그대로 아래, 결정 041 시안). 누르면 하단 시트를 연다. */
 export function FieldSelect({
   value,
   placeholder,
@@ -124,18 +113,6 @@ export function FieldSelect({
   open = false,
   testID,
 }: FieldSelectProps) {
-  // 열리면 화살표가 반 바퀴 돌아 위를 향하고, 닫히면 되돌아온다.
-  const [turn] = useState(() => new Animated.Value(open ? 1 : 0));
-  useEffect(() => {
-    Animated.timing(turn, {
-      toValue: open ? 1 : 0,
-      duration: ARROW_TURN_MS,
-      easing: Easing.out(Easing.ease),
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-  }, [open, turn]);
-  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-
   return (
     <Pressable
       testID={testID}
@@ -148,8 +125,8 @@ export function FieldSelect({
       <Txt variant="input" color={disabled ? 'muted' : value ? 'ink' : 'hint'} style={value ? styles.value : undefined}>
         {value ?? placeholder}
       </Txt>
-      <Animated.View style={{ transform: [{ rotate }] }}>
-        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <View testID="field-select-arrow">
+        <Svg width={Sizes.icon} height={Sizes.icon} viewBox="0 0 24 24" fill="none">
           <Path
             d="M6 9l6 6 6-6"
             stroke={Colors.hint}
@@ -158,13 +135,13 @@ export function FieldSelect({
             strokeLinejoin="round"
           />
         </Svg>
-      </Animated.View>
+      </View>
     </Pressable>
   );
 }
 
-// 웹 브라우저가 그리는 파란 포커스 테두리는 끈다. 포커스는 칸의 주색 테두리로 보여 준다.
-const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle;
+// 웹 브라우저가 그리는 파란 포커스 테두리는 끈다. 포커스는 칸의 주색 테두리로 보여 준다. 커서는 주색(시트의 숨긴 커서를 물려받지 않게)
+const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none', caretColor: Colors.primary } : {}) as TextStyle;
 
 const styles = StyleSheet.create({
   field: { gap: Spacing.xs },

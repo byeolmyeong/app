@@ -10,7 +10,7 @@ import { Button } from '@/components/button';
 import { GlowBackdrop } from '@/components/glow';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
-import { BrandColors, ScreenPaddingX, Spacing } from '@/constants/theme';
+import { BackdropShape, BrandColors, ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { AppleLoginButton } from '@/features/auth/providers/apple';
 import { GoogleLoginButton } from '@/features/auth/providers/google';
@@ -22,10 +22,9 @@ import type { ProviderCredential } from '@/lib/api';
 const S = strings.login;
 /** 스플래시와 같은 로고 그림(`assets/brand/splash.svg` → PNG, 결정 035) */
 const LOGO = require('@/assets/images/splash-icon.png');
-/** 시안의 로고 크기 · 바탕 빛(가운데 46% 높이에서 60% 에 사라진다) · 바닥 여백 */
-const LOGO_SIZE = 260;
-const GLOW = { extent: 0.6, centerY: 0.46 };
+/** 시안의 바닥 여백 */
 const BOTTOM = Spacing.xxl;
+const GLOW = BackdropShape.login;
 /** 서버가 새 사람의 이메일을 받지 못했다(결정 039). 공급자 이름 없이 시스템 알림 창 한 번 */
 const EMAIL_REQUIRED = 'EMAIL_REQUIRED';
 
@@ -97,6 +96,6 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   head: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.xxs, marginHorizontal: ScreenPaddingX },
-  logo: { width: LOGO_SIZE, height: LOGO_SIZE },
+  logo: { width: Sizes.loginLogo, height: Sizes.loginLogo },
   buttons: { gap: Spacing.sm, paddingHorizontal: ScreenPaddingX },
 });

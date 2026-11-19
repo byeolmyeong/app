@@ -31,8 +31,8 @@ export function placeLabel(name: string): string {
 const CHIP_COLUMNS = 3;
 const CHIP_GAP = Spacing.xs;
 
-/** 시트의 위아래 여백 · 제목 줄 · 검색 칸을 뺀 목록의 높이(목록일 때 시트는 화면 위 64 까지 올라온다) */
-const LIST_CHROME = Spacing.xl + Sizes.navHeight + Spacing.md + Sizes.searchHeight + Sizes.stepBottom + Spacing.xs;
+/** 시 · 군 · 구 목록은 가나다순(완성형 한글은 글자 번호 순서가 곧 가나다순이라 기기 언어 설정과 상관없다) */
+const byName = (a: Place, b: Place) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
 
 export type PlaceSheetProps = {
   visible: boolean;
@@ -63,7 +63,7 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
   const results = searching
     ? all.filter((p) => (districtOf(p.name) || `${regionOf(p.name)} ${shortRegion(regionOf(p.name))}`).includes(q))
     : [];
-  const districts = region ? all.filter((p) => regionOf(p.name) === region) : [];
+  const districts = region ? all.filter((p) => regionOf(p.name) === region).sort(byName) : [];
   const listing = searching || region !== null;
 
   function reset() {
@@ -88,10 +88,11 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
     setRegion(name);
   }
 
-  const listHeight = Math.max(Sizes.placeRow * 3, height - Sizes.placeSheetTop - LIST_CHROME);
+  // 시 · 도일 때 시트의 위는 222, 목록 · 검색일 때 64(보드 8-2 · 8-2-1 · 8-2-2). 아래 여백 없이 목록의 흐림이 바닥에 닿는다
+  const sheetHeight = height - (listing ? Sizes.placeSheetTop : Sizes.placeSheetTopRegions);
 
   return (
-    <Sheet visible={visible} onClose={close} gap={Spacing.md}>
+    <Sheet visible={visible} onClose={close} gap={0} height={sheetHeight} flush>
       <View testID="place-picker" style={styles.head}>
         {region && !searching ? (
           <Pressable
@@ -99,7 +100,7 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
             accessibilityLabel={strings.common.backLabel}
             onPress={() => setRegion(null)}
             style={styles.back}>
-            <Svg width={StepLayout.backIcon - 2} height={StepLayout.backIcon - 2} viewBox="0 0 24 24" fill="none">
+            <Svg width={Sizes.sheetBackIcon} height={Sizes.sheetBackIcon} viewBox="0 0 24 24" fill="none">
               <Path d="M15 5l-7 7 7 7" stroke={Colors.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
             </Svg>
           </Pressable>
@@ -122,6 +123,8 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
           onBlur={() => setFocused(false)}
           placeholder={B.searchPlaceholder}
           placeholderTextColor={Colors.hint}
+          selectionColor={Colors.primary}
+          cursorColor={Colors.primary}
           autoCorrect={false}
           autoCapitalize="none"
           returnKeyType="search"
@@ -137,13 +140,13 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
       </View>
 
       {!places && !failed ? (
-        <Txt variant="table" color="hint" style={styles.empty}>
+        <Txt variant="table" color="hint" style={[styles.empty, styles.below]}>
           {B.loading}
         </Txt>
       ) : null}
 
       {failed ? (
-        <View style={styles.failed}>
+        <View style={[styles.failed, styles.below]}>
           <Txt variant="table" color="gray">
             {H.placeLoadFailed}
           </Txt>
@@ -152,7 +155,8 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
       ) : null}
 
       {!listing && places ? (
-        <View>
+        // 작은 화면에서 칩이 시트 아래로 넘치면 굴린다
+        <ScrollView style={styles.fill} showsVerticalScrollIndicator={false}>
           <Txt variant="captionStrong" color="gray" style={styles.regionsLabel}>
             {B.regions}
           </Txt>
@@ -170,11 +174,11 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
               </Pressable>
             ))}
           </View>
-        </View>
+        </ScrollView>
       ) : null}
 
       {listing && places ? (
-        <View style={{ height: listHeight }}>
+        <View testID="place-list" style={styles.list}>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {searching && results.length === 0 ? (
               <Txt variant="table" color="hint" style={styles.empty}>
@@ -250,7 +254,8 @@ function Match({ name, query }: { name: string; query: string }) {
 }
 
 // 웹 브라우저가 그리는 파란 포커스 테두리는 끈다. 포커스는 칸의 주색 테두리로 보여 준다.
-const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle;
+// 커서는 주색 — 시트 뿌리의 숨긴 커서(caretColor: transparent)를 물려받으면 웹에서 커서가 안 보인다.
+const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none', caretColor: Colors.primary } : {}) as TextStyle;
 
 const styles = StyleSheet.create({
   head: { minHeight: Typography.sheetTitle.lineHeight, justifyContent: 'center' },
@@ -266,6 +271,7 @@ const styles = StyleSheet.create({
   },
   title: { textAlign: 'center' },
   search: {
+    marginTop: Spacing.md,
     height: Sizes.searchHeight,
     flexDirection: 'row',
     alignItems: 'center',
@@ -278,6 +284,11 @@ const styles = StyleSheet.create({
   },
   searchFocused: { borderColor: Colors.primary },
   searchInput: { flex: 1, ...Typography.item, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  /** 검색 칸 아래 안내(받는 중 · 받지 못함) */
+  below: { marginTop: Spacing.lg },
+  /** 목록: 검색 칸에서 8 아래부터 시트 바닥까지 */
+  list: { flex: 1, marginTop: Spacing.xs },
+  fill: { flex: 1 },
   searchValue: { fontWeight: FontWeight.medium },
   clear: {
     width: Sizes.icon,
@@ -288,7 +299,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   failed: { gap: Spacing.xs },
-  regionsLabel: { marginTop: Spacing.xs, marginBottom: Spacing.xs + Spacing.hairline },
+  regionsLabel: { marginTop: Spacing.lg, marginBottom: Spacing.xs + Spacing.hairline },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: CHIP_GAP },
   chip: {
     height: Sizes.searchHeight,
@@ -299,7 +310,8 @@ const styles = StyleSheet.create({
   },
   chipText: { fontWeight: FontWeight.medium },
   row: {
-    minHeight: Sizes.placeRow,
+    // 보드는 줄 56 에 아래 선 1 을 더한다(57)
+    minHeight: Sizes.placeRow + LineWidth,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import TermsStep from '@/app/signup/terms';
 import { LEGAL_VERSIONS } from '@/content/legal-versions';
@@ -38,6 +39,11 @@ const ITEMS = [
 
 // 가입 1단계: 약관 동의(결정 041, 보드 6 · 6-1)
 describe('약관 단계', () => {
+  it('필수와 선택 사이 틈은 17(피그마, 비교 B3)', async () => {
+    await render(<TermsStep />);
+    expect(StyleSheet.flatten(screen.getByTestId('terms-group-gap').props.style).height).toBe(17);
+  });
+
   it('처음에는 모두 꺼져 있고(선택도 기본 꺼짐) 다음을 누를 수 없다', async () => {
     await render(<TermsStep />);
     expect(screen.getByText(T.title)).toBeTruthy();

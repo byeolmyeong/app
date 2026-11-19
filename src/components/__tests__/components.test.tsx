@@ -5,7 +5,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/button';
 import { Byeoli } from '@/components/byeoli';
 import { DataTable } from '@/components/data-table';
-import { Field, FieldInput } from '@/components/field';
+import { Field, FieldInput, FieldSelect } from '@/components/field';
 import { GlowShape } from '@/components/glow';
 import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
@@ -58,7 +58,7 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'mono', 'number', 'picker', 'pickerOn',
+      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
     ]);
     // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 041 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
@@ -297,6 +297,30 @@ describe('ListRow', () => {
   it('이름의 색을 고를 수 있다(지우는 줄)', async () => {
     await render(<ListRow label="계정 삭제" color="danger" onPress={() => {}} />);
     expect(StyleSheet.flatten(screen.getByText('계정 삭제').props.style).color).toBe(Colors.danger);
+  });
+});
+
+describe('입력칸의 커서 · 고르는 칸의 화살표(비교 B4 · B5)', () => {
+  it('치는 칸의 커서 · 선택 색은 주색이다', async () => {
+    await render(<FieldInput placeholder="칸" />);
+    const input = screen.getByPlaceholderText('칸');
+    expect(input.props.selectionColor).toBe(Colors.primary);
+    expect(input.props.cursorColor).toBe(Colors.primary);
+  });
+
+  it('고르는 칸의 화살표는 시트가 열려도 아래를 향한 채다', async () => {
+    await render(<FieldSelect testID="sel" placeholder="고르기" open onPress={() => {}} />);
+    expect(StyleSheet.flatten(screen.getByTestId('field-select-arrow').props.style)?.transform).toBeUndefined();
+    expect(screen.getByTestId('sel').props.accessibilityState).toMatchObject({ expanded: true });
+  });
+
+  it('제목이 있는 시트는 위 여백 36(손잡이와 제목 사이 22)', async () => {
+    await render(
+      <Sheet visible title="제목" onClose={() => {}}>
+        <Txt>내용</Txt>
+      </Sheet>,
+    );
+    expect(StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).paddingTop).toBe(36);
   });
 });
 

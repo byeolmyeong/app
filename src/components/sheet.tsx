@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     paddingBottom: Sizes.stepBottom,
     gap: Spacing.lg,
   },
-  /** 제목이 있는 시트: 손잡이(위 10 + 4)와 제목 사이 22(결정 041 시안) */
+  /** 제목이 있는 시트: 손잡이(위 10 + 4)와 제목 사이 22(결정 042 시안) */
   titled: { paddingTop: Sizes.sheetTitleTop },
   flush: { paddingBottom: 0 },
   /** 시트 맨 위의, 잡고 끌 수 있는 영역 */

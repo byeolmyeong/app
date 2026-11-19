@@ -15,7 +15,7 @@ const headersOf = (fetchFn: jest.MockedFunction<typeof fetch>, i = 0) => (initOf
 const bodyOf = (fetchFn: jest.MockedFunction<typeof fetch>, i = 0) => JSON.parse(String(initOf(fetchFn, i).body));
 
 const birth = { date: '1995-05-05', time: '14:30', placeId: 1841277 };
-/** 가입 단계에서 모은 값(결정 041): 닉네임 · 프로필 · 약관 버전 · 동의 */
+/** 가입 단계에서 모은 값(결정 042): 닉네임 · 프로필 · 약관 버전 · 동의 */
 const extra = {
   nickname: '새벽별',
   avatar: 3 as const,
@@ -77,7 +77,7 @@ describe('api: 앱은 토큰을 본문으로 받고 헤더로 보낸다', () => 
     });
   });
 
-  it('POST /auth/nickname-check 는 세션 헤더 없이 가입권과 닉네임만 보내고 쓸 수 있는지 받는다(결정 041)', async () => {
+  it('POST /auth/nickname-check 는 세션 헤더 없이 가입권과 닉네임만 보내고 쓸 수 있는지 받는다(결정 042)', async () => {
     const fetchFn = fakeFetch(200, { available: false });
     expect(await app(fetchFn, 'old').checkNickname('ticket', '새벽별')).toEqual({ ok: true, data: { available: false } });
     expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/auth/nickname-check`);
@@ -93,7 +93,7 @@ describe('api: 앱은 토큰을 본문으로 받고 헤더로 보낸다', () => 
     });
   });
 
-  it('POST /auth/signup 은 가입권 · 출생 정보 · 닉네임 · 프로필 · 약관 버전 · 동의를 보내고 201 의 세션 토큰을 받는다(결정 041)', async () => {
+  it('POST /auth/signup 은 가입권 · 출생 정보 · 닉네임 · 프로필 · 약관 버전 · 동의를 보내고 201 의 세션 토큰을 받는다(결정 042)', async () => {
     const fetchFn = fakeFetch(201, { token: 'session-2' });
     expect(await app(fetchFn).signup('ticket', birth, extra)).toEqual({ ok: true, data: { token: 'session-2' } });
     expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/auth/signup`);

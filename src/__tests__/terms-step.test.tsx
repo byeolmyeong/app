@@ -37,7 +37,7 @@ const ITEMS = [
   `${T.optional} ${T.items.marketing}`,
 ];
 
-// 가입 1단계: 약관 동의(결정 041, 보드 6 · 6-1)
+// 가입 1단계: 약관 동의(결정 042, 보드 6 · 6-1)
 describe('약관 단계', () => {
   it('필수와 선택 사이 틈은 17(피그마, 비교 B3)', async () => {
     await render(<TermsStep />);

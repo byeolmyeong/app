@@ -40,7 +40,7 @@ const values = {
   pushConsent: false,
   marketingConsent: true,
 };
-/** 가입 단계에서 모은 것 전부(결정 041) */
+/** 가입 단계에서 모은 것 전부(결정 042) */
 const signupInput = { birth, ...values };
 const google = { provider: 'GOOGLE' as const, idToken: 'g' };
 
@@ -207,7 +207,7 @@ describe('로그인 · 가입 · 로그아웃', () => {
     expect(signup).toHaveBeenLastCalledWith('ticket', birth, values);
   });
 
-  it('가입을 그만두면(약관 단계에서 뒤로) 가입권을 버리고 이유 없이 로그인 전으로 간다(결정 041)', async () => {
+  it('가입을 그만두면(약관 단계에서 뒤로) 가입권을 버리고 이유 없이 로그인 전으로 간다(결정 042)', async () => {
     const { deps, store } = setup({ login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })) });
     await store.start();
     await store.signIn(google);
@@ -217,7 +217,7 @@ describe('로그인 · 가입 · 로그아웃', () => {
     expect(deps.signup).not.toHaveBeenCalled();
   });
 
-  it('닉네임 확인은 메모리의 가입권으로 묻는다. 가입권이 없거나 만료면 로그인 전으로(결정 041)', async () => {
+  it('닉네임 확인은 메모리의 가입권으로 묻는다. 가입권이 없거나 만료면 로그인 전으로(결정 042)', async () => {
     const checkNickname = jest
       .fn()
       .mockResolvedValueOnce(ok({ available: false }))

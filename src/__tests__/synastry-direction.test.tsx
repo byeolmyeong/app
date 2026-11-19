@@ -40,7 +40,7 @@ const refused = (status: number, code: string): ApiResult<Direction> => ({ ok: f
 /** 상대의 출생 정보를 다시 넣는다: 생년월일과 "태어난 시각을 몰라요" */
 async function reenter(date = '19990302') {
   await fireEvent.changeText(await screen.findByPlaceholderText(H.datePlaceholder), date);
-  // 시각 "모름" 체크가 아직 꺼져 있으면 켠다(결정 041 — 곳 칸은 그대로 있다)
+  // 시각 "모름" 체크가 아직 꺼져 있으면 켠다(결정 042 — 곳 칸은 그대로 있다)
   const unknown = screen.getByRole('checkbox', { name: H.timeUnknown });
   if (!unknown.props.accessibilityState?.checked) await fireEvent.press(unknown);
   await fireEvent.press(screen.getByText(D.submit));

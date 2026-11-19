@@ -69,7 +69,7 @@ describe('validateBirthInput', () => {
     expect(r.ok && r.input.time).toBeNull();
   });
 
-  it('시각 "모름" 이어도 고른 곳은 기기에 둔다. 서버에는 보내지 않는다(placeId null — 서버가 읽지 않는다, 결정 041)', () => {
+  it('시각 "모름" 이어도 고른 곳은 기기에 둔다. 서버에는 보내지 않는다(placeId null — 서버가 읽지 않는다, 결정 042)', () => {
     const r = validateBirthInput({ dateText: '2000-06-15', timeText: '', timeUnknown: true, place }, today);
     expect(r).toEqual({
       ok: true,
@@ -87,7 +87,7 @@ describe('validateBirthInput', () => {
     });
   });
 
-  it('시각 "모름" 이면 앞서 고른 시각 · 곳을 보내지 않는다(곳은 기기에만 남는다, 결정 041)', () => {
+  it('시각 "모름" 이면 앞서 고른 시각 · 곳을 보내지 않는다(곳은 기기에만 남는다, 결정 042)', () => {
     const r = validateBirthInput({ dateText: '2000-06-15', timeText: '21:00', timeUnknown: true, place }, today);
     expect(r.ok && r.input).toEqual({ date: '2000-06-15', time: null, placeId: null });
     expect(r.ok && r.profile.place).toEqual(place);

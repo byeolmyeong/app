@@ -18,7 +18,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-// 별명 짓는 중(결정 041, 보드 9): 별이 둥실 · 뒤 빛 · 궤도 · 반짝임 · 안내 문구 셋이 2.5초마다
+// 별명 짓는 중(결정 042, 보드 9): 별이 둥실 · 뒤 빛 · 궤도 · 반짝임 · 안내 문구 셋이 2.5초마다
 describe('MakingView', () => {
   it('제목과 첫 문구를 보여 주고, "길면 1분쯤 걸려요" 는 없다', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);

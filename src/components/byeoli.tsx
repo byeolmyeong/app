@@ -35,7 +35,7 @@ export async function reduceMotionNow(): Promise<boolean> {
   return AccessibilityInfo.isReduceMotionEnabled().catch(() => true);
 }
 
-/** 기기의 "동작 줄이기"(별이 · 별명 짓는 중이 함께 쓴다, 결정 035 · 041). 알기 전까지는 켜진 것으로 본다 */
+/** 기기의 "동작 줄이기"(별이 · 별명 짓는 중이 함께 쓴다, 결정 035 · 042). 알기 전까지는 켜진 것으로 본다 */
 export function useReduceMotion() {
   const [reduce, setReduce] = useState(() => webQuery()?.matches ?? true);
   useEffect(() => {

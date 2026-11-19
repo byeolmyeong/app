@@ -35,7 +35,7 @@ const input = () => screen.getByLabelText(N.label);
 const next = () => screen.getByRole('button', { name: N.next });
 const nextDisabled = () => next().props.accessibilityState?.disabled === true;
 
-// 가입 2단계: 닉네임 · 프로필(결정 041, 보드 7 · 7-1 · 7-2 · 7-3 · 7-4)
+// 가입 2단계: 닉네임 · 프로필(결정 042, 보드 7 · 7-1 · 7-2 · 7-3 · 7-4)
 describe('닉네임 단계', () => {
   it('이미 가입을 마친 사람(로그인 상태)이 뒤로 가기로 돌아오면 홈으로 보낸다(리뷰 A1)', async () => {
     (useAuth as jest.Mock).mockReturnValue({ status: 'signedIn', checkNickname });

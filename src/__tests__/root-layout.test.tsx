@@ -57,7 +57,7 @@ describe('로그인 전 가드(결정 034)', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('로그인 전 · 소개를 아직 안 봤으면 소개로 보내고, 읽는 중에는 가리기만 한다(결정 041)', async () => {
+  it('로그인 전 · 소개를 아직 안 봤으면 소개로 보내고, 읽는 중에는 가리기만 한다(결정 042)', async () => {
     mockSegments.mockReturnValue([]);
     mockUseSession.mockReturnValue(session('signedOut'));
     (useIntroSeen as jest.Mock).mockReturnValue(null);

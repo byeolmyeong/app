@@ -143,7 +143,7 @@ export type GlowBackdropProps = {
 };
 
 /**
- * 브랜드 자리 바탕의 옅은 빛(결정 041 시안의 `radial-gradient(circle at 50% y, color 0%, 투명 extent)`). 칸을 가득 채워 뒤에 깔고,
+ * 브랜드 자리 바탕의 옅은 빛(결정 042 시안의 `radial-gradient(circle at 50% y, color 0%, 투명 extent)`). 칸을 가득 채워 뒤에 깔고,
  * 크기를 잰 뒤에 그린다. 장식이라 화면 읽기에서 숨긴다.
  */
 export function GlowBackdrop({ color, extent, centerY = 0.5 }: GlowBackdropProps) {

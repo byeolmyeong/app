@@ -21,7 +21,7 @@ const open = (over: Partial<Parameters<typeof PlaceSheet>[0]> = {}) =>
 
 const search = () => screen.getByLabelText(B.searchPlaceholder);
 
-// 태어난 곳 고르기 시트(결정 041, 보드 8-2 · 8-2-1 · 8-2-2). 목록은 서버가 준 것만 쓴다.
+// 태어난 곳 고르기 시트(결정 042, 보드 8-2 · 8-2-1 · 8-2-2). 목록은 서버가 준 것만 쓴다.
 describe('태어난 곳 시트', () => {
   it('맨 위 동네 검색, 아래 시 · 도 칩 17개(3열)', async () => {
     await open();

@@ -22,7 +22,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
 });
 
-// 소개 3장은 앱을 처음 받아 처음 켰을 때 한 번만(결정 041, 소유자 2026-11-19)
+// 소개 3장은 앱을 처음 받아 처음 켰을 때 한 번만(결정 042, 소유자 2026-11-19)
 describe('소개를 봤는지', () => {
   it('처음에는 안 봤고, 적으면 봤다', async () => {
     expect(await hasSeenIntro()).toBe(false);

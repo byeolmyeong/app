@@ -60,7 +60,7 @@ describe('테마', () => {
     expect(Object.keys(Typography)).toEqual([
       'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
     ]);
-    // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 041 시안)
+    // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 042 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
     expect(Typography.lead).toMatchObject({ fontSize: 15, lineHeight: 23, fontWeight: '400' });
     expect(Object.values(Typography).every((t) => t.fontFamily === FontFamily)).toBe(true);
@@ -332,7 +332,7 @@ describe('FieldInput: 여러 줄', () => {
     expect(StyleSheet.flatten(input.props.style)).toMatchObject({ textAlignVertical: 'top' });
   });
 
-  it('한 줄 칸의 높이는 입력칸 높이(52, 결정 041 시안)다', async () => {
+  it('한 줄 칸의 높이는 입력칸 높이(52, 결정 042 시안)다', async () => {
     await render(<FieldInput placeholder="짧게" />);
     expect(StyleSheet.flatten(screen.getByPlaceholderText('짧게').parent?.props.style)).toMatchObject({
       height: Sizes.inputHeight,

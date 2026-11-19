@@ -1,6 +1,6 @@
 /**
  * 웹의 애플 로그인: Apple JS 팝업(결정 034). ID 토큰과 authorization code(서버가 탈퇴 때 철회용으로 바꾼다)를 받는다.
- * 버튼은 Apple JS 버튼 모양을 공급자 버튼 규칙(`SocialButton`, 결정 041)으로 직접 그린다.
+ * 버튼은 Apple JS 버튼 모양을 공급자 버튼 규칙(`SocialButton`, 결정 042)으로 직접 그린다.
  * 이메일만 묻는다(`scope: 'email'`, 결정 039) — 서버가 ID 토큰에서 읽는다.
  * Services ID(`EXPO_PUBLIC_APPLE_SERVICES_ID`)가 없거나 https 가 아니면 그리지 않는다(애플은 localhost 를 받지 않는다).
  * 웹 정적 출력은 화면을 브라우저 밖에서 미리 그린다(window 가 없다) — 그때와 하이드레이션 첫 그림은 주소를 '' 로 보고 그리지 않는다.

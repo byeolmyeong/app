@@ -1,6 +1,6 @@
 import { checkNickname, isComposingOnly } from '@/features/auth/nickname-rule';
 
-// 닉네임: 앞뒤 공백을 뗀 한글(가~힣) · 영문만 2~10자(결정 041). 판정은 서버, 앱은 먼저 안내만.
+// 닉네임: 앞뒤 공백을 뗀 한글(가~힣) · 영문만 2~10자(결정 042). 판정은 서버, 앱은 먼저 안내만.
 describe('checkNickname', () => {
   it('한글 · 영문 2~10자는 통과하고, 섞어도 된다. 앞뒤 공백은 뗀다', () => {
     expect(checkNickname('새벽별')).toEqual({ ok: true, value: '새벽별' });

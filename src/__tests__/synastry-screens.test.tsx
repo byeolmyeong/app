@@ -106,7 +106,7 @@ describe('궁합 시작(/synastry): 한 화면에서 관계 · 이름 · 상대�
     expect(selected()).toEqual([false, false, false, true]);
   });
 
-  it('시각 "모름" 을 고르면 시각 칸이 흐려지고 안내가 붙되 태어난 곳 칸은 그대로다(결정 041), 풀면 다시 고를 수 있다', async () => {
+  it('시각 "모름" 을 고르면 시각 칸이 흐려지고 안내가 붙되 태어난 곳 칸은 그대로다(결정 042), 풀면 다시 고를 수 있다', async () => {
     await render(<SynastryEntryScreen />);
     await fireEvent.press(await screen.findByRole('checkbox', { name: H.timeUnknown }));
     expect(screen.getByTestId('time-field').props.accessibilityState).toMatchObject({ disabled: true });

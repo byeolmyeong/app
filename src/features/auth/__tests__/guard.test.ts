@@ -1,6 +1,6 @@
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 
-// 로그인 전 가드(결정 009 · 034 · 041). 첫 경로 조각 · 세션 상태 · 소개를 봤는지로 갈 곳을 정한다.
+// 로그인 전 가드(결정 009 · 034 · 042). 첫 경로 조각 · 세션 상태 · 소개를 봤는지로 갈 곳을 정한다.
 describe('guardRedirect', () => {
   it('공유 페이지와 로그인에서 돌아오는 화면은 언제나 그대로다', () => {
     for (const status of ['checking', 'signedOut', 'signingUp', 'signedIn'] as const) {

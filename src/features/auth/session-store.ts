@@ -48,7 +48,7 @@ export type SessionStoreDeps = {
 /** 로그인 한 번의 결과 */
 export type SignInOutcome = 'signedIn' | 'signingUp' | 'failed';
 
-/** 가입을 마칠 때 보내는 것 전부: 출생 정보 + 가입 단계의 값(결정 041) */
+/** 가입을 마칠 때 보내는 것 전부: 출생 정보 + 가입 단계의 값(결정 042) */
 export type SignupInput = { birth: BirthInput } & SignupExtra;
 
 const reasonOf = (r: { error: string; code?: string }) => r.code ?? r.error;
@@ -157,7 +157,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
     },
 
     /**
-     * 가입을 마친다(출생 정보 + 닉네임 · 프로필 · 약관 버전 · 동의, 결정 041). 가입권 만료(`SIGNUP_EXPIRED`)면 로그인 전으로.
+     * 가입을 마친다(출생 정보 + 닉네임 · 프로필 · 약관 버전 · 동의, 결정 042). 가입권 만료(`SIGNUP_EXPIRED`)면 로그인 전으로.
      * 만 14세 미만(`UNDER_AGE`)이면 서버가 가입권을 지웠으므로 버리되, 화면이 생년월일 칸 아래에 이유를 보여 주게 가입 중에 머문다 —
      * 그다음 동작(다시 보내기 · 닉네임 확인)은 가입권이 없어 로그인 전이 되고 로그인 화면이 같은 이유를 보여 준다.
      * 닉네임 · 약관 · 프로필 · 출생 정보가 틀렸거나 서버에 닿지 못했으면 가입 중에 머문다(가입권이 남아 다시 보낼 수 있다). 결과를 그대로 돌려준다.
@@ -185,7 +185,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
     },
 
     /**
-     * 가입 중인 사람의 닉네임을 쓸 수 있는지 서버에 묻는다(결정 041). 가입권은 메모리의 것을 쓴다.
+     * 가입 중인 사람의 닉네임을 쓸 수 있는지 서버에 묻는다(결정 042). 가입권은 메모리의 것을 쓴다.
      * 가입권이 없거나 만료(`SIGNUP_EXPIRED`)면 로그인 전으로 돌아간다. 결과를 그대로 돌려준다.
      */
     async checkNickname(nickname: string): Promise<ApiResult<NicknameAvailability>> {
@@ -197,7 +197,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       return r;
     },
 
-    /** 가입을 그만둔다(약관 단계에서 뒤로, 결정 041). 가입권을 버리고 이유 없이 로그인 전이 된다 */
+    /** 가입을 그만둔다(약관 단계에서 뒤로, 결정 042). 가입권을 버리고 이유 없이 로그인 전이 된다 */
     async cancelSignup(): Promise<void> {
       // 가입 중일 때만(가입을 마친 뒤 남은 약관 단계의 뒤로가 로그아웃시키지 않게)
       if (state.status !== 'signingUp') return;

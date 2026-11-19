@@ -30,7 +30,7 @@ export const Colors = {
   hair: '#2A2B33',
   /** 입력칸·보조 버튼·카드의 바탕 */
   fill: '#1C1D24',
-  /** 시트 위의 칸(검색 칸 · 칩 · 드럼롤의 가운데 띠)과 시트 안 목록의 구분선(결정 041 시안) */
+  /** 시트 위의 칸(검색 칸 · 칩 · 드럼롤의 가운데 띠)과 시트 안 목록의 구분선(결정 042 시안) */
   sheetFill: '#1F2027',
   /** 시트의 손잡이 줄 · 검색 지우기 단추 */
   handle: '#3A3B42',
@@ -38,7 +38,7 @@ export const Colors = {
   fieldOff: '#121318',
   /** 주색(푸른 보라) 하나. 주 버튼, 고른 것, 포커스 테두리, "지금". 대비 3.6, 그 위 ink 4.8 */
   primary: '#4752FF',
-  /** 주색 계열의 글씨: 약관의 [필수], 검색에서 맞은 글자(결정 041 시안). 주색은 바탕 위 글씨로 쓰기엔 어둡다 */
+  /** 주색 계열의 글씨: 약관의 [필수], 검색에서 맞은 글자(결정 042 시안). 주색은 바탕 위 글씨로 쓰기엔 어둡다 */
   accentText: '#9AA3FF',
   /** 고른 칩의 옅은 푸른 보라 바탕 */
   primarySoft: '#1D2050',
@@ -75,7 +75,7 @@ export const BrandColors = {
   rest: '#DCE2F5',
   dim: '#7A8098',
   dimGlow: '#5A6075',
-  /** 브랜드 자리 바탕의 옅은 빛(가운데에서 바탕색으로 사라지는 원): 소개 · 스플래시 · 로그인 · 별명 짓는 중(결정 041) */
+  /** 브랜드 자리 바탕의 옅은 빛(가운데에서 바탕색으로 사라지는 원): 소개 · 스플래시 · 로그인 · 별명 짓는 중(결정 042) */
   backdrop: '#1A1F6B',
   backdropDim: '#161A45',
   /** 소개의 기울어진 그림 카드와 그 둘레의 빛 */
@@ -88,7 +88,7 @@ export const BrandColors = {
 } as const;
 
 /**
- * 소셜 로그인 버튼(결정 041). 공급자 가이드의 값이라 바꾸지 않는다: 카카오 · 애플(흰 바탕) · 구글(다크).
+ * 소셜 로그인 버튼(결정 042). 공급자 가이드의 값이라 바꾸지 않는다: 카카오 · 애플(흰 바탕) · 구글(다크).
  * 셋 다 높이 48 · 모서리 12, 로고 20×20 은 왼쪽 16, 글자는 16px · 500(애플 HIG 의 "높이의 43%" 만 소유자 예외).
  * 글자는 공급자 가이드대로 시스템 글꼴이다(Pretendard 를 쓰지 않는다).
  */
@@ -110,7 +110,7 @@ export const SocialButtonStyle = {
   },
 } as const;
 
-/** 가입 단계 화면(결정 041 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
+/** 가입 단계 화면(결정 042 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
 export const StepLayout = {
   progressHeight: 3,
   progressGap: 4,
@@ -128,7 +128,7 @@ export const StepLayout = {
 } as const;
 
 /**
- * 프로필 8종의 색(결정 041, 원본 `assets/brand/avatar-1~8.svg` — 한쪽을 바꾸면 다른 쪽도 바꾼다). 브랜드 그림이라 프로필 그림에만 쓴다.
+ * 프로필 8종의 색(결정 042, 원본 `assets/brand/avatar-1~8.svg` — 한쪽을 바꾸면 다른 쪽도 바꾼다). 브랜드 그림이라 프로필 그림에만 쓴다.
  * 바탕 원은 위(top) → 아래(bottom), 빛무리와 모양의 번짐은 glow 한 색이다.
  */
 export const AvatarColors = {
@@ -143,7 +143,7 @@ export const AvatarColors = {
 } as const;
 
 /**
- * 브랜드 자리 바탕의 옅은 빛 모양(결정 041 시안의 radial-gradient): 사라지는 자리(가운데에서 가장 먼 모서리까지를 1) · 가운데 높이.
+ * 브랜드 자리 바탕의 옅은 빛 모양(결정 042 시안의 radial-gradient): 사라지는 자리(가운데에서 가장 먼 모서리까지를 1) · 가운데 높이.
  * 소개는 장마다 가운데 높이가 다르다(셋째 장은 그림이 위로 올라간다).
  */
 export const BackdropShape = {
@@ -152,7 +152,7 @@ export const BackdropShape = {
   making: { extent: 0.56, centerY: 0.42 },
 } as const;
 
-/** 소개 둘째 · 셋째 장 그림의 자리(결정 041 시안 보드 3 · 4) */
+/** 소개 둘째 · 셋째 장 그림의 자리(결정 042 시안 보드 3 · 4) */
 export const IntroArtLayout = {
   card: { width: 136, height: 172, radius: 22, art: 120, heart: 96 },
   moonCard: { width: 148, height: 184, moon: 100 },
@@ -162,14 +162,14 @@ export const IntroArtLayout = {
   timeline: { width: 300, height: 14, line: 2, dot: 10, now: 14, gap: 10 },
 } as const;
 
-/** 별명 짓는 중의 반짝임 셋의 자리(그림 칸 260 기준, 결정 041 시안 보드 9) */
+/** 별명 짓는 중의 반짝임 셋의 자리(그림 칸 260 기준, 결정 042 시안 보드 9) */
 export const MakingTwinkles = [
   { left: 14, top: 40 },
   { right: 8, top: 170 },
   { left: 60, bottom: 6 },
 ] as const;
 
-/** 시트 뒤를 가리는 막. 밤색 66%(결정 041 시안. 어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
+/** 시트 뒤를 가리는 막. 밤색 66%(결정 042 시안. 어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(4,5,8,0.66)';
 
 /** 글꼴은 Pretendard 하나(src/app/_layout.tsx 에서 적재). */
@@ -199,45 +199,45 @@ const type = (fontSize: number, lineHeight: number, fontWeight: Weight) =>
 export const Typography = {
   /** 홈 제목, 한 줄 총평. 로고처럼 크고 가볍게 */
   display: type(28, 38, FontWeight.medium),
-  /** 소개 · 가입 단계의 큰 제목(결정 041 시안) */
+  /** 소개 · 가입 단계의 큰 제목(결정 042 시안) */
   hero: type(26, 36, FontWeight.semibold),
   /** 화면 제목, 구간 제목 */
   title: type(24, 34, FontWeight.semibold),
-  /** 별명 짓는 중의 제목(결정 041 시안) */
+  /** 별명 짓는 중의 제목(결정 042 시안) */
   headline: type(22, 32, FontWeight.semibold),
-  /** 하단 시트의 가운데 제목(결정 041 시안) */
+  /** 하단 시트의 가운데 제목(결정 042 시안) */
   sheetTitle: type(20, 28, FontWeight.semibold),
   /** 시트 제목(옛 시트), 문단 제목 */
   heading: type(18, 26, FontWeight.semibold),
   /** 버튼 글씨 */
   button: type(16, 24, FontWeight.semibold),
-  /** 입력칸의 값 · 자리 글자, 시트 목록의 한 줄(결정 041 시안). 값은 medium 으로 굵힌다 */
+  /** 입력칸의 값 · 자리 글자, 시트 목록의 한 줄(결정 042 시안). 값은 medium 으로 굵힌다 */
   input: type(16, 24, FontWeight.regular),
   /** 본문, 입력칸의 값. 긴 글을 어두운 바탕에서 읽으니 줄 간격 1.6 */
   body: type(15, 24, FontWeight.regular),
   /** 큰 제목 아래 안내 한두 줄(소개 · 가입 단계 · 로그인 한 줄) */
   lead: type(15, 23, FontWeight.regular),
-  /** 약관의 "모두 동의"(결정 041 시안) */
+  /** 약관의 "모두 동의"(결정 042 시안) */
   emphasis: type(17, 24, FontWeight.semibold),
   /** 약관 항목 한 줄 */
   item: type(15, 22, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
-  /** 입력칸 아래 도움말 · 오류, "보기"(결정 041 시안) */
+  /** 입력칸 아래 도움말 · 오류, "보기"(결정 042 시안) */
   caption: type(13, 18, FontWeight.regular),
-  /** 입력칸 이름 · "모름"(결정 041 시안) */
+  /** 입력칸 이름 · "모름"(결정 042 시안) */
   captionStrong: type(13, 18, FontWeight.medium),
   /** 약관의 마케팅 설명처럼 두 줄이 되는 작은 안내 */
   note: type(13, 19, FontWeight.regular),
   /** 도움말, 오류, 작은 라벨 */
   label: type(12, 17, FontWeight.medium),
-  /** 소개 셋째 장의 시기 줄 글자(결정 041 시안) */
+  /** 소개 셋째 장의 시기 줄 글자(결정 042 시안) */
   micro: type(12, 16, FontWeight.medium),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
   mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
   /** 점수, 순위 */
   number: { ...type(24, 32, FontWeight.medium), fontVariant: tabular },
-  /** 드럼롤 선택의 한 줄과 가운데(고른) 줄(결정 041 시안) */
+  /** 드럼롤 선택의 한 줄과 가운데(고른) 줄(결정 042 시안) */
   picker: { ...type(20, 28, FontWeight.regular), fontVariant: tabular },
   pickerOn: { ...type(22, 28, FontWeight.semibold), fontVariant: tabular },
 } as const satisfies Record<string, TextStyle>;
@@ -253,7 +253,7 @@ export const Spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
-  /** 글자와 작은 화살표 사이처럼 붙어 보여야 하는 틈(결정 041 시안) */
+  /** 글자와 작은 화살표 사이처럼 붙어 보여야 하는 틈(결정 042 시안) */
   hairline: 2,
 } as const;
 
@@ -273,7 +273,7 @@ export const LineWidth = 1;
 /** 부품 크기 */
 export const Sizes = {
   buttonHeight: 56,
-  /** 입력칸 높이(결정 041 시안 52) · 라벨 줄의 최소 높이(오른쪽에 체크가 붙어도 줄 높이가 같게) */
+  /** 입력칸 높이(결정 042 시안 52) · 라벨 줄의 최소 높이(오른쪽에 체크가 붙어도 줄 높이가 같게) */
   inputHeight: 52,
   fieldLabelRow: 20,
   /** 여러 줄을 적는 입력칸(문의 내용)의 높이 */
@@ -282,7 +282,7 @@ export const Sizes = {
   /** 화면 머리 양옆 칸의 너비 */
   navSide: 48,
   checkbox: 24,
-  /** 체크 칸(결정 041 시안): 모두 동의(동그라미) · 약관 항목 · 시각 "모름". 네모의 모서리 · 빈 칸 테두리 */
+  /** 체크 칸(결정 042 시안): 모두 동의(동그라미) · 약관 항목 · 시각 "모름". 네모의 모서리 · 빈 칸 테두리 */
   checkRound: 24,
   checkSquare: 20,
   checkSmall: 18,
@@ -302,14 +302,14 @@ export const Sizes = {
   tabIcon: 24,
   /** 목록 한 줄의 높이 */
   listRow: 48,
-  /** 약관의 "모두 동의" 줄 · "보기" 옆 작은 화살표(결정 041 시안) */
+  /** 약관의 "모두 동의" 줄 · "보기" 옆 작은 화살표(결정 042 시안) */
   agreeAllRow: 60,
   chevronSmall: 18,
   /** 약관의 필수 둘과 선택 둘 사이(피그마 17) */
   termsGroupGap: 17,
   /** 고르는 칩(궁합의 관계 유형)의 높이 */
   chipHeight: 48,
-  /** 태어난 곳 시트(결정 041 시안): 검색 칸 · 시 · 도 칩 높이 · 목록 한 줄 · 시트가 화면 위에서 떨어진 거리(시 · 도일 때 · 목록일 때) · 아래 흐림 */
+  /** 태어난 곳 시트(결정 042 시안): 검색 칸 · 시 · 도 칩 높이 · 목록 한 줄 · 시트가 화면 위에서 떨어진 거리(시 · 도일 때 · 목록일 때) · 아래 흐림 */
   searchHeight: 48,
   placeRow: 56,
   placeSheetTopRegions: 222,
@@ -324,17 +324,17 @@ export const Sizes = {
   /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
   shareCardWidth: 220,
   sharePageCardWidth: 280,
-  /** 시트 위의 손잡이 줄(결정 041 시안) · 제목이 있는 시트의 위 여백(손잡이 위 10 + 4 + 제목까지 22) · 제목 줄의 뒤로 화살표 */
+  /** 시트 위의 손잡이 줄(결정 042 시안) · 제목이 있는 시트의 위 여백(손잡이 위 10 + 4 + 제목까지 22) · 제목 줄의 뒤로 화살표 */
   handleWidth: 40,
   handleHeight: 4,
   sheetTitleTop: 36,
   sheetBackIcon: 22,
-  /** 드럼롤 선택(결정 041 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
+  /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
   pickerRow: 44,
   pickerRows: 5,
   pickerWidth: 76,
   pickerBandRadius: 10,
-  /** 프로필 그림(결정 041 시안): 닉네임 단계 위 가운데 · 고르기 시트 · 연필 표시 · 고른 표시 */
+  /** 프로필 그림(결정 042 시안): 닉네임 단계 위 가운데 · 고르기 시트 · 연필 표시 · 고른 표시 */
   avatarLarge: 88,
   avatarPick: 64,
   avatarEdit: 28,
@@ -342,9 +342,9 @@ export const Sizes = {
   avatarCheck: 22,
   avatarCheckIcon: 12,
   avatarRing: 3,
-  /** 로그인 위쪽의 로고 그림(결정 041 시안 보드 5) */
+  /** 로그인 위쪽의 로고 그림(결정 042 시안 보드 5) */
   loginLogo: 260,
-  /** 별명 짓는 중(결정 041 시안): 그림 칸 · 뒤 빛 · 안쪽 궤도가 칸에서 들어간 거리 · 궤도의 점 · 반짝임 · 안내 줄 높이 */
+  /** 별명 짓는 중(결정 042 시안): 그림 칸 · 뒤 빛 · 안쪽 궤도가 칸에서 들어간 거리 · 궤도의 점 · 반짝임 · 안내 줄 높이 */
   makingArt: 260,
   makingGlowInset: 40,
   makingInnerOrbit: 34,
@@ -358,7 +358,7 @@ export const Sizes = {
   byeoli: 160,
   byeoliSmall: 72,
   homeTile: 64,
-  /** 소개 · 가입 단계 화면의 머리(건너뛰기 · 뒤로) 높이와 바닥 여백(결정 041 시안) */
+  /** 소개 · 가입 단계 화면의 머리(건너뛰기 · 뒤로) 높이와 바닥 여백(결정 042 시안) */
   stepHeader: 56,
   stepBottom: 34,
   /** 소개의 그림 칸 · 장 표시 점(지금 장은 길게) */

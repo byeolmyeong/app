@@ -61,7 +61,7 @@ async function pickTime() {
   await sheetClosed();
 }
 
-// 가입 3단계: 출생 정보(결정 041, 보드 8 · 8-1 · 8-2 · 8-3 · 8-4)
+// 가입 3단계: 출생 정보(결정 042, 보드 8 · 8-1 · 8-2 · 8-3 · 8-4)
 describe('출생 정보 단계', () => {
   it('진행 막대 3/3, 위 안내 문구 없음, 세 칸이 비어 있으면 내 별명 읽기를 누를 수 없다', async () => {
     await render(<BirthStep />);

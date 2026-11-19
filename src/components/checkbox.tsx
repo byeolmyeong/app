@@ -50,7 +50,7 @@ export type CheckBoxProps = {
 };
 
 /**
- * 칸이 있는 체크 표시(결정 041 시안): 빈 칸은 흐린 테두리, 고르면 주색으로 채우고 흰 체크. 모양만 그린다 —
+ * 칸이 있는 체크 표시(결정 042 시안): 빈 칸은 흐린 테두리, 고르면 주색으로 채우고 흰 체크. 모양만 그린다 —
  * 누르는 줄(역할 · 이름 · 상태)은 쓰는 쪽이 정한다.
  */
 export function CheckBox({ checked, size, round = false }: CheckBoxProps) {

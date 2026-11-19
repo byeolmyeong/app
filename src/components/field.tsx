@@ -7,7 +7,7 @@ import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing, Typography } fro
 
 export type FieldProps = {
   label: string;
-  /** 라벨 줄 오른쪽에 둘 것(시각 칸의 "모름" 체크, 결정 041) */
+  /** 라벨 줄 오른쪽에 둘 것(시각 칸의 "모름" 체크, 결정 042) */
   labelRight?: ReactNode;
   /** 입력칸 아래의 작은 도움말 */
   hint?: string;
@@ -17,7 +17,7 @@ export type FieldProps = {
   children: ReactNode;
 };
 
-/** 라벨(위, 오른쪽에 덧붙일 것) · 입력칸 · 도움말 또는 오류(아래). 결정 041 시안의 모양이다. */
+/** 라벨(위, 오른쪽에 덧붙일 것) · 입력칸 · 도움말 또는 오류(아래). 결정 042 시안의 모양이다. */
 export function Field({ label, labelRight, hint, error, children }: FieldProps) {
   return (
     <View style={styles.field}>
@@ -50,7 +50,7 @@ export function Field({ label, labelRight, hint, error, children }: FieldProps) 
 }
 
 /**
- * 치는 입력칸. 떠 있는 면(raised) 에 옅은 테두리의 높이 52 칸이고, 포커스면 주색 테두리, 틀렸으면 오류 테두리(결정 041 시안).
+ * 치는 입력칸. 떠 있는 면(raised) 에 옅은 테두리의 높이 52 칸이고, 포커스면 주색 테두리, 틀렸으면 오류 테두리(결정 042 시안).
  * 값은 medium, 자리 글자는 regular 다. `multiline` 이면 여러 줄 높이의 칸이 되고 글은 위에서부터 적힌다.
  * `trailing` 은 칸 안 오른쪽에 둔다(닉네임의 글자 수).
  */
@@ -103,7 +103,7 @@ export type FieldSelectProps = {
   testID?: string;
 };
 
-/** 눌러서 고르는 입력칸. 모양은 `FieldInput` 과 같고 오른쪽에 아래 화살표가 있다(시트가 열려도 그대로 아래, 결정 041 시안). 누르면 하단 시트를 연다. */
+/** 눌러서 고르는 입력칸. 모양은 `FieldInput` 과 같고 오른쪽에 아래 화살표가 있다(시트가 열려도 그대로 아래, 결정 042 시안). 누르면 하단 시트를 연다. */
 export function FieldSelect({
   value,
   placeholder,

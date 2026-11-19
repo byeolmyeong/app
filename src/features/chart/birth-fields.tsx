@@ -149,7 +149,7 @@ export function useBirthFields(initial?: BirthProfile | null) {
 export type BirthFieldsControl = ReturnType<typeof useBirthFields>;
 
 /**
- * 출생 정보 세 칸(결정 041 시안 보드 8). 한 화면에 생년월일 · 태어난 시각 · 태어난 곳이 모두 보인다.
+ * 출생 정보 세 칸(결정 042 시안 보드 8). 한 화면에 생년월일 · 태어난 시각 · 태어난 곳이 모두 보인다.
  * 시각 "모름" 은 시각 칸 이름 줄 오른쪽의 작은 체크다. 켜면 시각 칸이 흐려지고 안내가 붙는다. 태어난 곳 칸은 그대로 받는다.
  * 생년월일은 숫자를 치고, 시각은 칸을 누르면 아래에서 올라오는 드럼롤 시트에서(오전/오후 · 시 · 분, 같은 폭),
  * 곳은 아래에서 올라오는 시트(`PlaceSheet` — 검색 · 시 · 도 칩 → 시 · 군 · 구)에서 고른다.

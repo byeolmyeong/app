@@ -18,7 +18,7 @@ export default function RootLayout() {
   const segments: string[] = useSegments();
   const [first, second] = segments;
   const session = useSession(first !== 's');
-  // 소개 3장은 이 기기에서 처음 한 번만(결정 041). 기기 저장소에서 읽는다.
+  // 소개 3장은 이 기기에서 처음 한 번만(결정 042). 기기 저장소에서 읽는다.
   const introSeen = useIntroSeen(first !== 's');
   // 로그인 전 가드(결정 034): 로그인 · 가입 · 공유 페이지 말고는 로그인해야 들어온다. 보내는 동안과 확인 중에는 화면을 가린다.
   const target = guardRedirect(session.status, first, introSeen, second);

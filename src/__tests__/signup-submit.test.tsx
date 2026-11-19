@@ -57,7 +57,7 @@ async function submit() {
   await waitFor(() => expect(completeSignup).toHaveBeenCalledTimes(1));
 }
 
-// 가입 마치기(결정 041): 앞 단계 값을 모아 POST /auth/signup 한 번. 오류마다 돌아갈 단계가 다르다
+// 가입 마치기(결정 042): 앞 단계 값을 모아 POST /auth/signup 한 번. 오류마다 돌아갈 단계가 다르다
 describe('가입 마치기', () => {
   it('보내는 값: 출생 정보 + 닉네임 · 프로필 · 약관 버전 둘 · 동의 둘(일곱 값)', async () => {
     await submit();

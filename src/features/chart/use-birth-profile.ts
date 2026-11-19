@@ -21,7 +21,7 @@ const readPlace = (v: unknown): BirthProfile['place'] => {
 
 /**
  * 보관된 값을 출생 정보로 읽는다. 모양이 다르면 null.
- * 시각 "모름" 이면 곳이 없어도 되고, 고른 곳이 있으면 그대로 읽는다(입력 칸을 채울 때만 쓴다, 결정 041).
+ * 시각 "모름" 이면 곳이 없어도 되고, 고른 곳이 있으면 그대로 읽는다(입력 칸을 채울 때만 쓴다, 결정 042).
  */
 function readBirthProfile(v: unknown): BirthProfile | null {
   if (typeof v !== 'object' || v === null) return null;

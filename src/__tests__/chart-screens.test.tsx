@@ -48,7 +48,7 @@ const sheetClosed = () => waitFor(() => expect(screen.queryByTestId('sheet-dim')
 /** 고르기 화면이 닫혀 사라질 때까지 기다린다 */
 const pickerClosed = () => waitFor(() => expect(screen.queryByTestId('place-picker')).toBeNull());
 
-/** 치지 않고 고른다: 태어난 곳 칸을 누르면 시트가 올라오고, 시·도 칩 → 시·군·구 를 고르면 닫힌다(결정 041) */
+/** 치지 않고 고른다: 태어난 곳 칸을 누르면 시트가 올라오고, 시·도 칩 → 시·군·구 를 고르면 닫힌다(결정 042) */
 async function fillPlace() {
   await fireEvent.press(screen.getByTestId('place-field'));
   await fireEvent.press(await screen.findByText('서울'));
@@ -66,7 +66,7 @@ async function fillTime(period: 'AM' | 'PM', hour: number, minute: number) {
   await sheetClosed();
 }
 
-/** 시각 칸 이름 줄 오른쪽의 "모름" 체크(결정 041) */
+/** 시각 칸 이름 줄 오른쪽의 "모름" 체크(결정 042) */
 const pressUnknown = () => fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
 
 /** 생년월일을 치고, 시각은 오후 9:00(21:00)을 고르거나 null 이면 "모름" 을 누른다 */
@@ -119,7 +119,7 @@ describe('출생 정보 입력(홈)', () => {
     expect(screen.queryByText(H.timeConfirm)).toBeNull();
   });
 
-  it('태어난 곳은 아래에서 올라오는 시트에서 고른다: 시·도 칩 → 그 시·도의 시·군·구(결정 041)', async () => {
+  it('태어난 곳은 아래에서 올라오는 시트에서 고른다: 시·도 칩 → 그 시·도의 시·군·구(결정 042)', async () => {
     await render(<HomeScreen />);
     // 열기 전에는 고르는 줄이 화면에 없다
     expect(screen.queryByTestId('place-option')).toBeNull();
@@ -204,7 +204,7 @@ describe('출생 정보 입력(홈)', () => {
     expect(await loadBirth()).toBeNull();
   });
 
-  it('"모름" 을 고르면 태어난 곳 칸은 그대로 있되 없어도 되고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 041)', async () => {
+  it('"모름" 을 고르면 태어난 곳 칸은 그대로 있되 없어도 되고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 042)', async () => {
     mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
@@ -221,7 +221,7 @@ describe('출생 정보 입력(홈)', () => {
     });
   });
 
-  it('곳을 고른 뒤 "모름" 을 고르면 골라 둔 곳을 서버에 보내지 않는다(기기에는 남는다, 결정 041)', async () => {
+  it('곳을 고른 뒤 "모름" 을 고르면 골라 둔 곳을 서버에 보내지 않는다(기기에는 남는다, 결정 042)', async () => {
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
     await fillPlace();

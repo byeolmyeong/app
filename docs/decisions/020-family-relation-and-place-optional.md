@@ -3,7 +3,7 @@ type: decision
 tags: [궁합, 관계 유형, 가족, 출생 정보, 태어난 곳, 시각 모름]
 status: active
 last_reviewed: 2026-11-11
-superseded_by: 041-stepped-onboarding.md (2 의 "시각 모름이면 태어난 곳 칸이 사라진다" 는 041 이 대체 — 앱은 칸을 그대로 받고 서버 계약은 그대로. 나머지는 유효)
+superseded_by: 042-stepped-onboarding.md (2 의 "시각 모름이면 태어난 곳 칸이 사라진다" 는 042 가 대체 — 앱은 칸을 그대로 받고 서버 계약은 그대로. 나머지는 유효)
 ---
 # 020. 궁합의 관계 유형에 가족을 넣고, 태어난 시각을 모르면 태어난 곳을 묻지 않는다
 

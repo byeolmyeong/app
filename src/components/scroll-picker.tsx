@@ -35,7 +35,7 @@ const PAD = ROW * Math.floor(Sizes.pickerRows / 2);
 const SETTLE_MS = 120;
 /** 마우스를 이만큼 넘게 움직이면 누른 것이 아니라 끈 것으로 본다 */
 const DRAG_SLOP = 4;
-/** 가운데에서 멀어질수록 흐리게(가운데 · 한 줄 · 두 줄 이상, 결정 041 시안) */
+/** 가운데에서 멀어질수록 흐리게(가운데 · 한 줄 · 두 줄 이상, 결정 042 시안) */
 const FADE = [1, 0.45, 0.2];
 
 const isWeb = Platform.OS === 'web';

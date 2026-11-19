@@ -43,7 +43,7 @@ describe('기기 보관', () => {
     expect(await loadBirth()).toEqual({ profile: unknown, chart: fixtures.chartTimeUnknown });
   });
 
-  it('시각 "모름" + 곳으로 보관된 값은 곳까지 읽는다(입력 칸을 채울 때 쓴다, 결정 041)', async () => {
+  it('시각 "모름" + 곳으로 보관된 값은 곳까지 읽는다(입력 칸을 채울 때 쓴다, 결정 042)', async () => {
     await AsyncStorage.setItem(
       BIRTH_STORAGE_KEY,
       JSON.stringify({ profile: { ...profile, time: null }, chart: fixtures.chartTimeUnknown }),

@@ -5,7 +5,7 @@ import { SocialButton } from '@/features/auth/providers/social-button';
 
 const flat = (testID: string) => StyleSheet.flatten(screen.getByTestId(testID).props.style);
 
-// 공급자 버튼 한 모양(결정 041): 높이 48 · 모서리 12 · 로고 20×20 은 왼쪽 16 · 문구는 가운데 16px(애플만 HIG 43% 에서 벗어남)
+// 공급자 버튼 한 모양(결정 042): 높이 48 · 모서리 12 · 로고 20×20 은 왼쪽 16 · 문구는 가운데 16px(애플만 HIG 43% 에서 벗어남)
 describe('공급자 버튼', () => {
   const cases = [
     { provider: 'KAKAO', label: '카카오 로그인', background: '#FEE500', text: 'rgba(0,0,0,0.85)', border: 0 },

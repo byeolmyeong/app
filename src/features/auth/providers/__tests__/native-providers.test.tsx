@@ -76,7 +76,7 @@ describe('구글(앱)', () => {
 });
 
 describe('애플(iOS)', () => {
-  it('시스템 버튼 대신 공급자 버튼 모양(16px, 결정 041)으로 그리고 누르면 signInAsync 를 부른다', async () => {
+  it('시스템 버튼 대신 공급자 버튼 모양(16px, 결정 042)으로 그리고 누르면 signInAsync 를 부른다', async () => {
     (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValue({ identityToken: 'a-id' });
     await render(<AppleLoginButton {...props} />);
     await fireEvent.press(await screen.findByText(strings.login.apple));

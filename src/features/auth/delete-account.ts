@@ -9,7 +9,7 @@ import { api, type ApiResult } from '@/lib/api';
 
 /**
  * 이 앱이 기기 저장소에 두는 사람의 키의 머리. 기능마다 `byeolmyeong.<이름>.v<판>` 으로 둔다.
- * 예외: 사람이 아니라 기기에 붙는 값(소개를 봤는지)은 `byeolmyeong-device.` 로 지어 여기서 지우지 않는다(결정 041).
+ * 예외: 사람이 아니라 기기에 붙는 값(소개를 봤는지)은 `byeolmyeong-device.` 로 지어 여기서 지우지 않는다(결정 042).
  */
 export const DEVICE_STORAGE_PREFIX = 'byeolmyeong.';
 

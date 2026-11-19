@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 import { AVATAR_IDS, Avatar } from '@/components/avatar';
 import { strings } from '@/content/strings';
 
-// 프로필 8종(결정 041, 원본 assets/brand/avatar-1~8.svg). 화면에는 이름이 보이지 않고 화면 읽기 이름만 있다.
+// 프로필 8종(결정 042, 원본 assets/brand/avatar-1~8.svg). 화면에는 이름이 보이지 않고 화면 읽기 이름만 있다.
 describe('Avatar', () => {
   it('1~8 여덟 가지다', () => {
     expect(AVATAR_IDS).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);

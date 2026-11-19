@@ -84,7 +84,7 @@ export type LoginResult = { status: 'SIGNED_IN'; token: string | null } | { stat
 export type SignupResult = { token: string | null };
 
 /**
- * `POST /auth/signup` 에 출생 정보와 함께 보내는 가입 단계의 값(결정 041). avatar 는 정수 1~8, 동의는 참거짓이다(서버가 타입을 정확히 본다).
+ * `POST /auth/signup` 에 출생 정보와 함께 보내는 가입 단계의 값(결정 042). avatar 는 정수 1~8, 동의는 참거짓이다(서버가 타입을 정확히 본다).
  * termsVersion · privacyVersion 은 `src/content/legal-versions.ts` 의 문자열 그대로다.
  */
 export type SignupExtra = {
@@ -96,7 +96,7 @@ export type SignupExtra = {
   marketingConsent: boolean;
 };
 
-/** `POST /auth/nickname-check` 의 응답. 영문 대소문자는 같은 이름으로 본다(결정 041) */
+/** `POST /auth/nickname-check` 의 응답. 영문 대소문자는 같은 이름으로 본다(결정 042) */
 export type NicknameAvailability = { available: boolean };
 
 export type Reading = {
@@ -900,7 +900,7 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /auth/signup` 가입권 · 출생 정보 · 가입 단계의 값(닉네임 · 프로필 · 약관 버전 · 동의, 결정 041)으로 가입한다. 만 14세 판정은 서버가 한다.
+     * `POST /auth/signup` 가입권 · 출생 정보 · 가입 단계의 값(닉네임 · 프로필 · 약관 버전 · 동의, 결정 042)으로 가입한다. 만 14세 판정은 서버가 한다.
      * 오류(code): 가입권이 없거나 만료 401 `SIGNUP_EXPIRED` · 약관 400 `TERMS_REQUIRED` · 닉네임 400 `INVALID_NICKNAME` · 프로필 400 `INVALID_AVATAR` ·
      * 출생 정보 `POST /charts` 와 같은 400 · 만 14세 미만 403 `UNDER_AGE`(가입권을 지운다) · 닉네임 중복 409 `NICKNAME_TAKEN`. 400 · 409 는 가입권이 남는다.
      */
@@ -927,7 +927,7 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /auth/nickname-check` 가입권으로 닉네임을 쓸 수 있는지 묻는다(결정 041). 가입 단계의 "다음" 에서 한 번만 부른다.
+     * `POST /auth/nickname-check` 가입권으로 닉네임을 쓸 수 있는지 묻는다(결정 042). 가입 단계의 "다음" 에서 한 번만 부른다.
      * 규칙에 어긋나면 400 `INVALID_NICKNAME`, 가입권이 없거나 만료면 401 `SIGNUP_EXPIRED` 가 code 로 온다. 세션 헤더는 붙이지 않는다.
      */
     async checkNickname(signupToken: string, nickname: string): Promise<ApiResult<NicknameAvailability>> {

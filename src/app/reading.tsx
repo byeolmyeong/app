@@ -61,7 +61,7 @@ export default function ReadingScreen() {
   // 기기를 찾아보는 동안에는 아무것도 그리지 않는다("짓는 중" 이 잠깐 비치지 않게).
   if (!stored.checked) return <Screen nav={nav}>{null}</Screen>;
 
-  // 짓는 동안은 "별명 짓는 중"(결정 041 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
+  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
   if (state.status === 'loading') return <MakingView nav={from === 'signup' ? undefined : nav} />;
 
   if (state.status === 'failed')

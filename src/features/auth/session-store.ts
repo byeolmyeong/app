@@ -10,6 +10,7 @@ import type {
   LoginResult,
   NicknameAvailability,
   ProviderCredential,
+  SignupExtra,
   SignupResult,
 } from '@/lib/api';
 
@@ -33,7 +34,7 @@ export type SessionStoreDeps = {
   cookieSession: boolean;
   createDevSession: () => Promise<ApiResult<DevSession>>;
   login: (credential: ProviderCredential) => Promise<ApiResult<LoginResult>>;
-  signup: (signupToken: string, birth: BirthInput) => Promise<ApiResult<SignupResult>>;
+  signup: (signupToken: string, birth: BirthInput, extra: SignupExtra) => Promise<ApiResult<SignupResult>>;
   checkNickname: (signupToken: string, nickname: string) => Promise<ApiResult<NicknameAvailability>>;
   getSession: () => Promise<ApiResult<null>>;
   logout: () => Promise<ApiResult<null>>;
@@ -46,6 +47,9 @@ export type SessionStoreDeps = {
 
 /** 로그인 한 번의 결과 */
 export type SignInOutcome = 'signedIn' | 'signingUp' | 'failed';
+
+/** 가입을 마칠 때 보내는 것 전부: 출생 정보 + 가입 단계의 값(결정 041) */
+export type SignupInput = { birth: BirthInput } & SignupExtra;
 
 const reasonOf = (r: { error: string; code?: string }) => r.code ?? r.error;
 
@@ -61,6 +65,15 @@ export function createSessionStore(deps: SessionStoreDeps) {
     state = { status, token, ready: status !== 'checking', lastError };
     deps.setApiToken(token);
     listeners.forEach((listener) => listener());
+  }
+
+  /**
+   * 가입권이 없을 때(만료 · 그만둠 · 만 14세 미만으로 서버가 지움). 로그인 전으로 돌아가고 결과는 SIGNUP_EXPIRED 다.
+   * 만 14세 미만 뒤라면 로그인 화면이 그 안내를 보여 주게 이유를 그대로 남긴다.
+   */
+  async function noTicket(): Promise<ApiResult<never>> {
+    await signedOut(state.lastError === 'UNDER_AGE' ? 'UNDER_AGE' : 'SIGNUP_EXPIRED');
+    return { ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' };
   }
 
   /** 서버가 준 세션으로 로그인 상태가 된다. 앱은 토큰을 보관한다(웹은 토큰이 없다) */
@@ -142,18 +155,23 @@ export function createSessionStore(deps: SessionStoreDeps) {
     },
 
     /**
-     * 가입을 마친다(출생 정보와 함께). 만 14세 미만(`UNDER_AGE`)이나 가입권 만료(`SIGNUP_EXPIRED`)면 가입권을 버리고 로그인 전으로,
-     * 출생 정보가 틀렸거나 서버에 닿지 못했으면 가입 중에 머문다(다시 보낼 수 있다). 결과를 그대로 돌려준다.
+     * 가입을 마친다(출생 정보 + 닉네임 · 프로필 · 약관 버전 · 동의, 결정 041). 가입권 만료(`SIGNUP_EXPIRED`)면 로그인 전으로.
+     * 만 14세 미만(`UNDER_AGE`)이면 서버가 가입권을 지웠으므로 버리되, 화면이 생년월일 칸 아래에 이유를 보여 주게 가입 중에 머문다 —
+     * 그다음 동작(다시 보내기 · 닉네임 확인)은 가입권이 없어 로그인 전이 되고 로그인 화면이 같은 이유를 보여 준다.
+     * 닉네임 · 약관 · 프로필 · 출생 정보가 틀렸거나 서버에 닿지 못했으면 가입 중에 머문다(가입권이 남아 다시 보낼 수 있다). 결과를 그대로 돌려준다.
      */
-    async completeSignup(birth: BirthInput): Promise<ApiResult<SignupResult>> {
-      if (!signupToken) return { ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' };
-      const r = await deps.signup(signupToken, birth);
+    async completeSignup({ birth, ...extra }: SignupInput): Promise<ApiResult<SignupResult>> {
+      if (!signupToken) return noTicket();
+      const r = await deps.signup(signupToken, birth, extra);
       if (r.ok) {
         await signedIn(r.data.token);
         return r;
       }
-      if (r.code === 'UNDER_AGE' || r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
-      else set('signingUp', null, reasonOf(r));
+      if (r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
+      else if (r.code === 'UNDER_AGE') {
+        signupToken = null;
+        set('signingUp', null, 'UNDER_AGE');
+      } else set('signingUp', null, reasonOf(r));
       return r;
     },
 
@@ -162,7 +180,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
      * 가입권이 없거나 만료(`SIGNUP_EXPIRED`)면 로그인 전으로 돌아간다. 결과를 그대로 돌려준다.
      */
     async checkNickname(nickname: string): Promise<ApiResult<NicknameAvailability>> {
-      if (!signupToken) return { ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' };
+      if (!signupToken) return noTicket();
       const r = await deps.checkNickname(signupToken, nickname);
       if (!r.ok && r.code === 'SIGNUP_EXPIRED') await signedOut(reasonOf(r));
       return r;

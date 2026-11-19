@@ -15,6 +15,7 @@ import { strings } from '@/content/strings';
 import { AppleLoginButton } from '@/features/auth/providers/apple';
 import { GoogleLoginButton } from '@/features/auth/providers/google';
 import { KakaoLoginButton } from '@/features/auth/providers/kakao';
+import { clearDraft } from '@/features/auth/signup-draft';
 import { getSession, useAuth } from '@/features/auth/use-session';
 import type { ProviderCredential } from '@/lib/api';
 
@@ -43,6 +44,9 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const alerted = useRef(false);
+
+  // 로그인 화면에 왔으면 하다 만 가입은 끝났다(가입 시간이 지남 · 만 14세 미만 · 그만둠) — 초안을 지워 다음 가입은 처음부터.
+  useEffect(() => clearDraft(), []);
 
   // 카카오 웹은 다른 화면(/auth/kakao)에서 로그인하고 여기로 돌아온다 — 그 실패도 뜰 때 한 번 알린다.
   useEffect(() => {

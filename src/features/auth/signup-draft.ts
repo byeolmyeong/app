@@ -30,4 +30,26 @@ export function getDraft(): SignupDraft | null {
 
 export function clearDraft(): void {
   draft = {};
+  rejection = null;
+}
+
+/** 마지막 단계에서 서버가 닉네임을 거절한 이유. 닉네임 단계로 돌아가 한 번 보여 준다 */
+export type NicknameRejection = 'INVALID_NICKNAME' | 'NICKNAME_TAKEN';
+let rejection: NicknameRejection | null = null;
+
+export function rejectNickname(code: NicknameRejection): void {
+  rejection = code;
+}
+
+/** 거절된 이유를 꺼낸다(한 번만 — 꺼내면 비운다) */
+export function takeNicknameRejection(): NicknameRejection | null {
+  const taken = rejection;
+  rejection = null;
+  return taken;
+}
+
+/** 약관 동의를 다시 받는다(서버가 `TERMS_REQUIRED` 로 거절했을 때). 닉네임 · 프로필은 남긴다 */
+export function dropTerms(): void {
+  const { nickname, avatar } = draft;
+  draft = { nickname, avatar };
 }

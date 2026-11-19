@@ -14,7 +14,7 @@ const store = createSessionStore({
   cookieSession: Platform.OS === 'web',
   createDevSession: () => api.createDevSession(),
   login: (credential) => api.login(credential),
-  signup: (signupToken, birth) => api.signup(signupToken, birth),
+  signup: (signupToken, birth, extra) => api.signup(signupToken, birth, extra),
   checkNickname: (signupToken, nickname) => api.checkNickname(signupToken, nickname),
   getSession: () => api.getSession(),
   logout: () => api.logout(),

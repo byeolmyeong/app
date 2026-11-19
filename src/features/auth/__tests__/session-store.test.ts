@@ -32,6 +32,16 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
 }
 
 const birth = { date: '1995-05-05', time: null, placeId: null };
+const values = {
+  nickname: '새벽별',
+  avatar: 2 as const,
+  termsVersion: '2026-11-19',
+  privacyVersion: '2026-11-19',
+  pushConsent: false,
+  marketingConsent: true,
+};
+/** 가입 단계에서 모은 것 전부(결정 041) */
+const signupInput = { birth, ...values };
 const google = { provider: 'GOOGLE' as const, idToken: 'g' };
 
 describe('개발용 세션(결정 017)', () => {
@@ -143,25 +153,58 @@ describe('로그인 · 가입 · 로그아웃', () => {
     expect(await store.signIn(google)).toBe('signingUp');
     expect(store.getSnapshot()).toMatchObject({ status: 'signingUp', token: null });
 
-    expect(await store.completeSignup(birth)).toEqual({ ok: true, data: { token: 'new-session' } });
-    expect(deps.signup).toHaveBeenCalledWith('ticket', birth);
+    expect(await store.completeSignup(signupInput)).toEqual({ ok: true, data: { token: 'new-session' } });
+    expect(deps.signup).toHaveBeenCalledWith('ticket', birth, values);
     expect(kept()).toBe('new-session');
     expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'new-session' });
   });
 
-  it('만 14세 미만이면 가입권을 버리고 로그인 전으로 돌아가며 이유를 남긴다', async () => {
+  it('만 14세 미만이면 가입권을 버리되 화면에 이유를 보여 주게 가입 중에 머문다. 다음 동작은 로그인 전으로(이유 그대로)', async () => {
     const { deps, store } = setup({
       login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })),
       signup: jest.fn(async () => fail('SERVER', 403, 'UNDER_AGE')),
     });
     await store.start();
     await store.signIn(google);
-    await store.completeSignup(birth);
-    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null, lastError: 'UNDER_AGE' });
+    expect(await store.completeSignup(signupInput)).toMatchObject({ ok: false, code: 'UNDER_AGE' });
+    expect(store.getSnapshot()).toMatchObject({ status: 'signingUp', token: null, lastError: 'UNDER_AGE' });
     expect(deps.saveToken).not.toHaveBeenCalled();
-    // 가입권을 버렸으니 다시 보내지 않는다
-    expect(await store.completeSignup(birth)).toEqual({ ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' });
+    // 서버가 가입권을 지웠으니 다시 보내지 않고, 로그인 화면이 만 14세 안내를 보여 주게 이유를 남긴다
+    expect(await store.completeSignup(signupInput)).toEqual({ ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' });
     expect(deps.signup).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', lastError: 'UNDER_AGE' });
+  });
+
+  it('만 14세 미만 뒤 닉네임 단계로 돌아가 확인해도 서버를 부르지 않고 로그인 전으로', async () => {
+    const { deps, store } = setup({
+      login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })),
+      signup: jest.fn(async () => fail('SERVER', 403, 'UNDER_AGE')),
+    });
+    await store.start();
+    await store.signIn(google);
+    await store.completeSignup(signupInput);
+    expect(await store.checkNickname('새벽별')).toMatchObject({ ok: false, code: 'SIGNUP_EXPIRED' });
+    expect(deps.checkNickname).not.toHaveBeenCalled();
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', lastError: 'UNDER_AGE' });
+  });
+
+  it('닉네임 · 약관 · 프로필이 거절되면(400 · 409, 가입권은 남는다) 가입 중에 머물러 고쳐 다시 보낼 수 있다', async () => {
+    const signup = jest
+      .fn()
+      .mockResolvedValueOnce(fail('SERVER', 409, 'NICKNAME_TAKEN'))
+      .mockResolvedValueOnce(fail('SERVER', 400, 'TERMS_REQUIRED'))
+      .mockResolvedValueOnce(ok({ token: 'new-session' }));
+    const { store } = setup({ login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })), signup });
+    await store.start();
+    await store.signIn(google);
+    await store.completeSignup(signupInput);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signingUp', lastError: 'NICKNAME_TAKEN' });
+    await store.completeSignup(signupInput);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signingUp', lastError: 'TERMS_REQUIRED' });
+    await store.completeSignup(signupInput);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn' });
+    expect(signup).toHaveBeenCalledTimes(3);
+    expect(signup).toHaveBeenLastCalledWith('ticket', birth, values);
   });
 
   it('가입을 그만두면(약관 단계에서 뒤로) 가입권을 버리고 이유 없이 로그인 전으로 간다(결정 041)', async () => {
@@ -170,7 +213,7 @@ describe('로그인 · 가입 · 로그아웃', () => {
     await store.signIn(google);
     await store.cancelSignup();
     expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null, lastError: null });
-    expect(await store.completeSignup(birth)).toMatchObject({ ok: false, code: 'SIGNUP_EXPIRED' });
+    expect(await store.completeSignup(signupInput)).toMatchObject({ ok: false, code: 'SIGNUP_EXPIRED' });
     expect(deps.signup).not.toHaveBeenCalled();
   });
 
@@ -198,7 +241,7 @@ describe('로그인 · 가입 · 로그아웃', () => {
     });
     await store.start();
     await store.signIn(google);
-    await store.completeSignup(birth);
+    await store.completeSignup(signupInput);
     expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', lastError: 'SIGNUP_EXPIRED' });
   });
 
@@ -211,11 +254,11 @@ describe('로그인 · 가입 · 로그아웃', () => {
     const { store } = setup({ login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })), signup });
     await store.start();
     await store.signIn(google);
-    expect(await store.completeSignup(birth)).toMatchObject({ ok: false, code: 'INVALID_DATE' });
+    expect(await store.completeSignup(signupInput)).toMatchObject({ ok: false, code: 'INVALID_DATE' });
     expect(store.getSnapshot()).toMatchObject({ status: 'signingUp' });
-    await store.completeSignup(birth);
+    await store.completeSignup(signupInput);
     expect(store.getSnapshot()).toMatchObject({ status: 'signingUp' });
-    await store.completeSignup(birth);
+    await store.completeSignup(signupInput);
     expect(store.getSnapshot()).toMatchObject({ status: 'signedIn' });
     expect(signup).toHaveBeenCalledTimes(3);
   });

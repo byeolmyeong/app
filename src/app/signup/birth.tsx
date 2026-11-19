@@ -1,7 +1,10 @@
 /**
  * 가입 3단계: 출생 정보(결정 009 · 034 · 041, 시안 보드 8 · 8-1 · 8-2 · 8-3 · 8-4). 진행 막대 3/3, 위 안내 문구 없음.
- * 세 칸을 채우면 "내 별명 읽기" 가 켜진다. 출생 정보로 가입을 마친 뒤(만 14세 판정은 서버) 차트를 받아 기기에 두고 풀이 글로 간다.
- * 차트를 받지 못하면 홈으로 — 홈이 서버에 저장된 출생 정보로 되살린다(결정 029). 만 14세 미만이면 생년월일 칸 아래에 빨강 안내.
+ * 세 칸을 채우면 "내 별명 읽기" 가 켜진다. 누르면 앞 단계의 초안(약관 버전 · 동의 · 닉네임 · 프로필)과 출생 정보를
+ * `POST /auth/signup` 한 번으로 보낸다 — 단계마다 서버를 부르지 않는다(가입권은 한 번 쓰면 끝, 중간에 나가면 계정이 반쯤 생긴다).
+ * 성공하면 초안을 지우고 차트를 받아 기기에 둔 뒤 풀이 글(짓는 동안은 "별명 짓는 중")로 간다. 차트를 받지 못하면 홈으로 —
+ * 홈이 서버에 저장된 출생 정보로 되살린다(결정 029). 오류마다 돌아갈 곳: 닉네임(`INVALID_NICKNAME` · `NICKNAME_TAKEN`) ·
+ * 약관(`TERMS_REQUIRED`) · 생년월일 칸 아래 빨강(`UNDER_AGE`) · 로그인(`SIGNUP_EXPIRED`, 가드가 보낸다) · 그 밖은 버튼 위 안내.
  * 닉네임 단계를 건너뛰고 들어오면 닉네임 단계로 돌려보낸다.
  */
 import { Redirect, router } from 'expo-router';
@@ -12,7 +15,7 @@ import { Button } from '@/components/button';
 import { Txt } from '@/components/txt';
 import { Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { getDraft } from '@/features/auth/signup-draft';
+import { clearDraft, dropTerms, getDraft, rejectNickname } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
 import { useAuth } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
@@ -31,7 +34,8 @@ export default function BirthStep() {
   const [requestError, setRequestError] = useState<string | null>(null);
 
   if (status === 'signedIn' && !finishing) return <Redirect href="/" />;
-  if (!draft?.nickname) return <Redirect href="/signup/nickname" />;
+  if (!draft?.nickname || draft.avatar === undefined) return <Redirect href="/signup/nickname" />;
+  const { nickname, avatar, termsVersion, privacyVersion, pushConsent, marketingConsent } = draft;
 
   async function submit() {
     if (finishing) return;
@@ -39,12 +43,26 @@ export default function BirthStep() {
     if (!v) return;
     setRequestError(null);
     setFinishing(true);
-    const r = await completeSignup(v.input);
+    const r = await completeSignup({ birth: v.input, nickname, avatar, termsVersion, privacyVersion, pushConsent, marketingConsent });
     if (!r.ok) {
       setFinishing(false);
-      if (r.code === 'UNDER_AGE') return fields.setDateError(H.errors.underAge);
+      switch (r.code) {
+        case 'INVALID_NICKNAME':
+        case 'NICKNAME_TAKEN':
+          rejectNickname(r.code);
+          return router.dismissTo('/signup/nickname');
+        case 'TERMS_REQUIRED':
+          dropTerms();
+          return router.dismissTo('/signup/terms');
+        case 'UNDER_AGE':
+          return fields.setDateError(H.errors.underAge);
+        case 'SIGNUP_EXPIRED':
+          // 세션이 로그인 전이 되어 가드가 로그인 화면으로 보낸다(그 화면이 이유를 보여 준다)
+          return;
+      }
       return setRequestError(r.error === 'NETWORK' ? H.requestErrors.NETWORK : H.requestErrors.OTHER);
     }
+    clearDraft();
     const chart = await api.createChart(v.input);
     if (chart.ok) await saveBirth({ profile: v.profile, chart: chart.data });
     router.replace(chart.ok ? '/reading' : '/');

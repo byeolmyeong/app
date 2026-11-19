@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn() },
+  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn() },
   Redirect: ({ href }: { href: string }) => {
     const { Text } = jest.requireActual('react-native');
     return <Text>{`redirect:${href}`}</Text>;
@@ -94,7 +94,7 @@ describe('출생 정보 단계', () => {
     expect(submitDisabled()).toBe(false);
     await fireEvent.press(submit());
     await waitFor(() => expect(completeSignup).toHaveBeenCalled());
-    expect(completeSignup.mock.calls[0][0]).toMatchObject({ date: '1999-03-08', time: null, placeId: null });
+    expect(completeSignup.mock.calls[0][0].birth).toEqual({ date: '1999-03-08', time: null, placeId: null });
   });
 
   it('세 칸을 채우면 누를 수 있고, 시각 · 곳을 함께 보낸다', async () => {
@@ -107,7 +107,7 @@ describe('출생 정보 단계', () => {
     await fireEvent.press(submit());
     const gangnam = fixtures.places.find((p) => p.name === '서울특별시 강남구')!;
     await waitFor(() => expect(completeSignup).toHaveBeenCalled());
-    expect(completeSignup.mock.calls[0][0]).toMatchObject({ date: '2000-06-15', time: '15:20', placeId: gangnam.id });
+    expect(completeSignup.mock.calls[0][0].birth).toEqual({ date: '2000-06-15', time: '15:20', placeId: gangnam.id });
   });
 
   it('만 14세 미만이면(서버 판정) 생년월일 칸 아래 빨강 안내(보드 8-4)', async () => {

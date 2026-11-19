@@ -4,6 +4,7 @@ import { Alert, StyleSheet } from 'react-native';
 import LoginScreen from '@/app/login';
 import { strings } from '@/content/strings';
 import { AppleLoginButton } from '@/features/auth/providers/apple';
+import { getDraft, setDraft } from '@/features/auth/signup-draft';
 import { getSession, useAuth } from '@/features/auth/use-session';
 
 const S = strings.login;
@@ -102,6 +103,12 @@ describe('로그인 화면', () => {
     await waitFor(() => expect(alert).toHaveBeenCalledWith(S.emailRequired.title, S.emailRequired.body));
     expect(alert).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(S.failed)).toBeNull();
+  });
+
+  it('로그인 화면에 오면 하다 만 가입 초안을 지운다(가입 시간이 지났거나 만 14세 미만으로 돌아온 경우 — 다음 가입은 처음부터)', async () => {
+    setDraft({ termsVersion: '2026-11-19', privacyVersion: '2026-11-19', pushConsent: true, marketingConsent: true, nickname: '새벽별' });
+    await render(<LoginScreen />);
+    expect(getDraft()).toBeNull();
   });
 
   it('카카오 웹처럼 다른 화면에서 EMAIL_REQUIRED 로 돌아오면 로그인 화면이 뜰 때 알린다', async () => {

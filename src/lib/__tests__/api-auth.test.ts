@@ -15,6 +15,15 @@ const headersOf = (fetchFn: jest.MockedFunction<typeof fetch>, i = 0) => (initOf
 const bodyOf = (fetchFn: jest.MockedFunction<typeof fetch>, i = 0) => JSON.parse(String(initOf(fetchFn, i).body));
 
 const birth = { date: '1995-05-05', time: '14:30', placeId: 1841277 };
+/** 가입 단계에서 모은 값(결정 041): 닉네임 · 프로필 · 약관 버전 · 동의 */
+const extra = {
+  nickname: '새벽별',
+  avatar: 3 as const,
+  termsVersion: '2026-11-19',
+  privacyVersion: '2026-11-19',
+  pushConsent: true,
+  marketingConsent: false,
+};
 
 // 소셜 로그인 · 가입 · 세션(결정 034, 서버 결정 021)
 describe('api: 웹은 쿠키 세션이라 토큰을 만지지 않는다', () => {
@@ -34,8 +43,8 @@ describe('api: 웹은 쿠키 세션이라 토큰을 만지지 않는다', () => 
     expect(bodyOf(login)).toEqual({ provider: 'GOOGLE', idToken: 'g', cookie: true });
 
     const signup = fakeFetch(201, {});
-    expect(await web(signup).signup('ticket', birth)).toEqual({ ok: true, data: { token: null } });
-    expect(bodyOf(signup)).toEqual({ signupToken: 'ticket', ...birth, cookie: true });
+    expect(await web(signup).signup('ticket', birth, extra)).toEqual({ ok: true, data: { token: null } });
+    expect(bodyOf(signup)).toEqual({ signupToken: 'ticket', ...birth, ...extra, cookie: true });
 
     const dev = fakeFetch(200, {});
     expect(await web(dev).createDevSession()).toEqual({ ok: true, data: { token: null } });
@@ -84,11 +93,31 @@ describe('api: 앱은 토큰을 본문으로 받고 헤더로 보낸다', () => 
     });
   });
 
-  it('POST /auth/signup 은 가입권과 출생 정보를 보내고 201 의 세션 토큰을 받는다', async () => {
+  it('POST /auth/signup 은 가입권 · 출생 정보 · 닉네임 · 프로필 · 약관 버전 · 동의를 보내고 201 의 세션 토큰을 받는다(결정 041)', async () => {
     const fetchFn = fakeFetch(201, { token: 'session-2' });
-    expect(await app(fetchFn).signup('ticket', birth)).toEqual({ ok: true, data: { token: 'session-2' } });
+    expect(await app(fetchFn).signup('ticket', birth, extra)).toEqual({ ok: true, data: { token: 'session-2' } });
     expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/auth/signup`);
-    expect(bodyOf(fetchFn)).toEqual({ signupToken: 'ticket', ...birth });
+    expect(bodyOf(fetchFn)).toEqual({
+      signupToken: 'ticket',
+      date: '1995-05-05',
+      time: '14:30',
+      placeId: 1841277,
+      nickname: '새벽별',
+      avatar: 3,
+      termsVersion: '2026-11-19',
+      privacyVersion: '2026-11-19',
+      pushConsent: true,
+      marketingConsent: false,
+    });
+    // 서버는 타입을 정확히 본다: 프로필은 정수, 동의는 참거짓
+    expect(typeof bodyOf(fetchFn).avatar).toBe('number');
+    expect(typeof bodyOf(fetchFn).pushConsent).toBe('boolean');
+  });
+
+  it('시각 "모름" 이면 time · placeId 를 null 로 보낸다', async () => {
+    const fetchFn = fakeFetch(201, { token: 'session-3' });
+    await app(fetchFn).signup('ticket', { date: '1995-05-05', time: null, placeId: null }, extra);
+    expect(bodyOf(fetchFn)).toMatchObject({ time: null, placeId: null });
   });
 
   it('응답 모양이 다르면 INVALID 다', async () => {
@@ -102,14 +131,14 @@ describe('api: 앱은 토큰을 본문으로 받고 헤더로 보낸다', () => 
       error: 'INVALID',
       status: 200,
     });
-    expect(await app(fakeFetch(201, {})).signup('ticket', birth)).toEqual({ ok: false, error: 'INVALID', status: 201 });
+    expect(await app(fakeFetch(201, {})).signup('ticket', birth, extra)).toEqual({ ok: false, error: 'INVALID', status: 201 });
   });
 });
 
 describe('api: 로그인 · 가입의 오류 이름', () => {
   it('만 14세 미만은 403 UNDER_AGE 로 돌려준다', async () => {
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(403, { error: 'UNDER_AGE' }), getToken: () => null });
-    expect(await api.signup('ticket', birth)).toEqual({ ok: false, error: 'SERVER', status: 403, code: 'UNDER_AGE' });
+    expect(await api.signup('ticket', birth, extra)).toEqual({ ok: false, error: 'SERVER', status: 403, code: 'UNDER_AGE' });
   });
 
   it('401 도 오류 이름을 함께 주고, 로그인 · 가입의 401 에는 세션을 다시 받지 않는다', async () => {
@@ -117,7 +146,7 @@ describe('api: 로그인 · 가입의 오류 이름', () => {
     const login = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401, { error: 'INVALID_ID_TOKEN' }), getToken: () => null, refreshSession });
     expect(await login.login({ provider: 'GOOGLE', idToken: 'g' })).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401, code: 'INVALID_ID_TOKEN' });
     const signup = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401, { error: 'SIGNUP_EXPIRED' }), getToken: () => null, refreshSession });
-    expect(await signup.signup('old', birth)).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401, code: 'SIGNUP_EXPIRED' });
+    expect(await signup.signup('old', birth, extra)).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401, code: 'SIGNUP_EXPIRED' });
     expect(refreshSession).not.toHaveBeenCalled();
   });
 });
@@ -147,7 +176,7 @@ describe('api: 가짜 서버', () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.login({ provider: 'GOOGLE', idToken: 'g' })).toEqual({ ok: true, data: { status: 'SIGNED_IN', token: 'fixture-session' } });
-    expect(await api.signup('ticket', birth)).toEqual({ ok: true, data: { token: 'fixture-session' } });
+    expect(await api.signup('ticket', birth, extra)).toEqual({ ok: true, data: { token: 'fixture-session' } });
     expect(await api.getSession()).toEqual({ ok: true, data: null });
     expect(await api.logout()).toEqual({ ok: true, data: null });
     expect(fetchFn).not.toHaveBeenCalled();

@@ -5,11 +5,13 @@ import { StyleSheet } from 'react-native';
 import NicknameStep from '@/app/signup/nickname';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { clearDraft, getDraft, setDraft } from '@/features/auth/signup-draft';
+import { clearDraft, getDraft, rejectNickname, setDraft } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
+  // 화면에 들어올 때 한 번(이 테스트에서는 그리는 때)
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   Redirect: ({ href }: { href: string }) => {
     const { Text } = jest.requireActual('react-native');
     return <Text>{`redirect:${href}`}</Text>;
@@ -128,6 +130,17 @@ describe('닉네임 단계', () => {
     await fireEvent.press(screen.getByRole('button', { name: N.confirm }));
     expect(getDraft()?.avatar).toBe(6);
     expect(screen.getAllByLabelText(N.avatars[5]).length).toBeGreaterThan(0);
+  });
+
+  it('마지막 단계에서 서버가 거절하고 돌아오면(NICKNAME_TAKEN) "이미 있는 닉네임" 을 보여 주고 다음을 막는다', async () => {
+    setDraft({ nickname: '새벽별', avatar: 3 });
+    rejectNickname('NICKNAME_TAKEN');
+    await render(<NicknameStep />);
+    expect(screen.getByText(N.taken)).toBeTruthy();
+    expect(nextDisabled()).toBe(true);
+    await fireEvent.changeText(input(), '새벽별빛');
+    expect(screen.queryByText(N.taken)).toBeNull();
+    expect(nextDisabled()).toBe(false);
   });
 
   it('돌아오면 초안의 닉네임 · 그림이 그대로다', async () => {

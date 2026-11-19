@@ -4,8 +4,8 @@
  * 중복은 "다음" 을 누를 때 서버에 한 번 묻는다 — 칠 때마다 묻지 않는다(요청이 늘고 남의 닉네임을 떠보기 쉬워진다).
  * 값은 가입 초안(메모리)에만 둔다. 약관 단계를 건너뛰고 들어오면 약관 단계로 돌려보낸다.
  */
-import { Redirect, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Redirect, router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -17,7 +17,7 @@ import { Colors, FontWeight, Sizes, Spacing, StepLayout } from '@/constants/them
 import { strings } from '@/content/strings';
 import { AvatarSheet } from '@/features/auth/avatar-sheet';
 import { NICKNAME_MAX, checkNickname, isComposingOnly, nicknameLength } from '@/features/auth/nickname-rule';
-import { getDraft, setDraft } from '@/features/auth/signup-draft';
+import { getDraft, setDraft, takeNicknameRejection } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
 import { useAuth } from '@/features/auth/use-session';
 
@@ -50,6 +50,14 @@ export default function NicknameStep() {
     // 들어올 때 한 번만
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 마지막 단계에서 서버가 닉네임을 거절하고 돌아왔으면(그사이 누가 가져감 등) 그 이유를 보여 준다
+  useFocusEffect(
+    useCallback(() => {
+      const rejected = takeNicknameRejection();
+      if (rejected) setServerError(rejected === 'NICKNAME_TAKEN' ? 'TAKEN' : 'INVALID');
+    }, []),
+  );
 
   if (!draft) return <Redirect href="/signup/terms" />;
 

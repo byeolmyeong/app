@@ -1,12 +1,12 @@
 ---
 type: plan
-status: proposed
+status: approved
 tags: [온보딩, 로그인, 가입, 디자인 시안]
 last_reviewed: 2026-11-19
 ---
 # 온보딩 시안 구현 — 스플래시 · 소개 · 로그인 · 약관 · 닉네임 · 출생 정보 · 별명 짓는 중
 
-> 상태: 제안 · 기준 2026-11-19 · 시안 원본: 캔버스 https://claude.ai/artifact/Rt33TzPSEe4PdxNRCej3xT · 피그마 https://www.figma.com/design/PNrWFsXHhF8crQkLA3SYBn ("별명 온보딩 시안", 보드 20개)
+> 상태: 승인(소유자 2026-11-19 "바로 시작해") · 기준 2026-11-19 develop `03a8bb3` + `origin/feat/social-email-nickname`(결정 039 · 이메일 범위 요청)을 합친 위 · 브랜치 `feat/onboarding-design` · 시안 원본: 캔버스 https://claude.ai/artifact/Rt33TzPSEe4PdxNRCej3xT · 피그마 https://www.figma.com/design/PNrWFsXHhF8crQkLA3SYBn ("별명 온보딩 시안", 보드 20개)
 
 ## 목표
 - 무엇을: 소유자가 고른 온보딩 시안을 앱(iOS · Android · 웹)에 그대로 옮긴다. 흐름은 스플래시 → 소개 3장 → 로그인 → 약관 동의 → 닉네임 → 출생 정보 → 별명 짓는 중이다.
@@ -155,4 +155,4 @@ last_reviewed: 2026-11-19
 - 되돌리기: 화면은 새 경로(`/intro` · `/signup/*`)라 브랜치를 버리면 그대로 돌아간다.
 
 ## 실행 기록
-(아직 없음)
+- 2026-11-19 승인. 브랜치를 `feat/onboarding-design` 으로 바꾸고 develop `03a8bb3` 위로 옮김. 결정 039 와 이메일 범위 요청(그 계획 태스크 3)을 쓰려고 `origin/feat/social-email-nickname` 을 합침(`846bf4e`). 서버 짝: 서버 저장소 `feat/signup-terms-push-avatar`.

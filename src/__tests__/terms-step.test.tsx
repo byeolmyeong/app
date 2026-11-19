@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -9,9 +8,6 @@ import { clearDraft, getDraft, setDraft } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
-jest.mock('@react-native-async-storage/async-storage', () =>
-  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
 jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn() }));
 
 const T = strings.terms;
@@ -112,15 +108,6 @@ describe('약관 단계', () => {
 
 // 리뷰 초점 1: 가입 중 앱을 껐다 켜면 초안이 남지 않는다(메모리만)
 describe('가입 초안', () => {
-  it('기기 저장소에 쓰지 않는다', async () => {
-    const setItem = jest.spyOn(AsyncStorage, 'setItem');
-    const multiSet = jest.spyOn(AsyncStorage, 'multiSet');
-    setDraft({ termsVersion: '2026-11-19', privacyVersion: '2026-11-19', pushConsent: true, marketingConsent: true, nickname: '새벽별' });
-    expect(setItem).not.toHaveBeenCalled();
-    expect(multiSet).not.toHaveBeenCalled();
-    expect(await AsyncStorage.getAllKeys()).toEqual([]);
-  });
-
   it('앱을 다시 켜면(모듈을 새로 불러오면) 비어 있다', () => {
     setDraft({ termsVersion: '2026-11-19', privacyVersion: '2026-11-19', pushConsent: false, marketingConsent: false });
     jest.isolateModules(() => {

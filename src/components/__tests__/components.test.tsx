@@ -187,6 +187,20 @@ describe('Sheet', () => {
     expect(screen.getByText('시트 내용')).toBeTruthy();
   });
 
+  it('시험에서는 닫히는 움직임(220ms)을 기다리지 않고 바로 치운다(jest.setup.js — 부하에서 시간 제한에 걸리지 않게)', async () => {
+    const view = await render(
+      <Sheet visible onClose={() => {}}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    await view.rerender(
+      <Sheet visible={false} onClose={() => {}}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    expect(screen.queryByText('시트 내용')).toBeNull();
+  });
+
   it('바깥 어두운 곳을 누르면 onClose 를 부른다', async () => {
     const onClose = jest.fn();
     await render(

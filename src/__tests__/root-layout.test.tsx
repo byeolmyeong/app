@@ -35,6 +35,8 @@ const session = (status: 'checking' | 'signedOut' | 'signingUp' | 'signedIn') =>
 
 describe('로그인 전 가드(결정 034)', () => {
   beforeEach(() => jest.clearAllMocks());
+  // 소개를 본 기기로 되돌린다(한 시험이 바꾼 가짜 값이 다음 시험으로 새지 않게)
+  afterEach(() => (useIntroSeen as jest.Mock).mockReturnValue(true));
 
   it('로그인 전에 앱 화면을 열면 로그인 화면으로 보내고 그동안 화면을 가린다', async () => {
     mockSegments.mockReturnValue(['reading']);
@@ -65,7 +67,6 @@ describe('로그인 전 가드(결정 034)', () => {
     (useIntroSeen as jest.Mock).mockReturnValue(false);
     await view.rerender(<RootLayout />);
     expect(router.replace).toHaveBeenCalledWith('/intro');
-    (useIntroSeen as jest.Mock).mockReturnValue(true);
   });
 
   it('공유 페이지는 세션 없이도 가리지 않는다', async () => {

@@ -170,3 +170,7 @@ last_reviewed: 2026-11-19
 - 문서: `docs/architecture.md`(라우트 `/intro` · `/signup/*` · 가드 · 기능 폴더 `onboarding/` · 가입 흐름 · 화면이 가려 쓰는 오류 이름 · 기기 키 예외 `byeolmyeong-device.`), `DESIGN.md`(첫 흐름 · 곳 시트 · 입력칸 52 · 막힌 버튼 `fill` · 시트 손잡이 · 막 66% · 소셜 버튼 · 별명 짓는 중 움직임)를 같은 브랜치에서 고침.
 - 전체 검사(태스크 1~10 뒤, Node 22): `npx tsc --noEmit && npx expo lint` exit 0 · `npx jest` 65 묶음 880 통과 · 0 실패(시작 전 56 묶음 793) · `npx expo export --platform web` exit 0(`/intro` · `/signup/terms` · `/signup/nickname` · `/signup/birth` 정적 출력) · `npx expo-doctor` 1 검사 실패 — SDK 58 패치 판 12개 뒤처짐(이 브랜치는 package.json 을 바꾸지 않았다, 시작 전부터). 태스크 11(웹 스크린샷 비교)은 소유자 쪽에서 따로.
 - 서버 계약 맞춤(코디네이터 전달, 서버 `feat/signup-terms-push-avatar`): 약관 · 처리방침 버전은 정확히 `2026-11-19`(legal-versions.ts), avatar 는 정수 1~8 · 동의는 참거짓으로 보냄(테스트로 타입 확인), 시각 모름이면 `time` · `placeId` null, 모르는 오류 코드(`INVALID_REQUEST` 포함)는 일반 안내. 서버 결정 번호(026 약관 · 027 푸시 · 028 프로필)는 이 계획 · 결정 041 · 코드 주석에 적지 않았다(고칠 곳 없음).
+
+### 수정 단계(독립 리뷰 · 피그마 비교, 소유자 "전부 다 고쳐" 2026-11-19)
+- A4 · A13(시험 안정): 전 — 시트가 닫히는 220ms 를 실제 시간으로 기다려 부하에서 5초 제한에 걸림, 약관 시험의 "저장소에 안 쓴다" 는 늘 통과, 루트 레이아웃 시험이 소개 가짜 값을 다음 시험에 흘림 → 후 — `jest.setup.js`(package.json `jest.setupFiles`)가 jest 에서만 `Animated.timing` · `spring` 을 바로 끝내고 `loop` 는 돌리지 않음(타임아웃은 늘리지 않음), 의미 없는 시험 삭제, `afterEach` 로 되돌림. 확인: 새 시험("닫히는 움직임을 기다리지 않는다") 1 실패 → 통과, 세 묶음(chart-screens+synastry-screens · home-screen+birth-step+restore-birth · synastry-delete+report+direction) 동시 실행 54 · 43 · 41 통과, `npx jest` 65 묶음 880 통과. 커밋: (이 커밋)
+

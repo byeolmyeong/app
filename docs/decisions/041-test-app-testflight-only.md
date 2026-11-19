@@ -31,13 +31,13 @@ superseded_by:
    | 올리는 곳 | TestFlight 에만 | TestFlight → App Store |
 
 2. **`APP_VARIANT`**: 없음 · 빈 값 · `production` 은 운영 설정 그대로다(웹 · 개발 빌드가 바뀌지 않는다). `test` 는 위 표의 테스트앱 값. 그 밖의 값은 `app.config.ts` 가 에러를 낸다 — 오타 하나로 스테이징을 보는 빌드가 운영 번들 ID 로 올라가지 않게.
-3. **개발 빌드**(`development` · `development-simulator`)는 운영 번들 ID 를 그대로 쓴다. 공급자 콘솔의 운영 등록(구글 "별명 iOS", 운영 카카오 앱의 iOS 번들 ID)으로 기기 로그인을 확인한다. 로컬 개발도 운영 카카오 앱을 쓴다(localhost 리디렉트가 거기 있다).
+3. **개발 빌드**(`development` · `development-simulator`)는 운영 번들 ID 를 그대로 쓴다. 공급자 콘솔의 운영 등록(구글 "별명 iOS", 운영 카카오 앱의 iOS 번들 ID)으로 기기 로그인을 확인한다. 로컬 개발도 운영 카카오 앱을 쓴다(localhost 리디렉트가 거기 있다). EAS 개발 빌드의 공급자 값은 EAS `development` 환경(운영과 같은 구글 · 카카오 값)에서 받는다 — `.env` 는 gitignore 라 EAS 로 올라가지 않는다.
 4. **"TestFlight 에만" 은 운영 규칙으로 지킨다.** 막는 설정은 없다. App Store Connect 에서 테스트앱을 심사에 제출하지 않는다.
 5. **공급자 설정**
    - 구글: Google Cloud 프로젝트 `byeolmyeong` 하나에 웹 클라이언트 하나(두 서버의 aud, 두 웹), iOS 클라이언트 둘("별명 테스트 iOS" · "별명 iOS"). 앱은 웹 클라이언트 ID 로 ID 토큰을 받으므로 iOS 클라이언트는 같은 프로젝트에 있어야 한다.
    - 애플: 테스트 App ID 의 Sign in with Apple 은 **운영 `com.byeolmyeong.app` 그룹에 묶는다**(Group with an existing primary App ID). 서버의 애플 키 하나로 두 앱의 코드 교환 · 탈퇴 철회를 한다. 스테이징 서버의 `APPLE_CLIENT_IDS` 에 테스트 번들 ID 를 더한다.
    - 카카오: 스테이징(서버 · 웹 · 테스트앱)은 테스트 카카오 앱, 운영(서버 · 웹 · 운영앱)과 로컬 · 개발 빌드는 운영 카카오 앱. 두 앱 모두 이메일 필수 동의(비즈 앱).
-6. **앱의 서버 · 웹 주소와 공급자 값**은 EAS 환경 변수(`preview` = 테스트앱, `production` = 운영앱)에서 받는다. 이름은 `.env.example` 과 같다. 개발용 값(`EXPO_PUBLIC_DEV_SESSION` · `EXPO_PUBLIC_USE_FIXTURES`)은 어느 EAS 환경에도 두지 않는다.
+6. **앱의 서버 · 웹 주소와 공급자 값**은 EAS 환경 변수(`preview` = 테스트앱, `production` = 운영앱, `development` = 개발 빌드)에서 받는다. 제출 프로필에도 번들 ID 를 적는다 — `eas submit` 을 따로 돌리면 빌드 프로필의 `APP_VARIANT` 를 읽지 않아, 없으면 운영 번들 ID 로 올리려 한다. 이름은 `.env.example` 과 같다. 개발용 값(`EXPO_PUBLIC_DEV_SESSION` · `EXPO_PUBLIC_USE_FIXTURES`)은 어느 EAS 환경에도 두지 않는다.
 
 ## 근거
 - 번들 ID 가 다르면 두 앱이 한 폰에 같이 깔리고, 스토어 · 공급자 콘솔에서 운영 기록과 섞이지 않는다.
@@ -56,4 +56,5 @@ superseded_by:
 - 구글 동의 화면은 브랜드 인증 전까지 앱 이름 · 로고 없이 도메인만 보인다(외부 · 게시 앱). 출시 전에 브랜드 인증을 받는다.
 - 안드로이드: 구글 안드로이드 클라이언트(서명 SHA-1) · 카카오 키 해시는 첫 안드로이드 빌드 뒤 운영 안드로이드 계획에서 한다. 테스트앱은 안드로이드로 올리지 않지만, 실수로 빌드해도 운영 패키지로 플레이에 가지 않게 패키지도 바꾼다.
 - 개발 빌드와 운영앱이 한 폰에서 서로를 덮어써 불편해지면 개발 변형을 더한다.
+- `expo-dev-client` 가 slug 로 만드는 scheme `exp+byeolmyeong` 은 두 변형에 함께 들어간다(개발 클라이언트용). 앱 고유 scheme(`byeolmyeong` · `byeolmyeong-test`)과 카카오 · 구글 scheme 은 서로 다르다.
 - App Store Connect 앱 기록과 번들 ID 등록은 되돌릴 수 없다(앱을 지워도 번들 ID 는 팀에 남는다).

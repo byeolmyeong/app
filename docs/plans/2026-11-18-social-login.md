@@ -60,7 +60,7 @@ last_reviewed: 2026-11-18
 값은 문서에 적지 않고 `.env` 에만 넣는다. 아래 이름으로 넣는다.
 1. ~~도메인을 알려 준다~~ 완료(2026-11-18): 도메인 `byeolmyeong.com` → 번들 ID · 안드로이드 패키지 `com.byeolmyeong.app`. 앱스토어에 올린 뒤에는 못 바꾼다.
 2. 구글 클라우드: OAuth 동의 화면, 클라이언트 ID 셋 — 웹(승인된 JavaScript 원본 `http://localhost:8081` + 테스트 · 운영 웹 주소), iOS(번들 ID), Android(패키지 이름 + EAS 서명 SHA-1). → 서버 `GOOGLE_CLIENT_IDS`(웹 클라이언트 ID), 앱 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` · `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`.
-3. 애플: App ID(번들 ID)에 Sign in with Apple 켜기, Sign in with Apple 키(.p8), Services ID(웹 — 도메인 · return URL · 서버 알림 주소 `https://<서버 주소>/auth/apple/notifications`, 테스트 서버 뒤). → 서버 `APPLE_CLIENT_IDS`(번들 ID, Services ID) · `APPLE_TEAM_ID` · `APPLE_KEY_ID` · `APPLE_PRIVATE_KEY`, 앱 `EXPO_PUBLIC_APPLE_SERVICES_ID`.
+3. 애플: App ID(번들 ID)에 Sign in with Apple 켜기, Sign in with Apple 키(.p8), Services ID(웹 — 도메인 · return URL `https://<웹 주소>/auth/apple` · 서버 알림 주소 `https://<서버 주소>/auth/apple/notifications`, 테스트 서버 뒤). → 서버 `APPLE_CLIENT_IDS`(번들 ID, Services ID) · `APPLE_TEAM_ID` · `APPLE_KEY_ID` · `APPLE_PRIVATE_KEY`, 앱 `EXPO_PUBLIC_APPLE_SERVICES_ID`.
 4. 카카오 개발자: 앱 "별명", 플랫폼 Web(사이트 도메인) · iOS(번들 ID) · Android(패키지 + 키 해시), 카카오 로그인 · OpenID Connect 켜기, 리디렉트 URI `http://localhost:8081/auth/kakao` + 테스트 · 운영 웹 주소, 클라이언트 시크릿. → 서버 `KAKAO_REST_API_KEY` · `KAKAO_CLIENT_SECRET` · `KAKAO_NATIVE_APP_KEY` · `KAKAO_ADMIN_KEY` · `KAKAO_REDIRECT_URIS`, 앱 `EXPO_PUBLIC_KAKAO_REST_API_KEY` · `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY`.
 5. Expo 계정과 `! npx eas-cli@latest login`. 아이폰(개발자 모드) · 안드로이드 기기 한 대씩, 또는 시뮬레이터.
 
@@ -190,32 +190,32 @@ last_reviewed: 2026-11-18
 - 실행 패턴: 혼자
 - 결과 요약: 앱 `2dd073c` — `session-store.ts`: `Session { status, token, ready, lastError }` · `SessionStatus` · `SignInOutcome`, `signIn` · `completeSignup` · `signOut` · `refresh` · `clear`. `use-session.ts`: `useAuth()`(status · lastError · signIn · completeSignup · signOut), `getSession()`, `useSession(start)`.
 
-### A5. web-provider-credentials · 상태: 대기
+### A5. web-provider-credentials · 상태: 완료
 - 읽을 것: A3 의 `ProviderCredential`, 구글 GIS(https://developers.google.com/identity/gsi/web/guides/overview), Apple JS(`appleid.auth.js`, 팝업 방식), 카카오 인가 코드 요청(REST)
 - 할 것: `src/features/auth/providers/google.web.ts`(GIS 스크립트를 한 번 싣고 버튼 · 콜백의 `credential` → `{ GOOGLE, idToken }`), `apple.web.ts`(팝업 → `{ APPLE, idToken, authorizationCode }`), `kakao.web.ts`(`https://kauth.kakao.com/oauth/authorize?...&scope=openid` 로 이동, 돌아올 주소 `<웹 주소>/auth/kakao`), 라우트 `src/app/auth/kakao.tsx`(`code` 를 읽어 `signIn({ KAKAO, code, redirectUri })`). 각 파일은 `isAvailable(): boolean` 과 `getCredential(): Promise<ProviderCredential | null>`(취소면 null)을 낸다.
 - 주는 것: 웹용 `isAvailable` · `getCredential` 세 쌍, `/auth/kakao` 라우트
 - 하지 말 것: 공급자 SDK 를 npm 으로 들이기. 이유: 셋 다 공식 스크립트나 주소 이동으로 된다.
 - 검증: 테스트 먼저 — 카카오 이동 주소의 쿼리, `/auth/kakao` 가 `code` 없으면 로그인 화면으로, 취소 시 null. `npm test -- providers` 통과
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 앱 `6667677` — `features/auth/providers/`: `types.ts`(`LoginButtonProps`), `web-redirect.ts`(`kakaoAuthorizeUrl` · `readKakaoReturn` · `appleWebAvailable` · `newKakaoState` · `takeKakaoState` · `webOrigin` · `KAKAO_RETURN_PATH` · `APPLE_RETURN_PATH`), `load-script.ts`, `google.web.tsx` · `apple.web.tsx` · `kakao.web.tsx`, 앱 자리표시 셋, 라우트 `src/app/auth/kakao.tsx`, `strings.login`.
 
-### A6. native-provider-credentials · 상태: 대기 (A2 필요)
+### A6. native-provider-credentials · 상태: 완료
 - 읽을 것: A2 결과, A5 의 함수 모양, 라이브러리 문서(A2 와 같음)
 - 할 것: `google.native.ts`(`webClientId` 로 `idToken`), `apple.ios.ts`(`expo-apple-authentication` → `identityToken` · `authorizationCode`), `apple.android.ts`(`isAvailable() = false`), `kakao.native.ts`(네이티브 SDK → `idToken`). A5 와 같은 함수 모양.
 - 주는 것: 플랫폼별 같은 이름의 `isAvailable` · `getCredential`
 - 하지 말 것: 받은 이름 · 이메일 저장. 이유: 계정에는 식별자만 둔다.
 - 검증: 테스트(라이브러리 흉내) — 취소 시 null, 토큰 없음 시 null. `npm test -- providers` · `npx tsc --noEmit` 통과
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 앱 `c13cfe5` — `google.tsx`(google-signin) · `apple.ios.tsx`(공식 버튼, 이름 · 이메일 없음) · `apple.tsx`(안드로이드 — 없음) · `kakao.tsx`(네이티브 SDK). 이름은 웹과 같다(`GoogleLoginButton` · `AppleLoginButton` · `KakaoLoginButton`).
 
-### A7. login-signup-screens-and-guard · 상태: 대기
+### A7. login-signup-screens-and-guard · 상태: 완료
 - 읽을 것: A4 · A5 · A6 결과, `src/app/_layout.tsx`, `src/app/index.tsx`(출생 정보가 없으면 `BirthForm` 을 보여 주는 홈) · `src/app/birth.tsx`(고치기 화면 — `BirthForm` 에 `save` 를 넘기는 모양), `src/features/chart/birth-form.tsx`, `src/app/settings/index.tsx`, `src/features/auth/account-delete-sheet.tsx`, DESIGN.md, Expo Router 보호 라우트 문서(v58)
 - 할 것: `src/app/login.tsx`(쓸 수 있는 공급자 버튼만, 문구 `strings.login.*`). `src/app/signup.tsx` — `BirthForm` 에 `completeSignup` 을 부르는 `save` 를 넘긴다(성공하면 기기에도 출생 정보를 둔다 — `useBirthProfile` 의 저장과 같은 결과). `UNDER_AGE` 면 "만 14세 이상만 가입할 수 있어요" 를 보여 주고 로그인 화면으로. 가드: `signedOut` 이면 `/login` · `/auth/*` · `/s/*` 말고는 `/login` 으로, `signingUp` 이면 `/signup` 으로. 설정에 로그아웃 줄. 계정 삭제 뒤 `/login`.
 - 주는 것: 가입 흐름 전체
 - 하지 말 것: 로그인 화면 디자인을 새로 짓기. 이유: 디자이너가 만든다 — 지금 토큰 · 부품으로 단순하게.
 - 검증: 테스트 먼저 — 로그인 전 `/chart` → `/login`, `/s/x` 는 그대로, 가입 중 → `/signup`, 만 14세 미만이면 홈에 못 감, 로그아웃 → `/login`. `npx tsc --noEmit && npx expo lint && npm test && npx expo export --platform web` 통과
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 앱 `ebd2f4c` — `src/app/login.tsx` · `src/app/signup.tsx`, 가드(`features/auth/guard.ts` 의 `guardRedirect` · `guardCovers`, 루트 레이아웃), `sign-out.ts`(+ `clearDeviceData`), 설정 로그아웃 줄, `BirthForm.submit`, `useAuth` 의 `devSessionEnabled` · `devSignIn`, `strings.login` · `strings.settings.logout`.
 
 ### A8. real-round · 상태: 대기 (사용자 준비 2~5 필요)
 - 읽을 것: 이 파일 "검증"
@@ -377,3 +377,39 @@ last_reviewed: 2026-11-18
 - 리뷰가 "보지 못한 것" 으로 남긴 것 중 소유자에게 물을 것: 가입 뒤 설정에서 생년월일을 만 14세 미만으로 고쳐도 막지 않는다(`PUT /profile`) · 연결 끊기 · 철회 실패 로그에 다시 처리할 식별자가 없다(토큰 · 계정 식별자를 로그에 남기지 않는 규칙 때문).
 - 관찰: `AdminAppConfigApiIntegrationTest` 의 한 단언(`updatedAt.isAfter(before)`)이 한 번 실패 → 혼자 두 번 통과. JVM 시계와 DB 컨테이너 시계를 견주는 기존 테스트라 흔들린다(이번 변경과 무관). 손대지 않았다.
 - 초록: `./gradlew build` → `BUILD SUCCESSFUL in 2m 48s`, 테스트 489개 실패 0.
+
+### A5 (2026-11-18, 앱 `6667677`)
+- 결정: 공급자 모듈이 `isAvailable` · `getCredential` 대신 같은 이름의 버튼 컴포넌트(`GoogleLoginButton` · `AppleLoginButton` · `KakaoLoginButton`, 속성 `LoginButtonProps`)를 낸다 — 구글 공식 웹 로그인은 구글이 그리는 버튼으로만 된다(함수로 부를 수 없다). 쓸 수 없으면 null 을 그린다 — 틀리면 비용: 없음(A7 이 버튼을 늘어놓기만 한다).
+- 결정: 앱 쪽 파일(`google.tsx` · `apple.tsx` · `kakao.tsx`)은 지금 null 을 그리는 자리표시다 — 타입스크립트가 기본 파일로 모양을 본다. A6 이 채운다.
+- 결정: 카카오 웹은 state(16바이트 무작위, sessionStorage)를 보내고 돌아온 값과 견준다(로그인 CSRF 막기). 계획에 없던 것.
+- 결정: 카카오 인가 요청에 `scope=openid` 를 싣는다(계획대로). [확인 필요] 카카오 문서가 "OIDC 를 켠 앱의 토큰 요청" 과 "scope 에 openid 를 넣은 추가 동의" 를 둘 다 적는다 — A8 실제 한 바퀴에서 동의 화면 · ID 토큰을 본다.
+- 결정: `/auth/kakao` 는 같은 돌아옴을 모듈 변수로 한 번만 처리한다 — 코드는 1회용이고 개발 모드는 효과를 두 번 돌린다.
+- 결정: 애플 웹의 돌아올 주소는 `<웹 주소>/auth/apple`(팝업이라 실제로 오지 않지만 Services ID 에 등록해야 한다) — 사용자 준비 3번에 더한다.
+- 결정: 애플 · 카카오 버튼은 지금 공용 `Button`(line)이다. 카카오 노랑 · 애플 HIG 모양은 디자이너가 다시 그린다(문구 주석에 적었다).
+- 결정: 린트(React Compiler 규칙)가 렌더 중 ref 갱신을 막아 구글 콜백은 `useEffectEvent` 로 최신 함수를 부른다.
+- 빨강: `npx jest src/features/auth/providers src/__tests__/kakao-return.test.tsx` → `Test Suites: 2 failed, 2 total`(모듈 없음).
+- 초록: `npx tsc --noEmit` 0 · `npx expo lint` 0 · `npm test` → `Tests: 742 passed, 742 total` · `npx expo export --platform web` 성공. 브라우저 화면은 A7 · A8 에서 본다.
+
+### A6 (2026-11-19, 앱 `c13cfe5`)
+- 확인(설치된 라이브러리의 타입 정의): google-signin 17 — `GoogleSignin.configure({ webClientId, iosClientId })` · `signIn()` → `{ type: 'success', data: User }` | `{ type: 'cancelled' }`, `User.idToken: string | null`, `statusCodes.SIGN_IN_CANCELLED`, `hasPlayServices`. kakao-login 6.0.4 — `login()` → `KakaoOAuthToken.idToken`, 실패는 안드로이드 · iOS 모두 같은 코드(`RNKakaoLogins`). expo-apple-authentication 58 — `isAvailableAsync` · `signInAsync({ requestedScopes })` · `identityToken` · `authorizationCode` · 취소는 `ERR_REQUEST_CANCELED` · `AppleAuthenticationButton`.
+- 결정: 애플 iOS 는 `requestedScopes: []`(이름 · 이메일을 묻지 않는다) — 계정에는 식별자만 둔다(서버 V2) — 틀리면 비용: 없음.
+- 결정: 애플 iOS 버튼은 애플의 공식 버튼(CONTINUE · BLACK)을 쓴다 — 심사 지침 · HIG. 구글 · 카카오 앱 버튼은 공용 `Button` — 브랜드 모양은 디자이너.
+- 결정: 카카오 취소는 오류 메시지의 "cancel" 로 가린다 — 라이브러리가 모든 실패에 같은 코드를 준다 — 틀리면 비용: 취소에 실패 안내가 한 번 뜬다.
+- 결정: `apple.tsx`(기본 = 안드로이드)는 null 을 그린다. iOS 는 `apple.ios.tsx` 가 먼저 잡힌다.
+- 확인: 웹 내보내기에 네이티브 모듈 이름(`RNKakaoLogins` · `RNGoogleSignin` · `ExpoAppleAuthentication`) 0건, 웹 로그인 코드(GIS 주소 · 카카오 인가 주소)는 있다.
+- 빨강: `npx jest src/features/auth/providers/__tests__/native-providers.test.tsx` → `Tests: 7 failed, 2 passed, 9 total`(값 없음 → 안 그림 둘은 자리표시가 이미 통과).
+- 초록: `npx tsc --noEmit` 0 · `npx expo lint` 깨끗 · `npm test` → `Tests: 751 passed, 751 total` · 웹 내보내기 성공. 기기에서는 A8.
+
+### A7 (2026-11-19, 앱 `ebd2f4c` · 문서 다음 커밋)
+- 결정: 가드는 `Stack.Protected` 대신 루트 레이아웃의 `guardRedirect(status, 첫 경로 조각)` + `router.replace` + 가림막으로 했다 — `Stack.Protected` 는 그 안에 적은 화면만 지켜, 화면 스무 개를 다 적거나 라우트 묶음 폴더로 옮겨야 한다(테스트의 화면 경로가 모두 바뀐다) — 틀리면 비용: 가드 함수 하나와 레이아웃 몇 줄.
+- 결정: 로그인 상태에서 `/signup` 은 가드가 아니라 그 화면이 정한다(가입을 마치는 중이 아니면 홈으로) — 가입을 마치는 순간 상태가 바뀌는데 그 화면은 차트를 받아 풀이 글로 가는 중이라 가드가 먼저 홈으로 보내면 꼬인다.
+- 결정: 가입 화면은 가입 → 차트 → 기기 저장 → `/reading`. 차트를 못 받으면 `/` 로 가서 홈이 서버의 출생 정보로 되살린다(결정 029) — `POST /charts` 는 세션이 있어야 해서 가입 전에는 차트를 받을 수 없다. `BirthForm` 에 차트 대신 부를 `submit` 을 더했다.
+- 결정: 로그아웃은 서버 세션 + 기기에 둔 것(`byeolmyeong.` 키)을 비운다 — 같은 기기로 다른 사람이 로그인하면 앞사람의 출생 정보 · 글이 보이면 안 된다. 다시 로그인하면 홈이 되살린다. 기기 비우기는 계정 삭제와 같은 함수(`clearDeviceData`)로 뽑았다(쓰는 곳 둘, 같은 정책, 테스트 있음).
+- 결정: 계정을 지우거나 로그아웃한 뒤의 첫 화면을 `/` 에서 `/login` 으로 바꿨다(기존 설정 테스트 셋의 기대값을 함께 고쳤다).
+- 결정: 개발용 세션 빌드의 로그인 화면에 "개발용으로 들어가기"(`store.devSignIn`)를 둔다 — 계정을 지운 뒤 개발 빌드가 로그인 화면에서 막히지 않게(A4 의 남은 결정).
+- 결정: 로그인 화면 문구(제목 "로그인" · 부제)는 자리다. 브랜드 문구 · 버튼 모양은 디자이너가 다시 그린다.
+- 일괄 변경: `update-gate.test.tsx` 의 expo-router 흉내에 `router` 를 더했다(세션 없는 레이아웃이 이제 로그인 화면으로 보낸다). 설정 테스트의 "로그아웃은 아직 없다" 단언을 "알림은 아직 없다" 로 바꿨다.
+- 주의: `BirthForm` 의 `submit` 진짜 부품 테스트는 구현 뒤에 썼다(빨강 먼저가 아니다) — 대신 그 분기를 꺼서(`false && submit`) 테스트가 실패하는 것을 보고 되돌렸다.
+- 빨강: 새 테스트 다섯 묶음 → `Test Suites: 5 failed, 5 total · Tests: 9 failed, 11 passed`.
+- 초록: `npx tsc --noEmit` 0 · `npx expo lint` 0 · `npm test` → `Tests: 770 passed, 770 total` · 웹 내보내기 성공.
+- 화면(웹, 8091, API 없음 · 가짜 공급자 값): `/` → `/login`(카카오 · 구글 공식 버튼 · 개발용 · 만 14세 안내, 애플은 http 라 없음, 콘솔 오류 0), `/settings` → `/login`, `/s/no-such-share` 그대로, 카카오 버튼 → `https://kauth.kakao.com/oauth/authorize?client_id=…&redirect_uri=http%3A%2F%2Flocalhost%3A8091%2Fauth%2Fkakao&response_type=code&scope=openid&state=<32자>`(요청은 브라우저에서 막아 카카오로 보내지 않았다), 위조 state 로 `/auth/kakao` → `/login`. 가입 화면은 실제 서버 로그인이 있어야 보여 A8 에서 본다. 스크린샷: scratchpad `shots/login-from-root.png`.

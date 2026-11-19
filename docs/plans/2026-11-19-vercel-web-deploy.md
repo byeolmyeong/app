@@ -140,4 +140,11 @@ $ curl --resolve app.byeolmyeong.com:443:216.150.16.193 https://app.byeolmyeong.
 - 스테이징 도메인을 develop 에 묶음: `vercel api /v9/projects/byeolmyeong-app/domains/app.staging.byeolmyeong.com -X PATCH -f gitBranch=develop` → `gitBranch: develop`.
 - 합칠 때마다 develop 빌드가 생겨, Vercel 설정이 없는 중간 빌드(#23 · #24 시점 d4838d7 · c9744e3)를 취소함 — 늦게 끝나면 스테이징이 깨진 빌드를 가리킬 수 있었다. 마지막 빌드 93a80fe READY.
 - 스테이징이 Vercel 팀 로그인(SSO) 뒤에 있음: 프로젝트 보호 `ssoProtection.deploymentType = all_except_custom_domains` 인데 운영이 아닌 사용자 지정 도메인도 막힌다(직접 alias 해도 302 → vercel.com/sso-api). 운영 `app.byeolmyeong.com/login` 200.
-- 결정: 스테이징은 Vercel 팀 로그인 뒤에 그대로 둔다(소유자 2026-11-19, 대안: 스테이징 전용 프로젝트로 공개 · 미리보기 보호 끄기) — 틀리면 비용: 팀 밖 테스터가 못 연다 → 스테이징 전용 프로젝트(productionBranch=develop)로 옮긴다.
+- 소유자가 처음엔 "그대로 두기" 를 골랐다가 "팀 밖 사람은 못 쓴다" 를 짚고 "전용 프로젝트로 공개" 로 바꿈(2026-11-19).
+- 결정: 스테이징 전용 프로젝트 `byeolmyeong-app-staging`(prj_bsKpKdPDxV9c1B5f51Z2WftHKm8t) — `POST /v11/projects`(같은 저장소, Ignored Build Step = develop 만 빌드, 환경 변수 4개를 preview · production 에), `ssoProtection: null`. 운영 브랜치를 develop 으로 바꾸는 공개 API 가 없어 "develop 만 빌드 + 보호 끔" 으로 같은 결과를 냄 — 틀리면 비용: 이 프로젝트의 배포 주소(*.vercel.app)도 공개(내용은 스테이징과 같다).
+- 도메인 이동: `POST /v1/projects/byeolmyeong-app/domains/app.staging.byeolmyeong.com/move` {projectId, gitBranch: develop} → 새 프로젝트에 `develop` 브랜치 도메인. 첫 배포(API `POST /v13/deployments` gitSource ref develop, 93a80fe)에 `vercel alias set`.
+```
+staging /login 200 · /synastry/abc 200 · /s/xyz 200 · /nope 404
+번들: api-staging=1 웹주소=1 kakao키=1 google=1 localhost=0 · devSession:!1
+```
+- 원래 프로젝트에 남은 Preview · develop 전용 `EXPO_PUBLIC_WEB_URL` 은 이제 쓰이지 않는다(지우는 건 소유자 승인 뒤).

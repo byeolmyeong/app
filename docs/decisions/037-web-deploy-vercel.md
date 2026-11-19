@@ -41,4 +41,4 @@ superseded_by:
 - 서버 저장소의 `ALLOWED_ORIGINS` 에 웹 주소를 넣어야 웹이 서버를 부른다(스테이징: `https://app.staging.byeolmyeong.com` 과 Vercel 미리보기 주소). 서버 배포 때 한다.
 - 공유 링크 미리보기에 카드 내용을 넣고 싶어지면 서버 렌더링(또는 Vercel 함수)을 다시 본다.
 - 운영 · 스테이징 빌드에 개발용 세션이 없는 것을 번들에서 확인했다(`enabled:!1`, 2026-11-19). 환경 변수를 바꾸면 다시 확인한다.
-- 갱신(2026-11-19): 스테이징 도메인은 develop 에 묶인 뒤 **Vercel 팀 로그인 뒤에 있다**(프로젝트 보호가 운영 도메인만 공개). 결정 4 의 "보호가 걸리지 않아 누구나 연다" 는 더 이상 사실이 아니다 — 소유자가 그대로 두기로 함. 개발용 세션은 그대로 어느 환경에도 두지 않는다. 팀 밖 테스터가 필요해지면 스테이징 전용 Vercel 프로젝트(productionBranch=develop)로 옮긴다.
+- 갱신(2026-11-19): 스테이징은 **스테이징 전용 Vercel 프로젝트 `byeolmyeong-app-staging`** 에 둔다. 원래 프로젝트의 보호(`all_except_custom_domains`)가 운영이 아닌 사용자 지정 도메인까지 팀 로그인 뒤로 숨겨, 팀 밖 사람이 스테이징을 쓸 수 없었다(소유자 2026-11-19 "전용 프로젝트로 공개"). 새 프로젝트는 같은 저장소에 연결하고 `develop` 만 빌드하며(Ignored Build Step: `VERCEL_GIT_COMMIT_REF` 가 develop 이 아니면 건너뜀), 보호를 껐고, `app.staging.byeolmyeong.com` 을 `develop` 브랜치 도메인으로 가진다. PR 미리보기는 원래 프로젝트에서 계속 팀 로그인 뒤에 있다. 개발용 세션은 그대로 어느 환경에도 두지 않는다.

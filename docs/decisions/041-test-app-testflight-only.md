@@ -58,3 +58,4 @@ superseded_by:
 - 개발 빌드와 운영앱이 한 폰에서 서로를 덮어써 불편해지면 개발 변형을 더한다.
 - `expo-dev-client` 가 slug 로 만드는 scheme `exp+byeolmyeong` 은 두 변형에 함께 들어간다(개발 클라이언트용). 앱 고유 scheme(`byeolmyeong` · `byeolmyeong-test`)과 카카오 · 구글 scheme 은 서로 다르다.
 - App Store Connect 앱 기록과 번들 ID 등록은 되돌릴 수 없다(앱을 지워도 번들 ID 는 팀에 남는다).
+- 갱신(2026-11-19): 테스트앱은 아이콘도 다르다 — 앱 아이콘에 노란 띠와 "TEST" 를 얹은 `assets/brand/app-icon-test.svg` → `assets/images/icon-test.png`(소유자 "운영이랑 안 헷갈리게"). 처음 계획의 "범위 밖: 테스트앱 전용 아이콘" 을 바꾼다. 안드로이드 적응형 아이콘은 테스트앱을 안드로이드로 올리지 않아 그대로 둔다.

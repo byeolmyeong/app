@@ -56,7 +56,7 @@ last_reviewed: 2026-11-19
 - 할 것: `app.json` 의 `web.output` → `static`. `npx expo export -p web` 으로 `dist/` 에 화면별 HTML 과 `[shareId]` · `[id]` 화면 파일이 생기는지 확인. 정적 렌더링(빌드 때 Node 에서 화면을 한 번 그림)에서 깨지는 코드(모듈 맨 위의 `window` · `localStorage` 등)가 있으면 고친다. `vercel.json`(build `npx expo export -p web`, 출력 `dist`, `cleanUrls`, 식별자 화면 rewrite 넷, `framework: null`).
 - 검증: `npx expo export -p web` exit 0, `dist/s/[shareId].html` 등 존재, `vercel build` 후 로컬(`vercel dev` 또는 `npx serve` + 같은 rewrite)에서 `/s/abc` · `/synastry/abc` 가 404 가 아님, 콘솔 에러 0.
 
-### 3. vercel-project  · 상태: 진행(GitHub 연결 · 소셜 로그인 값 대기)
+### 3. vercel-project  · 상태: 진행(소셜 로그인 값 · develop 도메인 묶기 대기)
 - 할 것: `vercel link`(새 프로젝트 `byeolmyeong-app`), Git 연동, Production 브랜치 `main`, 환경 변수(Production · Preview(develop) · Preview(그 밖)), 도메인 `app.byeolmyeong.com`(Production) · `app.staging.byeolmyeong.com`(develop 브랜치) 추가, DNS 값 소유자에게 전달.
 - 검증: `vercel env ls` 에 값의 이름이 환경별로 있다 · `vercel domains inspect` 에서 두 도메인이 확인됨(DNS 가 걸리면 "확인 대기" 로 기록).
 
@@ -120,3 +120,9 @@ $ curl --resolve app.byeolmyeong.com:443:216.150.16.193 https://app.byeolmyeong.
 ```
 - 이 맥의 DNS 캐시가 기록 없던 때의 답을 기억해 한동안 "Could not resolve host" — 외부 DNS(1.1.1.1)로는 바로 열림.
 - 서버 HTTPS: 서버 저장소의 첫 배포(태스크 8 · 9)는 "배포 전 안전장치" 계획 뒤로 묶여 있다. 소유자가 엔진엑스를 물었다가 Caddy 유지로 정함. 서버 작업 세션(byeolmyeong-a8)에 웹 주소 · ALLOWED_ORIGINS · 소셜 로그인 설정 요청을 보냄.
+
+### GitHub 연결 (2026-11-19)
+- 소유자가 Vercel 대시보드에서 `byeolmyeong/byeolmyeong-app` 연결. API 확인: `productionBranch: main`.
+- `EXPO_PUBLIC_WEB_URL=https://app.staging.byeolmyeong.com` 을 Preview · `develop` 브랜치에만 넣음(그 밖의 미리보기는 웹에서 지금 주소를 쓴다).
+- 결정: 스테이징 도메인을 `develop` 에 묶는 것은 PR #22 → #23 → #24 → #27 이 develop 에 합쳐진 뒤 — 지금의 develop 에는 vercel.json · 정적 출력이 없어 묶으면 스테이징이 깨진 빌드를 가리킨다 — 그때까지 `vercel alias set` 으로 최신 미리보기를 가리킨다. 묶는 방법: `vercel api /v9/projects/byeolmyeong-app/domains/app.staging.byeolmyeong.com -X PATCH -f gitBranch=develop --scope swyp-fad73311`.
+- 이제 PR 마다 Vercel 미리보기가 생긴다. vercel.json 이 없는 #22 · #23 · #24 의 미리보기는 서버 출력이라 화면이 비어 보일 수 있다(빌드는 통과) — 합칠 때 확인할 것은 GitHub Actions CI 다.

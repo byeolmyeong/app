@@ -3,6 +3,8 @@
  * 계약에 없는 필드는 여기서 만들지 않는다. 어긋나면 서버 저장소의 계약 표를 먼저 고친다.
  * 출생 정보와 세션 토큰은 로그에 남기지 않는다(이 파일은 아무것도 기록하지 않는다).
  */
+import { Platform } from 'react-native';
+
 import { appClient, type AppClient } from '@/lib/app-client';
 import { fixtures } from '@/lib/fixtures';
 
@@ -62,7 +64,24 @@ export type Chart = {
 };
 
 /** `POST /auth/dev` 의 응답. 개발용 세션 토큰 */
-export type DevSession = { token: string };
+/** 세션 토큰. 웹은 서버가 쿠키로 들고 있어 언제나 null 이다(결정 034) */
+export type DevSession = { token: string | null };
+
+/**
+ * `POST /auth/login` 에 보내는 공급자 자격 증명(결정 034, 서버 결정 021). 카카오 웹만 ID 토큰 대신 인가 코드를 보낸다.
+ * 애플은 authorization code(탈퇴 때 철회용)를 함께 보내고, 웹은 그 로그인에 쓴 돌아올 주소도 보낸다.
+ */
+export type ProviderCredential =
+  | { provider: 'GOOGLE'; idToken: string }
+  | { provider: 'APPLE'; idToken: string; authorizationCode?: string; redirectUri?: string }
+  | { provider: 'KAKAO'; idToken: string }
+  | { provider: 'KAKAO'; code: string; redirectUri: string };
+
+/** 로그인 결과: 계정이 있으면 세션(웹은 token 이 null), 처음 온 사람은 가입권 */
+export type LoginResult = { status: 'SIGNED_IN'; token: string | null } | { status: 'SIGNUP_REQUIRED'; signupToken: string };
+
+/** 가입 결과. 웹은 token 이 null 이다 */
+export type SignupResult = { token: string | null };
 
 export type Reading = {
   headline: string;
@@ -662,7 +681,25 @@ export function isAppConfig(v: unknown): v is AppConfig {
   );
 }
 
-const isDevSession = (v: unknown): v is DevSession => isObject(v) && typeof v.token === 'string' && v.token.length > 0;
+const isNonEmptyString = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+
+/** 세션 토큰이 든 응답(`POST /auth/dev` · `POST /auth/signup`). 쿠키 세션(웹)이면 토큰이 없어도 된다 */
+const isSessionBody =
+  (cookie: boolean) =>
+  (v: unknown): v is { token?: string } =>
+    isObject(v) && (isNonEmptyString(v.token) || (cookie && v.token === undefined));
+
+type LoginBody = { status: 'SIGNED_IN'; token?: string } | { status: 'SIGNUP_REQUIRED'; signupToken: string };
+
+const isLoginBody =
+  (cookie: boolean) =>
+  (v: unknown): v is LoginBody =>
+    isObject(v) &&
+    ((v.status === 'SIGNED_IN' && (isNonEmptyString(v.token) || (cookie && v.token === undefined))) ||
+      (v.status === 'SIGNUP_REQUIRED' && isNonEmptyString(v.signupToken)));
+
+/** 본문이 없는 성공(204) */
+const isEmpty = (v: unknown): v is null => v === null;
 
 /** `PUT /profile` · `GET /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
@@ -688,6 +725,11 @@ export type ApiConfig = {
   onUpdateRequired?: () => void;
   /** 서버가 503 `MAINTENANCE` 로 거절했을 때 부른다(결정 030) */
   onMaintenance?: () => void;
+  /**
+   * 웹이면 true: 세션은 서버의 httpOnly 쿠키 `bm_session` 이다(결정 034). 모든 요청에 쿠키를 싣고(`credentials: 'include'`),
+   * Authorization 헤더를 붙이지 않으며, 로그인 · 가입 · 개발용 로그인에 `cookie: true` 를 보내고 받은 토큰을 버린다.
+   */
+  cookieSession?: boolean;
 };
 
 type RequestOptions<T> = {
@@ -714,6 +756,8 @@ export function createApi(config: ApiConfig) {
    * 실패한 호출을 스스로 다시 하지 않는다. 다시 시도는 화면에서 사용자가 누를 때만 한다.
    * 예외 하나: 401 이면 세션을 한 번 다시 받고 같은 호출을 한 번만 더 한다(retried 가 그 표시다).
    */
+  const cookie = config.cookieSession === true;
+
   async function request<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
@@ -723,7 +767,7 @@ export function createApi(config: ApiConfig) {
     const auth = options.auth !== false;
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
-    const token = auth ? config.getToken() : null;
+    const token = auth && !cookie ? config.getToken() : null;
     if (token) headers.Authorization = `Bearer ${token}`;
     if (config.client) {
       headers['X-App-Platform'] = config.client.platform;
@@ -736,6 +780,7 @@ export function createApi(config: ApiConfig) {
         method,
         headers,
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        ...(cookie ? { credentials: 'include' as const } : {}),
       });
     } catch {
       return { ok: false, error: 'NETWORK' };
@@ -745,7 +790,10 @@ export function createApi(config: ApiConfig) {
     if (status === 401) {
       if (auth && !retried && config.refreshSession && (await config.refreshSession()))
         return request(method, path, options, true);
-      return { ok: false, error: 'LOGIN_REQUIRED', status };
+      // 로그인 · 가입의 401 은 이름(`INVALID_ID_TOKEN` · `SIGNUP_EXPIRED` 등)으로 갈린다.
+      const body: unknown = await response.json().catch(() => null);
+      const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
+      return { ok: false, error: 'LOGIN_REQUIRED', status, ...code };
     }
     if (status === 429) return { ok: false, error: 'LIMIT', status };
     if (!response.ok) {
@@ -806,10 +854,58 @@ export function createApi(config: ApiConfig) {
       return request('POST', '/charts', { body: input, validate: isChart });
     },
 
-    /** `POST /auth/dev` 개발용 세션 토큰을 받는다. 서버가 개발용 로그인을 꺼 두었으면 404 다 */
+    /** `POST /auth/dev` 개발용 세션을 받는다. 서버가 개발용 로그인을 꺼 두었으면 404 다. 웹은 쿠키로 받는다 */
     async createDevSession(): Promise<ApiResult<DevSession>> {
       if (config.useFixtures) return { ok: true, data: { token: FIXTURE_TOKEN } };
-      return request('POST', '/auth/dev', { validate: isDevSession, auth: false });
+      const r = await request('POST', '/auth/dev', {
+        body: cookie ? { cookie: true } : undefined,
+        validate: isSessionBody(cookie),
+        auth: false,
+      });
+      return r.ok ? { ok: true, data: { token: cookie ? null : (r.data.token ?? null) } } : r;
+    },
+
+    /**
+     * `POST /auth/login` 공급자 자격 증명으로 로그인한다(결정 034). 계정이 있으면 세션, 처음 온 사람은 가입권.
+     * 틀린 자격 증명은 401 `INVALID_ID_TOKEN` · `INVALID_CODE`, 공급자에 닿지 못하면 502 `PROVIDER_UNAVAILABLE` 이 code 로 온다.
+     */
+    async login(credential: ProviderCredential): Promise<ApiResult<LoginResult>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'SIGNED_IN', token: FIXTURE_TOKEN } };
+      const r = await request('POST', '/auth/login', {
+        body: cookie ? { ...credential, cookie: true } : credential,
+        validate: isLoginBody(cookie),
+        auth: false,
+      });
+      if (!r.ok) return r;
+      if (r.data.status === 'SIGNUP_REQUIRED') return { ok: true, data: { status: 'SIGNUP_REQUIRED', signupToken: r.data.signupToken } };
+      return { ok: true, data: { status: 'SIGNED_IN', token: cookie ? null : (r.data.token ?? null) } };
+    },
+
+    /**
+     * `POST /auth/signup` 가입권과 출생 정보로 가입한다. 만 14세 판정은 서버가 한다(미만이면 403 `UNDER_AGE`).
+     * 가입권이 없거나 만료면 401 `SIGNUP_EXPIRED`, 출생 정보가 틀리면 `POST /charts` 와 같은 400 이 code 로 온다.
+     */
+    async signup(signupToken: string, birth: BirthInput): Promise<ApiResult<SignupResult>> {
+      if (config.useFixtures) return { ok: true, data: { token: FIXTURE_TOKEN } };
+      const body = { signupToken, ...birth };
+      const r = await request('POST', '/auth/signup', {
+        body: cookie ? { ...body, cookie: true } : body,
+        validate: isSessionBody(cookie),
+        auth: false,
+      });
+      return r.ok ? { ok: true, data: { token: cookie ? null : (r.data.token ?? null) } } : r;
+    },
+
+    /** `GET /auth/session` 세션이 살아 있는지(204). 웹이 켜질 때 쿠키 세션을 확인한다 */
+    async getSession(): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('GET', '/auth/session', { validate: isEmpty });
+    },
+
+    /** `DELETE /auth/session` 로그아웃. 이 기기의 세션만 지운다(웹은 쿠키도) */
+    async logout(): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', '/auth/session', { validate: isEmpty });
     },
 
     /** `PUT /profile` 출생 정보를 서버에 저장한다. 요약 해석은 서버가 이 값으로 쓴다 */
@@ -1029,4 +1125,5 @@ export const api = createApi({
   client: appClient,
   onUpdateRequired: () => updateRequiredHandler?.(),
   onMaintenance: () => maintenanceHandler?.(),
+  cookieSession: Platform.OS === 'web',
 });

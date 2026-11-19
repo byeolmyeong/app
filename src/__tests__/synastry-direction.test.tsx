@@ -21,7 +21,7 @@ jest.mock('@/lib/api', () => ({
   api: { listPlaces: jest.fn(), createSynastryDirection: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -48,7 +48,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   forgetFresh();
-  mockUseSession.mockReturnValue({ token: 'dev-token', ready: true });
+  mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockParams.mockReturnValue({ id });
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.createSynastryDirection.mockResolvedValue(ok);
@@ -194,7 +194,7 @@ describe('방향성 제시 — 궁합(/synastry/[id]/direction)', () => {
   });
 
   it('세션 확인이 끝나기 전에는 서버를 부르지 않는다', async () => {
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<SynastryDirectionScreen />);
     expect(await screen.findByText(D.generating)).toBeTruthy();
     await act(async () => {});

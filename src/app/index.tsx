@@ -32,7 +32,7 @@ export default function HomeScreen() {
   const { loaded, profile, chart, save } = useBirthProfile();
   const session = useSession();
   const empty = loaded && !profile;
-  const canRestore = empty && session.ready && session.token !== null;
+  const canRestore = empty && session.status === 'signedIn';
   const restoreSettled = useBirthRestore(canRestore, save);
   // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);

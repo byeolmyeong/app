@@ -106,7 +106,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약: `npx eas-cli@latest init --account monkeygardens-team --non-interactive --force`(eas-cli 27.10.0) → `@monkeygardens-team/byeolmyeong` 생성 · 연결, 대시보드 아이콘은 앱 아이콘. CLI 가 동적 설정이어도 `app.json` 에 직접 썼다(`extra.eas.projectId` · `owner`). 함께 써 넣은 `extra.router`(expo-router 플러그인이 만드는 값)는 뺐다 — 빼도 최종 설정은 순서만 다르고 같다. 검증: `project:info` fullName `@monkeygardens-team/byeolmyeong`, ID 가 `app.json` 과 같다. `APP_VARIANT` 없음 · test 모두 같은 projectId · owner. 태스크 2 이전 운영 설정과의 차이는 `extra.eas` · `owner` 두 칸뿐.
 
-### 4. eas-store-profiles · 상태: 대기
+### 4. eas-store-profiles · 상태: 완료
 - 읽을 것: 결정 041, `eas.json`, `app.json`, eas.json · 앱 버전 문서(전역 제약의 주소), 태스크 2 · 3 결과
 - 할 것: `eas.json` 에 `cli.appVersionSource: "remote"` 를 넣는다. 빌드 프로필 둘을 더한다. `test` = 배포 `store`, 환경 `preview`, `autoIncrement: true`, `env.APP_VARIANT: "test"`. `production` = 배포 `store`, 환경 `production`, `autoIncrement: true`. submit 프로필은 `test` · `production` 을 같은 이름으로 둔다(`--auto-submit` 이 같은 이름을 찾는다). `ascAppId` 는 넣지 않는다. `app.json` 에는 `ios.config.usesNonExemptEncryption: false` 를 넣는다. `development` · `development-simulator` 는 그대로 둔다.
 - 주는 것: 빌드 프로필 `test` · `production`(태스크 7 · 8 의 명령)
@@ -116,7 +116,7 @@ last_reviewed: 2026-11-19
   - `--profile production` → `com.byeolmyeong.app`, `environment: production`
   - `--profile development` → `com.byeolmyeong.app`(바뀌지 않음)
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `eas.json` 에 `cli.appVersionSource: "remote"`, 빌드 `test`(store · preview · autoIncrement · `env.APP_VARIANT=test`) · `production`(store · production · autoIncrement), 제출 `test: {}` · `production: {}`. `app.json` 에 `ios.config.usesNonExemptEncryption: false`. 키는 Expo 문서(eas.json · environment-variables · app-versions · submit/ios · app config)로 확인 — `--auto-submit` 은 같은 이름의 제출 프로필을 쓰고 기본은 TestFlight 까지. 바꾸기 전: `eas config --profile test|production` → "config command failed". 바꾼 뒤: test → `별명 테스트` · `byeolmyeong-test` · `com.byeolmyeong.app.test` · store · preview · autoIncrement · APP_VARIANT test, production → `별명` · `com.byeolmyeong.app` · store · production, development → `com.byeolmyeong.app` · internal(그대로). `expo config --type introspect` 의 Info.plist `ITSAppUsesNonExemptEncryption` 가 두 변형 모두 false. [확인 필요] 빈 제출 프로필(`{}`)이 받아들여지는지는 문서에 없다 — `eas config` 가 eas.json 을 읽으며 오류를 내지 않았고, 최종 확인은 태스크 7 의 `--auto-submit`.
 
 ### 5. eas-env-urls · 상태: 대기
 - 읽을 것: 결정 037 "결정 4"(환경 변수), EAS 환경 변수 문서, 태스크 3 결과

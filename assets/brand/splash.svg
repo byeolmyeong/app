@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 스플래시: 별이와 로고 (결정 035). 고치면 scripts/render-brand.mjs 로 PNG 를 다시 만든다 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -100 200 280" width="400" height="560">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -100 280 280" width="560" height="560">
 <defs>
     <filter id="blurXL" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="14"/></filter>
     <filter id="blurL" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="7"/></filter>

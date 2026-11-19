@@ -17,7 +17,7 @@ const TARGETS = [
   ['adaptive-background.svg', 'android-icon-background.png', 512, 512],
   ['adaptive-foreground.svg', 'android-icon-foreground.png', 512, 512],
   ['adaptive-monochrome.svg', 'android-icon-monochrome.png', 432, 432],
-  ['splash.svg', 'splash-icon.png', 800, 1120],
+  ['splash.svg', 'splash-icon.png', 1024, 1024],
   // 공유 카드(결정 036): 웹 이미지 저장이 SVG 필터를 못 그려 PNG 로 넣는다. 1080 폭 이미지에서도 흐리지 않은 크기
   ['share-byeoli-default.svg', 'share/byeoli-default.png', 640, 640],
   ['share-byeoli-happy.svg', 'share/byeoli-happy.png', 640, 640],

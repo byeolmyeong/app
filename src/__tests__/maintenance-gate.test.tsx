@@ -35,7 +35,7 @@ jest.mock('expo-router', () => {
     useLocalSearchParams: jest.fn(() => ({ shareId: 'AbCdEfGhIjKlMnOpQrStUv' })),
   };
 });
-jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ token: null, ready: true })) }));
+jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })) }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 const mockSetHandler = setMaintenanceHandler as jest.Mock;

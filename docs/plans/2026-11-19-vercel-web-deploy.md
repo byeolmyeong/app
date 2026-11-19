@@ -48,23 +48,23 @@ last_reviewed: 2026-11-19
 
 ## 태스크
 
-### 1. adr-web-deploy  · 상태: 대기
+### 1. adr-web-deploy  · 상태: 완료
 - 할 것: `docs/decisions/037-web-deploy-vercel.md`(위 전제 · 주소 표 · 환경 변수 · DEV_SESSION 은 스테이징만 · 정적 출력 · develop/main). CLAUDE.md 명령어 절에 배포 한 줄, `.env.example` 에 환경별 값의 예(주소만), docs/architecture.md 의 환경 변수 절, docs/release-1.0.0.md 의 웹 주소.
 - 검증: ADR 037 이 025 · 033 을 가리키고 CLAUDE.md 가 80줄 이하.
 
-### 2. static-output  · 상태: 대기
+### 2. static-output  · 상태: 완료
 - 할 것: `app.json` 의 `web.output` → `static`. `npx expo export -p web` 으로 `dist/` 에 화면별 HTML 과 `[shareId]` · `[id]` 화면 파일이 생기는지 확인. 정적 렌더링(빌드 때 Node 에서 화면을 한 번 그림)에서 깨지는 코드(모듈 맨 위의 `window` · `localStorage` 등)가 있으면 고친다. `vercel.json`(build `npx expo export -p web`, 출력 `dist`, `cleanUrls`, 식별자 화면 rewrite 넷, `framework: null`).
 - 검증: `npx expo export -p web` exit 0, `dist/s/[shareId].html` 등 존재, `vercel build` 후 로컬(`vercel dev` 또는 `npx serve` + 같은 rewrite)에서 `/s/abc` · `/synastry/abc` 가 404 가 아님, 콘솔 에러 0.
 
-### 3. vercel-project  · 상태: 대기
+### 3. vercel-project  · 상태: 진행(GitHub 연결 · 소셜 로그인 값 대기)
 - 할 것: `vercel link`(새 프로젝트 `byeolmyeong-app`), Git 연동, Production 브랜치 `main`, 환경 변수(Production · Preview(develop) · Preview(그 밖)), 도메인 `app.byeolmyeong.com`(Production) · `app.staging.byeolmyeong.com`(develop 브랜치) 추가, DNS 값 소유자에게 전달.
 - 검증: `vercel env ls` 에 값의 이름이 환경별로 있다 · `vercel domains inspect` 에서 두 도메인이 확인됨(DNS 가 걸리면 "확인 대기" 로 기록).
 
-### 4. develop-branch  · 상태: 대기(승인 후 push)
+### 4. develop-branch  · 상태: 완료(승인 후 push)
 - 할 것: `develop` 을 `origin/main` 에서 만들어 올리고, PR #22 의 목표를 `develop` 으로. CLAUDE.md · golden-rules 의 브랜치 줄은 이미 `develop` 을 보호 브랜치로 적고 있다.
 - 검증: `gh pr view 22 --json baseRefName` → develop
 
-### 5. first-deploy  · 상태: 대기
+### 5. first-deploy  · 상태: 진행(스테이징 완료, 운영 대기)
 - 할 것: 이 브랜치의 미리보기 배포 → 주소 확인. PR 들이 `develop` 에 합쳐지면 스테이징 배포 확인. 운영은 `develop` → `main` 을 소유자가 합칠 때.
 - 검증: 미리보기 주소에서 화면이 뜬다(서버가 없으면 "인터넷 연결을 확인하고…" 오류 화면이 정상), 파비콘 · 어두운 바탕 · 콘솔 에러(서버 연결 실패 말고) 0, 스크린샷.
 
@@ -88,3 +88,22 @@ last_reviewed: 2026-11-19
 ## 실행 기록
 - 2026-11-19 승인: "승인, 운영 도메인은 나중에". Vercel 범위는 `swyp` 팀(Pro).
 - 결정: 운영 도메인(`app.byeolmyeong.com`) 연결은 서버 · 로그인 준비 뒤 — 소유자 답 — 태스크 3 에서는 스테이징 도메인만 붙이고, 운영 환경 변수는 미리 넣어 둔다.
+
+### 태스크 1~5 (2026-11-19)
+- ADR 037, CLAUDE.md · .env.example · architecture.md · release-1.0.0.md.
+- 정적 출력: `npx expo export -p web` → HTML 22개(식별자 화면 `s/[shareId]` · `synastry/[id]` · `report` · `direction`, 로그인 · 가입 · 카카오 돌아오기 포함), `/_sitemap` 은 `expo-router` `sitemap: false` 로 끔. vercel.json 과 같은 규칙의 로컬 서버(스크래치)와 실제 Vercel 에서 `/s/abc` · `/synastry/abc` · `/my` 200, 없는 주소 404, 콘솔 에러 0.
+- Vercel: `swyp` 팀(`swyp-fad73311`)에 `byeolmyeong-app` 프로젝트. 환경 변수 — Production: `EXPO_PUBLIC_API_URL` · `EXPO_PUBLIC_WEB_URL`, Preview: `EXPO_PUBLIC_API_URL`. 개발용 세션은 어디에도 없음(번들에서 운영 `enabled:!1` 확인).
+- 결정: 새 프로젝트의 첫 배포는 Vercel 이 자동으로 운영에 올렸다(운영 환경 변수, Vercel 로그인 보호) — 다음부터 미리보기.
+- 결정: 스테이징 도메인을 브랜치 없이 붙여 몇 분 동안 운영 빌드가 공개됐다(개발용 세션 없음) — `vercel alias set` 으로 미리보기 배포를 가리키게 함. GitHub 연결 뒤 `develop` 브랜치 도메인으로 바꾼다.
+- 결정: Vercel 이 `.gitignore` 끝에 붙인 `.env*` 를 지웠다 — 위의 `!.env.example` 예외를 덮는다. `.vercel` 만 남김. `package.json` engines `node 22.x`, `.vercelignore`(dist · docs/design).
+- 결정(소유자): 스테이징도 개발용 세션을 끈다(주소만 알면 누구나 연다), 운영 도메인도 지금 붙인다.
+- develop: 이미 있던 `develop`(옛 main 4d3395f)을 지금 main(7e364bd, 소셜 로그인 #25 포함)까지 앞으로 감음(fast-forward), PR #22 의 목표를 develop 으로.
+- 소셜 로그인(#25)이 그 사이 main 에 합쳐져 #22 → #23 → #24 → 이 브랜치에 차례로 병합(강제 푸시 없이). #23 의 결정 번호 034 를 038 로 옮김(소셜 로그인이 034). 로그아웃을 마이로 옮김.
+- DNS(Cloudflare, 소유자가 넣음): `app.staging` CNAME → `1fa18a8dd601061b.vercel-dns-016.com`(DNS 전용). Vercel 확인 · 인증서 발급 완료, https://app.staging.byeolmyeong.com 200.
+```
+$ npx jest (병합 뒤)       → Test Suites: 55 passed · Tests: 792 passed
+$ npx tsc --noEmit · npx expo lint → exit 0 · exit 0
+$ vercel domains verify app.staging.byeolmyeong.com → valid configuration and is verified
+$ curl https://app.staging.byeolmyeong.com/login → 200
+```
+- 남은 것: 운영 DNS(`app` CNAME, 같은 값), Vercel GitHub 연결(소유자), 소셜 로그인 웹 값 3개를 Vercel 두 환경에(값은 소유자 `.env`), 공급자 콘솔에 두 웹 주소, 서버(`api.` 443 거부 · `api.staging` DNS 없음 · `ALLOWED_ORIGINS`), 운영 배포.

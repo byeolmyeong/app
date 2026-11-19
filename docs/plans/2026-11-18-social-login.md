@@ -430,3 +430,9 @@ errors: []
 - 정리: 두 서버를 멈추고 컨테이너를 지웠다(포트 8091 · 8095 · 55499 비어 있음).
 - 남은 것(차단 — 소유자): 사용자 준비 2(구글 클라이언트 셋) · 3(애플 App ID · 키 · Services ID — Services ID 는 스테이징 https 뒤) · 4(카카오 앱 · OIDC · 리디렉트 URI · 키) · 5(Expo 계정 `eas login` · 기기). 받으면: 웹에서 구글 · 카카오 실제 로그인 → 새 계정 가입(만 14세 미만 거절 포함) → 새로고침 유지 → 로그아웃 → 계정 삭제(카카오 연결 끊김 확인), EAS 개발 빌드로 iOS(애플 · 구글 · 카카오) · Android(구글 · 카카오). 카카오 `scope=openid` 의 동의 화면 · ID 토큰도 이때 본다(A5 의 [확인 필요]).
 
+
+### 소유자 결정 뒤(2026-11-19) — 가입 뒤 만 14세 미만 날짜로 고치기 막기
+- 소유자 결정: 막는다(독립 리뷰가 "가입 때만 본다" 를 짚은 것). PR 올리기, Expo 패키지 패치는 따로.
+- 원격 받기: 두 저장소 모두 `origin/main` 에 새 커밋 없음(2026-11-19 확인) — 받을 것 없음.
+- 서버 `2931c7a`: `PUT /profile` 이 가입과 같은 `isAtLeast14(…, koreaToday())` 로 403 `UNDER_AGE`, 있던 것은 그대로. 빨강 `16 tests completed, 1 failed` → 초록 `./gradlew build` `BUILD SUCCESSFUL in 3m 38s` 테스트 490개 실패 0.
+- 앱: 출생 정보 저장이 `UNDER_AGE` 면 `strings.home.requestErrors.UNDER_AGE` 를 보여 주고 보관 · 이동하지 않는다. 빨강 `1 failed` → 초록 tsc 0 · lint 0 · `Tests: 771 passed, 771 total`.

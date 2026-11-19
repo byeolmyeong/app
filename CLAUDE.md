@@ -20,6 +20,7 @@
 - `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 화면 로직(chart·auth·reading·report·synastry·direction·support·update·share) · `src/components/` 공용 부품 · `src/content/` 문구 · `src/lib/` 서버 호출
 - 서버(Spring Boot)는 별도 저장소다. 앱과는 HTTP API 로만 만난다. 근거: docs/decisions/004-spring-backend.md
 - `docs/` agent가 참고할 문서 · `docs/raw/` 원본(던지는 곳, 고치지 않음) · `.claude/` 설정·규칙·스킬·에이전트·훅
+- `assets/brand/` 브랜드 그림 원본(SVG) · `scripts/` 개발 도구(`render-brand.mjs`: SVG → `assets/images/` PNG). 결정 035
 - `dist/`·`ios/`·`android/` 는 생성물이다(커밋 안 함, 손으로 고치지 않음).
 
 ## 스택
@@ -29,6 +30,7 @@
 ## 명령어 (Node 22)
 - 개발: `npx expo start --web` · 빌드: `npx expo export --platform web` · 테스트: `npm test` · 린트/타입: `npx tsc --noEmit && npx expo lint`
 - 패키지 설치: `npx expo install <패키지>` 만. 환경 변수 이름은 루트 `.env.example`
+- 브랜드 그림 PNG 다시 만들기(앱 아이콘 · 스플래시 · 공유 카드): `node scripts/render-brand.mjs`
 
 ## 도구 (.claude/)
 - 스킬 `/plan-feature`(킷 제공): 한 커밋을 넘는 요청은 바로 만들지 않는다. `docs/plans/`에 계획 파일 → 승인 → 실행 → 검증.

@@ -92,13 +92,13 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 서버 세션(별도 저장소)
 - 결과 요약:
 
-### 3. app-scopes  · 상태: 대기  · [앱] (O1 끝난 뒤 배포)
+### 3. app-scopes  · 상태: 완료(develop 합치기는 서버 S4 · 처리방침 L1 뒤)  · [앱] (O1 끝난 뒤 배포)
 - 읽을 것: 결정 039, `src/features/auth/providers/web-redirect.ts` · `apple.web.tsx` · `apple.ios.tsx` · `kakao.tsx` · `google.tsx` · `google.web.tsx`, 그 테스트
 - 할 것: 카카오 웹 인가 주소 `scope` 를 `openid account_email` 로, 애플 웹 `init` 의 `scope` 를 `'email'` 로, 애플 iOS `requestedScopes` 를 `[AppleAuthenticationScope.EMAIL]` 로. 머리 주석의 "이름 · 이메일은 묻지 않는다" 를 039 기준으로 바꾼다. 카카오 네이티브 · 구글은 코드 변경 없음(콘솔 동의항목 · 기본 범위로 온다) — 주석에 이유 한 줄.
 - 하지 말 것: 공급자가 준 이메일을 앱이 읽어 서버로 따로 보내지 않는다. 이유: 서버가 ID 토큰에서 확인한 값만 믿는다.
 - 검증: `npm test -- web-redirect` 에서 `scope: 'openid account_email'` 기대로 먼저 바꿔 실패를 본 뒤 통과. 애플 웹 · iOS 테스트가 있으면 같은 방식
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 카카오 웹 `openid account_email` · 애플 웹 `'email'` · iOS `[EMAIL]`, 카카오 네이티브 · 구글은 주석만(커밋 db28eff). 애플 웹은 테스트가 없어(웹 전용 파일) 코드로 확인.
 
 ### 4. app-api-account  · 상태: 대기  · [앱] (S7 계약 확정 뒤)
 - 읽을 것: 서버 `docs/architecture.md` 의 새 계약 행, `src/lib/api.ts`(`signup` · `login` · 응답 검증 함수), `src/features/auth/use-session.ts` · `session-store.ts`
@@ -181,3 +181,14 @@ docs/decisions/039-social-email-nickname-marketing.md
 $ grep -n "039" docs/decisions/034-social-login-platforms.md
 25:   | 카카오 | 카카오 인가 주소로 이동(`scope=openid` — 결정 039 가 `openid account_email` 로 대체) → ...
 ```
+- 태스크 3 검증(테스트 먼저 바꿔 실패 → 고쳐 통과):
+```
+$ npx jest src/features/auth/providers   # 고치기 전
+  ● 애플(iOS) › 이메일만 묻고(이름은 묻지 않는다, 결정 039) … → "requestedScopes": Array [] 
+  ● 카카오 웹: 인가 주소 › … → "scope": "openid"
+Tests:       2 failed, 12 passed, 14 total
+$ npx jest src/features/auth/providers   # 고친 뒤
+Tests:       14 passed, 14 total
+$ npx tsc --noEmit → exit 0 · npx expo lint → exit 0
+```
+- 결정: 애플 웹(`apple.web.tsx`)은 웹 전용 파일이라 지금 테스트 환경(네이티브 기본)에서 그리지 않아 테스트를 더하지 않음 — 한 줄 상수 변경 — 틀리면 비용: 스테이징에서 애플 웹 로그인 때 이메일이 없으면 서버가 EMAIL_REQUIRED 로 알려 준다.

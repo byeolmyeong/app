@@ -126,3 +126,11 @@ $ curl --resolve app.byeolmyeong.com:443:216.150.16.193 https://app.byeolmyeong.
 - `EXPO_PUBLIC_WEB_URL=https://app.staging.byeolmyeong.com` 을 Preview · `develop` 브랜치에만 넣음(그 밖의 미리보기는 웹에서 지금 주소를 쓴다).
 - 결정: 스테이징 도메인을 `develop` 에 묶는 것은 PR #22 → #23 → #24 → #27 이 develop 에 합쳐진 뒤 — 지금의 develop 에는 vercel.json · 정적 출력이 없어 묶으면 스테이징이 깨진 빌드를 가리킨다 — 그때까지 `vercel alias set` 으로 최신 미리보기를 가리킨다. 묶는 방법: `vercel api /v9/projects/byeolmyeong-app/domains/app.staging.byeolmyeong.com -X PATCH -f gitBranch=develop --scope swyp-fad73311`.
 - 이제 PR 마다 Vercel 미리보기가 생긴다. vercel.json 이 없는 #22 · #23 · #24 의 미리보기는 서버 출력이라 화면이 비어 보일 수 있다(빌드는 통과) — 합칠 때 확인할 것은 GitHub Actions CI 다.
+
+### 소셜 로그인 공급자 콘솔 (2026-11-19)
+- 카카오(소유자): 카카오 로그인 ON · OpenID Connect ON · 로그인 리다이렉트 URI 3개(`http://localhost:8081/auth/kakao`, `https://app.byeolmyeong.com/auth/kakao`, `https://app.staging.byeolmyeong.com/auth/kakao`) · 클라이언트 시크릿 사용함 · 동의항목 전부 사용 안 함(서버 결정 021: `sub` 만). JavaScript SDK 도메인 · 로그아웃 리다이렉트는 쓰지 않음.
+- 구글(소유자): 프로젝트 `byeolmyeong`, 웹 OAuth 클라이언트(승인된 JavaScript 원본 = 두 웹 주소 + `http://localhost:8081`, 리디렉션 URI 없음), 브랜딩(로고 없음 · 홈페이지 랜딩 · 처리방침 `/settings/privacy` · 약관 `/settings/terms` · 승인된 도메인 `byeolmyeong.com`), 앱 게시(프로덕션).
+- Vercel 두 환경: `EXPO_PUBLIC_KAKAO_REST_API_KEY` · `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` 추가(`--type config` — CLI 가 `EXPO_PUBLIC_*KEY` 를 비밀처럼 보고 공개 여부를 묻는다). 다음 배포부터 들어간다.
+- 서버 VM 두 대(서버 세션이 넣음, 값 출력 없음): `KAKAO_*` 4개 + VM 별 `KAKAO_REDIRECT_URIS`, `GOOGLE_CLIENT_IDS`. 카카오 연결 해제 웹훅은 서버 계획으로 넘김.
+- 결정: 카카오 동의항목(이메일 · 닉네임)은 받지 않는다 — 서버 결정 021 그대로, 닉네임은 온보딩에서 받는 기능으로 따로 계획 — 틀리면 비용: 동의항목 추가 + 서버 저장 + 처리방침 개정.
+- 남은 것: 애플(Services ID · 키), 처리방침 · 약관 본문(지금 자리표시) — 출시 전.

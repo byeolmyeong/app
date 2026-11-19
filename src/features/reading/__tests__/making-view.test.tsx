@@ -1,13 +1,13 @@
 import { act, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import { strings } from '@/content/strings';
 import { MakingView } from '@/features/reading/making-view';
 
 const M = strings.making;
 
-/** 지금 보이는 안내 문구(셋 중 하나만 화면에 있다) */
-const shownLines = () => M.lines.filter((line) => screen.queryByText(line) !== null);
+/** 지금 보이는 안내 문구(셋 중 하나만 화면에 있다). 화면 읽기에서는 숨겨 두었다 */
+const shownLines = () => M.lines.filter((line) => screen.queryByText(line, { includeHiddenElements: true }) !== null);
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -39,6 +39,25 @@ describe('MakingView', () => {
     expect(shownLines()).toEqual([M.lines[2]]);
     await act(async () => jest.advanceTimersByTime(2500));
     expect(shownLines()).toEqual([M.lines[0]]);
+  });
+
+  it('화면 읽기는 제목만 읽는다 — 바뀌는 안내 문구는 알리지 않는다(리뷰 A7)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    await render(<MakingView />);
+    expect(screen.getByRole('header', { name: M.title })).toBeTruthy();
+    expect(screen.queryByText(M.lines[0])).toBeNull();
+    const lines = screen.getByTestId('making-lines', { includeHiddenElements: true });
+    expect(lines.props['aria-live']).toBeUndefined();
+    expect(lines.props.accessibilityLiveRegion).toBeUndefined();
+  });
+
+  it('동작 줄이기면 뒤 빛 · 반짝임은 투명도 1 로 멈춘다(보드 9)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    await render(<MakingView />);
+    await act(async () => {});
+    for (const id of ['making-glow', 'making-twinkle-0', 'making-twinkle-1', 'making-twinkle-2']) {
+      expect(StyleSheet.flatten(screen.getByTestId(id, { includeHiddenElements: true }).props.style).opacity).toBe(1);
+    }
   });
 
   it('동작 줄이기가 켜져 있으면 멈춘 첫 장면 — 첫 문구만 계속 보인다(1분이 넘어도, 리뷰 초점 3)', async () => {

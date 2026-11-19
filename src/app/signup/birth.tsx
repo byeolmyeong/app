@@ -90,7 +90,7 @@ export default function BirthStep() {
     const chart = await api.createChart(v.input);
     if (chart.ok) await saveBirth({ profile: v.profile, chart: chart.data });
     stop();
-    setLeave({ href: chart.ok ? '/reading' : '/', clear: true });
+    setLeave({ href: chart.ok ? { pathname: '/reading', params: { from: 'signup' } } : '/', clear: true });
   }
 
   return (

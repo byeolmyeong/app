@@ -136,6 +136,12 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
         ) : null}
       </View>
 
+      {!places && !failed ? (
+        <Txt variant="table" color="hint" style={styles.empty}>
+          {B.loading}
+        </Txt>
+      ) : null}
+
       {failed ? (
         <View style={styles.failed}>
           <Txt variant="table" color="gray">
@@ -167,7 +173,7 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
         </View>
       ) : null}
 
-      {listing ? (
+      {listing && places ? (
         <View style={{ height: listHeight }}>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {searching && results.length === 0 ? (

@@ -53,6 +53,8 @@ export function useBirthFields(initial?: BirthProfile | null) {
   /** 시각 시트에서 굴리는 중인 값. "확인" 을 눌러야 정해진다 */
   const [timeDraft, setTimeDraft] = useState<TimePick>(DEFAULT_TIME);
   const [errors, setErrors] = useState<BirthFormErrors>({});
+  /** 서버가 거절한 이유(가입의 만 14세 미만). 날짜를 고치면 지워지고, 다 채웠는지에는 넣지 않는다(버튼은 켜진 채, 보드 8-4) */
+  const [serverDateError, setServerDateError] = useState<string | null>(null);
 
   const loadPlaces = useCallback(async () => {
     setPlacesFailed(false);
@@ -76,6 +78,7 @@ export function useBirthFields(initial?: BirthProfile | null) {
   function onDateText(text: string) {
     const value = formatDateTyping(text);
     setDateText(value);
+    setServerDateError(null);
     const date = value.length === DATE_LENGTH ? parseBirthDate(value, new Date()) : null;
     setErrors((e) => ({ ...e, date: date && !date.ok ? date.error : undefined }));
   }
@@ -111,7 +114,7 @@ export function useBirthFields(initial?: BirthProfile | null) {
 
   /** 서버가 거절한 이유를 생년월일 칸 아래에 띄운다(가입의 만 14세 미만, 보드 8-4). 날짜를 고치면 지워진다 */
   function setDateError(message: string) {
-    setErrors((e) => ({ ...e, date: message }));
+    setServerDateError(message);
   }
 
   /** 다 채웠는가(가입 단계의 버튼을 켤 때): 날짜를 다 쳤고 틀리지 않았으며, 시각을 골랐거나 "모름", 시각이 있으면 곳도 */
@@ -128,6 +131,7 @@ export function useBirthFields(initial?: BirthProfile | null) {
     sheet,
     timeDraft,
     errors,
+    serverDateError,
     setSheet,
     setTimeDraft,
     loadPlaces,
@@ -155,14 +159,14 @@ export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
   return (
     <>
       <View style={styles.fields}>
-        <Field label={S.dateLabel} error={c.errors.date}>
+        <Field label={S.dateLabel} error={c.errors.date ?? c.serverDateError ?? undefined}>
           <FieldInput
             value={c.dateText}
             onChangeText={c.onDateText}
             placeholder={S.datePlaceholder}
             keyboardType="number-pad"
             maxLength={DATE_LENGTH}
-            invalid={Boolean(c.errors.date)}
+            invalid={Boolean(c.errors.date ?? c.serverDateError)}
             accessibilityLabel={S.dateLabel}
           />
         </Field>

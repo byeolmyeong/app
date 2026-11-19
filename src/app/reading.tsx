@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -31,6 +31,8 @@ const S = strings.reading;
  */
 export default function ReadingScreen() {
   const { ready } = useSession();
+  // 가입을 마치고 바로 온 것인가(별명 짓는 중을 머리 없이, 보드 9). 홈 · 출생 정보 바꾸기에서 오면 뒤로 가기가 있다
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 먼저 기기에 받아 둔 글을 찾는다. 있으면 세션을 기다리지 않고 바로 보여 준다.
@@ -60,7 +62,7 @@ export default function ReadingScreen() {
   if (!stored.checked) return <Screen nav={nav}>{null}</Screen>;
 
   // 짓는 동안은 "별명 짓는 중"(결정 041 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
-  if (state.status === 'loading') return <MakingView />;
+  if (state.status === 'loading') return <MakingView nav={from === 'signup' ? undefined : nav} />;
 
   if (state.status === 'failed')
     return (

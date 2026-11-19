@@ -73,7 +73,7 @@ describe('가입 마치기', () => {
 
   it('성공하면 초안을 비우고 차트를 받아 둔 뒤 별명 짓는 중(풀이 글)으로 간다', async () => {
     await submit();
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/reading'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith({ pathname: '/reading', params: { from: 'signup' } }));
     expect(getDraft()).toBeNull();
     expect((await loadBirth())?.profile).toEqual({ date: '1999-03-08', time: null, place: null });
   });

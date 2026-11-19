@@ -2,9 +2,9 @@
  * 별명 짓는 중(결정 041, 시안 보드 9). 풀이 글을 짓는 동안 보이는 브랜드 자리: 별이가 둥실 떠 있고(위아래 8 · 3.2초),
  * 뒤의 빛이 숨 쉬듯 밝아지며(투명도 0.55↔1 · 크기 1↔1.08), 궤도 둘이 반대 방향으로 돌고(9초 · 15초), 작은 별이 반짝인다.
  * 아래 안내 문구 셋이 2.5초마다 바뀐다. 기기의 "동작 줄이기" 가 켜져 있으면 멈춘 첫 장면과 첫 문구만 보인다.
- * "길면 1분쯤 걸려요" 는 넣지 않는다(소유자). 움직임은 react-native 의 Animated 다 — 별이(`Byeoli`)와 같고 jest · 웹에서 그대로 돈다.
+ * "길면 1분쯤 걸려요" 는 넣지 않는다(소유자). 화면 읽기는 제목만 읽는다(바뀌는 문구는 숨긴다). 움직임은 react-native 의 Animated 다 — 별이(`Byeoli`)와 같고 jest · 웹에서 그대로 돈다.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Image, Platform, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
@@ -93,7 +93,12 @@ function useLine(run: boolean) {
   return { index: run ? index : 0, shown };
 }
 
-export function MakingView() {
+export type MakingViewProps = {
+  /** 화면 머리(뒤로 가기). 가입 직후에는 없다(보드 9), 홈에서 들어왔을 때는 있다 */
+  nav?: ReactNode;
+};
+
+export function MakingView({ nav }: MakingViewProps) {
   const reduce = useReduceMotion();
   const run = !reduce;
   const float = usePulse(run, FLOAT_MS);
@@ -105,18 +110,20 @@ export function MakingView() {
 
   const spin = (v: Animated.Value, reverse = false) =>
     v.interpolate({ inputRange: [0, 1], outputRange: reverse ? ['360deg', '0deg'] : ['0deg', '360deg'] });
-  const twinkle = (v: Animated.Value) => v.interpolate({ inputRange: [0, 1], outputRange: [TWINKLE_DIM, TWINKLE_BRIGHT] });
+  // 동작 줄이기면 멈춘 장면: 뒤 빛 · 반짝임은 다 밝은 채(보드 9)
+  const twinkle = (v: Animated.Value) => (run ? v.interpolate({ inputRange: [0, 1], outputRange: [TWINKLE_DIM, TWINKLE_BRIGHT] }) : 1);
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} nav={nav}>
       <View style={styles.body}>
         <GlowBackdrop color={BrandColors.backdropDim} extent={0.56} centerY={0.42} />
         <View testID="making-art" aria-hidden importantForAccessibility="no-hide-descendants" style={styles.art}>
           <Animated.View
+            testID="making-glow"
             style={[
               styles.glow,
               {
-                opacity: glow.interpolate({ inputRange: [0, 1], outputRange: [GLOW_DIM, 1] }),
+                opacity: run ? glow.interpolate({ inputRange: [0, 1], outputRange: [GLOW_DIM, 1] }) : 1,
                 transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [1, GLOW_SCALE] }) }],
               },
             ]}>
@@ -136,9 +143,15 @@ export function MakingView() {
           <Animated.View style={[styles.innerOrbit, { transform: [{ rotate: spin(inner, true) }] }]}>
             <View style={styles.innerDot} />
           </Animated.View>
-          <Animated.View style={[styles.twinkle, styles.twinkleA, { opacity: twinkle(twinkles[0]) }]} />
-          <Animated.View style={[styles.twinkle, styles.twinkleSmall, styles.twinkleB, { opacity: twinkle(twinkles[1]) }]} />
-          <Animated.View style={[styles.twinkle, styles.twinkleSmall, styles.twinkleC, { opacity: twinkle(twinkles[2]) }]} />
+          <Animated.View testID="making-twinkle-0" style={[styles.twinkle, styles.twinkleA, { opacity: twinkle(twinkles[0]) }]} />
+          <Animated.View
+            testID="making-twinkle-1"
+            style={[styles.twinkle, styles.twinkleSmall, styles.twinkleB, { opacity: twinkle(twinkles[1]) }]}
+          />
+          <Animated.View
+            testID="making-twinkle-2"
+            style={[styles.twinkle, styles.twinkleSmall, styles.twinkleC, { opacity: twinkle(twinkles[2]) }]}
+          />
           <Animated.View
             style={[
               styles.byeoli,
@@ -150,7 +163,8 @@ export function MakingView() {
         <Txt variant="headline" accessibilityRole="header" style={styles.title}>
           {M.title}
         </Txt>
-        <View style={styles.lines} aria-live="polite" accessibilityLiveRegion="polite">
+        {/* 바뀌는 안내 문구는 화면 읽기에서 숨긴다 — 제목만 읽힌다(2.5초마다 알리면 시끄럽다) */}
+        <View testID="making-lines" style={styles.lines} aria-hidden importantForAccessibility="no-hide-descendants">
           <Animated.View
             style={{
               opacity: line.shown,

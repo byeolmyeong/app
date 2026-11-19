@@ -119,6 +119,9 @@ describe('출생 정보 단계', () => {
     await fireEvent.press(submit());
     expect(await screen.findByText(H.errors.underAge)).toBeTruthy();
     expect(router.replace).not.toHaveBeenCalled();
+    // 안내가 떠도 버튼은 켜진 채(보드 8-4) — 누르면 다시 로그인으로 간다(세션)
+    expect(submitDisabled()).toBe(false);
+    expect(H.errors.underAge).toMatch(/다시 로그인/);
   });
 
   it('내 별명 읽기를 두 번 눌러도 가입은 한 번 보내고, 보내는 동안은 뒤로 가지 않는다(리뷰 A1 · A9)', async () => {

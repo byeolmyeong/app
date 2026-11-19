@@ -89,6 +89,14 @@ describe('태어난 곳 시트', () => {
     expect(screen.getAllByTestId('place-region')).toHaveLength(17);
   });
 
+  it('지역 목록을 받는 동안은 받는 중이라고 보이고, 그 사이 검색해도 "찾는 동네가 없어요" 를 띄우지 않는다(리뷰 A12)', async () => {
+    await open({ places: null, failed: false });
+    expect(screen.getByText(B.loading)).toBeTruthy();
+    await fireEvent.changeText(search(), '중구');
+    expect(screen.queryByText(B.noResult)).toBeNull();
+    expect(screen.getByText(B.loading)).toBeTruthy();
+  });
+
   it('목록을 받지 못했으면 안내와 다시 불러오기', async () => {
     await open({ places: null, failed: true });
     expect(screen.getByText(strings.home.placeLoadFailed)).toBeTruthy();

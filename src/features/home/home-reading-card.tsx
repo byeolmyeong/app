@@ -3,8 +3,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Button } from '@/components/button';
+import { Byeoli } from '@/components/byeoli';
 import { Txt } from '@/components/txt';
-import { CardRadius, Colors, Spacing } from '@/constants/theme';
+import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const M = strings.main;
@@ -22,12 +23,18 @@ export function HomeReadingCard({ headline, picture, onOpen }: HomeReadingCardPr
   if (!headline)
     return (
       <View style={styles.card}>
-        <Txt variant="label" color="gray">
-          {M.readingLabel}
-        </Txt>
-        <Txt variant="body" color="gray">
-          {M.readingEmpty}
-        </Txt>
+        <View style={styles.top}>
+          <View style={styles.emptyText}>
+            <Txt variant="label" color="gray">
+              {M.readingLabel}
+            </Txt>
+            <Txt variant="body" color="gray">
+              {M.readingEmpty}
+            </Txt>
+          </View>
+          {/* 아직 별명을 짓지 않았을 때: 쉬는 중 별이(결정 035) */}
+          <Byeoli state="empty" size={Sizes.byeoliSmall} />
+        </View>
         <Button label={M.readingCta} onPress={onOpen} />
       </View>
     );
@@ -56,4 +63,5 @@ const styles = StyleSheet.create({
   card: { backgroundColor: Colors.fill, borderRadius: CardRadius, padding: Spacing.lg, gap: Spacing.sm },
   top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xxs / 2 },
+  emptyText: { flex: 1, gap: Spacing.sm },
 });

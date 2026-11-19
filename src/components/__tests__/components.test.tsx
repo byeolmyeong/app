@@ -1,15 +1,18 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { processColor, StyleSheet } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 
+import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/button';
+import { Byeoli } from '@/components/byeoli';
 import { DataTable } from '@/components/data-table';
 import { Field, FieldInput } from '@/components/field';
+import { GlowShape } from '@/components/glow';
 import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
-import { ChartMark } from '@/components/chart-mark';
 import { SectionLabel } from '@/components/section-label';
 import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
+import { StatusView } from '@/components/status-view';
 import { Txt } from '@/components/txt';
 import { Colors, FontFamily, FontWeight, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -161,16 +164,6 @@ describe('DataTable', () => {
   });
 });
 
-describe('ChartMark', () => {
-  it('눈금 원과 주색 점 하나로 된 표식을 그린다', async () => {
-    await render(<ChartMark />);
-    expect(screen.getByTestId('chart-mark')).toBeTruthy();
-    expect(screen.getByLabelText(strings.appName)).toBeTruthy();
-    // react-native-svg 는 색을 { type: 0, payload: 숫자 } 로 바꿔 넘긴다
-    expect(screen.getByTestId('chart-mark-dot').props.fill).toEqual({ type: 0, payload: processColor(Colors.primary) });
-  });
-});
-
 describe('Sheet', () => {
   it('visible 일 때만 내용을 그린다', async () => {
     const view = await render(
@@ -299,5 +292,93 @@ describe('FieldInput: 여러 줄', () => {
     expect(StyleSheet.flatten(screen.getByPlaceholderText('짧게').parent?.props.style)).toMatchObject({
       height: Sizes.inputHeight,
     });
+  });
+});
+
+describe('브랜드 그림(결정 035)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('로고(BrandMark)는 앱 이름으로 읽히고, 높이에 맞춰 가로가 정해진다', async () => {
+    await render(<BrandMark height={20} />);
+    const mark = screen.getByLabelText(strings.appName);
+    expect(mark.props.accessibilityRole).toBe('image');
+    expect(StyleSheet.flatten(mark.props.style)).toMatchObject({ height: 20 });
+    expect(StyleSheet.flatten(mark.props.style).width).toBeGreaterThan(30);
+  });
+
+  it.each(['think', 'empty', 'error'] as const)('별이 "%s" 는 그 표정을 그린다', async (state) => {
+    await render(<Byeoli state={state} size={120} />);
+    // 별이는 화면 읽기에서 숨긴 장식이라 숨긴 것까지 찾는다
+    const hidden = { includeHiddenElements: true };
+    expect(screen.getByTestId(`byeoli-face-${state}`, hidden)).toBeTruthy();
+    for (const other of ['think', 'empty', 'error'].filter((s) => s !== state))
+      expect(screen.queryByTestId(`byeoli-face-${other}`, hidden)).toBeNull();
+  });
+
+  it('별이는 장식이라 화면 읽기에서 숨는다(상태는 옆의 제목 글이 말한다)', async () => {
+    await render(<Byeoli state="empty" size={120} />);
+    const byeoli = screen.getByTestId('byeoli', { includeHiddenElements: true });
+    expect(byeoli.props['aria-hidden']).toBe(true);
+    expect(byeoli.props.importantForAccessibility).toBe('no-hide-descendants');
+  });
+
+  it('동작 줄이기가 꺼져 있으면 생각 중 별이가 돌고, 화면에서 사라지면 멈춘다', async () => {
+    const loop = jest.spyOn(Animated, 'loop');
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const view = await render(<Byeoli state="think" size={120} />);
+    await waitFor(() => expect(loop).toHaveBeenCalledTimes(1));
+    const stop = jest.spyOn(loop.mock.results[0].value, 'stop');
+    await view.unmount();
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('동작 줄이기가 켜져 있으면 처음부터 움직이지 않고, 도는 중에 켜면 멈춘다', async () => {
+    const loop = jest.spyOn(Animated, 'loop');
+    let changed: (on: boolean) => void = () => {};
+    jest.spyOn(AccessibilityInfo, 'addEventListener').mockImplementation(((_event: string, handler: (on: boolean) => void) => {
+      changed = handler;
+      return { remove: jest.fn() };
+    }) as never);
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    const still = await render(<Byeoli state="think" size={120} />);
+    await waitFor(() => expect(AccessibilityInfo.isReduceMotionEnabled).toHaveBeenCalled());
+    await act(async () => {});
+    expect(loop).not.toHaveBeenCalled();
+    await still.unmount();
+
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    await render(<Byeoli state="think" size={120} />);
+    await waitFor(() => expect(loop).toHaveBeenCalledTimes(1));
+    const stop = jest.spyOn(loop.mock.results[0].value, 'stop');
+    await act(async () => changed(true));
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['star', 'flame', 'heart', 'moon'] as const)('빛나는 모양 "%s" 를 그린다', async (shape) => {
+    await render(<GlowShape shape={shape} size={64} />);
+    const glow = screen.getByTestId(`glow-${shape}`, { includeHiddenElements: true });
+    expect(glow.props['aria-hidden']).toBe(true);
+  });
+});
+
+describe('StatusView', () => {
+  it('별이 · 제목 · 설명 · 버튼을 가운데에 놓는다. 생각 중의 제목은 문단 제목 단계다', async () => {
+    const onPress = jest.fn();
+    await render(
+      <StatusView state="think" title="짓는 중" note="1분쯤 걸려요">
+        <Button label="다시 시도" onPress={onPress} />
+      </StatusView>,
+    );
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByText('짓는 중').props.style)).toMatchObject({ ...Typography.heading, textAlign: 'center' });
+    expect(screen.getByText('1분쯤 걸려요')).toBeTruthy();
+    await fireEvent.press(screen.getByText('다시 시도'));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('실패 · 빈 화면의 제목은 본문 단계다', async () => {
+    await render(<StatusView state="error" title="불러오지 못했어요" />);
+    expect(screen.getByTestId('byeoli-face-error', { includeHiddenElements: true })).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByText('불러오지 못했어요').props.style)).toMatchObject(Typography.body);
   });
 });

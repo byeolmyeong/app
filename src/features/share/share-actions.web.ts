@@ -20,6 +20,7 @@ export async function sendImage(card: CardRef): Promise<boolean> {
     const canvas = await html2canvas(element, {
       scale: SHARE_IMAGE.width / element.offsetWidth,
       backgroundColor: Colors.paper,
+      onclone: showSourceImages,
     });
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
@@ -28,6 +29,17 @@ export async function sendImage(card: CardRef): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * react-native-web 의 Image 는 그림을 배경으로 그리고 같은 그림의 <img> 를 투명하게 숨겨 둔다.
+ * html2canvas 는 배경 그림을 화면 크기로 줄였다가 키워 흐리게 만들므로, 복제본에서 숨은 <img> 를 드러내 원본 해상도로 그리게 한다(결정 036).
+ */
+function showSourceImages(_doc: unknown, element: { querySelectorAll: (selector: string) => ArrayLike<{ style: { opacity: string; zIndex: string } }> }) {
+  for (const img of Array.from(element.querySelectorAll('img'))) {
+    img.style.opacity = '1';
+    img.style.zIndex = '0';
   }
 }
 

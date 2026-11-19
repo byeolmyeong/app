@@ -71,6 +71,17 @@ describe('웹의 공유(이미지 저장 · 링크 복사)', () => {
     expect(anchor.click).toHaveBeenCalledTimes(1);
   });
 
+  it('이미지: 카드 속 그림은 숨은 원본 <img> 로 그려 1080 에서도 흐리지 않다(결정 036)', async () => {
+    g.document = { createElement: jest.fn(() => ({ href: '', download: '', click: jest.fn() })) };
+    mockHtml2canvas.mockResolvedValue({ toDataURL: jest.fn(() => 'data:image/png;base64,AAAA') });
+    await web.sendImage(view);
+    const { onclone } = mockHtml2canvas.mock.calls[0][1] as { onclone: (doc: unknown, el: unknown) => void };
+    // react-native-web 의 Image 는 그림을 배경으로 그리고, 같은 그림의 <img> 를 투명하게 숨겨 둔다
+    const hidden = [{ style: { opacity: '0', zIndex: '-1' } }, { style: { opacity: '0', zIndex: '-1' } }];
+    onclone({}, { querySelectorAll: (selector: string) => (selector === 'img' ? hidden : []) });
+    for (const img of hidden) expect(img.style).toEqual({ opacity: '1', zIndex: '0' });
+  });
+
   it('이미지: 그리지 못하면 false 다', async () => {
     mockHtml2canvas.mockRejectedValue(new Error('x'));
     expect(await web.sendImage(view)).toBe(false);

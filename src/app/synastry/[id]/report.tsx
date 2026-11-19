@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
+import { StatusView } from '@/components/status-view';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -73,12 +74,7 @@ export default function SynastryReportScreen() {
   if (state.status === 'writing')
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="heading">{S.writing}</Txt>
-          <Txt variant="table" color="gray">
-            {S.writingNote}
-          </Txt>
-        </View>
+        <StatusView state="think" title={S.writing} note={S.writingNote} />
       </Screen>
     );
 
@@ -87,10 +83,9 @@ export default function SynastryReportScreen() {
     if (error === 'PROFILE_CHANGED')
       return (
         <Screen nav={nav}>
-          <View style={styles.status}>
-            <Txt variant="body">{S.profileChanged}</Txt>
+          <StatusView state="error" title={S.profileChanged}>
             <Button label={S.recalculate} onPress={() => router.replace('/synastry')} />
-          </View>
+          </StatusView>
         </Screen>
       );
     const message =
@@ -105,11 +100,19 @@ export default function SynastryReportScreen() {
       stage === 'check' ? recheck : remembered && error !== 'BIRTH_MISMATCH' ? () => start(remembered) : null;
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="body">{message}</Txt>
-          {retry ? <Button label={S.retry} onPress={retry} /> : null}
-        </View>
-        {retry ? null : reenter}
+        {/* 다시 보낼 수 있으면 머쓱한 별이와 "다시 시도", 아니면 안내 아래에서 상대의 출생 정보를 다시 받는다 */}
+        {retry ? (
+          <StatusView state="error" title={message}>
+            <Button label={S.retry} onPress={retry} />
+          </StatusView>
+        ) : (
+          <>
+            <View style={styles.status}>
+              <Txt variant="body">{message}</Txt>
+            </View>
+            {reenter}
+          </>
+        )}
       </Screen>
     );
   }

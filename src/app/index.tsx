@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { ChartMark } from '@/components/chart-mark';
+import { BrandMark } from '@/components/brand-mark';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { SectionHead } from '@/components/section-head';
@@ -37,7 +37,7 @@ export default function HomeScreen() {
   // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   const { reading } = useStoredReading(input);
-  const nav = <NavBar left={<ChartMark />} />;
+  const nav = <NavBar left={<BrandMark height={Sizes.brandMarkHeight} />} />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (empty && (!session.ready || (canRestore && !restoreSettled)))
     return (

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { GlowShape, useSvgIds, type GlowShapeName } from '@/components/glow';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const M = strings.main;
@@ -68,7 +69,7 @@ export function HomeCategories({ onOpen }: HomeCategoriesProps) {
                 style={styles.tile}
               >
                 <View testID="home-category-icon" style={styles.icon}>
-                  <CategoryIcon name={category.key} color={soon ? Colors.muted : Colors.ink} />
+                  <CategoryTile name={category.key} soon={soon} />
                 </View>
                 <Txt variant="table" color={soon ? 'muted' : 'ink'}>
                   {category.title}
@@ -123,39 +124,29 @@ export function HomeCategories({ onOpen }: HomeCategoriesProps) {
   );
 }
 
-/** 칸마다의 선 아이콘: 나(사람) · 관계(마음) · 궁합(겹친 두 원) · 시기(시계). */
-function CategoryIcon({ name, color }: { name: Category['key']; color: string }) {
-  const stroke = {
-    stroke: color,
-    strokeWidth: 1.8,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    fill: 'none',
-  } as const;
+/** 칸마다의 빛나는 모양(결정 035): 나 별 · 관계 불꽃 · 궁합 하트 · 시기 달. 카드는 칸마다 조금씩 기운다 */
+const SHAPE: Record<Category['key'], GlowShapeName> = { me: 'star', relation: 'flame', synastry: 'heart', timing: 'moon' };
+const TILT: Record<Category['key'], number> = { me: -4, relation: 3, synastry: -3, timing: 4 };
+
+/** 검은 카드 위의 빛나는 모양. 준비 중인 칸은 빛 없이 흐리게 */
+function CategoryTile({ name, soon }: { name: Category['key']; soon: boolean }) {
+  const ids = useSvgIds();
+  const fill = `tile${ids.halo}`;
   return (
-    <Svg width={Sizes.categoryIcon} height={Sizes.categoryIcon} viewBox="0 0 24 24" fill="none">
-      {name === 'me' ? (
-        <>
-          <Circle cx={12} cy={8} r={3.5} {...stroke} />
-          <Path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" {...stroke} />
-        </>
-      ) : null}
-      {name === 'relation' ? (
-        <Path d="M12 20s-7-4.4-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.6 12 20 12 20z" {...stroke} />
-      ) : null}
-      {name === 'synastry' ? (
-        <>
-          <Circle cx={9} cy={12} r={5.5} {...stroke} />
-          <Circle cx={15} cy={12} r={5.5} {...stroke} />
-        </>
-      ) : null}
-      {name === 'timing' ? (
-        <>
-          <Circle cx={12} cy={12} r={8} {...stroke} />
-          <Path d="M12 7.5V12l3 2" {...stroke} />
-        </>
-      ) : null}
-    </Svg>
+    <>
+      <Svg style={StyleSheet.absoluteFill} viewBox="0 0 120 120">
+        <Defs>
+          <LinearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={BrandColors.tileTop} />
+            <Stop offset="1" stopColor={BrandColors.tileBottom} />
+          </LinearGradient>
+        </Defs>
+        <G transform={`rotate(${TILT[name]} 60 60)`}>
+          <Rect x={10} y={10} width={100} height={100} rx={22} fill={`url(#${fill})`} stroke={BrandColors.tileLine} strokeWidth={1.5} />
+        </G>
+      </Svg>
+      <GlowShape shape={SHAPE[name]} size={Sizes.homeTile} dim={soon} />
+    </>
   );
 }
 
@@ -163,10 +154,10 @@ const styles = StyleSheet.create({
   root: { paddingTop: Spacing.md, paddingBottom: Spacing.lg },
   // 한 줄의 양끝을 화면 여백에 맞춘다: 첫 아이콘의 왼쪽 끝이 머리의 표식과 같은 선에 온다.
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm },
-  // 타일의 너비는 아이콘과 같다. 이름은 그 가운데에 놓이고 넘쳐도 된다.
-  tile: { width: Sizes.categoryIcon, alignItems: 'center', gap: Spacing.xs, overflow: 'visible' },
-  // 바탕도 좌우 여백도 없다. 누르는 자리는 hitSlop 으로 넓힌다.
-  icon: { width: Sizes.categoryIcon, height: Sizes.categoryIcon },
+  // 타일의 너비는 카드와 같다. 이름은 그 가운데에 놓이고 넘쳐도 된다.
+  tile: { width: Sizes.homeTile, alignItems: 'center', gap: Spacing.xs, overflow: 'visible' },
+  // 카드 그림만 있고 좌우 여백은 없다. 누르는 자리는 hitSlop 으로 넓힌다.
+  icon: { width: Sizes.homeTile, height: Sizes.homeTile },
   item: {
     height: Sizes.listRow,
     flexDirection: 'row',

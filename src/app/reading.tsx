@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
+import { StatusView } from '@/components/status-view';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
 import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
@@ -60,24 +61,16 @@ export default function ReadingScreen() {
   if (state.status === 'loading')
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="heading">{S.generating}</Txt>
-          <Txt variant="table" color="gray">
-            {S.generatingNote}
-          </Txt>
-        </View>
+        <StatusView state="think" title={S.generating} note={S.generatingNote} />
       </Screen>
     );
 
   if (state.status === 'failed')
     return (
       <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="body">
-            {state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}
-          </Txt>
+        <StatusView state="error" title={state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}>
           <Button label={S.retry} onPress={retry} />
-        </View>
+        </StatusView>
       </Screen>
     );
 
@@ -123,6 +116,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.fill,
     borderRadius: CardRadius,
   },
-  status: { gap: Spacing.md, paddingTop: Spacing.lg },
   footer: { gap: Spacing.lg, paddingTop: Spacing.lg },
 });

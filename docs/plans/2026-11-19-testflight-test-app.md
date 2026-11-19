@@ -1,12 +1,12 @@
 ---
 type: plan
-status: proposed
+status: approved
 tags: [배포, TestFlight, EAS, 테스트앱, 운영앱]
 last_reviewed: 2026-11-19
 ---
 # 테스트앱(TestFlight 전용)과 운영앱을 나눠 올린다
 
-> 상태: 제안 · 기준 2026-11-19 · 브랜치 `feat/testflight-test-app`(origin/develop `03a8bb3` 위) · 작업 폴더 `../.wt-app-testflight`
+> 상태: 승인(소유자 2026-11-19 "작업 시작하자") · 기준 2026-11-19 · 브랜치 `feat/testflight-test-app`(origin/develop `03a8bb3` 위) · 작업 폴더 `../.wt-app-testflight`
 > 이 세션은 문서만 썼다(소유자 "문서만 적어놔 작업은 새세션에서 할거야"). 실행하는 세션은 소유자 승인("승인"·"가자")을 받고 `status: approved` 로 바꾼 뒤 태스크 1부터 한다.
 
 ## 목표
@@ -179,4 +179,18 @@ last_reviewed: 2026-11-19
 - 코드: `git revert`(`app.config.ts` · `eas.json` · `app.json`). EAS 환경 변수: `eas env:delete`. EAS 프로젝트는 지우지 않고 둔다.
 
 ## 실행 기록
-(아직 없음)
+
+### 소유자 준비 U1~U3 — 공급자 콘솔 · 서버 · Vercel (2026-11-19 저녁, 소유자 + Claude)
+값은 적지 않는다. 확인은 값 대신 프로젝트 이름 · 키 해시 앞자리 · `/health` 로 했다.
+
+- 애플(계획 변경): App ID `com.byeolmyeong.app.test`("Byeolmyeong Test")를 EAS 에 맡기지 않고 소유자가 먼저 등록했다. Sign in with Apple 은 **운영 `com.byeolmyeong.app` 의 그룹**에 묶었다(Group with an existing primary App ID). 이유: 서버는 애플 키 하나(`APPLE_KEY_ID`, primary App ID = `com.byeolmyeong.app`)로 테스트앱 번들 ID 의 코드 교환 · 탈퇴 철회를 하는데(서버 `AppleSignIn.kt` · `LoginService.kt:121`), 키는 자기 그룹의 client_id 에만 쓰인다. 묶지 않으면 로그인은 되지만 탈퇴 때 애플 철회가 조용히 빠진다. [확인 필요] 태스크 7 아이폰 확인에서 테스트앱 가입 → 탈퇴 뒤 스테이징 로그에 `apple_token_failed` 가 없는지 본다.
+- 구글(계획 변경): 오늘 낮에 만든 웹 클라이언트가 프로젝트 `byeolmyeong` 이 아니라 **Default Gemini Project** 에 있었다(스테이징 웹 번들의 클라이언트 ID 프로젝트 번호로 확인). 소유자 결정으로 `byeolmyeong` 프로젝트에 다시 만들었다 — Google 인증 플랫폼(앱 이름 "별명", 외부, 게시) · 브랜딩(홈페이지 `https://byeolmyeong.com`, 처리방침 `https://byeolmyeong.com/privacy`, 약관 `https://byeolmyeong.com/terms` — 랜딩의 본문, 승인된 도메인 `byeolmyeong.com`) · 클라이언트 3개("별명 웹" — JavaScript 원본 운영 · 스테이징 웹 · `http://localhost:8081`, "별명 테스트 iOS" `com.byeolmyeong.app.test`, "별명 iOS" `com.byeolmyeong.app`). 안드로이드 클라이언트는 서명 SHA-1 이 생긴 뒤(운영 안드로이드 계획). Firebase 앱 체크 · AI 에이전트 사용은 끔. 구글 사용자 번호(`sub`)는 프로젝트가 달라도 같아 기존 계정은 그대로 이어진다.
+- 구글 브랜드 인증: **안 함(남은 일)**. 외부 · 게시 앱은 브랜드 인증 전에는 동의 화면에 앱 이름 · 로고 없이 도메인만 보인다(Google "Manage OAuth App Branding"). 필요한 것: Search Console 에서 `byeolmyeong.com` 도메인 소유 확인(Cloudflare DNS TXT) → 브랜딩에 로고(120×120, 브랜드 아이콘) → 브랜딩 인증 → 승인 뒤 7일 안에 브랜딩 게시.
+- 카카오: 테스트 카카오 앱 **"별명 개발"**(계획의 "별명 테스트" 대신 이 이름) — 비즈 앱 전환(개인 개발자), 앱 아이콘(브랜드 아이콘 128×128), 네이티브 앱 키에 iOS 번들 ID `com.byeolmyeong.app.test`(스킴 발급 확인), REST API 키 리다이렉트 URI 스테이징 웹 `/auth/kakao` · `http://localhost:8081/auth/kakao`, 클라이언트 시크릿 활성화, 카카오 로그인 ON · OpenID Connect ON, 동의항목은 카카오계정(이메일) 필수만. 콘솔 메뉴 이름은 2025 개편 뒤의 카카오 문서(`/docs/ko/app-setting/app`, `/docs/ko/kakaologin/prerequisite`) 기준.
+- 값 넣기(소유자가 터미널에서 스크립트로 — 값은 숨김 입력, 서버에는 ssh 입력으로 보냄): 스테이징 서버 `GOOGLE_CLIENT_IDS` 에 새 웹 ID + `KAKAO_REST_API_KEY` · `KAKAO_NATIVE_APP_KEY` · `KAKAO_CLIENT_SECRET` · `KAKAO_ADMIN_KEY` 를 테스트 카카오 앱 값으로, `KAKAO_REDIRECT_URIS` 그대로. 운영 서버 `GOOGLE_CLIENT_IDS` = 새 웹 ID(운영 웹은 옛 ID 를 쓴 적이 없다). Vercel `byeolmyeong-app-staging` 의 구글 웹 ID · 카카오 REST 키, `byeolmyeong-app`(운영)의 구글 웹 ID(production · preview). 두 VM 모두 `.env` 백업 뒤 `docker compose up -d --force-recreate api` → `/health` 200.
+- 걸린 것: Vercel CLI 가 `EXPO_PUBLIC_*KEY` 이름을 비밀로 보고 `--type config` 없이는 바꾸지 않는다(웹 배포 계획의 같은 기록). 처음 스크립트가 여기서 멈춰 이어서 하는 스크립트로 마쳤다.
+- 스테이징 다시 배포: `vercel redeploy`(17:23 배포 → 새 배포), `app.staging.byeolmyeong.com` 이 새 배포를 가리킨다. 번들 확인 — 구글 웹 ID 의 프로젝트가 Default Gemini → `byeolmyeong`, 카카오 REST 키 해시가 운영(Vercel 운영 값)과 다르다.
+- 스테이징 웹 확인(소유자): 구글 로그인 → 가입 화면(새 웹 ID · 서버 aud 통과), 카카오 동의 화면에 "별명 개발" 표시. [확인 필요] 카카오 가입 끝까지 · 탈퇴(어드민 키 연결 끊기).
+- 정리: 스테이징 서버 `GOOGLE_CLIENT_IDS` 에서 옛 ID 를 뺐다(새 ID 하나, `/health` 200). 로컬 `byeolmyeong-api/.env` `GOOGLE_CLIENT_IDS` · `byeolmyeong-app/.env` `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` 를 새 웹 ID 로(백업은 저장소 밖). 로컬 개발은 카카오 운영 앱 그대로(개발 빌드가 운영 번들 ID 를 쓰므로).
+- 남은 것(소유자 콘솔): Default Gemini Project 의 옛 "웹" 클라이언트 삭제 · 운영 카카오 앱 "별명" 의 리디렉트 URI 에서 스테이징 웹 주소 빼기 · 구글 브랜드 인증. 8081 에 오늘 14:04 `.wt-app-login` 에서 띄운 시험용 웹 서버(옛 값을 명령에 넣어 띄움, 부르는 `localhost:8095` 는 꺼짐)가 남아 있다 — Claude 는 끄지 못했다(권한).
+- 다음: 태스크 1(결정 041)부터. 태스크 5 의 EAS 환경 변수에 공급자 값도 함께 — preview: 구글 웹 · "별명 테스트 iOS" · "별명 개발" 네이티브 키, production: 구글 웹 · "별명 iOS" · 운영 카카오 네이티브 키.

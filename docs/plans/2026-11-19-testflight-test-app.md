@@ -74,14 +74,14 @@ last_reviewed: 2026-11-19
 
 ## 태스크
 
-### 1. adr-041-test-and-production-apps · 상태: 대기
+### 1. adr-041-test-and-production-apps · 상태: 완료
 - 읽을 것: 이 파일의 "인터뷰 결과" · "내 결정" · "범위 밖", docs/decisions/037-web-deploy-vercel.md(형식 · 주소), docs/decisions/034-social-login-platforms.md
 - 할 것: `docs/decisions/041-test-app-testflight-only.md`. 머리말은 037 과 같은 모양(type: decision · tags · status: active · last_reviewed · superseded_by). 결정 절에 두 앱 표를 둔다. 열은 이름 · 번들 ID(= 안드로이드 패키지) · scheme · 서버 · 웹 · 카카오 앱 · EAS 빌드 프로필 / EAS 환경 · 올리는 곳. 개발 빌드는 운영 ID 그대로라는 것, "TestFlight 에만" 은 운영 규칙으로 지킨다는 것, 스테이징 카카오를 테스트 카카오 앱으로 옮긴다는 것도 적는다. 대안: 앱 하나 + 앱 안의 서버 전환 / 카카오 앱 하나 공유 / 개발 변형을 넣은 세 변형.
 - 주는 것: 결정 041(뒤 태스크 · 문서가 "결정 041" 로 가리킨다)
 - 하지 말 것: 037 · 034 본문 고치기. 이유: 기존 ADR 은 고쳐 쓰지 않는다(golden-rules).
 - 검증: `ls docs/decisions/041-*` → 파일 하나. `grep -c 'com.byeolmyeong.app.test' docs/decisions/041-*.md` → 1 이상
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `docs/decisions/041-test-app-testflight-only.md`(커밋 5d2d936). 표에 `APP_VARIANT` 행을 더했고, 오늘 콘솔 작업의 사실(테스트 카카오 앱 "별명 개발", 애플 그룹 묶기, 구글 `byeolmyeong` 프로젝트 · 클라이언트 셋)을 결정 5에 적었다. 대안에 "테스트 App ID 를 별도 primary 로" 를 더했다. 검증: 파일 1개, `com.byeolmyeong.app.test` 1줄, 값(32자리 키 · 구글 클라이언트 ID) 0건.
 
 ### 2. app-variant-config · 상태: 대기
 - 읽을 것: 결정 041, `app.config.ts`, `app.json`, Expo app variants 문서(전역 제약의 주소)

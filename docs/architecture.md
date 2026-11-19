@@ -32,10 +32,12 @@ flowchart LR
 ## 디렉터리 구조 (src/)
 ```
 app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇게: features 의 훅·부품을 조립만 한다
-  index.tsx          출생 정보 입력 (태스크 4 뒤에는 가입 마지막 단계)
+  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 /login, 가입 중 /signup, /s · /auth 는 열림, 결정 034)
+  index.tsx          홈(출생 정보가 없으면 입력 · 서버의 것으로 되살리기)
+  login.tsx · signup.tsx · auth/kakao.tsx   로그인(공급자 버튼) · 가입 마지막 단계(출생 정보, 판정은 서버) · 카카오 웹 로그인에서 돌아오는 화면(결정 034)
   reading.tsx · report.tsx · direction.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · settings/(설정 · 자주 묻는 질문 · 문의하기 · 처리방침 · 약관)
 features/            기능별 로직과 기능 전용 부품
-  auth/              세션(소셜 로그인 · 가입 · 로그아웃, 개발용 세션), 공급자별 자격 증명(providers/ — 플랫폼 파일 .web/.ios/.android/.native), 세션 토큰 보관, 로그인 전 가드, 계정 삭제(확인 시트 · 기기 저장 비움)
+  auth/              세션(session-store · use-session 의 useAuth — 소셜 로그인 · 가입 · 로그아웃, 개발용 세션), 공급자 버튼(providers/ — `google`·`apple`·`kakao` 의 기본(앱) · `.ios` · `.web` 파일, 같은 이름의 버튼), 세션 토큰 보관, 로그인 전 가드(guard.ts), 로그아웃(sign-out.ts — 기기 저장도 비움), 계정 삭제(확인 시트 · 기기 저장 비움)
   chart/             차트 휠·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
   reading/           요약 해석 요청 상태·문단 부품
   report/            심층 리포트·변곡점 타임라인

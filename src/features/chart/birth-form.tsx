@@ -9,6 +9,7 @@ import { strings } from '@/content/strings';
 import { getSession } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
 import type { BirthProfile } from '@/features/chart/birth-input';
+import type { BirthInput } from '@/lib/api';
 import type { StoredBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
 
@@ -21,13 +22,18 @@ export type BirthFormProps = {
   /** 기기에 보관된 값. 있으면 입력 칸을 이 값으로 채운다 */
   stored: StoredBirth | null;
   save: (value: StoredBirth) => Promise<void>;
+  /**
+   * 있으면 버튼이 차트를 받는 대신 이 함수를 부른다(가입 마지막 단계 — 가입을 마쳐야 차트를 받을 세션이 생긴다, 결정 034).
+   * 돌려준 글이 있으면 안내로 보여 준다. 어디로 갈지는 이 함수가 정한다.
+   */
+  submit?: (value: { input: BirthInput; profile: BirthProfile }) => Promise<string | null>;
 };
 
 /**
  * 출생 정보 입력. 세 칸은 [BirthFields] 가 그린다.
  * 맨 아래 버튼을 누르면 차트를 받아 보관하고 풀이 글(/reading)로 간다. 차트는 풀이 글 화면에서 연다.
  */
-export function BirthForm({ stored, save }: BirthFormProps) {
+export function BirthForm({ stored, save, submit }: BirthFormProps) {
   const fields = useBirthFields(stored?.profile);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +43,13 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     const v = fields.validate();
     if (!v) return;
     setRequestError(null);
+    if (submit) {
+      setSubmitting(true);
+      const message = await submit({ input: v.input, profile: v.profile });
+      setSubmitting(false);
+      setRequestError(message);
+      return;
+    }
     // 같은 입력의 차트를 이미 갖고 있으면 다시 요청하지 않는다.
     if (stored && sameInput(stored.profile, v.profile)) {
       router.push('/reading');

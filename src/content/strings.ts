@@ -15,10 +15,19 @@ export const strings = {
   /** 홈(카테고리 화면). 구성은 docs/decisions/019-home-categories.md */
   /** 로그인 · 가입(결정 034). 버튼 모양은 디자이너가 브랜드 규칙(카카오 노랑 · 애플 HIG)으로 다시 그린다 */
   login: {
+    title: '로그인',
+    subtitle: '계정으로 이어서 시작해요. 내 출생 정보와 받은 글이 계정에 저장돼요.',
     google: '구글로 계속하기',
     apple: 'Apple로 계속하기',
     kakao: '카카오로 계속하기',
+    dev: '개발용으로 들어가기',
+    ageNotice: '만 14세 이상만 가입할 수 있어요.',
     signingIn: '로그인하는 중이에요',
+    failed: '로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+    underAge: '만 14세 이상만 가입할 수 있어요. 가입이 끝나지 않았어요.',
+    expired: '가입 시간이 지났어요. 다시 로그인해 주세요.',
+    signupTitle: '출생 정보를 알려 주세요',
+    signupGuide: '마지막 단계예요. 차트를 계산하는 데 쓰고, 만 14세 이상인지도 이 날짜로 확인해요.',
   },
   /** 아래 탭(결정 019) */
   tabs: { home: '홈', my: '마이' },
@@ -36,6 +45,7 @@ export const strings = {
     faq: '자주 묻는 질문',
     inquiry: '문의하기',
     version: '앱 버전',
+    logout: '로그아웃',
     deleteAccount: '계정 삭제',
     deleteSheet: {
       title: '계정을 삭제할까요?',

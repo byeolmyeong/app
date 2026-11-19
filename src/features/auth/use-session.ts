@@ -32,6 +32,9 @@ export const getSession = (): Session => store.getSnapshot();
 /** 세션을 비운다(계정을 지웠을 때). 보관된 토큰도 지운다 */
 export const clearSession = (): Promise<void> => store.clear();
 
+/** 로그아웃(서버 세션 · 보관된 토큰). 기기에 둔 출생 정보 · 글은 `sign-out.ts` 가 함께 비운다 */
+export const signOutSession = (): Promise<void> => store.signOut();
+
 /**
  * 세션 상태. 처음 쓰일 때(앱이 켜질 때) 세션을 시작한다.
  * start 가 false 인 동안에는 시작하지 않는다(세션 없이 열리는 공유 페이지. 결정 025).
@@ -51,6 +54,7 @@ export function useAuth() {
     lastError: session.lastError,
     signIn: store.signIn,
     completeSignup: store.completeSignup,
-    signOut: store.signOut,
+    devSessionEnabled: store.devSessionEnabled(),
+    devSignIn: store.devSignIn,
   };
 }

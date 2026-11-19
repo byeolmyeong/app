@@ -148,6 +148,14 @@ export function createSessionStore(deps: SessionStoreDeps) {
       return r;
     },
 
+    /** 개발용 세션을 쓰는 빌드인가(로그인 화면의 "개발용으로 들어가기") */
+    devSessionEnabled: () => deps.devSession,
+
+    /** 개발용 세션으로 들어간다(계정을 지운 뒤 등). 꺼진 빌드에서는 아무것도 하지 않고 false */
+    devSignIn(): Promise<boolean> {
+      return deps.devSession ? fetchDevSession() : Promise.resolve(false);
+    },
+
     /** 로그아웃. 서버 세션을 지우고(실패해도) 기기의 토큰을 지운다 */
     async signOut(): Promise<void> {
       await deps.logout();

@@ -8,6 +8,7 @@ import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import { strings } from '@/content/strings';
 import { getSession } from '@/features/auth/use-session';
+import { BirthForm } from '@/features/chart/birth-form';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -485,5 +486,24 @@ describe('설명 버튼', () => {
     await fireEvent.press(screen.getByText(strings.detail.tabs.aspects));
     await fireEvent.press(screen.getByTestId('info-detail'));
     expect(await screen.findByText(HELP.aspects.title)).toBeTruthy();
+  });
+});
+
+describe('출생 정보 입력의 submit(가입 마지막 단계, 결정 034)', () => {
+  it('submit 이 있으면 차트를 받지 않고 검증한 값으로 부르며, 돌려준 안내를 보여 준다', async () => {
+    const submit = jest.fn(async () => '안내 글');
+    const save = jest.fn(async () => {});
+    await render(<BirthForm stored={null} save={save} submit={submit} />);
+    await fillDateAndTime('1995-05-05', null);
+    await fireEvent.press(screen.getByText(H.submit));
+    expect(await screen.findByText('안내 글')).toBeTruthy();
+    expect(submit).toHaveBeenCalledWith({
+      input: { date: '1995-05-05', time: null, placeId: null },
+      profile: expect.objectContaining({ date: '1995-05-05', time: null }),
+    });
+    expect(mockApi.createChart).not.toHaveBeenCalled();
+    expect(mockApi.saveProfile).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(router.push).not.toHaveBeenCalled();
   });
 });

@@ -54,8 +54,11 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'title', 'heading', 'button', 'body', 'table', 'label', 'mono', 'number', 'picker',
+      'display', 'hero', 'title', 'heading', 'button', 'body', 'lead', 'table', 'label', 'mono', 'number', 'picker',
     ]);
+    // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 041 시안)
+    expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
+    expect(Typography.lead).toMatchObject({ fontSize: 15, lineHeight: 23, fontWeight: '400' });
     expect(Object.values(Typography).every((t) => t.fontFamily === FontFamily)).toBe(true);
     expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 38, fontWeight: '500' });
     expect(Typography.button).toMatchObject({ fontSize: 16, fontWeight: '600' });

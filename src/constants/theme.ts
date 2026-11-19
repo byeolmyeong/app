@@ -66,6 +66,12 @@ export const BrandColors = {
   rest: '#DCE2F5',
   dim: '#7A8098',
   dimGlow: '#5A6075',
+  /** 브랜드 자리 바탕의 옅은 빛(가운데에서 바탕색으로 사라지는 원): 소개 · 스플래시 · 로그인 · 별명 짓는 중(결정 041) */
+  backdrop: '#1A1F6B',
+  backdropDim: '#161A45',
+  /** 소개의 기울어진 그림 카드와 그 둘레의 빛 */
+  card: '#15161C',
+  cardShadow: 'rgba(71,82,255,0.22)',
   /** 홈 아이콘 카드 */
   tileTop: '#17181F',
   tileBottom: '#0E0F14',
@@ -125,6 +131,8 @@ const type = (fontSize: number, lineHeight: number, fontWeight: Weight) =>
 export const Typography = {
   /** 홈 제목, 한 줄 총평. 로고처럼 크고 가볍게 */
   display: type(28, 38, FontWeight.medium),
+  /** 소개 · 가입 단계의 큰 제목(결정 041 시안) */
+  hero: type(26, 36, FontWeight.semibold),
   /** 화면 제목, 구간 제목 */
   title: type(24, 34, FontWeight.semibold),
   /** 시트 제목, 문단 제목 */
@@ -133,6 +141,8 @@ export const Typography = {
   button: type(16, 24, FontWeight.semibold),
   /** 본문, 입력칸의 값. 긴 글을 어두운 바탕에서 읽으니 줄 간격 1.6 */
   body: type(15, 24, FontWeight.regular),
+  /** 큰 제목 아래 안내 한두 줄(소개 · 가입 단계 · 로그인 한 줄) */
+  lead: type(15, 23, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
   /** 도움말, 오류, 작은 라벨 */
@@ -215,4 +225,11 @@ export const Sizes = {
   byeoli: 160,
   byeoliSmall: 72,
   homeTile: 64,
+  /** 소개 · 가입 단계 화면의 머리(건너뛰기 · 뒤로) 높이와 바닥 여백(결정 041 시안) */
+  stepHeader: 56,
+  stepBottom: 34,
+  /** 소개의 그림 칸 · 장 표시 점(지금 장은 길게) */
+  introArt: 260,
+  introDot: 6,
+  introDotActive: 20,
 } as const;

@@ -13,6 +13,7 @@ const chrome = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/M
 /** [원본 SVG, 만들 PNG, 가로, 세로] */
 const TARGETS = [
   ['app-icon.svg', 'icon.png', 1024, 1024],
+  ['app-icon-test.svg', 'icon-test.png', 1024, 1024], // 테스트앱(APP_VARIANT=test, 결정 041)
   ['app-icon.svg', 'favicon.png', 48, 48],
   ['adaptive-background.svg', 'android-icon-background.png', 512, 512],
   ['adaptive-foreground.svg', 'android-icon-foreground.png', 512, 512],

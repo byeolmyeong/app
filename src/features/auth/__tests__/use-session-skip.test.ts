@@ -24,10 +24,10 @@ describe('useSession(false): 세션을 시작하지 않는다(공유 페이지)'
     });
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(api.createDevSession).not.toHaveBeenCalled();
-    expect(result.current).toEqual({ token: null, ready: false });
+    expect(result.current).toMatchObject({ status: 'checking', token: null, ready: false });
 
     await rerender({ start: true });
-    await waitFor(() => expect(result.current).toEqual({ token: 'dev-token', ready: true }));
+    await waitFor(() => expect(result.current).toMatchObject({ status: 'signedIn', token: 'dev-token', ready: true }));
     expect(api.createDevSession).toHaveBeenCalledTimes(1);
   });
 });

@@ -33,7 +33,7 @@ jest.mock('@/lib/api', () => ({
   api: { requestReport: jest.fn(), getReport: jest.fn(), saveProfile: jest.fn(), createDirection: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -50,7 +50,7 @@ const selectedTabs = () => screen.getAllByRole('tab').map((t) => t.props.accessi
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockUseSession.mockReturnValue({ token: 'dev-token', ready: true });
+  mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockParams.mockReturnValue({});
   mockApi.getReport.mockResolvedValue(done);
   mockApi.requestReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
@@ -191,7 +191,7 @@ describe('심층 리포트 화면', () => {
   });
 
   it('세션 확인이 끝나기 전에는 서버를 부르지 않는다', async () => {
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<ReportScreen />);
     expect(await screen.findByText(R.checking)).toBeTruthy();
     await act(async () => {});
@@ -887,7 +887,7 @@ describe('심층 리포트 화면: 시기 탭 "지금" 아래의 방향성 제�
     expect(await screen.findByText(future.title)).toBeTruthy();
     await first.unmount();
     mockApi.createDirection.mockClear();
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<ReportScreen />);
     await act(async () => {});
     expect(mockApi.createDirection).not.toHaveBeenCalled();

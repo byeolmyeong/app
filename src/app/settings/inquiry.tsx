@@ -21,7 +21,7 @@ const I = strings.inquiry;
 
 const BODY_ERRORS = { TOO_SHORT: I.errors.bodyTooShort, TOO_LONG: I.errors.bodyTooLong };
 
-/** 온 곳(마이 · 자주 묻는 질문)으로 돌아간다. 돌아갈 곳이 없으면(웹에서 주소로 바로 연 경우) 마이로 간다(결정 034) */
+/** 온 곳(마이 · 자주 묻는 질문)으로 돌아간다. 돌아갈 곳이 없으면(웹에서 주소로 바로 연 경우) 마이로 간다(결정 038) */
 function backToMy() {
   if (router.canGoBack()) router.back();
   else router.replace('/my');

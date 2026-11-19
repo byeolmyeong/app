@@ -14,6 +14,7 @@ import { Txt } from '@/components/txt';
 import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { AccountDeleteSheet } from '@/features/auth/account-delete-sheet';
+import { signOut } from '@/features/auth/sign-out';
 import { formatBirthSummary } from '@/features/chart/birth-input';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
@@ -22,19 +23,19 @@ const M = strings.my;
 const S = strings.settings;
 
 /**
- * 마이: 출생 정보와 설정의 줄을 한 화면에 둔다(결정 034). 출생 정보 카드 → 도움 → 약관 · 정보 → 계정 삭제.
- * 출생 정보가 없어도 줄들과 아래 탭은 보인다. 로그아웃은 소셜 로그인, 알림은 푸시가 생길 때 더한다.
+ * 마이: 출생 정보와 설정의 줄을 한 화면에 둔다(결정 038). 출생 정보 카드 → 도움 → 약관 · 정보 → 로그아웃 → 계정 삭제.
+ * 출생 정보가 없어도 줄들과 아래 탭은 보인다. 알림은 푸시가 생길 때 더한다.
  */
 export default function MyScreen() {
   const { loaded, profile } = useBirthProfile();
   const [asking, setAsking] = useState(false);
   const nav = <NavBar title={M.title} />;
 
-  /** 지운 뒤에는 쌓인 화면을 걷어 내고 첫 화면(출생 정보 입력)만 남긴다 */
+  /** 지우거나 로그아웃한 뒤에는 쌓인 화면을 걷어 내고 로그인 화면만 남긴다(결정 034) */
   function leave() {
     setAsking(false);
     if (router.canDismiss()) router.dismissAll();
-    router.replace('/');
+    router.replace('/login');
   }
 
   const tabs = <MainTabs active="my" />;
@@ -53,7 +54,7 @@ export default function MyScreen() {
           <TextLink label={M.editBirth} onPress={() => router.push('/birth')} />
         </View>
       ) : (
-        // 출생 정보가 없으면 카드 자리에 쉬는 중 별이와 넣으러 가는 버튼(결정 034 · 035)
+        // 출생 정보가 없으면 카드 자리에 쉬는 중 별이와 넣으러 가는 버튼(결정 038 · 035)
         <View style={styles.emptyCard}>
           <View style={styles.emptyTop}>
             <Txt variant="body" color="gray" style={styles.text}>
@@ -79,7 +80,10 @@ export default function MyScreen() {
           <ListRow label={S.version} value={Constants.expoConfig?.version ?? strings.common.none} />
         </View>
       </View>
-      <ListRow label={S.deleteAccount} color="danger" onPress={() => setAsking(true)} />
+      <View>
+        <ListRow label={S.logout} onPress={() => void signOut().then(leave)} />
+        <ListRow label={S.deleteAccount} color="danger" onPress={() => setAsking(true)} />
+      </View>
       <AccountDeleteSheet visible={asking} onClose={() => setAsking(false)} onDeleted={leave} />
     </Screen>
   );

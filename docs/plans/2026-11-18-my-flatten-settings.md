@@ -36,9 +36,9 @@ last_reviewed: 2026-11-18
 
 ### 1. adr-my-settings  · 상태: 완료
 - 읽을 것: `docs/decisions/019-home-categories.md`, `024-faq-and-inquiry-form.md`, `docs/release-1.0.0.md` "화면" 표의 마이 · 설정 줄과 F9
-- 할 것: `docs/decisions/034-settings-into-my.md`(마이에 설정을 합친다, 위 "내 결정"). 019 · 024 머리 `superseded_by` 에 대체 표시만. release-1.0.0.md 화면 표의 마이 줄을 고치고 설정 줄을 지운다. F9 · F7 의 "설정에서" 는 "마이에서" 로.
+- 할 것: `docs/decisions/038-settings-into-my.md`(처음 034 — 소셜 로그인과 번호가 겹쳐 038 로 옮김)(마이에 설정을 합친다, 위 "내 결정"). 019 · 024 머리 `superseded_by` 에 대체 표시만. release-1.0.0.md 화면 표의 마이 줄을 고치고 설정 줄을 지운다. F9 · F7 의 "설정에서" 는 "마이에서" 로.
 - 검증: `grep -n "/settings\`" docs/release-1.0.0.md` → 하위 화면 줄만 남음
-- 결과 요약: ADR 034, 019 · 024 대체 표시, release-1.0.0.md 의 F1 · F7 · F8 · F9 와 화면 표.
+- 결과 요약: ADR 038(처음 034), 019 · 024 대체 표시, release-1.0.0.md 의 F1 · F7 · F8 · F9 와 화면 표.
 
 ### 2. my-with-settings  · 상태: 완료
 - 읽을 것: `src/app/my.tsx`, `src/app/settings/index.tsx`, `src/app/settings/inquiry.tsx`(27줄), `src/__tests__/settings-screen.test.tsx`, `src/__tests__/inquiry-screen.test.tsx`(158줄), `src/content/strings.ts` 의 `my` · `settings` · `inquiry.done`
@@ -101,7 +101,7 @@ reviewer(깨끗한 컨텍스트) 지적과 처리
 | 1 | 수정 | architecture.md 36 · 75 줄이 지운 설정 화면을 가리킴 | 고침 |
 | 2 | 제안 | 문의 뒤 "마이로 돌아가기" 가 실제로는 온 곳(FAQ)으로 감 | 버튼을 "돌아가기" 로(테스트 red → green) |
 | 3 | 제안 | 탭으로 열린 마이(걷어 낼 화면 없음)에서의 삭제 경우를 테스트가 안 침 | 테스트 더함, 주석 고침 |
-| 4 | 제안 | 기획안 화면 표에 설정 화면 | 머리에 바뀐 결정(032 · 033 · 034 · 035) 한 줄 |
+| 4 | 제안 | 기획안 화면 표에 설정 화면 | 머리에 바뀐 결정(032 · 033 · 038 · 035) 한 줄 |
 | 5 | 제안 | `+not-found` 없음, `_sitemap` 이 운영에서도 열릴 수 있음 | 원래 있던 문제 — 소유자에게 따로 알림 |
 | 6 | 제안 | 불러오는 동안 아래 탭이 늦게 나타남 | 불러오는 동안에도 탭(테스트 red → green) |
 | 7 | 제안 | 계획 기록 · 스크린샷 미커밋, 넓은 화면 스크린샷 없음 | 기록 · 스크린샷 커밋. 넓은 화면은 마이 구조가 폭과 무관해 생략 |

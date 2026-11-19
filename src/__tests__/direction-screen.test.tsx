@@ -21,7 +21,7 @@ jest.mock('@/lib/api', () => ({
   api: { createDirection: jest.fn(), saveProfile: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -34,7 +34,7 @@ const ok: ApiResult<Direction> = { ok: true, data: direction };
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockUseSession.mockReturnValue({ token: 'dev-token', ready: true });
+  mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockApi.createDirection.mockResolvedValue(ok);
   mockApi.saveProfile.mockImplementation(async (i) => ({ ok: true, data: i }));
   await saveBirth({ profile, chart: fixtures.chart });
@@ -71,7 +71,7 @@ describe('방향성 제시(이성) 화면', () => {
       DIRECTION_STORAGE_KEY,
       JSON.stringify({ key: JSON.stringify([profile.date, profile.time, profile.place.id]), direction }),
     );
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<DirectionScreen />);
     expect(await screen.findByText(direction.title)).toBeTruthy();
     expect(screen.queryByText(D.generating)).toBeNull();
@@ -124,7 +124,7 @@ describe('방향성 제시(이성) 화면', () => {
   });
 
   it('세션 확인이 끝나기 전에는 요청하지 않고 기다리는 상태를 보여 준다', async () => {
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<DirectionScreen />);
     expect(await screen.findByText(D.generating)).toBeTruthy();
     await act(async () => {});

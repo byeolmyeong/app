@@ -20,9 +20,10 @@ superseded_by:
 1. **주소**: 랜딩 `byeolmyeong.com`(따로 배포), 웹 앱 운영 `app.byeolmyeong.com`, 스테이징 `app.staging.byeolmyeong.com`. 서버는 운영 `api.byeolmyeong.com`, 스테이징 `api.staging.byeolmyeong.com`(서버 배포 때 만든다).
 2. **브랜치 → 환경**: `develop` → 스테이징(Vercel Preview, develop 브랜치 도메인), `main` → 운영(Vercel Production). 작업 브랜치는 PR 마다 Vercel 임시 주소(스테이징 서버를 본다). 작업 브랜치는 `develop` 으로 PR 을 낸다.
 3. **웹 출력은 정적(`web.output: static`)**. 주소에 식별자가 든 화면(`/s/<id>`, `/synastry/<id>` 와 그 아래 `report` · `direction`)은 정적 내보내기가 만든 `[id]` 화면 파일로 Vercel 이 돌려준다(`vercel.json` rewrite). 화면은 브라우저에서 주소를 읽어 그린다.
-4. **환경 변수**(빌드 때 들어간다. 이름은 `.env.example`): `EXPO_PUBLIC_API_URL` · `EXPO_PUBLIC_WEB_URL` 을 환경마다 그 환경의 주소로. `EXPO_PUBLIC_DEV_SESSION=1` 은 **스테이징 · 미리보기에만** 둔다. 운영에서 켜면 누구나 개발용 세션을 받는다.
+4. **환경 변수**(빌드 때 들어간다. 이름은 `.env.example`): `EXPO_PUBLIC_API_URL` · `EXPO_PUBLIC_WEB_URL` 과 웹 소셜 로그인 값(`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` · `EXPO_PUBLIC_APPLE_SERVICES_ID` · `EXPO_PUBLIC_KAKAO_REST_API_KEY`)을 환경마다. `EXPO_PUBLIC_DEV_SESSION` 은 **어느 Vercel 환경에도 두지 않는다** — 스테이징 도메인은 Vercel 로그인 보호가 걸리지 않아 주소만 알면 누구나 열고, 소셜 로그인(결정 034)이 들어와 스테이징도 진짜 로그인으로 확인한다(소유자 2026-11-19, 처음 계획의 "스테이징에만" 을 바꿈).
 5. **Vercel**: `swyp` 팀(Pro)의 프로젝트, GitHub 저장소와 연결(브랜치마다 자동 배포). 설정 파일 `vercel.json` 은 저장소에 둔다.
-6. **운영 도메인 연결은 서버 · 로그인 준비 뒤**(소유자 2026-11-19). 그때까지는 스테이징 도메인만 붙인다.
+6. **운영 도메인도 지금 붙인다**(소유자 2026-11-19 "운영도 해야 해" — 처음의 "서버 · 로그인 준비 뒤" 를 바꿈). 두 도메인 모두 Cloudflare DNS 에서 CNAME(프록시 끔, DNS 전용)으로 Vercel 을 가리킨다.
+8. **웹 로그인과 서버**: 웹 세션은 서버의 httpOnly 쿠키다(결정 034). `app.` ↔ `api.`(스테이징은 `app.staging.` ↔ `api.staging.`)는 같은 사이트라 쿠키가 오간다. Vercel 의 임시 주소(`*.vercel.app`)는 다른 사이트라 웹 로그인이 안 될 수 있다 — 로그인 확인은 스테이징 도메인에서 한다. 공급자 콘솔(구글 승인된 출처 · 애플 Services ID 반환 주소 · 카카오 웹 플랫폼 · 리다이렉트 URI)에 두 웹 주소를 넣는다.
 7. 앱 열기 링크(iOS 유니버설 링크 · Android 앱 링크)는 공유 링크와 같은 도메인(`app.`)에 `public/.well-known/` 파일로 둔다. 번들 ID · 서명이 정해지면(스토어 준비) 넣는다.
 
 ## 근거
@@ -39,4 +40,4 @@ superseded_by:
 ## 결과·재검토 조건
 - 서버 저장소의 `ALLOWED_ORIGINS` 에 웹 주소를 넣어야 웹이 서버를 부른다(스테이징: `https://app.staging.byeolmyeong.com` 과 Vercel 미리보기 주소). 서버 배포 때 한다.
 - 공유 링크 미리보기에 카드 내용을 넣고 싶어지면 서버 렌더링(또는 Vercel 함수)을 다시 본다.
-- 소셜 로그인이 붙으면 운영 도메인을 연결하고, 운영 빌드에 개발용 세션이 없는지 다시 확인한다.
+- 운영 · 스테이징 빌드에 개발용 세션이 없는 것을 번들에서 확인했다(`enabled:!1`, 2026-11-19). 환경 변수를 바꾸면 다시 확인한다.

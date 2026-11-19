@@ -37,7 +37,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { deleteAccount: jest.fn() },
+  api: { deleteAccount: jest.fn(), logout: jest.fn(async () => ({ ok: true, data: null })) },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -55,12 +55,12 @@ beforeEach(async () => {
   await AsyncStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify({ key: 'k', report: fixtures.report }));
 });
 
-describe('마이(/my) — 설정을 합쳤다(결정 034)', () => {
-  it('출생 정보 카드 · 도움(자주 묻는 질문 · 문의하기) · 약관 · 정보(처리방침 · 약관 · 앱 버전) · 계정 삭제를 이 순서로 보여 준다', async () => {
+describe('마이(/my) — 설정을 합쳤다(결정 038)', () => {
+  it('출생 정보 카드 · 도움(자주 묻는 질문 · 문의하기) · 약관 · 정보(처리방침 · 약관 · 앱 버전) · 로그아웃 · 계정 삭제를 이 순서로 보여 준다', async () => {
     await render(<MyScreen />);
     expect(await screen.findByText(S.faq)).toBeTruthy();
     expect([M.help, M.info]).toEqual(['도움', '약관 · 정보']);
-    const labels = [M.birthLabel, M.help, S.faq, S.inquiry, M.info, S.privacy, S.terms, S.version, S.deleteAccount];
+    const labels = [M.birthLabel, M.help, S.faq, S.inquiry, M.info, S.privacy, S.terms, S.version, S.logout, S.deleteAccount];
     for (const label of labels) expect(screen.getByText(label)).toBeTruthy();
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
@@ -68,17 +68,17 @@ describe('마이(/my) — 설정을 합쳤다(결정 034)', () => {
     // 앱 버전은 expo 설정에서 온다
     expect(Constants.expoConfig?.version).toBe('9.8.7');
     expect(screen.getByText('9.8.7')).toBeTruthy();
-    // 로그아웃과 알림은 아직 없다(소셜 로그인 · 푸시 뒤). "설정" 으로 가는 줄도 없다
-    expect(screen.queryByText(/로그아웃/)).toBeNull();
+    // 알림은 아직 없다(푸시 뒤). "설정" 으로 가는 줄도 없다
+    expect(screen.queryByText(/알림/)).toBeNull();
     expect(M).not.toHaveProperty('settings');
   });
 
-  it('출생 정보가 없어도 도움 · 약관 · 계정 삭제 줄과 아래 탭은 보이고, 카드 자리에서 출생 정보를 넣으러 간다', async () => {
+  it('출생 정보가 없어도 도움 · 약관 · 로그아웃 · 계정 삭제 줄과 아래 탭은 보이고, 카드 자리에서 출생 정보를 넣으러 간다', async () => {
     await AsyncStorage.clear();
     await render(<MyScreen />);
     expect(await screen.findByText(strings.chart.empty)).toBeTruthy();
     expect(screen.getByTestId('byeoli-face-empty', { includeHiddenElements: true })).toBeTruthy();
-    for (const label of [S.faq, S.inquiry, S.privacy, S.terms, S.version, S.deleteAccount]) expect(screen.getByText(label)).toBeTruthy();
+    for (const label of [S.faq, S.inquiry, S.privacy, S.terms, S.version, S.logout, S.deleteAccount]) expect(screen.getByText(label)).toBeTruthy();
     expect(screen.getByText(strings.tabs.home)).toBeTruthy();
     expect(screen.queryByText(M.birthLabel)).toBeNull();
     await fireEvent.press(screen.getByText(strings.chart.goHome));
@@ -156,27 +156,27 @@ describe('계정 삭제', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('확인하면 서버에 한 번 요청하고, 기기에 둔 것과 세션 토큰을 비운 뒤 첫 화면으로 간다', async () => {
+  it('확인하면 서버에 한 번 요청하고, 기기에 둔 것과 세션 토큰을 비운 뒤 로그인 화면으로 간다', async () => {
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
     await render(<MyScreen />);
     await screen.findByText(S.faq);
     await fireEvent.press(screen.getByText(S.deleteAccount));
     await fireEvent.press(await screen.findByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
     expect(await AsyncStorage.getAllKeys()).toEqual([]);
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledTimes(1);
-    // 마이 아래에 쌓인 화면이 있으면 걷어 내고 첫 화면만 남긴다
+    // 마이 아래에 쌓인 화면이 있으면 걷어 내고 로그인 화면만 남긴다
     expect(router.dismissAll).toHaveBeenCalledTimes(1);
   });
 
-  it('마이가 탭으로 열려 걷어 낼 화면이 없으면 걷지 않고 첫 화면으로 바꾼다(뒤로 가기로 마이에 돌아갈 수 없다)', async () => {
+  it('마이가 탭으로 열려 걷어 낼 화면이 없으면 걷지 않고 로그인 화면으로 바꾼다(뒤로 가기로 마이에 돌아갈 수 없다)', async () => {
     (router.canDismiss as jest.Mock).mockReturnValue(false);
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
     await render(<MyScreen />);
     await fireEvent.press(await screen.findByText(S.deleteAccount));
     await fireEvent.press(await screen.findByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
     expect(router.dismissAll).not.toHaveBeenCalled();
     (router.canDismiss as jest.Mock).mockReturnValue(true);
   });
@@ -191,7 +191,7 @@ describe('계정 삭제', () => {
     await fireEvent.press(await screen.findByText(D.deleting));
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
     finish({ ok: true, data: null });
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
   });
 
   it.each([
@@ -212,11 +212,23 @@ describe('계정 삭제', () => {
     // 시트는 열려 있고, 다시 누르면 다시 요청한다
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
     await fireEvent.press(screen.getByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(2);
   });
 
   it('기능들이 기기에 두는 키는 모두 삭제 때 지우는 머리(byeolmyeong.)로 시작한다', () => {
     for (const key of STORED_KEYS) expect(key.startsWith(DEVICE_STORAGE_PREFIX)).toBe(true);
+  });
+});
+
+describe('로그아웃(결정 034)', () => {
+  it('서버 세션을 지우고 이 기기에 둔 것을 비운 뒤 로그인 화면으로 간다', async () => {
+    await saveBirth({ profile: { date: '1995-05-05', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    await render(<MyScreen />);
+    await fireEvent.press(await screen.findByText(S.logout));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
+    expect(mockApi.logout).toHaveBeenCalledTimes(1);
+    const keys = await AsyncStorage.getAllKeys();
+    expect(keys.filter((k) => k.startsWith(DEVICE_STORAGE_PREFIX))).toEqual([]);
   });
 });

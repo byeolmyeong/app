@@ -29,7 +29,7 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;

@@ -17,6 +17,8 @@ import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing, Typography } fro
 
 export type FieldProps = {
   label: string;
+  /** 라벨 줄 오른쪽에 둘 것(시각 칸의 "모름" 체크, 결정 041) */
+  labelRight?: ReactNode;
   /** 입력칸 아래의 작은 도움말 */
   hint?: string;
   /** 있으면 도움말 대신 오류색(danger)으로 보여 준다 */
@@ -25,24 +27,31 @@ export type FieldProps = {
   children: ReactNode;
 };
 
-/** 라벨(위) · 입력칸 · 도움말 또는 오류(아래). */
-export function Field({ label, hint, error, children }: FieldProps) {
+/** 라벨(위, 오른쪽에 덧붙일 것) · 입력칸 · 도움말 또는 오류(아래). 결정 041 시안의 모양이다. */
+export function Field({ label, labelRight, hint, error, children }: FieldProps) {
   return (
     <View style={styles.field}>
-      <Txt variant="table">{label}</Txt>
+      <View style={styles.labelRow}>
+        <Txt variant="captionStrong" color="gray">
+          {label}
+        </Txt>
+        {labelRight}
+      </View>
       {typeof children === 'string' ? (
         <View style={styles.box}>
-          <Txt variant="body">{children}</Txt>
+          <Txt variant="input" style={styles.value}>
+            {children}
+          </Txt>
         </View>
       ) : (
         children
       )}
       {error ? (
-        <Txt variant="label" color="danger">
+        <Txt variant="caption" color="danger">
           {error}
         </Txt>
       ) : hint ? (
-        <Txt variant="label" color="hint">
+        <Txt variant="caption" color="hint">
           {hint}
         </Txt>
       ) : null}
@@ -51,24 +60,30 @@ export function Field({ label, hint, error, children }: FieldProps) {
 }
 
 /**
- * 치는 입력칸. 회색으로 채운 높이 56 칸이고, 포커스면 주색 테두리, 틀렸으면 오류 테두리.
- * `multiline` 이면 여러 줄 높이의 칸이 되고 글은 위에서부터 적힌다.
+ * 치는 입력칸. 떠 있는 면(raised) 에 옅은 테두리의 높이 52 칸이고, 포커스면 주색 테두리, 틀렸으면 오류 테두리(결정 041 시안).
+ * 값은 medium, 자리 글자는 regular 다. `multiline` 이면 여러 줄 높이의 칸이 되고 글은 위에서부터 적힌다.
+ * `trailing` 은 칸 안 오른쪽에 둔다(닉네임의 글자 수).
  */
 export function FieldInput({
   invalid = false,
   multiline = false,
+  trailing,
+  boxTestID,
   style,
   onFocus,
   onBlur,
   ...rest
-}: TextInputProps & { invalid?: boolean }) {
+}: TextInputProps & { invalid?: boolean; trailing?: ReactNode; boxTestID?: string }) {
   const [focused, setFocused] = useState(false);
+  const empty = !rest.value;
   return (
-    <View style={[styles.box, multiline && styles.area, focused && styles.focused, invalid && styles.invalid]}>
+    <View
+      testID={boxTestID}
+      style={[styles.box, trailing ? styles.withTrailing : null, multiline && styles.area, focused && styles.focused, invalid && styles.invalid]}>
       <TextInput
         multiline={multiline}
         placeholderTextColor={Colors.hint}
-        style={[styles.input, multiline && styles.areaInput, style]}
+        style={[styles.input, empty && styles.placeholder, trailing ? styles.inputFlex : null, multiline && styles.areaInput, style]}
         onFocus={(e) => {
           setFocused(true);
           onFocus?.(e);
@@ -79,6 +94,7 @@ export function FieldInput({
         }}
         {...rest}
       />
+      {trailing}
     </View>
   );
 }
@@ -127,16 +143,16 @@ export function FieldSelect({
       accessibilityState={{ disabled, expanded: open }}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.box, styles.select, open && styles.focused, invalid && styles.invalid]}
+      style={[styles.box, styles.select, disabled && styles.off, open && styles.focused, invalid && styles.invalid]}
     >
-      <Txt variant="body" color={disabled ? 'muted' : value ? 'ink' : 'hint'} style={value ? styles.value : undefined}>
+      <Txt variant="input" color={disabled ? 'muted' : value ? 'ink' : 'hint'} style={value ? styles.value : undefined}>
         {value ?? placeholder}
       </Txt>
       <Animated.View style={{ transform: [{ rotate }] }}>
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
           <Path
             d="M6 9l6 6 6-6"
-            stroke={disabled ? Colors.muted : Colors.hint}
+            stroke={Colors.hint}
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -152,20 +168,26 @@ const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as Tex
 
 const styles = StyleSheet.create({
   field: { gap: Spacing.xs },
+  labelRow: { minHeight: Sizes.fieldLabelRow, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   box: {
     height: Sizes.inputHeight,
     justifyContent: 'center',
     paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.fill,
+    backgroundColor: Colors.raised,
     borderRadius: Radius,
     borderWidth: LineWidth,
-    borderColor: 'transparent',
+    borderColor: Colors.hair,
   },
+  withTrailing: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   area: { height: Sizes.textArea, paddingVertical: Spacing.md },
   areaInput: { flex: 1, textAlignVertical: 'top' },
   focused: { borderColor: Colors.primary },
   invalid: { borderColor: Colors.danger },
+  /** 고를 수 없게 흐려진 칸(시각 "모름") */
+  off: { backgroundColor: Colors.fieldOff, borderColor: Colors.fill },
   select: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  input: { ...Typography.body, fontWeight: FontWeight.medium, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  input: { ...Typography.input, fontWeight: FontWeight.medium, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  placeholder: { fontWeight: FontWeight.regular },
+  inputFlex: { flex: 1 },
   value: { fontWeight: FontWeight.medium },
 });

@@ -30,6 +30,12 @@ export const Colors = {
   hair: '#2A2B33',
   /** 입력칸·보조 버튼·카드의 바탕 */
   fill: '#1C1D24',
+  /** 시트 위의 칸(검색 칸 · 칩 · 드럼롤의 가운데 띠)과 시트 안 목록의 구분선(결정 041 시안) */
+  sheetFill: '#1F2027',
+  /** 시트의 손잡이 줄 · 검색 지우기 단추 */
+  handle: '#3A3B42',
+  /** 고를 수 없게 흐려진 입력칸(시각 "모름")의 바탕 */
+  fieldOff: '#121318',
   /** 주색(푸른 보라) 하나. 주 버튼, 고른 것, 포커스 테두리, "지금". 대비 3.6, 그 위 ink 4.8 */
   primary: '#4752FF',
   /** 주색 계열의 글씨: 약관의 [필수], 검색에서 맞은 글자(결정 041 시안). 주색은 바탕 위 글씨로 쓰기엔 어둡다 */
@@ -62,8 +68,9 @@ export const BrandColors = {
   /** 유리 구슬 속 */
   glassDeep: '#1C2A6B',
   glassNight: '#101642',
-  /** 별이의 눈 */
+  /** 별이의 눈과 눈의 빛점 */
   eye: '#161A3E',
+  eyeShine: '#FFFFFF',
   /** 쉬는 중 · 머쓱한 별이의 몸과 빛무리 */
   rest: '#DCE2F5',
   dim: '#7A8098',
@@ -118,8 +125,23 @@ export const StepLayout = {
   keyboardGap: 12,
 } as const;
 
-/** 시트 뒤를 가리는 막. 검정 60%(어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
-export const DimColor = 'rgba(0,0,0,0.6)';
+/**
+ * 프로필 8종의 색(결정 041, 원본 `assets/brand/avatar-1~8.svg` — 한쪽을 바꾸면 다른 쪽도 바꾼다). 브랜드 그림이라 프로필 그림에만 쓴다.
+ * 바탕 원은 위(top) → 아래(bottom), 빛무리와 모양의 번짐은 glow 한 색이다.
+ */
+export const AvatarColors = {
+  1: { top: '#262B78', bottom: '#101642', glow: '#5B66FF' },
+  2: { top: '#3A2C7A', bottom: '#16123F', glow: '#C9B8FF' },
+  3: { top: '#0E4456', bottom: '#08202C', glow: '#00C8E2' },
+  4: { top: '#1C2350', bottom: '#0B0F28', glow: '#9AA3FF' },
+  5: { top: '#18305A', bottom: '#0A1630', glow: '#9AE8FF' },
+  6: { top: '#3B2366', bottom: '#170F33', glow: '#C9B8FF' },
+  7: { top: '#202A86', bottom: '#0E1240', glow: '#4F5BFF' },
+  8: { top: '#141A44', bottom: '#07091C', glow: '#00C8E2' },
+} as const;
+
+/** 시트 뒤를 가리는 막. 밤색 66%(결정 041 시안. 어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
+export const DimColor = 'rgba(4,5,8,0.66)';
 
 /** 글꼴은 Pretendard 하나(src/app/_layout.tsx 에서 적재). */
 export const FontFamily = 'Pretendard';
@@ -152,10 +174,16 @@ export const Typography = {
   hero: type(26, 36, FontWeight.semibold),
   /** 화면 제목, 구간 제목 */
   title: type(24, 34, FontWeight.semibold),
-  /** 시트 제목, 문단 제목 */
+  /** 별명 짓는 중의 제목(결정 041 시안) */
+  headline: type(22, 32, FontWeight.semibold),
+  /** 하단 시트의 가운데 제목(결정 041 시안) */
+  sheetTitle: type(20, 28, FontWeight.semibold),
+  /** 시트 제목(옛 시트), 문단 제목 */
   heading: type(18, 26, FontWeight.semibold),
   /** 버튼 글씨 */
   button: type(16, 24, FontWeight.semibold),
+  /** 입력칸의 값 · 자리 글자, 시트 목록의 한 줄(결정 041 시안). 값은 medium 으로 굵힌다 */
+  input: type(16, 24, FontWeight.regular),
   /** 본문, 입력칸의 값. 긴 글을 어두운 바탕에서 읽으니 줄 간격 1.6 */
   body: type(15, 24, FontWeight.regular),
   /** 큰 제목 아래 안내 한두 줄(소개 · 가입 단계 · 로그인 한 줄) */
@@ -213,7 +241,9 @@ export const LineWidth = 1;
 /** 부품 크기 */
 export const Sizes = {
   buttonHeight: 56,
-  inputHeight: 56,
+  /** 입력칸 높이(결정 041 시안 52) · 라벨 줄의 최소 높이(오른쪽에 체크가 붙어도 줄 높이가 같게) */
+  inputHeight: 52,
+  fieldLabelRow: 20,
   /** 여러 줄을 적는 입력칸(문의 내용)의 높이 */
   textArea: 160,
   navHeight: 48,
@@ -251,13 +281,21 @@ export const Sizes = {
   /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
   shareCardWidth: 220,
   sharePageCardWidth: 280,
-  /** 시트 위의 손잡이 줄 */
-  handleWidth: 50,
+  /** 시트 위의 손잡이 줄(결정 041 시안) */
+  handleWidth: 40,
   handleHeight: 4,
   /** 드럼롤 선택: 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 */
   pickerRow: 36,
   pickerRows: 5,
   pickerWidth: 72,
+  /** 프로필 그림(결정 041 시안): 닉네임 단계 위 가운데 · 고르기 시트 · 연필 표시 · 고른 표시 */
+  avatarLarge: 88,
+  avatarPick: 64,
+  avatarEdit: 28,
+  avatarEditIcon: 14,
+  avatarCheck: 22,
+  avatarCheckIcon: 12,
+  avatarRing: 3,
   /** 브랜드 그림: 홈 머리의 로고 높이 · 별이(화면 가운데 · 카드 안) · 홈 아이콘 카드 */
   brandMarkHeight: 20,
   byeoli: 160,

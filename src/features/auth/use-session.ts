@@ -15,6 +15,7 @@ const store = createSessionStore({
   createDevSession: () => api.createDevSession(),
   login: (credential) => api.login(credential),
   signup: (signupToken, birth) => api.signup(signupToken, birth),
+  checkNickname: (signupToken, nickname) => api.checkNickname(signupToken, nickname),
   getSession: () => api.getSession(),
   logout: () => api.logout(),
   loadToken,
@@ -55,6 +56,7 @@ export function useAuth() {
     signIn: store.signIn,
     completeSignup: store.completeSignup,
     cancelSignup: store.cancelSignup,
+    checkNickname: store.checkNickname,
     devSessionEnabled: store.devSessionEnabled(),
     devSignIn: store.devSignIn,
   };

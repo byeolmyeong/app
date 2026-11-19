@@ -83,6 +83,9 @@ export type LoginResult = { status: 'SIGNED_IN'; token: string | null } | { stat
 /** 가입 결과. 웹은 token 이 null 이다 */
 export type SignupResult = { token: string | null };
 
+/** `POST /auth/nickname-check` 의 응답. 영문 대소문자는 같은 이름으로 본다(결정 041) */
+export type NicknameAvailability = { available: boolean };
+
 export type Reading = {
   headline: string;
   sections: { title: string; body: string; basis: string[] }[];
@@ -698,6 +701,8 @@ const isLoginBody =
     ((v.status === 'SIGNED_IN' && (isNonEmptyString(v.token) || (cookie && v.token === undefined))) ||
       (v.status === 'SIGNUP_REQUIRED' && isNonEmptyString(v.signupToken)));
 
+const isNicknameAvailability = (v: unknown): v is NicknameAvailability => isObject(v) && typeof v.available === 'boolean';
+
 /** 본문이 없는 성공(204) */
 const isEmpty = (v: unknown): v is null => v === null;
 
@@ -894,6 +899,19 @@ export function createApi(config: ApiConfig) {
         auth: false,
       });
       return r.ok ? { ok: true, data: { token: cookie ? null : (r.data.token ?? null) } } : r;
+    },
+
+    /**
+     * `POST /auth/nickname-check` 가입권으로 닉네임을 쓸 수 있는지 묻는다(결정 041). 가입 단계의 "다음" 에서 한 번만 부른다.
+     * 규칙에 어긋나면 400 `INVALID_NICKNAME`, 가입권이 없거나 만료면 401 `SIGNUP_EXPIRED` 가 code 로 온다. 세션 헤더는 붙이지 않는다.
+     */
+    async checkNickname(signupToken: string, nickname: string): Promise<ApiResult<NicknameAvailability>> {
+      if (config.useFixtures) return { ok: true, data: { available: true } };
+      return request('POST', '/auth/nickname-check', {
+        body: { signupToken, nickname },
+        validate: isNicknameAvailability,
+        auth: false,
+      });
     },
 
     /** `GET /auth/session` 세션이 살아 있는지(204). 웹이 켜질 때 쿠키 세션을 확인한다 */

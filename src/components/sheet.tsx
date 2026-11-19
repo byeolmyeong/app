@@ -20,6 +20,8 @@ export type SheetProps = {
   onClose: () => void;
   /** 시트 맨 위 가운데의 제목 */
   title?: string;
+  /** 제목과 내용 사이 · 내용끼리의 간격. 기본은 24 */
+  gap?: number;
   children: ReactNode;
 };
 
@@ -39,7 +41,7 @@ const noCaret = (Platform.OS === 'web' ? { caretColor: 'transparent', outlineWid
  * 뒤의 막은 제자리에서 서서히 어두워지고 시트만 올라온다. 위쪽을 잡고 아래로 끌어내리면 닫힌다.
  * 넓은 웹 화면에서도 앱 화면 폭 안에서만 어두워지고 올라온다.
  */
-export function Sheet({ visible, onClose, title, children }: SheetProps) {
+export function Sheet({ visible, onClose, title, gap, children }: SheetProps) {
   /** 닫히는 움직임이 끝나 화면에서 치웠는가 */
   const [hidden, setHidden] = useState(!visible);
   if (visible && hidden) setHidden(false);
@@ -94,10 +96,10 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             {/* 키보드 포커스를 받지 않는다. 받으면 웹에서 화면 전체에 포커스 테두리가 그려진다 */}
             <Pressable testID="sheet-dim" focusable={false} tabIndex={-1} style={styles.dimPress} onPress={onClose} />
           </Animated.View>
-          <Animated.View testID="sheet-panel" style={[styles.sheet, { transform: [{ translateY }] }]}>
+          <Animated.View testID="sheet-panel" style={[styles.sheet, gap !== undefined && { gap }, { transform: [{ translateY }] }]}>
             {title ? (
               <View style={styles.head}>
-                <Txt variant="heading" style={styles.title}>
+                <Txt variant="sheetTitle" style={styles.title}>
                   {title}
                 </Txt>
               </View>
@@ -125,7 +127,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: SheetRadius,
     paddingHorizontal: ScreenPaddingX,
     paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Sizes.stepBottom,
     gap: Spacing.lg,
   },
   /** 시트 맨 위의, 잡고 끌 수 있는 영역 */
@@ -143,7 +145,7 @@ const styles = StyleSheet.create({
     width: Sizes.handleWidth,
     height: Sizes.handleHeight,
     borderRadius: Sizes.handleHeight,
-    backgroundColor: Colors.muted,
+    backgroundColor: Colors.handle,
   },
   head: { justifyContent: 'center' },
   title: { textAlign: 'center' },

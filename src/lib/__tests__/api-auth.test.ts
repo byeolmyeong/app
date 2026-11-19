@@ -68,6 +68,22 @@ describe('api: 앱은 토큰을 본문으로 받고 헤더로 보낸다', () => 
     });
   });
 
+  it('POST /auth/nickname-check 는 세션 헤더 없이 가입권과 닉네임만 보내고 쓸 수 있는지 받는다(결정 041)', async () => {
+    const fetchFn = fakeFetch(200, { available: false });
+    expect(await app(fetchFn, 'old').checkNickname('ticket', '새벽별')).toEqual({ ok: true, data: { available: false } });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/auth/nickname-check`);
+    expect(initOf(fetchFn).method).toBe('POST');
+    expect(bodyOf(fetchFn)).toEqual({ signupToken: 'ticket', nickname: '새벽별' });
+    expect(headersOf(fetchFn)).not.toHaveProperty('Authorization');
+    expect(await app(fakeFetch(200, { available: 'yes' })).checkNickname('ticket', '새벽별')).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    expect(await app(fakeFetch(400, { error: 'INVALID_NICKNAME' })).checkNickname('ticket', '별!')).toEqual({
+      ok: false,
+      error: 'SERVER',
+      status: 400,
+      code: 'INVALID_NICKNAME',
+    });
+  });
+
   it('POST /auth/signup 은 가입권과 출생 정보를 보내고 201 의 세션 토큰을 받는다', async () => {
     const fetchFn = fakeFetch(201, { token: 'session-2' });
     expect(await app(fetchFn).signup('ticket', birth)).toEqual({ ok: true, data: { token: 'session-2' } });

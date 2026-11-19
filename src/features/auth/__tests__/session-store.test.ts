@@ -15,6 +15,7 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
     createDevSession: jest.fn(async () => ok({ token: 'dev-token' as string | null })),
     login: jest.fn(async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNED_IN' as const, token: 'session-token' })),
     signup: jest.fn(async () => ok({ token: 'new-session' as string | null })),
+    checkNickname: jest.fn(async () => ok({ available: true })),
     getSession: jest.fn(async (): Promise<ApiResult<null>> => ok(null)),
     logout: jest.fn(async (): Promise<ApiResult<null>> => ok(null)),
     loadToken: jest.fn(async () => kept),
@@ -171,6 +172,23 @@ describe('로그인 · 가입 · 로그아웃', () => {
     expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null, lastError: null });
     expect(await store.completeSignup(birth)).toMatchObject({ ok: false, code: 'SIGNUP_EXPIRED' });
     expect(deps.signup).not.toHaveBeenCalled();
+  });
+
+  it('닉네임 확인은 메모리의 가입권으로 묻는다. 가입권이 없거나 만료면 로그인 전으로(결정 041)', async () => {
+    const checkNickname = jest
+      .fn()
+      .mockResolvedValueOnce(ok({ available: false }))
+      .mockResolvedValueOnce(fail('LOGIN_REQUIRED', 401, 'SIGNUP_EXPIRED'));
+    const { store } = setup({ login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })), checkNickname });
+    await store.start();
+    expect(await store.checkNickname('새벽별')).toMatchObject({ ok: false, code: 'SIGNUP_EXPIRED' });
+    expect(checkNickname).not.toHaveBeenCalled();
+    await store.signIn(google);
+    expect(await store.checkNickname('새벽별')).toEqual({ ok: true, data: { available: false } });
+    expect(checkNickname).toHaveBeenCalledWith('ticket', '새벽별');
+    expect(store.getSnapshot()).toMatchObject({ status: 'signingUp' });
+    await store.checkNickname('새벽별');
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', lastError: 'SIGNUP_EXPIRED' });
   });
 
   it('가입권이 만료됐으면 로그인 전으로 돌아간다', async () => {

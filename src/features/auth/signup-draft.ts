@@ -2,6 +2,7 @@
  * 단계식 가입의 초안(결정 041): 약관 동의 → 닉네임 · 프로필 → 출생 정보의 앞 단계 값. 마지막 "내 별명 읽기" 에서 `POST /auth/signup` 한 번으로 보낸다.
  * **메모리에만** 둔다 — 기기 저장소 · 로그 · 분석에 두지 않는다(닉네임은 개인정보). 앱을 껐다 켜면 비어 있고, 가입을 그만두거나 마치면 지운다.
  */
+import type { AvatarId } from '@/components/avatar';
 
 export type SignupDraft = {
   termsVersion: string;
@@ -9,6 +10,8 @@ export type SignupDraft = {
   pushConsent: boolean;
   marketingConsent: boolean;
   nickname?: string;
+  /** 닉네임 단계에서 고른 프로필 그림(처음엔 무작위) */
+  avatar?: AvatarId;
 };
 
 let draft: Partial<SignupDraft> = {};

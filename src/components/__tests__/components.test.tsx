@@ -30,6 +30,9 @@ describe('테마', () => {
       muted: '#4D4F5A',
       hair: '#2A2B33',
       fill: '#1C1D24',
+      sheetFill: '#1F2027',
+      handle: '#3A3B42',
+      fieldOff: '#121318',
       primary: '#4752FF',
       accentText: '#9AA3FF',
       primarySoft: '#1D2050',
@@ -55,7 +58,7 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'heading', 'button', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'mono', 'number', 'picker',
+      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'mono', 'number', 'picker',
     ]);
     // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 041 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
@@ -75,7 +78,7 @@ describe('테마', () => {
     expect(Object.values(Spacing).slice(0, 7)).toEqual([4, 8, 12, 16, 24, 32, 48]);
     expect(Radius).toBe(12);
     expect(SheetRadius).toBe(24);
-    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 56, maxContentWidth: 480 });
+    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 52, maxContentWidth: 480 });
   });
 });
 
@@ -202,7 +205,7 @@ describe('Sheet', () => {
       </Sheet>,
     );
     expect(StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).backgroundColor).toBe(Colors.raised);
-    expect(StyleSheet.flatten(screen.getByTestId('sheet-handle').props.style).backgroundColor).toBe(Colors.muted);
+    expect(StyleSheet.flatten(screen.getByTestId('sheet-handle').props.style).backgroundColor).toBe(Colors.handle);
   });
 });
 
@@ -291,7 +294,7 @@ describe('FieldInput: 여러 줄', () => {
     expect(StyleSheet.flatten(input.props.style)).toMatchObject({ textAlignVertical: 'top' });
   });
 
-  it('한 줄 칸의 높이는 그대로 56 이다', async () => {
+  it('한 줄 칸의 높이는 입력칸 높이(52, 결정 041 시안)다', async () => {
     await render(<FieldInput placeholder="짧게" />);
     expect(StyleSheet.flatten(screen.getByPlaceholderText('짧게').parent?.props.style)).toMatchObject({
       height: Sizes.inputHeight,

@@ -3,7 +3,15 @@
  * 앱(iOS·Android)은 세션 토큰을 기기 보안 저장소에 두고 api 에 건네고, 웹은 서버의 쿠키가 들고 있어 토큰을 만지지 않는다.
  * 로그인 여부 · 만 14세 판정은 서버 응답만 따른다(golden rules). 토큰과 가입권은 로그에 남기지 않는다.
  */
-import type { ApiResult, BirthInput, DevSession, LoginResult, ProviderCredential, SignupResult } from '@/lib/api';
+import type {
+  ApiResult,
+  BirthInput,
+  DevSession,
+  LoginResult,
+  NicknameAvailability,
+  ProviderCredential,
+  SignupResult,
+} from '@/lib/api';
 
 /** checking 시작할 때 확인 중 · signedOut 로그인 전 · signingUp 처음 온 사람이 가입 단계(약관 · 닉네임 · 출생 정보)를 밟는 중 · signedIn 로그인 상태 */
 export type SessionStatus = 'checking' | 'signedOut' | 'signingUp' | 'signedIn';
@@ -26,6 +34,7 @@ export type SessionStoreDeps = {
   createDevSession: () => Promise<ApiResult<DevSession>>;
   login: (credential: ProviderCredential) => Promise<ApiResult<LoginResult>>;
   signup: (signupToken: string, birth: BirthInput) => Promise<ApiResult<SignupResult>>;
+  checkNickname: (signupToken: string, nickname: string) => Promise<ApiResult<NicknameAvailability>>;
   getSession: () => Promise<ApiResult<null>>;
   logout: () => Promise<ApiResult<null>>;
   loadToken: () => Promise<string | null>;
@@ -145,6 +154,17 @@ export function createSessionStore(deps: SessionStoreDeps) {
       }
       if (r.code === 'UNDER_AGE' || r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
       else set('signingUp', null, reasonOf(r));
+      return r;
+    },
+
+    /**
+     * 가입 중인 사람의 닉네임을 쓸 수 있는지 서버에 묻는다(결정 041). 가입권은 메모리의 것을 쓴다.
+     * 가입권이 없거나 만료(`SIGNUP_EXPIRED`)면 로그인 전으로 돌아간다. 결과를 그대로 돌려준다.
+     */
+    async checkNickname(nickname: string): Promise<ApiResult<NicknameAvailability>> {
+      if (!signupToken) return { ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' };
+      const r = await deps.checkNickname(signupToken, nickname);
+      if (!r.ok && r.code === 'SIGNUP_EXPIRED') await signedOut(reasonOf(r));
       return r;
     },
 

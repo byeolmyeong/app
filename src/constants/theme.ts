@@ -47,6 +47,8 @@ export type ColorName = keyof typeof Colors;
 export const BrandColors = {
   /** 빛: Figma 원본의 불꽃 · 별 · 하트가 빛나는 색 */
   glow: '#3843F4',
+  /** 빛무리의 가운데 · 별이의 번짐 */
+  haloCenter: '#5B66FF',
   glowMid: '#4F5BFF',
   glowSoft: '#9AA3FF',
   /** 빛의 심. 별이의 몸 */
@@ -163,8 +165,6 @@ export const Sizes = {
   wheel: 300,
   /** 웹 넓은 화면에서 가운데에 보이는 앱 화면의 폭. 휴대폰보다 넓게 두어 모니터에서도 시원하게 보인다(2026-11-18 소유자) */
   maxContentWidth: 480,
-  /** 홈 카테고리 타일의 아이콘 */
-  categoryIcon: 40,
   /** 아래 탭 줄의 높이 · 탭 아이콘 */
   tabBarHeight: 60,
   tabIcon: 24,

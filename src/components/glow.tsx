@@ -59,7 +59,7 @@ export function GlowDefs({ ids }: { ids: SvgIds }) {
   return (
     <Defs>
       <RadialGradient id={ids.halo}>
-        <Stop offset="0" stopColor={BrandColors.glowMid} stopOpacity={0.55} />
+        <Stop offset="0" stopColor={BrandColors.haloCenter} stopOpacity={0.55} />
         <Stop offset="0.45" stopColor={BrandColors.glow} stopOpacity={0.18} />
         <Stop offset="1" stopColor={BrandColors.glow} stopOpacity={0} />
       </RadialGradient>
@@ -83,7 +83,7 @@ export function GlowDefs({ ids }: { ids: SvgIds }) {
   );
 }
 
-/** 빛나는 모양 하나: 빛무리 → 푸른 번짐 → 옅은 보라 → 흰 심 */
+/** 빛나는 모양 하나: 빛무리 → 푸른 번짐 → 옅은 보라 → 흰 심. 흰 심은 흐림 없이 그려 흐림이 빠지는 기기에서도 모양이 남는다 */
 export function GlowLayers({ d, ids, halo = 46, dim = false }: { d: string; ids: SvgIds; halo?: number; dim?: boolean }) {
   if (dim)
     return (
@@ -99,7 +99,7 @@ export function GlowLayers({ d, ids, halo = 46, dim = false }: { d: string; ids:
       <Path d={d} fill={BrandColors.glow} opacity={0.9} filter={`url(#${ids.blurXL})`} />
       <Path d={d} fill={BrandColors.glowMid} filter={`url(#${ids.blurL})`} />
       <Path d={d} fill={BrandColors.glowSoft} filter={`url(#${ids.blurM})`} />
-      <Path d={d} fill={BrandColors.core} transform="scale(0.86)" filter={`url(#${ids.blurS})`} />
+      <Path d={d} fill={BrandColors.core} transform="scale(0.86)" />
     </G>
   );
 }

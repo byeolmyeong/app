@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
@@ -306,34 +306,52 @@ describe('브랜드 그림(결정 035)', () => {
     expect(StyleSheet.flatten(mark.props.style).width).toBeGreaterThan(30);
   });
 
-  it.each(['default', 'think', 'empty', 'error'] as const)('별이 "%s" 는 그 표정을 그린다', async (state) => {
+  it.each(['think', 'empty', 'error'] as const)('별이 "%s" 는 그 표정을 그린다', async (state) => {
     await render(<Byeoli state={state} size={120} />);
     // 별이는 화면 읽기에서 숨긴 장식이라 숨긴 것까지 찾는다
     const hidden = { includeHiddenElements: true };
     expect(screen.getByTestId(`byeoli-face-${state}`, hidden)).toBeTruthy();
-    for (const other of ['default', 'think', 'empty', 'error'].filter((s) => s !== state))
+    for (const other of ['think', 'empty', 'error'].filter((s) => s !== state))
       expect(screen.queryByTestId(`byeoli-face-${other}`, hidden)).toBeNull();
   });
 
   it('별이는 장식이라 화면 읽기에서 숨는다(상태는 옆의 제목 글이 말한다)', async () => {
-    await render(<Byeoli state="default" size={120} />);
+    await render(<Byeoli state="empty" size={120} />);
     const byeoli = screen.getByTestId('byeoli', { includeHiddenElements: true });
     expect(byeoli.props['aria-hidden']).toBe(true);
     expect(byeoli.props.importantForAccessibility).toBe('no-hide-descendants');
   });
 
-  it('동작 줄이기가 꺼져 있으면 생각 중 별이가 돌고, 켜져 있으면 움직이지 않는다', async () => {
+  it('동작 줄이기가 꺼져 있으면 생각 중 별이가 돌고, 화면에서 사라지면 멈춘다', async () => {
     const loop = jest.spyOn(Animated, 'loop');
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
-    const moving = await render(<Byeoli state="think" size={120} />);
-    await waitFor(() => expect(loop).toHaveBeenCalled());
-    await moving.unmount();
+    const view = await render(<Byeoli state="think" size={120} />);
+    await waitFor(() => expect(loop).toHaveBeenCalledTimes(1));
+    const stop = jest.spyOn(loop.mock.results[0].value, 'stop');
+    await view.unmount();
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
 
-    loop.mockClear();
+  it('동작 줄이기가 켜져 있으면 처음부터 움직이지 않고, 도는 중에 켜면 멈춘다', async () => {
+    const loop = jest.spyOn(Animated, 'loop');
+    let changed: (on: boolean) => void = () => {};
+    jest.spyOn(AccessibilityInfo, 'addEventListener').mockImplementation(((_event: string, handler: (on: boolean) => void) => {
+      changed = handler;
+      return { remove: jest.fn() };
+    }) as never);
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
-    await render(<Byeoli state="think" size={120} />);
+    const still = await render(<Byeoli state="think" size={120} />);
     await waitFor(() => expect(AccessibilityInfo.isReduceMotionEnabled).toHaveBeenCalled());
+    await act(async () => {});
     expect(loop).not.toHaveBeenCalled();
+    await still.unmount();
+
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    await render(<Byeoli state="think" size={120} />);
+    await waitFor(() => expect(loop).toHaveBeenCalledTimes(1));
+    const stop = jest.spyOn(loop.mock.results[0].value, 'stop');
+    await act(async () => changed(true));
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 
   it.each(['star', 'flame', 'heart', 'moon'] as const)('빛나는 모양 "%s" 를 그린다', async (shape) => {

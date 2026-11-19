@@ -29,6 +29,12 @@ const REDUCE_QUERY = '(prefers-reduced-motion: reduce)';
 /** 웹의 브라우저 설정. 서버에서 그릴 때와 matchMedia 가 없을 때는 null */
 const webQuery = () => (Platform.OS === 'web' && typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(REDUCE_QUERY) : null);
 
+/** 지금 기기의 "동작 줄이기" 가 켜져 있는가(한 번 묻는다 — 가입 진행 막대처럼 한 번 움직일 때). 알 수 없으면 켜진 것으로 본다 */
+export async function reduceMotionNow(): Promise<boolean> {
+  if (Platform.OS === 'web') return webQuery()?.matches ?? true;
+  return AccessibilityInfo.isReduceMotionEnabled().catch(() => true);
+}
+
 /** 기기의 "동작 줄이기"(별이 · 별명 짓는 중이 함께 쓴다, 결정 035 · 041). 알기 전까지는 켜진 것으로 본다 */
 export function useReduceMotion() {
   const [reduce, setReduce] = useState(() => webQuery()?.matches ?? true);

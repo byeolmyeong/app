@@ -123,6 +123,8 @@ export const StepLayout = {
   backInset: -10,
   /** 키보드가 올라왔을 때 다음 버튼과 키보드 사이 */
   keyboardGap: 12,
+  /** 단계가 바뀔 때 진행 막대의 칸이 차오르거나 줄어드는 시간(소유자 2026-11-19) */
+  progressMs: 300,
 } as const;
 
 /**

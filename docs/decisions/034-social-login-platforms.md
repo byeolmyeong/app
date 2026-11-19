@@ -3,7 +3,7 @@ type: decision
 tags: [로그인, 소셜 로그인, 구글 로그인, 애플 로그인, 카카오 로그인, 웹 쿠키, 가입, 만 14세]
 status: active
 last_reviewed: 2026-11-18
-superseded_by:
+superseded_by: 041-stepped-onboarding.md (3 의 가입 흐름과 7 의 "소개 · 약관 동의 화면은 넣지 않는다" 는 041 이 대체. 나머지는 유효)
 ---
 # 034. 소셜 로그인은 플랫폼마다 공급자의 공식 방법으로 받고, 웹 세션은 서버의 httpOnly 쿠키에 맡긴다
 

@@ -58,7 +58,7 @@ last_reviewed: 2026-11-19
 
 ## 태스크
 
-### 1. adr-stepped-signup · 상태: 대기
+### 1. adr-stepped-signup · 상태: 완료
 - 읽을 것: `docs/decisions/039-*`(다른 세션 브랜치 `origin/feat/social-email-nickname`), 034, 033, 이 계획의 "인터뷰 결과"
 - 할 것: `docs/decisions/<다음 번호>-stepped-onboarding.md`. 번호는 모든 원격 브랜치를 훑어 비어 있는 것(지금 039 사용, 040 은 다른 세션이 쓸 예정 → 041 부터 확인). 내용: 단계식 흐름, 약관 항목, 로그인 버튼 규칙(애플 16px 예외 포함), 소개는 처음 한 번. 039 앞머리에 "가입 한 화면은 <번호> 가 대체" 한 줄.
 - 주는 것: 결정 번호(뒤 태스크 주석의 근거)
@@ -156,3 +156,4 @@ last_reviewed: 2026-11-19
 
 ## 실행 기록
 - 2026-11-19 승인. 브랜치를 `feat/onboarding-design` 으로 바꾸고 develop `03a8bb3` 위로 옮김. 결정 039 와 이메일 범위 요청(그 계획 태스크 3)을 쓰려고 `origin/feat/social-email-nickname` 을 합침(`846bf4e`). 서버 짝: 서버 저장소 `feat/signup-terms-push-avatar`.
+- 태스크 1(결정 041): 전 — 039 "가입 한 화면" · 034 "소개 · 약관 화면 없음" · 020 "시각 모름이면 곳 칸 없음" → 후 — `docs/decisions/041-stepped-onboarding.md`(단계식 가입 · 약관 넷 · 닉네임 2~10자 중복 불가 · 프로필 8종 · 로그인 버튼 16px(애플 예외) · 소개 처음 한 번 · 곳 시트 · 별명 짓는 중), 039 · 034 · 020 앞머리 `superseded_by` 한 줄. 확인: `git fetch --all` 뒤 모든 원격 브랜치에 041 0건(040 은 origin/feat/analytics), `ls docs/decisions | sort | uniq -d` 0줄, 번호 앞 세 자리 중복 0줄. 커밋: (이 커밋)

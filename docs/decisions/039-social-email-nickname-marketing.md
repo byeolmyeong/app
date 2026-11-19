@@ -3,7 +3,7 @@ type: decision
 tags: [로그인, 소셜 로그인, 이메일, 닉네임, 마케팅 수신 동의, 가입, 개인정보]
 status: active
 last_reviewed: 2026-11-19
-superseded_by:
+superseded_by: 041-stepped-onboarding.md (가입 한 화면 · 닉네임 1~20자 · 중복 허용은 041 이 대체 — 단계식 가입 · 닉네임 2~10자 · 중복 불가. 나머지는 유효)
 ---
 # 039. 소셜 로그인에서는 이메일만 필수로 받고, 가입 화면에서 닉네임과 마케팅 수신 동의(선택)를 받는다
 

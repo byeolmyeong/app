@@ -14,7 +14,7 @@ last_reviewed: 2026-11-18
 ## 사용자 결정
 - 타겟: 핵심 20대 초반~30대 초반 + 확산 10대 후반(만 14세 이상). docs/product.md
 - 언어·출생지: 한국어, 국내 출생지만. 영어와 해외 출생지는 1.2.0.
-- 출시 채널: 웹과 스토어 앱(iOS·Android) 동시.
+- 출시 채널: 웹과 스토어 앱(iOS·Android) 동시. 웹 앱은 app.byeolmyeong.com(스테이징 app.staging.byeolmyeong.com, 결정 037).
 - 가입: 스플래시 직후 필수, 구글·애플·카카오, 만 14세 이상만. 결정: docs/decisions/009-signup-first-kakao-age14.md
 - 해석의 용어: 본문은 쉬운 말, 문단 머리에 근거가 된 차트 요소를 항상 표시한다.
 - 리포트: 심층 리포트(성격·관계·일·감정·시기)와 궁합 리포트. 횟수 제한 없이 무료이고 앞으로도 무료다. 결정: docs/decisions/011-no-usage-limits-in-1.0.0.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md

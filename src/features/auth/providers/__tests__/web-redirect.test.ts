@@ -2,14 +2,14 @@ import { appleWebAvailable, kakaoAuthorizeUrl, readKakaoReturn } from '@/feature
 
 // 웹 로그인의 주소 만들기 · 돌아온 값 읽기(결정 034)
 describe('카카오 웹: 인가 주소', () => {
-  it('REST API 키 · 돌아올 주소 · 코드 응답 · openid · state 를 싣는다', () => {
+  it('REST API 키 · 돌아올 주소 · 코드 응답 · openid · 이메일(account_email) · state 를 싣는다(결정 039)', () => {
     const url = new URL(kakaoAuthorizeUrl('rest-key', 'https://byeolmyeong.com/auth/kakao', 'st-1'));
     expect(url.origin + url.pathname).toBe('https://kauth.kakao.com/oauth/authorize');
     expect(Object.fromEntries(url.searchParams)).toEqual({
       client_id: 'rest-key',
       redirect_uri: 'https://byeolmyeong.com/auth/kakao',
       response_type: 'code',
-      scope: 'openid',
+      scope: 'openid account_email',
       state: 'st-1',
     });
   });

@@ -1,6 +1,6 @@
 /**
  * iOS 의 애플 로그인: `expo-apple-authentication`(결정 034). 버튼은 애플의 공식 버튼이다(심사 지침 · HIG).
- * 이름 · 이메일은 묻지 않는다(계정에는 공급자 식별자만 둔다). authorization code 는 서버가 탈퇴 때 철회용으로 바꾼다.
+ * 이메일만 묻는다(이름은 묻지 않는다, 결정 039). 이메일은 서버가 ID 토큰에서 읽는다 — 앱이 따로 보내지 않는다. authorization code 는 서버가 탈퇴 때 철회용으로 바꾼다.
  * 이 기기에서 쓸 수 없으면 그리지 않는다. 사용자가 닫은 것(`ERR_REQUEST_CANCELED`)은 오류가 아니다.
  */
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -21,7 +21,7 @@ export function AppleLoginButton({ onCredential, onError, disabled }: LoginButto
 
   async function press() {
     try {
-      const credential = await AppleAuthentication.signInAsync({ requestedScopes: [] });
+      const credential = await AppleAuthentication.signInAsync({ requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL] });
       if (!credential.identityToken) return onError();
       onCredential({
         provider: 'APPLE',

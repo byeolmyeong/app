@@ -23,6 +23,7 @@ jest.mock('expo-apple-authentication', () => {
     AppleAuthenticationButton: (props: { onPress: () => void }) => <Pressable testID="apple-button" onPress={props.onPress} />,
     AppleAuthenticationButtonType: { CONTINUE: 1 },
     AppleAuthenticationButtonStyle: { BLACK: 2 },
+    AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
   };
 });
 
@@ -75,12 +76,12 @@ describe('구글(앱)', () => {
 });
 
 describe('애플(iOS)', () => {
-  it('이름 · 이메일을 묻지 않고 ID 토큰과 authorization code 를 넘긴다', async () => {
+  it('이메일만 묻고(이름은 묻지 않는다, 결정 039) ID 토큰과 authorization code 를 넘긴다', async () => {
     (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValue({ identityToken: 'a-id', authorizationCode: 'a-code' });
     await render(<AppleLoginButton {...props} />);
     await fireEvent.press(await screen.findByTestId('apple-button'));
     await waitFor(() => expect(onCredential).toHaveBeenCalledWith({ provider: 'APPLE', idToken: 'a-id', authorizationCode: 'a-code' }));
-    expect(AppleAuthentication.signInAsync).toHaveBeenCalledWith({ requestedScopes: [] });
+    expect(AppleAuthentication.signInAsync).toHaveBeenCalledWith({ requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL] });
   });
 
   it('취소는 조용히, 다른 오류는 실패를 알린다', async () => {

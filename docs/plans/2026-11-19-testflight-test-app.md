@@ -83,7 +83,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약: `docs/decisions/041-test-app-testflight-only.md`(커밋 5d2d936). 표에 `APP_VARIANT` 행을 더했고, 오늘 콘솔 작업의 사실(테스트 카카오 앱 "별명 개발", 애플 그룹 묶기, 구글 `byeolmyeong` 프로젝트 · 클라이언트 셋)을 결정 5에 적었다. 대안에 "테스트 App ID 를 별도 primary 로" 를 더했다. 검증: 파일 1개, `com.byeolmyeong.app.test` 1줄, 값(32자리 키 · 구글 클라이언트 ID) 0건.
 
-### 2. app-variant-config · 상태: 대기
+### 2. app-variant-config · 상태: 완료
 - 읽을 것: 결정 041, `app.config.ts`, `app.json`, Expo app variants 문서(전역 제약의 주소)
 - 할 것: `app.config.ts` 의 기본 내보내기가 `process.env.APP_VARIANT` 를 읽는다. 없음 · 빈 값 · `production` → 지금 결과 그대로. `test` → `ios.bundleIdentifier` · `android.package` 를 `com.byeolmyeong.app.test` 로, `name` 을 `별명 테스트` 로, `scheme` 을 `byeolmyeong-test` 로. 그 밖의 값 → `Error` 를 던진다(메시지에 받은 값). 구글 · 카카오 플러그인을 넣는 지금 로직은 그대로 둔다.
 - 주는 것: `APP_VARIANT=test` 하나로 테스트앱 설정이 나온다(태스크 4 의 eas.json 이 쓴다)
@@ -94,7 +94,7 @@ last_reviewed: 2026-11-19
   - `APP_VARIANT=tset npx expo config --type public` → 0 이 아닌 종료 코드, 메시지에 `tset`
   - `npx tsc --noEmit && npx expo lint` 통과, `npx expo export --platform web` exit 0(Vercel 빌드는 영향 없음)
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `app.config.ts` 에 `isTestVariant()`(없음 · 빈 값 · `production` → 운영, `test` → 테스트, 그 밖 → Error)와 테스트 변형(이름 · scheme · iOS 번들 ID · 안드로이드 패키지)을 더했다(커밋은 git log 의 `feat(config)`). 바꾸기 전: `APP_VARIANT=test` 도 운영 값, `tset` 종료 코드 0. 바꾼 뒤: test → `별명 테스트 byeolmyeong-test com.byeolmyeong.app.test com.byeolmyeong.app.test`, 없음 · production → 운영 값, `tset` · `Test` → 종료 코드 1 + 메시지에 받은 값. `APP_VARIANT` 없을 때 `expo config --type public --json` 전체가 바꾸기 전과 같다(리뷰 초점 2). 운영 ↔ 테스트 설정 차이는 네 칸뿐. tsc · lint 통과, `expo export --platform web` 종료 코드 0. Expo 문서(app variants)의 `{ config }` 펼치기 · `env.APP_VARIANT` 방식과 같다(문서 예시에는 scheme 이 없어 계획대로 더함).
 
 ### 3. eas-project-link · 상태: 대기
 - 읽을 것: 결정 041, `app.json`

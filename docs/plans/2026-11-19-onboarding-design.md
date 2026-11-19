@@ -30,9 +30,11 @@ last_reviewed: 2026-11-19
 | 태어난 곳은 바텀시트: 맨 위 "동네 이름으로 찾기" 검색, 아래 시 · 도 칩 → 시 · 군 · 구 목록(추천안, 보드 8-2 · 8-2-1 · 8-2-2) | 태스크 8 |
 | 별명 짓는 중: 애니메이션(별이 둥실 · 뒤 빛 · 궤도 점 · 안내 문구 세 줄 순환), "길면 1분쯤 걸려요" 없음 | 태스크 9 |
 
-## 결정 필요 (소유자)
-1. **닉네임 규칙** — 시안은 "한글 · 영문 · 숫자 2~10자", 승인된 서버 계획(025)은 "앞뒤 공백을 뗀 1~20자(코드 포인트), 줄바꿈 · 제어 문자만 금지, 중복 허용". 추천: **서버 계획대로** 두고 시안의 안내 문구를 "20자까지 쓸 수 있어요" 로, 오류 보드(7-2)를 "20자를 넘었어요" 로 바꾼다. 서버가 이미 그 규칙으로 만들고 있다.
-2. **앱 세션 계획과의 관계** — 앱 세션 계획 `2026-11-19-social-email-nickname.md` 의 태스크 5(가입 한 화면)는 이 계획의 태스크 6~8 로 대체하고, 태스크 4(`app-api-account`)는 그대로 쓴다. 추천: 그렇게 하고 앱 세션에 알린다.
+## 소유자가 정한 것 (2026-11-19, 계획을 쓴 뒤)
+1. **닉네임**: 한글 · 영문만 2~10자(숫자 · 공백 · 기호 안 됨, 한글과 영문은 섞어도 된다 — 내 해석), **중복 안 됨**(영문은 대소문자를 같게 본다 — 내 결정). 서버 결정 025 의 "1~20자 · 중복 허용" 을 바꾼다 → 서버 세션에 요청.
+2. **프로필 그림**: 브랜드 그림으로 만든 8종(별이 · 웃는 별이 · 윙크 별이 · 조는 별이 · 달 · 하트 · 불꽃 · 구슬) 가운데 하나를 닉네임 단계에서 고른다. 시안 보드 7(위 가운데 88px + 연필 표시) · 7-4(고르기 시트, 4열 2줄). 그림 원본은 `assets/brand/avatar-*.svg` 로 둔다.
+3. **이미 있는 닉네임 문구**: "이미 있는 닉네임이에요."(시안 7-3). 오류 문구는 모두 한 줄로 짧게.
+4. **앱 세션 계획과의 관계**: 앱 세션 계획 `2026-11-19-social-email-nickname.md` 의 태스크 5(가입 한 화면)는 이 계획의 태스크 6~8 로 대체하고, 태스크 4(`app-api-account`)는 그대로 쓴다.
 
 ## 내 결정 (묻지 않고 고른 기본값)
 - 소개 3장은 **처음 실행 때만** 보인다. 본 표시는 기기 저장소(`expo-secure-store` 가 아니라 일반 저장소 — 개인정보 아님)에 둔다. "건너뛰기" 도 본 것으로 친다.
@@ -65,7 +67,7 @@ last_reviewed: 2026-11-19
 
 ### 2. strings-onboarding · 상태: 대기
 - 읽을 것: `src/content/strings.ts`, 피그마 보드 문구
-- 할 것: `strings.intro`(세 장의 제목 · 본문 · 건너뛰기 · 다음 · 시작하기), `strings.terms`(제목 · 안내 · 모두 동의 · 항목 넷 · 마케팅 설명 · 보기), `strings.nickname`(제목 · 안내 · 자리 글자 · 규칙 안내 · 오류), `strings.birthSheet`(곳 검색 자리 글자 "동네 이름으로 찾기" — 예시 없이 · 시 · 도), `strings.making`(제목 · 순환 문구 셋). `login.kakao` → "카카오 로그인", `login.google` → "Google 계정으로 계속하기". `login.subtitle` · `ageNotice` · `signupGuide` 는 쓰는 곳이 없어지면 지운다.
+- 할 것: `strings.intro`(세 장의 제목 · 본문 · 건너뛰기 · 다음 · 시작하기), `strings.terms`(제목 · 안내 · 모두 동의 · 항목 넷 · 마케팅 설명 · 보기), `strings.nickname`(제목 · 안내 "프로필 그림과 닉네임은 나중에 마이에서 바꿀 수 있어요." · 자리 글자 · 규칙 안내 "한글 · 영문으로 2~10자" · 오류 "한글 · 영문만 쓸 수 있어요." · "이미 있는 닉네임이에요." · 프로필 그림 이름 8개 · 시트 제목 "프로필 그림"), `strings.birthSheet`(곳 검색 자리 글자 "동네 이름으로 찾기" — 예시 없이 · 시 · 도), `strings.making`(제목 · 순환 문구 셋). `login.kakao` → "카카오 로그인", `login.google` → "Google 계정으로 계속하기". `login.subtitle` · `ageNotice` · `signupGuide` 는 쓰는 곳이 없어지면 지운다.
 - 주는 것: 위 키 이름
 - 하지 말 것: 화면 파일에 문구를 직접 쓰지 않는다. 이유: 문구는 한 곳에서만 바뀐다.
 - 검증: `npx tsc --noEmit` 통과, `grep -rn "카카오로 계속하기\|구글로 계속하기" src` → 0건
@@ -99,11 +101,11 @@ last_reviewed: 2026-11-19
 - 검증: `npm test -- terms` — 필수 하나라도 꺼지면 "다음" 꺼짐, 모두 동의는 넷 다, 선택 기본 꺼짐, 초안에 버전 · 동의가 들어감
 
 ### 7. nickname-step · 상태: 대기
-- 읽을 것: 태스크 6 의 `SignupDraft`, "결정 필요 1" 의 답, 시안 보드 7 · 7-1 · 7-2
-- 할 것: `src/app/signup/nickname.tsx`. 칸 하나 + 글자 수(`n/한도`) + 규칙 안내. 규칙에 어긋나면 칸 테두리 빨강 + 안내, "다음" 꺼짐. 키보드가 올라오면 "다음" 이 키보드 바로 위로. `src/features/auth/nickname-rule.ts` — `checkNickname(raw: string): { ok: true; value: string } | { ok: false; reason: 'EMPTY' | 'TOO_LONG' | 'INVALID_CHAR' }`(서버 규칙과 같게 — 코드 포인트로 센다).
-- 주는 것: `checkNickname`, `/signup/nickname`
-- 하지 말 것: UTF-16 길이로 세지 않는다. 이유: 이모지 하나가 2로 세져 서버와 어긋난다.
-- 검증: `npm test -- nickname` — 빈 값 · 공백만 · 한도 초과 · 줄바꿈 거절, 이모지 1개 = 1, 앞뒤 공백 뗀 값이 초안에
+- 읽을 것: 태스크 6 의 `SignupDraft`, "소유자가 정한 것" 1~3, 서버 계약(서버 저장소 `docs/architecture.md` 의 닉네임 확인 경로), 시안 보드 7 · 7-1 · 7-2 · 7-3 · 7-4
+- 할 것: `src/app/signup/nickname.tsx`. 위 가운데 고른 프로필 그림(88px, 누르면 고르기 시트) + 닉네임 칸 + 글자 수(`n/10`) + 규칙 안내. 규칙에 어긋나면 칸 테두리 빨강 + 안내, "다음" 꺼짐. "다음" 을 누르면 서버에 닉네임 확인 → 이미 있으면 "이미 있는 닉네임이에요." 키보드가 올라오면 "다음" 이 키보드 바로 위로. 처음 들어오면 그림 하나를 무작위로 골라 둔다. `src/features/auth/nickname-rule.ts` — `checkNickname(raw: string): { ok: true; value: string } | { ok: false; reason: 'TOO_SHORT' | 'TOO_LONG' | 'INVALID_CHAR' }`(한글 완성형 가~힣 · 영문 a~z A~Z 만, 2~10자). `src/components/avatar.tsx` — `Avatar({ id: AvatarId, size })`, `type AvatarId = 1 | 2 | … | 8`, `src/features/auth/avatar-sheet.tsx`. 초안에 `avatar: AvatarId` 를 더한다.
+- 주는 것: `checkNickname`, `Avatar` · `AvatarId`, `/signup/nickname`
+- 하지 말 것: 입력할 때마다 서버에 묻지 않는다. 이유: 요청이 늘고 남의 닉네임을 하나씩 떠보기 쉬워진다("다음" 에서 한 번).
+- 검증: `npm test -- nickname avatar` — 1자 · 11자 · 숫자 · 공백 · 기호 거절, 한글+영문 섞기 통과, 이미 있으면 안내하고 다음 단계로 안 감, 그림을 바꾸면 초안의 avatar 가 바뀜
 
 ### 8. birth-step · 상태: 대기
 - 읽을 것: `src/app/signup.tsx`, `src/features/chart/birth-form.tsx` · `birth-fields.tsx` · `place-picker.tsx`, `src/components/sheet.tsx` · `scroll-picker.tsx`, 시안 보드 8 · 8-1 · 8-2 · 8-2-1 · 8-2-2 · 8-3 · 8-4
@@ -121,10 +123,10 @@ last_reviewed: 2026-11-19
 
 ### 10. signup-submit · 상태: 대기
 - 읽을 것: 태스크 6 · 7 · 8 의 결과, `src/lib/api.ts`(`signup`), `src/features/auth/use-session.ts`(`completeSignup`), 서버 계약 표(서버 저장소 `docs/architecture.md` 의 `POST /auth/signup`)
-- 할 것: "내 별명 읽기" → `completeSignup({ birth, nickname, termsVersion, privacyVersion, pushConsent, marketingConsent })` → `api.signup` 한 번. 성공하면 초안을 지우고 별명 짓는 중(태스크 9)으로. `INVALID_NICKNAME` → 닉네임 단계로 돌아가 안내, `TERMS_REQUIRED` → 약관 단계로, `UNDER_AGE` → 생년월일 칸 아래 빨강 안내(보드 8-4), `SIGNUP_EXPIRED` → 로그인으로.
+- 할 것: "내 별명 읽기" → `completeSignup({ birth, nickname, avatar, termsVersion, privacyVersion, pushConsent, marketingConsent })` → `api.signup` 한 번. 성공하면 초안을 지우고 별명 짓는 중(태스크 9)으로. `INVALID_NICKNAME` · `NICKNAME_TAKEN`(그사이 누가 먼저 가져감) → 닉네임 단계로 돌아가 안내, `TERMS_REQUIRED` → 약관 단계로, `UNDER_AGE` → 생년월일 칸 아래 빨강 안내(보드 8-4), `SIGNUP_EXPIRED` → 로그인으로.
 - 주는 것: 없음
 - 하지 말 것: 단계마다 서버를 부르지 않는다. 이유: 가입권은 한 번 쓰면 끝이고, 중간에 나가면 계정이 반쯤 생긴다.
-- 검증: `npm test -- signup` — 보내는 본문에 여섯 값, 오류 코드마다 돌아가는 단계, 성공하면 초안이 비어 있음
+- 검증: `npm test -- signup` — 보내는 본문에 일곱 값, 오류 코드마다 돌아가는 단계, 성공하면 초안이 비어 있음
 
 ### 11. verify-screens · 상태: 대기
 - 읽을 것: `.claude/skills/verify/SKILL.md`, 피그마 보드 20개

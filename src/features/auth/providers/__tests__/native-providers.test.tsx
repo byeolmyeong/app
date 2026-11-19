@@ -76,10 +76,19 @@ describe('구글(앱)', () => {
 });
 
 describe('애플(iOS)', () => {
+  it('시스템 버튼 대신 공급자 버튼 모양(16px, 결정 041)으로 그리고 누르면 signInAsync 를 부른다', async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValue({ identityToken: 'a-id' });
+    await render(<AppleLoginButton {...props} />);
+    await fireEvent.press(await screen.findByText(strings.login.apple));
+    expect(screen.queryByTestId('apple-button')).toBeNull();
+    expect(screen.getByTestId('social-button-APPLE')).toBeTruthy();
+    await waitFor(() => expect(AppleAuthentication.signInAsync).toHaveBeenCalledTimes(1));
+  });
+
   it('이메일만 묻고(이름은 묻지 않는다, 결정 039) ID 토큰과 authorization code 를 넘긴다', async () => {
     (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValue({ identityToken: 'a-id', authorizationCode: 'a-code' });
     await render(<AppleLoginButton {...props} />);
-    await fireEvent.press(await screen.findByTestId('apple-button'));
+    await fireEvent.press(await screen.findByText(strings.login.apple));
     await waitFor(() => expect(onCredential).toHaveBeenCalledWith({ provider: 'APPLE', idToken: 'a-id', authorizationCode: 'a-code' }));
     expect(AppleAuthentication.signInAsync).toHaveBeenCalledWith({ requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL] });
   });
@@ -88,7 +97,7 @@ describe('애플(iOS)', () => {
     (AppleAuthentication.signInAsync as jest.Mock).mockRejectedValueOnce({ code: 'ERR_REQUEST_CANCELED' });
     (AppleAuthentication.signInAsync as jest.Mock).mockRejectedValueOnce({ code: 'ERR_REQUEST_FAILED' });
     await render(<AppleLoginButton {...props} />);
-    const button = await screen.findByTestId('apple-button');
+    const button = await screen.findByText(strings.login.apple);
     await fireEvent.press(button);
     await fireEvent.press(button);
     await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
@@ -99,7 +108,7 @@ describe('애플(iOS)', () => {
     (AppleAuthentication.isAvailableAsync as jest.Mock).mockResolvedValueOnce(false);
     await render(<AppleLoginButton {...props} />);
     await waitFor(() => expect(AppleAuthentication.isAvailableAsync).toHaveBeenCalled());
-    expect(screen.queryByTestId('apple-button')).toBeNull();
+    expect(screen.queryByText(strings.login.apple)).toBeNull();
   });
 });
 

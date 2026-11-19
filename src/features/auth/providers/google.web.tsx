@@ -1,5 +1,7 @@
 /**
  * 웹의 구글 로그인: 구글 공식 웹 버튼(Google Identity Services, 결정 034). 버튼은 구글이 그린다(구글 브랜드 규칙).
+ * 시안(결정 041)의 다크 버튼(`filled_black`) · 로고 왼쪽 · 칸 폭에 맞춘다. GIS 는 높이(최대 40)와 글자 크기를 바꿀 수 없어
+ * 웹에서만 다른 공급자 버튼(48 · 16px)보다 조금 작다(계획 "내 결정").
  * 누르면 구글이 ID 토큰(credential)을 콜백으로 준다. 클라이언트 ID(`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`)가 없으면 그리지 않는다.
  */
 import { useEffect, useEffectEvent, useRef, type ComponentRef } from 'react';
@@ -9,7 +11,9 @@ import type { LoginButtonProps } from '@/features/auth/providers/types';
 import { loadScript } from '@/features/auth/providers/load-script';
 
 const GIS_SCRIPT = 'https://accounts.google.com/gsi/client';
-const BUTTON_WIDTH = 320;
+/** GIS 가 받는 버튼 폭의 범위(px). 칸 폭을 이 안으로 맞춘다 */
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 400;
 
 type GoogleIdentity = {
   initialize(options: { client_id: string; callback: (response: { credential?: string }) => void }): void;
@@ -40,7 +44,17 @@ export function GoogleLoginButton({ onCredential, onError }: LoginButtonProps) {
           client_id: clientId,
           callback: ({ credential }) => credentialed(credential),
         });
-        id.renderButton(parent, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', width: BUTTON_WIDTH, locale: 'ko' });
+        const width = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(parent.offsetWidth)));
+        id.renderButton(parent, {
+          type: 'standard',
+          theme: 'filled_black',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+          width,
+          locale: 'ko',
+        });
       })
       .catch(() => {
         if (!cancelled) failed();
@@ -51,5 +65,5 @@ export function GoogleLoginButton({ onCredential, onError }: LoginButtonProps) {
   }, [clientId]);
 
   if (!clientId) return null;
-  return <View ref={container} style={{ minHeight: 44, alignItems: 'center' }} />;
+  return <View ref={container} style={{ width: '100%', minHeight: 44, alignItems: 'center' }} />;
 }

@@ -7,8 +7,8 @@
 import { login } from '@react-native-seoul/kakao-login';
 import { useState } from 'react';
 
-import { Button } from '@/components/button';
 import { strings } from '@/content/strings';
+import { SocialButton } from '@/features/auth/providers/social-button';
 import type { LoginButtonProps } from '@/features/auth/providers/types';
 
 /** 라이브러리는 모든 실패를 같은 코드로 준다. 사용자가 닫은 것은 메시지로만 가린다 */
@@ -32,5 +32,5 @@ export function KakaoLoginButton({ onCredential, onError, disabled }: LoginButto
     }
   }
 
-  return <Button label={strings.login.kakao} variant="line" onPress={() => void press()} disabled={disabled || busy} />;
+  return <SocialButton provider="KAKAO" label={strings.login.kakao} onPress={() => void press()} disabled={disabled || busy} />;
 }

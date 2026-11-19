@@ -72,6 +72,29 @@ export const BrandColors = {
   tileLine: '#262833',
 } as const;
 
+/**
+ * 소셜 로그인 버튼(결정 041). 공급자 가이드의 값이라 바꾸지 않는다: 카카오 · 애플(흰 바탕) · 구글(다크).
+ * 셋 다 높이 48 · 모서리 12, 로고 20×20 은 왼쪽 16, 글자는 16px · 500(애플 HIG 의 "높이의 43%" 만 소유자 예외).
+ * 글자는 공급자 가이드대로 시스템 글꼴이다(Pretendard 를 쓰지 않는다).
+ */
+export const SocialButtonStyle = {
+  height: 48,
+  radius: 12,
+  logo: 20,
+  logoInset: 16,
+  text: { fontSize: 16, lineHeight: 20, fontWeight: '500' },
+  disabledOpacity: 0.4,
+  kakao: { background: '#FEE500', symbol: '#000000', text: 'rgba(0,0,0,0.85)' },
+  apple: { background: '#FFFFFF', logo: '#000000', text: '#000000', letterSpacing: -0.16 },
+  google: {
+    background: '#131314',
+    border: '#8E918F',
+    text: '#E3E3E3',
+    /** G 로고의 원래 색 */
+    logo: { red: '#EA4335', blue: '#4285F4', yellow: '#FBBC05', green: '#34A853' },
+  },
+} as const;
+
 /** 시트 뒤를 가리는 막. 검정 60%(어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(0,0,0,0.6)';
 

@@ -8,8 +8,8 @@ import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@
 import { useState } from 'react';
 import { Platform } from 'react-native';
 
-import { Button } from '@/components/button';
 import { strings } from '@/content/strings';
+import { SocialButton } from '@/features/auth/providers/social-button';
 import type { LoginButtonProps } from '@/features/auth/providers/types';
 
 export function GoogleLoginButton({ onCredential, onError, disabled }: LoginButtonProps) {
@@ -35,5 +35,5 @@ export function GoogleLoginButton({ onCredential, onError, disabled }: LoginButt
     }
   }
 
-  return <Button label={strings.login.google} variant="line" onPress={() => void press()} disabled={disabled || busy} />;
+  return <SocialButton provider="GOOGLE" label={strings.login.google} onPress={() => void press()} disabled={disabled || busy} />;
 }

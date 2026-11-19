@@ -56,7 +56,7 @@ last_reviewed: 2026-11-19
 - 할 것: `app.json` 의 `web.output` → `static`. `npx expo export -p web` 으로 `dist/` 에 화면별 HTML 과 `[shareId]` · `[id]` 화면 파일이 생기는지 확인. 정적 렌더링(빌드 때 Node 에서 화면을 한 번 그림)에서 깨지는 코드(모듈 맨 위의 `window` · `localStorage` 등)가 있으면 고친다. `vercel.json`(build `npx expo export -p web`, 출력 `dist`, `cleanUrls`, 식별자 화면 rewrite 넷, `framework: null`).
 - 검증: `npx expo export -p web` exit 0, `dist/s/[shareId].html` 등 존재, `vercel build` 후 로컬(`vercel dev` 또는 `npx serve` + 같은 rewrite)에서 `/s/abc` · `/synastry/abc` 가 404 가 아님, 콘솔 에러 0.
 
-### 3. vercel-project  · 상태: 진행(소셜 로그인 값 · develop 도메인 묶기 대기)
+### 3. vercel-project  · 상태: 완료(애플 Services ID 값만 남음 — 이메일 · 닉네임 계획과 함께)
 - 할 것: `vercel link`(새 프로젝트 `byeolmyeong-app`), Git 연동, Production 브랜치 `main`, 환경 변수(Production · Preview(develop) · Preview(그 밖)), 도메인 `app.byeolmyeong.com`(Production) · `app.staging.byeolmyeong.com`(develop 브랜치) 추가, DNS 값 소유자에게 전달.
 - 검증: `vercel env ls` 에 값의 이름이 환경별로 있다 · `vercel domains inspect` 에서 두 도메인이 확인됨(DNS 가 걸리면 "확인 대기" 로 기록).
 
@@ -134,3 +134,17 @@ $ curl --resolve app.byeolmyeong.com:443:216.150.16.193 https://app.byeolmyeong.
 - 서버 VM 두 대(서버 세션이 넣음, 값 출력 없음): `KAKAO_*` 4개 + VM 별 `KAKAO_REDIRECT_URIS`, `GOOGLE_CLIENT_IDS`. 카카오 연결 해제 웹훅은 서버 계획으로 넘김.
 - 결정: 카카오 동의항목(이메일 · 닉네임)은 받지 않는다 — 서버 결정 021 그대로, 닉네임은 온보딩에서 받는 기능으로 따로 계획 — 틀리면 비용: 동의항목 추가 + 서버 저장 + 처리방침 개정.
 - 남은 것: 애플(Services ID · 키), 처리방침 · 약관 본문(지금 자리표시) — 출시 전.
+
+### develop 합치기 · 스테이징 자동 연결 (2026-11-19)
+- 소유자 "합쳐" → #22 → #23 → #24 → #27 을 develop 에 합침(각 CI pass 확인). `delete_branch_on_merge` 가 꺼져 있어 다음 PR 의 기준을 직접 develop 으로 바꿈(`gh pr edit` 은 토큰 권한 부족 → REST `PATCH /pulls/{n}` base=develop). 바꾼 뒤 파일 수가 예전 기준과 같음(18 · 69 · 11).
+- 스테이징 도메인을 develop 에 묶음: `vercel api /v9/projects/byeolmyeong-app/domains/app.staging.byeolmyeong.com -X PATCH -f gitBranch=develop` → `gitBranch: develop`.
+- 합칠 때마다 develop 빌드가 생겨, Vercel 설정이 없는 중간 빌드(#23 · #24 시점 d4838d7 · c9744e3)를 취소함 — 늦게 끝나면 스테이징이 깨진 빌드를 가리킬 수 있었다. 마지막 빌드 93a80fe READY.
+- 스테이징이 Vercel 팀 로그인(SSO) 뒤에 있음: 프로젝트 보호 `ssoProtection.deploymentType = all_except_custom_domains` 인데 운영이 아닌 사용자 지정 도메인도 막힌다(직접 alias 해도 302 → vercel.com/sso-api). 운영 `app.byeolmyeong.com/login` 200.
+- 소유자가 처음엔 "그대로 두기" 를 골랐다가 "팀 밖 사람은 못 쓴다" 를 짚고 "전용 프로젝트로 공개" 로 바꿈(2026-11-19).
+- 결정: 스테이징 전용 프로젝트 `byeolmyeong-app-staging`(prj_bsKpKdPDxV9c1B5f51Z2WftHKm8t) — `POST /v11/projects`(같은 저장소, Ignored Build Step = develop 만 빌드, 환경 변수 4개를 preview · production 에), `ssoProtection: null`. 운영 브랜치를 develop 으로 바꾸는 공개 API 가 없어 "develop 만 빌드 + 보호 끔" 으로 같은 결과를 냄 — 틀리면 비용: 이 프로젝트의 배포 주소(*.vercel.app)도 공개(내용은 스테이징과 같다).
+- 도메인 이동: `POST /v1/projects/byeolmyeong-app/domains/app.staging.byeolmyeong.com/move` {projectId, gitBranch: develop} → 새 프로젝트에 `develop` 브랜치 도메인. 첫 배포(API `POST /v13/deployments` gitSource ref develop, 93a80fe)에 `vercel alias set`.
+```
+staging /login 200 · /synastry/abc 200 · /s/xyz 200 · /nope 404
+번들: api-staging=1 웹주소=1 kakao키=1 google=1 localhost=0 · devSession:!1
+```
+- 원래 프로젝트에 남은 Preview · develop 전용 `EXPO_PUBLIC_WEB_URL` 은 이제 쓰이지 않는다(지우는 건 소유자 승인 뒤).

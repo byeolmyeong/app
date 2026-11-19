@@ -7,11 +7,12 @@ import MyScreen from '@/app/my';
 import SettingsScreen from '@/app/settings/index';
 import { strings } from '@/content/strings';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
+import type { Session } from '@/features/auth/session-store';
 import { api, createApi, type ApiResult, type BirthInput } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
-const mockSession: { current: { token: string | null; ready: boolean } } = {
-  current: { token: 'dev-token', ready: true },
+const mockSession: { current: Session } = {
+  current: { status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null },
 };
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -42,7 +43,7 @@ jest.mock('@/features/auth/use-session', () => ({
   getSession: jest.fn(() => mockSession.current),
   // 계정을 지우면 세션이 비워진다.
   clearSession: jest.fn(async () => {
-    mockSession.current = { token: null, ready: true };
+    mockSession.current = { status: 'signedOut' as const, token: null, ready: true, lastError: null };
   }),
 }));
 
@@ -59,7 +60,7 @@ const homeShown = () => screen.findAllByTestId('home-category');
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockSession.current = { token: 'dev-token', ready: true };
+  mockSession.current = { status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null };
   mockApi.getProfile.mockResolvedValue(noProfile);
   mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
@@ -162,7 +163,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
   });
 
   it('세션이 없으면 서버에 묻지 않고 입력 화면을 보여 준다', async () => {
-    mockSession.current = { token: null, ready: true };
+    mockSession.current = { status: 'signedOut' as const, token: null, ready: true, lastError: null };
     mockApi.getProfile.mockResolvedValue({ ok: true, data: known });
     await render(<HomeScreen />);
     expect(await formShown()).toBeTruthy();
@@ -179,7 +180,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
   });
 
   it('확인하는 동안에는 입력 화면이 비치지 않는다: 세션을 기다릴 때도, 서버의 답을 기다릴 때도 "불러오는 중" 만 보인다', async () => {
-    mockSession.current = { token: null, ready: false };
+    mockSession.current = { status: 'checking' as const, token: null, ready: false, lastError: null };
     let answer: (r: ApiResult<BirthInput>) => void = () => {};
     mockApi.getProfile.mockReturnValue(new Promise((resolve) => (answer = resolve)));
     const seenForm = () => screen.queryByPlaceholderText(H.datePlaceholder) !== null;
@@ -190,7 +191,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
     expect(seenForm()).toBe(false);
     expect(mockApi.getProfile).not.toHaveBeenCalled();
 
-    mockSession.current = { token: 'dev-token', ready: true };
+    mockSession.current = { status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null };
     await view.rerender(<HomeScreen />);
     await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalledTimes(1));
     expect(screen.getByText(H.restoring)).toBeTruthy();
@@ -228,7 +229,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
     await first.unmount();
 
     // 다음에 켜서 새 세션을 받았다. 지운 계정의 출생 정보는 서버에 없다.
-    mockSession.current = { token: 'new-token', ready: true };
+    mockSession.current = { status: 'signedIn' as const, token: 'new-token', ready: true, lastError: null };
     await render(<HomeScreen />);
     expect(await formShown()).toBeTruthy();
     expect(mockApi.getProfile).toHaveBeenCalledTimes(1);

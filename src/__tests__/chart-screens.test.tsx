@@ -8,6 +8,7 @@ import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import { strings } from '@/content/strings';
 import { getSession } from '@/features/auth/use-session';
+import { BirthForm } from '@/features/chart/birth-form';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -23,9 +24,9 @@ jest.mock('@/lib/api', () => ({
   api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  getSession: jest.fn(() => ({ token: null, ready: true })),
+  getSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),
   // 홈은 세션이 없으면 서버에 저장된 출생 정보를 묻지 않고 입력부터 받는다(결정 029).
-  useSession: jest.fn(() => ({ token: null, ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -39,7 +40,7 @@ beforeEach(async () => {
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
   mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
-  mockGetSession.mockReturnValue({ token: null, ready: true });
+  mockGetSession.mockReturnValue({ status: 'signedOut' as const, token: null, ready: true, lastError: null });
 });
 
 /** 시트가 닫혀 화면에서 사라질 때까지 기다린다(닫히는 움직임이 끝나야 사라진다) */
@@ -168,7 +169,7 @@ describe('출생 정보 입력(홈)', () => {
   });
 
   it('세션이 있으면 차트를 받은 뒤 출생 정보를 서버에도 저장한다(PUT /profile)', async () => {
-    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
     await fillPlace();
@@ -179,7 +180,7 @@ describe('출생 정보 입력(홈)', () => {
   });
 
   it('서버에 출생 정보를 저장하지 못하면 안내를 보여 주고 보관도 이동도 하지 않는다', async () => {
-    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'NETWORK' });
     await render(<HomeScreen />);
     await fillDateAndTime('2000-06-15', '21:00');
@@ -190,8 +191,19 @@ describe('출생 정보 입력(홈)', () => {
     expect(await loadBirth()).toBeNull();
   });
 
+  it('만 14세 미만 날짜로 고치려 하면 서버가 거절하고(403 UNDER_AGE) 그 이유를 보여 주며 보관하지 않는다', async () => {
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'SERVER', status: 403, code: 'UNDER_AGE' });
+    await render(<HomeScreen />);
+    await fillDateAndTime('2020-06-15', null);
+    await fireEvent.press(screen.getByText(H.submit));
+    expect(await screen.findByText(H.requestErrors.UNDER_AGE)).toBeTruthy();
+    expect(router.push).not.toHaveBeenCalled();
+    expect(await loadBirth()).toBeNull();
+  });
+
   it('"모름" 을 고르면 태어난 곳 칸이 사라지고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 020)', async () => {
-    mockGetSession.mockReturnValue({ token: 'dev-token', ready: true });
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
     await render(<HomeScreen />);
     expect(screen.getByTestId('place-field')).toBeTruthy();
@@ -485,5 +497,24 @@ describe('설명 버튼', () => {
     await fireEvent.press(screen.getByText(strings.detail.tabs.aspects));
     await fireEvent.press(screen.getByTestId('info-detail'));
     expect(await screen.findByText(HELP.aspects.title)).toBeTruthy();
+  });
+});
+
+describe('출생 정보 입력의 submit(가입 마지막 단계, 결정 034)', () => {
+  it('submit 이 있으면 차트를 받지 않고 검증한 값으로 부르며, 돌려준 안내를 보여 준다', async () => {
+    const submit = jest.fn(async () => '안내 글');
+    const save = jest.fn(async () => {});
+    await render(<BirthForm stored={null} save={save} submit={submit} />);
+    await fillDateAndTime('1995-05-05', null);
+    await fireEvent.press(screen.getByText(H.submit));
+    expect(await screen.findByText('안내 글')).toBeTruthy();
+    expect(submit).toHaveBeenCalledWith({
+      input: { date: '1995-05-05', time: null, placeId: null },
+      profile: expect.objectContaining({ date: '1995-05-05', time: null }),
+    });
+    expect(mockApi.createChart).not.toHaveBeenCalled();
+    expect(mockApi.saveProfile).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(router.push).not.toHaveBeenCalled();
   });
 });

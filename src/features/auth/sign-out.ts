@@ -1,0 +1,11 @@
+/**
+ * 로그아웃(결정 034). 서버 세션을 지우고(실패해도 기기에서는 로그아웃한다) 이 앱이 기기에 둔 것을 비운다 —
+ * 같은 기기로 다른 사람이 로그인하면 앞사람의 출생 정보 · 글이 보이면 안 된다. 다시 로그인하면 홈이 서버의 출생 정보로 되살린다.
+ */
+import { clearDeviceData } from '@/features/auth/delete-account';
+import { signOutSession } from '@/features/auth/use-session';
+
+export async function signOut(): Promise<void> {
+  await clearDeviceData();
+  await signOutSession();
+}

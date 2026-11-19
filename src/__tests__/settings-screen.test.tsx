@@ -38,7 +38,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { deleteAccount: jest.fn() },
+  api: { deleteAccount: jest.fn(), logout: jest.fn(async () => ({ ok: true, data: null })) },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -64,10 +64,10 @@ describe('마이에서 설정으로', () => {
 });
 
 describe('설정(/settings)', () => {
-  it('자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 앱 버전 · 계정 삭제 줄을 이 순서로 보여 준다', async () => {
+  it('자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 앱 버전 · 로그아웃 · 계정 삭제 줄을 이 순서로 보여 준다', async () => {
     await render(<SettingsScreen />);
     expect([S.faq, S.inquiry]).toEqual(['자주 묻는 질문', '문의하기']);
-    const labels = [S.faq, S.inquiry, S.privacy, S.terms, S.version, S.deleteAccount];
+    const labels = [S.faq, S.inquiry, S.privacy, S.terms, S.version, S.logout, S.deleteAccount];
     for (const label of labels) expect(screen.getByText(label)).toBeTruthy();
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
@@ -75,8 +75,8 @@ describe('설정(/settings)', () => {
     // 앱 버전은 expo 설정에서 온다
     expect(Constants.expoConfig?.version).toBe('9.8.7');
     expect(screen.getByText('9.8.7')).toBeTruthy();
-    // 로그아웃과 알림은 아직 없다(소셜 로그인 · 푸시 뒤)
-    expect(screen.queryByText(/로그아웃/)).toBeNull();
+    // 알림은 아직 없다(푸시 뒤)
+    expect(screen.queryByText(/알림/)).toBeNull();
   });
 
   it('처리방침 · 약관 줄은 그 글 화면으로 간다', async () => {
@@ -132,12 +132,12 @@ describe('계정 삭제', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('확인하면 서버에 한 번 요청하고, 기기에 둔 것과 세션 토큰을 비운 뒤 첫 화면으로 간다', async () => {
+  it('확인하면 서버에 한 번 요청하고, 기기에 둔 것과 세션 토큰을 비운 뒤 로그인 화면으로 간다', async () => {
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
     await render(<SettingsScreen />);
     await fireEvent.press(screen.getByText(S.deleteAccount));
     await fireEvent.press(await screen.findByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
     expect(await AsyncStorage.getAllKeys()).toEqual([]);
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledTimes(1);
@@ -154,7 +154,7 @@ describe('계정 삭제', () => {
     await fireEvent.press(await screen.findByText(D.deleting));
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
     finish({ ok: true, data: null });
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
   });
 
   it.each([
@@ -174,11 +174,23 @@ describe('계정 삭제', () => {
     // 시트는 열려 있고, 다시 누르면 다시 요청한다
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
     await fireEvent.press(screen.getByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(2);
   });
 
   it('기능들이 기기에 두는 키는 모두 삭제 때 지우는 머리(byeolmyeong.)로 시작한다', () => {
     for (const key of STORED_KEYS) expect(key.startsWith(DEVICE_STORAGE_PREFIX)).toBe(true);
+  });
+});
+
+describe('로그아웃(결정 034)', () => {
+  it('서버 세션을 지우고 이 기기에 둔 것을 비운 뒤 로그인 화면으로 간다', async () => {
+    await saveBirth({ profile: { date: '1995-05-05', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByText(S.logout));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
+    expect(mockApi.logout).toHaveBeenCalledTimes(1);
+    const keys = await AsyncStorage.getAllKeys();
+    expect(keys.filter((k) => k.startsWith(DEVICE_STORAGE_PREFIX))).toEqual([]);
   });
 });

@@ -7,7 +7,14 @@ import { strings } from '@/content/strings';
 import { clearDraft, getDraft, setDraft } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
+jest.mock('expo-router', () => ({
+  router: { push: jest.fn(), replace: jest.fn() },
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
+  Redirect: ({ href }: { href: string }) => {
+    const { Text } = jest.requireActual('react-native');
+    return <Text>{`redirect:${href}`}</Text>;
+  },
+}));
 jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn() }));
 
 const T = strings.terms;
@@ -95,6 +102,22 @@ describe('약관 단계', () => {
     await fireEvent.press(views[1]);
     await fireEvent.press(views[2]);
     expect((router.push as jest.Mock).mock.calls).toEqual([['/settings/terms'], ['/settings/privacy'], ['/settings/privacy']]);
+  });
+
+  it('이미 가입을 마친 사람(로그인 상태)이 뒤로 가기로 돌아오면 홈으로 보낸다(리뷰 A1)', async () => {
+    (useAuth as jest.Mock).mockReturnValue({ status: 'signedIn', cancelSignup });
+    await render(<TermsStep />);
+    expect(screen.getByText('redirect:/')).toBeTruthy();
+    expect(cancelSignup).not.toHaveBeenCalled();
+  });
+
+  it('다음을 두 번 눌러도 한 번만 넘어간다(리뷰 A9)', async () => {
+    await render(<TermsStep />);
+    await fireEvent.press(check(T.all));
+    const next = screen.getByRole('button', { name: T.next });
+    await fireEvent.press(next);
+    await fireEvent.press(next);
+    expect(router.push).toHaveBeenCalledTimes(1);
   });
 
   it('뒤로 가면 가입을 그만두고(가입권 · 초안을 버린다) 로그인 화면은 가드가 보낸다', async () => {

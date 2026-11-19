@@ -5,7 +5,7 @@
  * 값은 가입 초안(메모리)에만 둔다. 약관 단계를 건너뛰고 들어오면 약관 단계로 돌려보낸다.
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -35,7 +35,9 @@ const SERVER_MESSAGE: Record<ServerError, string> = {
 const randomAvatar = (): AvatarId => AVATAR_IDS[Math.min(AVATAR_IDS.length - 1, Math.floor(Math.random() * AVATAR_IDS.length))];
 
 export default function NicknameStep() {
-  const { checkNickname: askServer } = useAuth();
+  const { status, checkNickname: askServer } = useAuth();
+  /** 서버에 묻는 중(두 번 누르기 · 엔터가 겹쳐도 한 번만 묻는다) */
+  const asking = useRef(false);
   const [draft] = useState(getDraft);
   const [avatar, setAvatar] = useState<AvatarId>(() => draft?.avatar ?? randomAvatar());
   const [raw, setRaw] = useState(draft?.nickname ?? '');
@@ -59,6 +61,8 @@ export default function NicknameStep() {
     }, []),
   );
 
+  // 가입을 마친 사람이 뒤로 가기로 돌아오면 홈으로(여기서 누른 "다음" 이 로그아웃시키지 않게)
+  if (status === 'signedIn') return <Redirect href="/" />;
   if (!draft) return <Redirect href="/signup/terms" />;
 
   const check = checkNickname(raw);
@@ -84,9 +88,12 @@ export default function NicknameStep() {
   }
 
   async function next() {
-    if (!check.ok || checking) return;
+    // "이미 있는 닉네임" 이 떠 있거나 묻는 중이면 다시 묻지 않는다(엔터 포함)
+    if (!check.ok || !canNext || asking.current) return;
+    asking.current = true;
     setChecking(true);
     const r = await askServer(check.value);
+    asking.current = false;
     setChecking(false);
     if (r.ok && r.data.available) {
       setDraft({ nickname: check.value, avatar });

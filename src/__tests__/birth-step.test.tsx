@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
@@ -12,7 +12,8 @@ import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn() },
+  usePreventRemove: jest.fn(),
+  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => true) },
   Redirect: ({ href }: { href: string }) => {
     const { Text } = jest.requireActual('react-native');
     return <Text>{`redirect:${href}`}</Text>;
@@ -118,6 +119,22 @@ describe('출생 정보 단계', () => {
     await fireEvent.press(submit());
     expect(await screen.findByText(H.errors.underAge)).toBeTruthy();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('내 별명 읽기를 두 번 눌러도 가입은 한 번 보내고, 보내는 동안은 뒤로 가지 않는다(리뷰 A1 · A9)', async () => {
+    let resolve: (v: unknown) => void = () => {};
+    completeSignup.mockImplementation(() => new Promise((r) => (resolve = r)));
+    await render(<BirthStep />);
+    await fireEvent.changeText(screen.getByLabelText(H.dateLabel), '19990308');
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
+    await fireEvent.press(submit());
+    await fireEvent.press(submit());
+    expect(completeSignup).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+    expect(router.back).not.toHaveBeenCalled();
+    await act(async () => resolve({ ok: false, error: 'NETWORK' }));
+    await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+    expect(router.back).toHaveBeenCalledTimes(1);
   });
 
   it('뒤로 가면 닉네임 단계로', async () => {

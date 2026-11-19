@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
@@ -37,6 +37,34 @@ const nextDisabled = () => next().props.accessibilityState?.disabled === true;
 
 // 가입 2단계: 닉네임 · 프로필(결정 041, 보드 7 · 7-1 · 7-2 · 7-3 · 7-4)
 describe('닉네임 단계', () => {
+  it('이미 가입을 마친 사람(로그인 상태)이 뒤로 가기로 돌아오면 홈으로 보낸다(리뷰 A1)', async () => {
+    (useAuth as jest.Mock).mockReturnValue({ status: 'signedIn', checkNickname });
+    await render(<NicknameStep />);
+    expect(screen.getByText('redirect:/')).toBeTruthy();
+  });
+
+  it('"이미 있는 닉네임" 이 떠 있을 때 엔터를 눌러도 같은 이름으로 서버를 다시 부르지 않는다(리뷰 A9)', async () => {
+    checkNickname.mockResolvedValue({ ok: true, data: { available: false } });
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await fireEvent.press(next());
+    expect(await screen.findByText(N.taken)).toBeTruthy();
+    await fireEvent(input(), 'submitEditing');
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+  });
+
+  it('다음을 두 번 눌러도 서버에는 한 번 묻는다', async () => {
+    let resolve: (v: unknown) => void = () => {};
+    checkNickname.mockImplementation(() => new Promise((r) => (resolve = r)));
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await fireEvent.press(next());
+    await fireEvent(input(), 'submitEditing');
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+    await act(async () => resolve({ ok: true, data: { available: true } }));
+    expect(router.push).toHaveBeenCalledTimes(1);
+  });
+
   it('약관 단계를 건너뛰고 들어오면(초안 없음) 약관 단계로 돌려보낸다(리뷰 초점 2)', async () => {
     clearDraft();
     await render(<NicknameStep />);

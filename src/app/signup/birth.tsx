@@ -5,10 +5,11 @@
  * 성공하면 초안을 지우고 차트를 받아 기기에 둔 뒤 풀이 글(짓는 동안은 "별명 짓는 중")로 간다. 차트를 받지 못하면 홈으로 —
  * 홈이 서버에 저장된 출생 정보로 되살린다(결정 029). 오류마다 돌아갈 곳: 닉네임(`INVALID_NICKNAME` · `NICKNAME_TAKEN`) ·
  * 약관(`TERMS_REQUIRED`) · 생년월일 칸 아래 빨강(`UNDER_AGE`) · 로그인(`SIGNUP_EXPIRED`, 가드가 보낸다) · 그 밖은 버튼 위 안내.
- * 닉네임 단계를 건너뛰고 들어오면 닉네임 단계로 돌려보낸다.
+ * 닉네임 단계를 건너뛰고 들어오면 닉네임 단계로 돌려보낸다. 보내는 동안은 뒤로 가지 않고(두 번 누르기도 막는다),
+ * 가입을 마치면 스택을 비우고 간다 — 남은 약관 · 닉네임 단계로 뒤로 가 가입 단계를 다시 밟지 않게.
  */
-import { Redirect, router } from 'expo-router';
-import { useState } from 'react';
+import { Redirect, router, usePreventRemove, type Href } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -25,35 +26,58 @@ import { api } from '@/lib/api';
 const S = strings.login;
 const H = strings.home;
 
+/** 다 끝나 떠날 곳. clear 면 스택을 비우고 간다(가입을 마침) */
+type Leave = { href: Href; clear: boolean };
+
 export default function BirthStep() {
   const { status, completeSignup } = useAuth();
   const [draft] = useState(getDraft);
   const fields = useBirthFields();
-  // 가입을 마치는 순간 로그인 상태가 되지만, 이 화면은 차트를 받아 풀이 글로 갈 때까지 머문다.
-  const [finishing, setFinishing] = useState(false);
+  /** 보내는 중(가입 요청 · 차트 받기). 두 번 누르기를 막고 뒤로 가기를 막는다 */
+  const sending = useRef(false);
+  const [busy, setBusy] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [leave, setLeave] = useState<Leave | null>(null);
 
-  if (status === 'signedIn' && !finishing) return <Redirect href="/" />;
+  // 보내는 동안은 뒤로(손짓 · 기기 뒤로 단추)를 막는다
+  usePreventRemove(busy, () => {});
+
+  // 막기가 풀린 뒤에 떠난다(막힌 채로 떠나면 막기에 걸린다)
+  useEffect(() => {
+    if (!leave) return;
+    if (!leave.clear) return router.dismissTo(leave.href);
+    if (router.canDismiss()) router.dismissAll();
+    router.replace(leave.href);
+  }, [leave]);
+
+  // 가입을 마치는 순간 로그인 상태가 되지만, 이 화면은 차트를 받아 풀이 글로 갈 때까지 머문다.
+  if (status === 'signedIn' && !busy && !leave) return <Redirect href="/" />;
   if (!draft?.nickname || draft.avatar === undefined) return <Redirect href="/signup/nickname" />;
   const { nickname, avatar, termsVersion, privacyVersion, pushConsent, marketingConsent } = draft;
 
+  function stop() {
+    sending.current = false;
+    setBusy(false);
+  }
+
   async function submit() {
-    if (finishing) return;
+    if (sending.current) return;
     const v = fields.validate();
     if (!v) return;
+    sending.current = true;
+    setBusy(true);
     setRequestError(null);
-    setFinishing(true);
     const r = await completeSignup({ birth: v.input, nickname, avatar, termsVersion, privacyVersion, pushConsent, marketingConsent });
     if (!r.ok) {
-      setFinishing(false);
+      stop();
       switch (r.code) {
         case 'INVALID_NICKNAME':
         case 'NICKNAME_TAKEN':
           rejectNickname(r.code);
-          return router.dismissTo('/signup/nickname');
+          return setLeave({ href: '/signup/nickname', clear: false });
         case 'TERMS_REQUIRED':
           dropTerms();
-          return router.dismissTo('/signup/terms');
+          return setLeave({ href: '/signup/terms', clear: false });
         case 'UNDER_AGE':
           return fields.setDateError(H.errors.underAge);
         case 'SIGNUP_EXPIRED':
@@ -65,13 +89,16 @@ export default function BirthStep() {
     clearDraft();
     const chart = await api.createChart(v.input);
     if (chart.ok) await saveBirth({ profile: v.profile, chart: chart.data });
-    router.replace(chart.ok ? '/reading' : '/');
+    stop();
+    setLeave({ href: chart.ok ? '/reading' : '/', clear: true });
   }
 
   return (
     <SignupStep
       step={3}
-      onBack={() => router.back()}
+      onBack={() => {
+        if (!sending.current) router.back();
+      }}
       title={S.signupTitle}
       footer={
         <View style={styles.footer}>
@@ -80,7 +107,7 @@ export default function BirthStep() {
               {requestError}
             </Txt>
           ) : null}
-          <Button label={H.submit} onPress={() => void submit()} disabled={!fields.complete || finishing} />
+          <Button label={H.submit} onPress={() => void submit()} disabled={!fields.complete || busy} />
         </View>
       }>
       <View style={styles.fields}>

@@ -4,8 +4,8 @@
  * "모두 동의" 만 넷을 한 번에 켠다. 동의와 약관 · 처리방침 버전은 가입 초안(메모리)에 두고 마지막 단계에서 한 번에 보낸다.
  * 뒤로 가면 가입을 그만둔다(가입권 · 초안을 버리고 로그인 화면으로 — 가드가 보낸다).
  */
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { Redirect, router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -41,8 +41,19 @@ function initial(): Agreed {
 }
 
 export default function TermsStep() {
-  const { cancelSignup } = useAuth();
+  const { status, cancelSignup } = useAuth();
   const [agreed, setAgreed] = useState<Agreed>(initial);
+  /** 다음을 눌러 넘어가는 중(두 번 눌러 닉네임 단계가 두 번 쌓이지 않게). 이 화면으로 돌아오면 푼다 */
+  const leaving = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      leaving.current = false;
+    }, []),
+  );
+
+  // 가입을 마친 사람이 뒤로 가기로 돌아오면 홈으로(여기서 누른 뒤로가 로그아웃시키지 않게)
+  if (status === 'signedIn') return <Redirect href="/" />;
+
   const all = ITEMS.every((item) => agreed[item.key]);
   const canNext = agreed.terms && agreed.privacy;
 
@@ -52,6 +63,8 @@ export default function TermsStep() {
   }
 
   function next() {
+    if (!canNext || leaving.current) return;
+    leaving.current = true;
     setDraft({
       termsVersion: LEGAL_VERSIONS.terms,
       privacyVersion: LEGAL_VERSIONS.privacy,

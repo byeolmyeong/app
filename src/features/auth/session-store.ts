@@ -60,6 +60,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
   let fetching: Promise<boolean> | null = null;
   /** 가입권. 메모리에만 둔다(30분 · 1회용) */
   let signupToken: string | null = null;
+  /** 보내는 중인 가입. 두 번 눌러도 같은 요청을 함께 쓴다(가입권은 한 번 쓰면 끝이라 둘째 응답이 첫째의 로그인을 지우지 않게) */
+  let submitting: Promise<ApiResult<SignupResult>> | null = null;
 
   function set(status: SessionStatus, token: string | null, lastError: string | null = null) {
     state = { status, token, ready: status !== 'checking', lastError };
@@ -160,19 +162,26 @@ export function createSessionStore(deps: SessionStoreDeps) {
      * 그다음 동작(다시 보내기 · 닉네임 확인)은 가입권이 없어 로그인 전이 되고 로그인 화면이 같은 이유를 보여 준다.
      * 닉네임 · 약관 · 프로필 · 출생 정보가 틀렸거나 서버에 닿지 못했으면 가입 중에 머문다(가입권이 남아 다시 보낼 수 있다). 결과를 그대로 돌려준다.
      */
-    async completeSignup({ birth, ...extra }: SignupInput): Promise<ApiResult<SignupResult>> {
-      if (!signupToken) return noTicket();
-      const r = await deps.signup(signupToken, birth, extra);
-      if (r.ok) {
-        await signedIn(r.data.token);
+    completeSignup({ birth, ...extra }: SignupInput): Promise<ApiResult<SignupResult>> {
+      // 가입 중이 아니면(이미 가입을 마쳤거나 로그인 전) 아무것도 하지 않는다 — 남은 가입 단계에서 눌러도 세션을 건드리지 않게
+      if (state.status !== 'signingUp') return Promise.resolve({ ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' });
+      submitting ??= (async (): Promise<ApiResult<SignupResult>> => {
+        if (!signupToken) return noTicket();
+        const r = await deps.signup(signupToken, birth, extra);
+        if (r.ok) {
+          await signedIn(r.data.token);
+          return r;
+        }
+        if (r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
+        else if (r.code === 'UNDER_AGE') {
+          signupToken = null;
+          set('signingUp', null, 'UNDER_AGE');
+        } else set('signingUp', null, reasonOf(r));
         return r;
-      }
-      if (r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
-      else if (r.code === 'UNDER_AGE') {
-        signupToken = null;
-        set('signingUp', null, 'UNDER_AGE');
-      } else set('signingUp', null, reasonOf(r));
-      return r;
+      })().finally(() => {
+        submitting = null;
+      });
+      return submitting;
     },
 
     /**
@@ -180,6 +189,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
      * 가입권이 없거나 만료(`SIGNUP_EXPIRED`)면 로그인 전으로 돌아간다. 결과를 그대로 돌려준다.
      */
     async checkNickname(nickname: string): Promise<ApiResult<NicknameAvailability>> {
+      // 가입 중이 아니면 아무것도 하지 않는다(가입을 마친 뒤 남은 닉네임 단계에서 눌러도 로그아웃되지 않게)
+      if (state.status !== 'signingUp') return { ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' };
       if (!signupToken) return noTicket();
       const r = await deps.checkNickname(signupToken, nickname);
       if (!r.ok && r.code === 'SIGNUP_EXPIRED') await signedOut(reasonOf(r));
@@ -188,6 +199,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
 
     /** 가입을 그만둔다(약관 단계에서 뒤로, 결정 041). 가입권을 버리고 이유 없이 로그인 전이 된다 */
     async cancelSignup(): Promise<void> {
+      // 가입 중일 때만(가입을 마친 뒤 남은 약관 단계의 뒤로가 로그아웃시키지 않게)
+      if (state.status !== 'signingUp') return;
       await signedOut();
     },
 

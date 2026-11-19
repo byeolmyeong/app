@@ -11,7 +11,8 @@ import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn() },
+  usePreventRemove: jest.fn(),
+  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => true) },
   Redirect: ({ href }: { href: string }) => {
     const { Text } = jest.requireActual('react-native');
     return <Text>{`redirect:${href}`}</Text>;

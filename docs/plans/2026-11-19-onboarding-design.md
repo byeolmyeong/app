@@ -22,7 +22,7 @@ last_reviewed: 2026-11-19
 | 정한 것 | 영향 |
 |---|---|
 | 스플래시에는 로고만, 아래 문구 없음 | 태스크 4 |
-| 로그인 버튼: 카카오 · 애플 · 구글 각 공식 가이드. 로고는 왼쪽 16px 같은 세로줄, 문구는 버튼 가운데, 높이 48 · 반경 12, **글자는 셋 다 16px**(애플의 "제목 = 높이의 43%" 만 벗어남 — 소유자가 통일을 골랐다). 안드로이드는 애플 없음 | 태스크 3 · 5 |
+| 로그인 버튼: 카카오 · 애플 · 구글 각 공식 가이드. 로고는 왼쪽 16px 같은 세로줄, 문구는 버튼 가운데, 높이 48 · 반경 12, **글자는 셋 다 16px**(애플의 "제목 = 높이의 43%" 만 벗어남 — 소유자가 통일을 골랐다). 안드로이드는 애플 없음. 구글 문구는 "Google로 계속하기"(소유자 2026-11-19 — 보드와 다름(소유자 결정)) | 태스크 3 · 5 |
 | 로그인 화면 아래 안내 문구(만 14세 · 약관) 없음, 이메일 동의 안내 띠 없음 | 태스크 5 |
 | 약관 단계를 닉네임보다 먼저: 모두 동의 + [필수] 이용약관 · [필수] 개인정보 수집 · 이용 · [선택] 푸시 알림 받기 · [선택] 마케팅 정보 수신(앱 푸시 · 이메일). 필수와 선택 사이 구분선 없음. 야간(21~08시) 광고는 보내지 않으므로 야간 동의는 받지 않는다 | 태스크 6 |
 | 닉네임은 따로 한 단계 | 태스크 7 |
@@ -54,7 +54,7 @@ last_reviewed: 2026-11-19
 - 색 · 글자 · 간격은 `src/constants/theme.ts`, 문구는 `src/content/strings.ts` 에서만(골든 룰). 시안 색은 이미 theme 토큰과 같다(paper `#0D0E12` · raised `#16171D` · fill `#1C1D24` · hair `#2A2B33` · primary `#4752FF` · danger `#E5484D` …).
 - 로그인 · 만 14세 · 닉네임 판정은 서버 응답을 따른다. 앱은 같은 규칙으로 먼저 안내만 한다.
 - 출생 정보 · 닉네임 · 이메일은 로그 · 분석 이벤트 · 기기 저장소에 두지 않는다.
-- 공급자 버튼 값(바꾸지 않는다): 카카오 바탕 `#FEE500` · 심볼 `#000000` · 글자 `#000000` 85% · 문구 "카카오 로그인" · 심볼은 카카오 공식 리소스. 구글 다크 바탕 `#131314` · 테두리 `#8E918F` 1px · 글자 `#E3E3E3` · 문구 "Google 계정으로 계속하기" · G 로고 원래 색. 애플 흰 바탕 · 검정 로고와 글자 · 문구 "Apple로 계속하기".
+- 공급자 버튼 값(바꾸지 않는다): 카카오 바탕 `#FEE500` · 심볼 `#000000` · 글자 `#000000` 85% · 문구 "카카오 로그인" · 심볼은 카카오 공식 리소스. 구글 다크 바탕 `#131314` · 테두리 `#8E918F` 1px · 글자 `#E3E3E3` · 문구 "Google로 계속하기"(소유자 2026-11-19 'Google로 계속하기' — 보드 5 · 5-1 의 "Google 계정으로 계속하기" 와 다름(소유자 결정). 웹은 GIS 가 그리는 글자 `continue_with` · `ko`) · G 로고 원래 색. 애플 흰 바탕 · 검정 로고와 글자 · 문구 "Apple로 계속하기".
 
 ## 태스크
 
@@ -67,7 +67,7 @@ last_reviewed: 2026-11-19
 
 ### 2. strings-onboarding · 상태: 완료
 - 읽을 것: `src/content/strings.ts`, 피그마 보드 문구
-- 할 것: `strings.intro`(세 장의 제목 · 본문 · 건너뛰기 · 다음 · 시작하기), `strings.terms`(제목 · 안내 · 모두 동의 · 항목 넷 · 마케팅 설명 · 보기), `strings.nickname`(제목 · 안내 "프로필과 닉네임은 나중에 마이에서 바꿀 수 있어요." · 자리 글자 · 규칙 안내 "한글 · 영문으로 2~10자" · 오류 "한글 · 영문만 쓸 수 있어요." · "이미 있는 닉네임이에요." · 프로필 8종의 접근성 이름(화면에는 안 보임)), `strings.birthSheet`(곳 검색 자리 글자 "동네 이름으로 찾기" — 예시 없이 · 시 · 도), `strings.making`(제목 · 순환 문구 셋). `login.kakao` → "카카오 로그인", `login.google` → "Google 계정으로 계속하기". `login.subtitle` · `ageNotice` · `signupGuide` 는 쓰는 곳이 없어지면 지운다.
+- 할 것: `strings.intro`(세 장의 제목 · 본문 · 건너뛰기 · 다음 · 시작하기), `strings.terms`(제목 · 안내 · 모두 동의 · 항목 넷 · 마케팅 설명 · 보기), `strings.nickname`(제목 · 안내 "프로필과 닉네임은 나중에 마이에서 바꿀 수 있어요." · 자리 글자 · 규칙 안내 "한글 · 영문으로 2~10자" · 오류 "한글 · 영문만 쓸 수 있어요." · "이미 있는 닉네임이에요." · 프로필 8종의 접근성 이름(화면에는 안 보임)), `strings.birthSheet`(곳 검색 자리 글자 "동네 이름으로 찾기" — 예시 없이 · 시 · 도), `strings.making`(제목 · 순환 문구 셋). `login.kakao` → "카카오 로그인", `login.google` → "Google로 계속하기"(소유자 2026-11-19 'Google로 계속하기' — 보드와 다름(소유자 결정)). `login.subtitle` · `ageNotice` · `signupGuide` 는 쓰는 곳이 없어지면 지운다.
 - 주는 것: 위 키 이름
 - 하지 말 것: 화면 파일에 문구를 직접 쓰지 않는다. 이유: 문구는 한 곳에서만 바뀐다.
 - 검증: `npx tsc --noEmit` 통과, `grep -rn "카카오로 계속하기\|구글로 계속하기" src` → 0건
@@ -133,7 +133,7 @@ last_reviewed: 2026-11-19
 - 할 것: `/verify`(타입 · 린트 · 테스트 · 빌드) 후 웹(`npx expo start --web`)에서 보드마다 같은 상태를 띄워 390×844 스크린샷을 찍고 피그마 보드와 나란히 비교. 다른 점은 해당 태스크로 돌아가 고친다.
 - 주는 것: 비교 스크린샷 묶음(실행 기록에 경로)
 - 하지 말 것: "비슷하다" 로 넘기지 않는다. 이유: 시안이 기준이다.
-- 검증: `/verify` 표 전부 통과 + 보드 20개 비교에서 남은 차이 0(웹 구글 버튼 크기 — 내 결정 — 만 예외)
+- 검증: `/verify` 표 전부 통과 + 보드 20개 비교에서 남은 차이 0(예외: 웹 구글 버튼 크기 — 내 결정, 앱 구글 버튼 문구 "Google로 계속하기" — 소유자 2026-11-19 보드와 다름(소유자 결정))
 
 ## 검증
 - `npx tsc --noEmit && npx expo lint && npm test` 통과, `/verify` 표 전부 통과.
@@ -158,4 +158,5 @@ last_reviewed: 2026-11-19
 - 2026-11-19 승인. 브랜치를 `feat/onboarding-design` 으로 바꾸고 develop `03a8bb3` 위로 옮김. 결정 039 와 이메일 범위 요청(그 계획 태스크 3)을 쓰려고 `origin/feat/social-email-nickname` 을 합침(`846bf4e`). 서버 짝: 서버 저장소 `feat/signup-terms-push-avatar`.
 - 태스크 1(결정 041): 전 — 039 "가입 한 화면" · 034 "소개 · 약관 화면 없음" · 020 "시각 모름이면 곳 칸 없음" → 후 — `docs/decisions/041-stepped-onboarding.md`(단계식 가입 · 약관 넷 · 닉네임 2~10자 중복 불가 · 프로필 8종 · 로그인 버튼 16px(애플 예외) · 소개 처음 한 번 · 곳 시트 · 별명 짓는 중), 039 · 034 · 020 앞머리 `superseded_by` 한 줄. 확인: `git fetch --all` 뒤 모든 원격 브랜치에 041 0건(040 은 origin/feat/analytics), `ls docs/decisions | sort | uniq -d` 0줄, 번호 앞 세 자리 중복 0줄. 커밋: 890d32e
 - 태스크 2(문구): 전 — `login.kakao` "카카오로 계속하기" · `login.google` "구글로 계속하기", 온보딩 문구 없음 → 후 — "카카오 로그인" · "Google 계정으로 계속하기", `strings.intro` · `steps` · `terms` · `nickname`(프로필 8종 화면 읽기 이름 포함) · `birthSheet` · `making`, `login.tagline` · `login.emailRequired`, `home.timeUnknownNote` · `home.errors.underAge`. `login.subtitle` · `ageNotice` · `signupGuide` 는 아직 로그인 · 가입 화면이 써서 태스크 5 · 8 에서 지운다. 확인: `npx tsc --noEmit` exit 0, `grep -rn "카카오로 계속하기\|구글로 계속하기" src` 0건, `npx expo lint` exit 0, `npx jest src/features/auth src/__tests__/login-screen` 10 묶음 53 통과. 커밋: 218cd9a
-- 태스크 3(공급자 버튼): 전 — 카카오 · 구글(앱) · 애플(웹)은 회색 보조 버튼(`Button line`), iOS 애플은 시스템 버튼, 웹 구글 GIS 는 흰 테두리(`outline`) 320 폭 → 후 — `src/features/auth/providers/social-button.tsx`(`SocialButton`: 48 · 12 · 로고 20×20 바깥 왼쪽 16 · 문구 가운데 16px 500 · 공급자 색은 `theme.ts` `SocialButtonStyle`), 카카오(앱 · 웹) · 구글(앱) · 애플(iOS · 웹)이 이 부품을 쓴다. iOS 애플은 이 부품 + `signInAsync`. 웹 구글 GIS 는 그대로 쓰되 `filled_black` · 로고 왼쪽 · 칸 폭(200~400)으로. 확인: `npx jest social-button` 먼저 실패(모듈 없음) → 5 통과, `native-providers` 애플 테스트를 공급자 버튼 기대로 바꿔 3 실패 → 통과, `npx jest` 57 묶음 799 통과, `npx tsc --noEmit` · `npx expo lint` exit 0. 결정: 버튼 글꼴은 공급자 가이드대로 시스템 글꼴(시안 원본도 -apple-system · Google Sans), 막힌 버튼은 투명도 0.4. 커밋: (이 커밋)
+- 태스크 3(공급자 버튼): 전 — 카카오 · 구글(앱) · 애플(웹)은 회색 보조 버튼(`Button line`), iOS 애플은 시스템 버튼, 웹 구글 GIS 는 흰 테두리(`outline`) 320 폭 → 후 — `src/features/auth/providers/social-button.tsx`(`SocialButton`: 48 · 12 · 로고 20×20 바깥 왼쪽 16 · 문구 가운데 16px 500 · 공급자 색은 `theme.ts` `SocialButtonStyle`), 카카오(앱 · 웹) · 구글(앱) · 애플(iOS · 웹)이 이 부품을 쓴다. iOS 애플은 이 부품 + `signInAsync`. 웹 구글 GIS 는 그대로 쓰되 `filled_black` · 로고 왼쪽 · 칸 폭(200~400)으로. 확인: `npx jest social-button` 먼저 실패(모듈 없음) → 5 통과, `native-providers` 애플 테스트를 공급자 버튼 기대로 바꿔 3 실패 → 통과, `npx jest` 57 묶음 799 통과, `npx tsc --noEmit` · `npx expo lint` exit 0. 결정: 버튼 글꼴은 공급자 가이드대로 시스템 글꼴(시안 원본도 -apple-system · Google Sans), 막힌 버튼은 투명도 0.4. 커밋: 977d1ee
+- 문구 변경(소유자 2026-11-19, 코디네이터 전달): 전 — `login.google` "Google 계정으로 계속하기"(보드 5 · 5-1) → 후 — "Google로 계속하기"(다른 버튼과 같은 꼴). 웹은 GIS 그대로(`text: 'continue_with'` · `locale: 'ko'` — 이미 그렇다). 전역 제약 · 인터뷰 결과 · 태스크 2 · 태스크 11 예외 목록 · 결정 041 맥락 줄을 함께 고침. 확인: `npx jest social-button native-providers` 통과, `grep -rn "Google 계정으로 계속하기" src` 0건. 커밋: (이 커밋)

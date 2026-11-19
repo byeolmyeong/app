@@ -10,7 +10,7 @@ describe('공급자 버튼', () => {
   const cases = [
     { provider: 'KAKAO', label: '카카오 로그인', background: '#FEE500', text: 'rgba(0,0,0,0.85)', border: 0 },
     { provider: 'APPLE', label: 'Apple로 계속하기', background: '#FFFFFF', text: '#000000', border: 0 },
-    { provider: 'GOOGLE', label: 'Google 계정으로 계속하기', background: '#131314', text: '#E3E3E3', border: 1 },
+    { provider: 'GOOGLE', label: 'Google로 계속하기', background: '#131314', text: '#E3E3E3', border: 1 },
   ] as const;
 
   it.each(cases)('$provider: 공급자 가이드의 바탕 · 문구 · 글자색, 로고는 바깥 왼쪽 16 에 20×20', async (c) => {

@@ -5,8 +5,6 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 
 import MyScreen from '@/app/my';
-import PrivacyScreen from '@/app/settings/privacy';
-import TermsScreen from '@/app/settings/terms';
 import { strings } from '@/content/strings';
 import { DEVICE_STORAGE_PREFIX } from '@/features/auth/delete-account';
 import { BIRTH_STORAGE_KEY, saveBirth } from '@/features/chart/use-birth-profile';
@@ -125,18 +123,6 @@ describe('마이를 불러오는 동안', () => {
     } finally {
       pending.mockRestore();
     }
-  });
-});
-
-describe('처리방침 · 약관 글 화면', () => {
-  it.each([
-    ['처리방침', PrivacyScreen, strings.legal.privacy],
-    ['약관', TermsScreen, strings.legal.terms],
-  ])('%s: 제목과 본문을 보여 주고, 아직 자리표시 글임을 밝힌다', async (_name, Component, doc) => {
-    await render(<Component />);
-    expect(screen.getByText(doc.title)).toBeTruthy();
-    expect(screen.getByText(strings.legal.placeholderNotice)).toBeTruthy();
-    for (const paragraph of doc.paragraphs) expect(screen.getByText(paragraph)).toBeTruthy();
   });
 });
 

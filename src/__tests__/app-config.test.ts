@@ -23,11 +23,17 @@ const ids = (c: ExpoConfig) => [c.name, c.scheme, c.ios?.bundleIdentifier, c.and
 
 describe('app.config APP_VARIANT', () => {
   it.each([undefined, '', 'production'])('%p 이면 운영앱 설정이다', (variant) => {
-    expect(ids(configWith(variant))).toEqual(['별명', 'byeolmyeong', 'com.byeolmyeong.app', 'com.byeolmyeong.app']);
+    const c = configWith(variant);
+    expect(ids(c)).toEqual(['별명', 'byeolmyeong', 'com.byeolmyeong.app', 'com.byeolmyeong.app']);
+    expect(c.icon).toBe('./assets/images/icon.png');
   });
 
-  it('test 이면 테스트앱의 이름 · scheme · 번들 ID · 패키지다', () => {
-    expect(ids(configWith('test'))).toEqual([
+  it('test 이면 테스트앱의 이름 · scheme · 번들 ID · 패키지 · 아이콘이다', () => {
+    const c = configWith('test');
+    expect(c.icon).toBe('./assets/images/icon-test.png');
+    // 파일이 없으면 모듈을 찾지 못해 던진다(경로 오타를 잡는다)
+    expect(() => require('../../assets/images/icon-test.png')).not.toThrow();
+    expect(ids(c)).toEqual([
       '별명 테스트',
       'byeolmyeong-test',
       'com.byeolmyeong.app.test',
@@ -42,6 +48,7 @@ describe('app.config APP_VARIANT', () => {
       ...c,
       name: undefined,
       scheme: undefined,
+      icon: undefined,
       ios: { ...c.ios, bundleIdentifier: undefined },
       android: { ...c.android, package: undefined },
     });

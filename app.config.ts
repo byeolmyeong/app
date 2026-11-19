@@ -3,7 +3,7 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 // 정적 설정(app.json) 위에 소셜 로그인 공급자 값을 얹는다(결정 034).
 // 값은 비밀이 아니고(앱에 들어간다) .env 의 EXPO_PUBLIC_* 에서 온다. 값이 없으면 그 공급자의 플러그인은 넣지 않는다
 // (구글 플러그인은 값 없이 넣으면 설정 읽기부터 실패한다) — 그 빌드에서는 그 공급자로 로그인할 수 없다.
-// APP_VARIANT=test 이면 테스트앱(스테이징 서버, TestFlight 전용)의 이름 · 번들 ID · scheme 으로 바꾼다(결정 041).
+// APP_VARIANT=test 이면 테스트앱(스테이징 서버, TestFlight 전용)의 이름 · 번들 ID · scheme · 아이콘으로 바꾼다(결정 041).
 
 const TEST_APP_ID = 'com.byeolmyeong.app.test';
 
@@ -39,6 +39,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...app,
     name: '별명 테스트',
     scheme: 'byeolmyeong-test',
+    // 노란 띠 + TEST(assets/brand/app-icon-test.svg). 홈 화면에서 운영앱과 구분한다
+    icon: './assets/images/icon-test.png',
     ios: { ...app.ios, bundleIdentifier: TEST_APP_ID },
     android: { ...app.android, package: TEST_APP_ID },
   };

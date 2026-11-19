@@ -65,7 +65,7 @@ last_reviewed: 2026-11-19
 
 ### 2. strings-onboarding · 상태: 대기
 - 읽을 것: `src/content/strings.ts`, 피그마 보드 문구
-- 할 것: `strings.intro`(세 장의 제목 · 본문 · 건너뛰기 · 다음 · 시작하기), `strings.terms`(제목 · 안내 · 모두 동의 · 항목 넷 · 마케팅 설명 · 보기), `strings.nickname`(제목 · 안내 · 자리 글자 · 규칙 안내 · 오류), `strings.birthSheet`(곳 검색 자리 글자 · "N곳 찾았어요" · 시 · 도), `strings.making`(제목 · 순환 문구 셋). `login.kakao` → "카카오 로그인", `login.google` → "Google 계정으로 계속하기". `login.subtitle` · `ageNotice` · `signupGuide` 는 쓰는 곳이 없어지면 지운다.
+- 할 것: `strings.intro`(세 장의 제목 · 본문 · 건너뛰기 · 다음 · 시작하기), `strings.terms`(제목 · 안내 · 모두 동의 · 항목 넷 · 마케팅 설명 · 보기), `strings.nickname`(제목 · 안내 · 자리 글자 · 규칙 안내 · 오류), `strings.birthSheet`(곳 검색 자리 글자 "동네 이름으로 찾기" — 예시 없이 · 시 · 도), `strings.making`(제목 · 순환 문구 셋). `login.kakao` → "카카오 로그인", `login.google` → "Google 계정으로 계속하기". `login.subtitle` · `ageNotice` · `signupGuide` 는 쓰는 곳이 없어지면 지운다.
 - 주는 것: 위 키 이름
 - 하지 말 것: 화면 파일에 문구를 직접 쓰지 않는다. 이유: 문구는 한 곳에서만 바뀐다.
 - 검증: `npx tsc --noEmit` 통과, `grep -rn "카카오로 계속하기\|구글로 계속하기" src` → 0건
@@ -107,7 +107,7 @@ last_reviewed: 2026-11-19
 
 ### 8. birth-step · 상태: 대기
 - 읽을 것: `src/app/signup.tsx`, `src/features/chart/birth-form.tsx` · `birth-fields.tsx` · `place-picker.tsx`, `src/components/sheet.tsx` · `scroll-picker.tsx`, 시안 보드 8 · 8-1 · 8-2 · 8-2-1 · 8-2-2 · 8-3 · 8-4
-- 할 것: `src/app/signup.tsx` → `src/app/signup/birth.tsx`(진행 막대 3/3, 위 안내 문구 없음). 시각 칸 이름 줄 오른쪽에 "모름" 체크(켜면 시각 칸 흐림 + "태어난 시각을 몰라 하우스와 상승점은 보여 드리지 않아요."). 시각 시트 제목 가운데, 휠 세 칸 같은 폭. 태어난 곳은 `PlacePicker`(전체 화면) 대신 `src/features/chart/place-sheet.tsx` — 검색 칸(서버가 준 지역 목록을 앱이 거른다, 같은 이름이면 시 · 도를 앞에) · 시 · 도 칩 17개(3열) · 시 · 군 · 구 목록(뒤로 가기, 고른 곳에 체크). 홈의 출생 정보 바꾸기(`/birth`)도 같은 칸을 쓴다.
+- 할 것: `src/app/signup.tsx` → `src/app/signup/birth.tsx`(진행 막대 3/3, 위 안내 문구 없음). 시각 칸 이름 줄 오른쪽에 "모름" 체크(켜면 시각 칸 흐림 + "태어난 시각을 몰라 하우스와 상승점은 보여 드리지 않아요."). 시각 시트 제목 가운데, 휠 세 칸 같은 폭. 태어난 곳은 `PlacePicker`(전체 화면) 대신 `src/features/chart/place-sheet.tsx` — 검색 칸(서버가 준 지역 목록을 앱이 거른다, 같은 이름이면 시 · 도를 앞에, 결과 개수 줄은 두지 않는다) · 시 · 도 칩 17개(3열) · 시 · 군 · 구 목록(뒤로 가기, 고른 곳에 체크). 홈의 출생 정보 바꾸기(`/birth`)도 같은 칸을 쓴다.
 - 주는 것: `PlaceSheet`, `/signup/birth`
 - 하지 말 것: 지역 목록을 앱에 새로 넣지 않는다. 이유: 서버가 준 목록이 원본이다(결정 006 정신).
 - 검증: `npm test -- birth place` — "모름" 켜면 시각 값 없이 보냄, 검색 "중구" → 6곳, 시 · 도 → 시 · 군 · 구 → 고르면 칸에 "서울 강남구"

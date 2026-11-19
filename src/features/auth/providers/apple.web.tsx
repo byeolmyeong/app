@@ -1,5 +1,6 @@
 /**
  * 웹의 애플 로그인: Apple JS 팝업(결정 034). ID 토큰과 authorization code(서버가 탈퇴 때 철회용으로 바꾼다)를 받는다.
+ * 이메일만 묻는다(`scope: 'email'`, 결정 039) — 서버가 ID 토큰에서 읽는다.
  * Services ID(`EXPO_PUBLIC_APPLE_SERVICES_ID`)가 없거나 https 가 아니면 그리지 않는다(애플은 localhost 를 받지 않는다).
  */
 import { useState } from 'react';
@@ -31,7 +32,7 @@ export function AppleLoginButton({ onCredential, onError, disabled }: LoginButto
       const auth = appleAuth();
       if (!auth || !servicesId) throw new Error('apple');
       const redirectUri = webOrigin() + APPLE_RETURN_PATH;
-      auth.init({ clientId: servicesId, scope: '', redirectURI: redirectUri, usePopup: true });
+      auth.init({ clientId: servicesId, scope: 'email', redirectURI: redirectUri, usePopup: true });
       const { authorization } = await auth.signIn();
       if (!authorization?.id_token) throw new Error('apple');
       onCredential({ provider: 'APPLE', idToken: authorization.id_token, authorizationCode: authorization.code, redirectUri });

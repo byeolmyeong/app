@@ -12,9 +12,9 @@ export const APPLE_RETURN_PATH = '/auth/apple';
 const KAKAO_AUTHORIZE = 'https://kauth.kakao.com/oauth/authorize';
 const KAKAO_STATE_KEY = 'byeolmyeong.kakaoState.v1';
 
-/** 카카오 인가 주소. 코드는 서버가 ID 토큰으로 바꾼다(서버 결정 021). openid 로 ID 토큰을 받는다 */
+/** 카카오 인가 주소. 코드는 서버가 ID 토큰으로 바꾼다(서버 결정 021). openid 로 ID 토큰을, account_email 로 그 토큰에 이메일을 받는다(결정 039) */
 export function kakaoAuthorizeUrl(restApiKey: string, redirectUri: string, state: string): string {
-  const query = new URLSearchParams({ client_id: restApiKey, redirect_uri: redirectUri, response_type: 'code', scope: 'openid', state });
+  const query = new URLSearchParams({ client_id: restApiKey, redirect_uri: redirectUri, response_type: 'code', scope: 'openid account_email', state });
   return `${KAKAO_AUTHORIZE}?${query.toString()}`;
 }
 

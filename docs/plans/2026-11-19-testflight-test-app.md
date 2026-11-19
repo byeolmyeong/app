@@ -127,14 +127,14 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약: 바꾸기 전 preview · production · development 모두 변수 없음. Claude 가 공개값을 넣었다 — preview `EXPO_PUBLIC_API_URL=https://api-staging.byeolmyeong.com` · `EXPO_PUBLIC_WEB_URL=https://app.staging.byeolmyeong.com`, production `https://api.byeolmyeong.com` · `https://app.byeolmyeong.com`, 두 환경의 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`(공개 스테이징 번들에서 꺼내 출력 없이). U4 는 소유자가 숨김 입력 스크립트로 넣었다 — `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`(preview "별명 테스트 iOS", production "별명 iOS") · `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY`(preview "별명 개발", production 운영 "별명"). 모두 plaintext(앱에 들어가는 값). 검증(값 대신 모양 · 해시 앞자리): 구글 ID 넷 모두 `byeolmyeong` 프로젝트, iOS 둘은 서로 다름, 카카오 둘은 32자리 16진수이고 서로 다름. preview 카카오 해시가 "별명 개발" 키와 같다. `eas config --profile test` → `com.byeolmyeong.app.test` + 구글 · 카카오 플러그인이 preview 값으로, `--profile production` → `com.byeolmyeong.app` + production 값으로 들어간다. 개발용 변수(`DEV_SESSION` · `USE_FIXTURES`) 0개. [확인 필요] 구글 iOS 테스트 · 운영 ID 가 뒤바뀌지 않았는지는 태스크 7 의 기기 구글 로그인으로 본다. development 환경은 비어 있다 — EAS 개발 빌드에 구글 · 카카오 플러그인이 필요하면 production 과 같은 공급자 값을 development 에도 넣는다(이 계획 밖).
 
-### 6. docs-commands · 상태: 대기
+### 6. docs-commands · 상태: 완료
 - 읽을 것: `CLAUDE.md`(80줄 제한), `.env.example`, 결정 041
 - 할 것: `CLAUDE.md` 명령어 절에 테스트앱 한 줄을 넣는다: `npx eas-cli@latest build --profile test --platform ios --auto-submit`(TestFlight 에만, 결정 041). 운영앱은 `--profile production` 이라고 짧게 붙인다. `.env.example` 머리에 한 줄을 더한다: EAS 빌드는 같은 이름을 EAS 환경 변수(preview = 테스트앱, production = 운영앱)에서 받는다.
 - 주는 것: 다음 세션이 명령을 CLAUDE.md 에서 찾는다
 - 하지 말 것: CLAUDE.md 80줄 넘기기. 이유: 이 파일의 규칙이다.
 - 검증: `wc -l CLAUDE.md` → 80 이하. `grep -n 'profile test' CLAUDE.md` → 한 줄. `grep -n 'preview' .env.example` → 한 줄
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `CLAUDE.md` 명령어 절에 테스트앱 빌드 · 제출 한 줄(운영은 `--profile production`, 값은 EAS 환경 변수), `.env.example` 머리에 "EAS 스토어 빌드는 같은 이름을 EAS 환경 변수에서 받는다(preview = 테스트앱, production = 운영앱)" 한 줄. 검증: CLAUDE.md 55줄(80 이하), `profile test` 1줄, `.env.example` 의 `preview` 1줄.
 
 ### 7. first-testflight-upload · 상태: 대기(U1~U4 가 끝나야 시작)
 - 읽을 것: 태스크 2~6 결과, 이 파일 "소유자만 할 수 있는 준비"

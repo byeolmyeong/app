@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 export type SynastryRowProps = {
@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   },
   rank: { minWidth: Spacing.xl, textAlign: 'center' },
   text: { flex: 1, gap: Spacing.xxs },
-  name: { fontWeight: '600' },
+  name: { fontWeight: FontWeight.semibold },
   score: { alignItems: 'flex-end', gap: Spacing.xxs },
 });

@@ -13,7 +13,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Radius, Sizes, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing, Typography } from '@/constants/theme';
 
 export type FieldProps = {
   label: string;
@@ -51,7 +51,7 @@ export function Field({ label, hint, error, children }: FieldProps) {
 }
 
 /**
- * 치는 입력칸. 회색으로 채운 높이 56 칸이고, 포커스면 초록 테두리, 틀렸으면 오류 테두리.
+ * 치는 입력칸. 회색으로 채운 높이 56 칸이고, 포커스면 주색 테두리, 틀렸으면 오류 테두리.
  * `multiline` 이면 여러 줄 높이의 칸이 되고 글은 위에서부터 적힌다.
  */
 export function FieldInput({
@@ -147,7 +147,7 @@ export function FieldSelect({
   );
 }
 
-// 웹 브라우저가 그리는 파란 포커스 테두리는 끈다. 포커스는 칸의 초록 테두리로 보여 준다.
+// 웹 브라우저가 그리는 파란 포커스 테두리는 끈다. 포커스는 칸의 주색 테두리로 보여 준다.
 const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle;
 
 const styles = StyleSheet.create({
@@ -166,6 +166,6 @@ const styles = StyleSheet.create({
   focused: { borderColor: Colors.primary },
   invalid: { borderColor: Colors.danger },
   select: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  input: { ...Typography.body, fontWeight: '500', color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
-  value: { fontWeight: '500' },
+  input: { ...Typography.body, fontWeight: FontWeight.medium, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  value: { fontWeight: FontWeight.medium },
 });

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
+import { FontWeight, ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 export type NavBarProps = {
@@ -56,5 +56,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: ScreenPaddingX,
   },
   side: { width: Sizes.navSide, alignItems: 'flex-start' },
-  title: { fontWeight: '700' },
+  title: { fontWeight: FontWeight.semibold },
 });

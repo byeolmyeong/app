@@ -10,7 +10,7 @@ export type CheckboxProps = {
   onChange: (checked: boolean) => void;
 };
 
-/** 체크 표시와 글씨. 고르면 체크가 초록이 된다. */
+/** 체크 표시와 글씨. 고르면 체크가 주색이 된다. */
 export function Checkbox({ label, checked, onChange }: CheckboxProps) {
   return (
     <Pressable

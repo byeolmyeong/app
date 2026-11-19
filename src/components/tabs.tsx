@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Spacing } from '@/constants/theme';
 
 export type TabsProps<K extends string> = {
   tabs: { key: K; label: string }[];
@@ -42,5 +42,5 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   on: { borderBottomColor: Colors.ink },
-  onText: { fontWeight: '700' },
+  onText: { fontWeight: FontWeight.semibold },
 });

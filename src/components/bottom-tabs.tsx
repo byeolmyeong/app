@@ -2,12 +2,12 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
 
 export type BottomTab<K extends string> = {
   key: K;
   label: string;
-  /** 색을 받아 아이콘을 그린다. 고른 탭은 진한 색, 나머지는 옅은 색 */
+  /** 색을 받아 아이콘을 그린다. 고른 탭은 본문색(ink), 나머지는 흐린 색 */
   icon: (color: string) => ReactNode;
 };
 
@@ -54,5 +54,5 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.hair,
   },
   tab: { flex: 1, height: Sizes.tabBarHeight, alignItems: 'center', justifyContent: 'center', gap: Spacing.xxs / 2 },
-  label: { fontWeight: '700' },
+  label: { fontWeight: FontWeight.semibold },
 });

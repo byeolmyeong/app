@@ -11,27 +11,42 @@ import { SectionLabel } from '@/components/section-label';
 import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, FontFamily, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontFamily, FontWeight, Radius, SheetRadius, Sizes, Spacing, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 describe('테마', () => {
-  it('흰 바탕·중립 회색·초록 주색을 갖는다(결정 018)', () => {
-    expect(Colors).toMatchObject({
-      paper: '#FFFFFF',
-      canvas: '#FFFFFF',
-      ink: '#191919',
-      gray: '#6A6A6A',
-      hint: '#989898',
-      muted: '#C6C6C6',
-      hair: '#E6E6E6',
-      fill: '#F6F6F6',
-      primary: '#3DDB99',
-      primaryLight: '#ECFBF5',
-      night: '#0F1220',
-      nightGold: '#E0A45A',
-      danger: '#F73838',
+  it('어두운 바탕·밝은 글씨·푸른 보라 주색을 갖는다(결정 033)', () => {
+    expect(Colors).toEqual({
+      paper: '#0D0E12',
+      raised: '#16171D',
+      // 화면 밖 여백: 웹 넓은 화면만 흰색이고, 앱(태블릿·폴드)은 바탕색이다. jest 는 앱(ios)으로 돈다
+      canvas: '#0D0E12',
+      ink: '#F2F3F7',
+      gray: '#A9ABB7',
+      hint: '#7C7E8A',
+      muted: '#4D4F5A',
+      hair: '#2A2B33',
+      fill: '#1C1D24',
+      primary: '#4752FF',
+      primarySoft: '#1D2050',
+      danger: '#E5484D',
     });
-    expect(Colors).not.toHaveProperty('gold');
+  });
+
+  it('웹 넓은 화면의 앱 폭 밖은 바탕보다 한 단 어두운 색이다(2026-11-18 소유자)', () => {
+    // 테마를 웹으로 다시 불러온다(격리된 모듈에서 Platform.OS 만 웹으로 바꾼다)
+    jest.isolateModules(() => {
+      const { Platform } = jest.requireActual<typeof import('react-native')>('react-native');
+      const original = Platform.OS;
+      Platform.OS = 'web';
+      try {
+        const web = jest.requireActual<typeof import('@/constants/theme')>('@/constants/theme');
+        expect(web.Colors.canvas).toBe('#08090B');
+        expect(web.Colors.canvas).not.toBe(web.Colors.paper);
+      } finally {
+        Platform.OS = original;
+      }
+    });
   });
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
@@ -39,15 +54,21 @@ describe('테마', () => {
       'display', 'title', 'heading', 'button', 'body', 'table', 'label', 'mono', 'number', 'picker',
     ]);
     expect(Object.values(Typography).every((t) => t.fontFamily === FontFamily)).toBe(true);
-    expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 39, fontWeight: '700' });
+    expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 38, fontWeight: '500' });
     expect(Typography.button).toMatchObject({ fontSize: 16, fontWeight: '600' });
-    expect(Typography.body).toMatchObject({ fontSize: 15, lineHeight: 23 });
-    // 글자 사이는 크기의 -2%
-    expect(Typography.body.letterSpacing).toBeCloseTo(-0.3);
+    expect(Typography.body).toMatchObject({ fontSize: 15, lineHeight: 24, fontWeight: '400' });
+    // 자간: 20 이상 -2%, 15~18 -1%, 14 이하 0(결정 033)
+    expect(Typography.display.letterSpacing).toBeCloseTo(-0.56);
+    expect(Typography.body.letterSpacing).toBeCloseTo(-0.15);
+    expect(Typography.label.letterSpacing).toBe(0);
+    // 굵기는 400 · 500 · 600 세 가지만(결정 033). 700 이상 글꼴 파일은 싣지 않는다
+    expect(FontWeight).toEqual({ regular: '400', medium: '500', semibold: '600' });
+    const weights: string[] = Object.values(FontWeight);
+    expect(Object.values(Typography).every((t) => weights.includes(t.fontWeight))).toBe(true);
     expect(Object.values(Spacing).slice(0, 7)).toEqual([4, 8, 12, 16, 24, 32, 48]);
     expect(Radius).toBe(12);
     expect(SheetRadius).toBe(24);
-    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 56, maxContentWidth: 390 });
+    expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 56, maxContentWidth: 480 });
   });
 });
 
@@ -71,6 +92,17 @@ describe('Button', () => {
     expect((await bg('danger')).backgroundColor).toBe(Colors.danger);
     expect((await bg('primary', true)).backgroundColor).toBe(Colors.hair);
     expect((await bg('primary')).borderRadius).toBe(12);
+  });
+
+  it('주·빨강 버튼의 글씨는 밝은 본문색이다(어두운 바탕, 결정 033)', async () => {
+    const color = async (variant: 'primary' | 'danger') => {
+      const view = await render(<Button label="버튼" variant={variant} onPress={() => {}} />);
+      const value = StyleSheet.flatten(screen.getByText('버튼').props.style).color;
+      await view.unmount();
+      return value;
+    };
+    expect(await color('primary')).toBe(Colors.ink);
+    expect(await color('danger')).toBe(Colors.ink);
   });
 
   it('disabled 이면 눌러도 onPress 를 부르지 않는다', async () => {
@@ -164,6 +196,16 @@ describe('Sheet', () => {
     );
     await fireEvent.press(screen.getByTestId('sheet-dim'));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('시트는 바탕보다 한 단 떠 있는 면이고 손잡이는 그 위에서 보인다(결정 033)', async () => {
+    await render(
+      <Sheet visible onClose={() => {}}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    expect(StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).backgroundColor).toBe(Colors.raised);
+    expect(StyleSheet.flatten(screen.getByTestId('sheet-handle').props.style).backgroundColor).toBe(Colors.muted);
   });
 });
 

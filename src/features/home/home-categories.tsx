@@ -4,7 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const M = strings.main;
@@ -175,5 +175,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: LineWidth,
     borderBottomColor: Colors.hair,
   },
-  itemOn: { fontWeight: '500' },
+  itemOn: { fontWeight: FontWeight.medium },
 });

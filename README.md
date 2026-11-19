@@ -1,6 +1,6 @@
 # 앱 저장소 (byeolmyeong-app)
 
-점성술 몰라도 읽히는 한국어 서양 점성술 앱(웹·iOS·Android). 출생 차트를 서버가 계산하고 AI 가 용어 없이 풀어 준다. 앱 이름은 바꿀 예정이다(가칭 "별명").
+점성술 몰라도 읽히는 한국어 서양 점성술 앱(웹·iOS·Android). 출생 차트를 서버가 계산하고 AI 가 용어 없이 풀어 준다. 앱 이름은 "별명"이다(별이 지어 준 이름, 결정 032).
 
 - 무엇을 만드는가: [docs/product.md](docs/product.md)
 - 1.0.0 기능 명세: [docs/release-1.0.0.md](docs/release-1.0.0.md) · 기획안: [docs/design/product-brief-1.0.0.md](docs/design/product-brief-1.0.0.md)

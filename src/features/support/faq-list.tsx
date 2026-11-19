@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
 import type { Faq } from '@/lib/api';
 
 /**
@@ -64,6 +64,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingVertical: Spacing.sm,
   },
-  questionText: { flex: 1, fontWeight: '500' },
+  questionText: { flex: 1, fontWeight: FontWeight.medium },
   answer: { paddingBottom: Spacing.md },
 });

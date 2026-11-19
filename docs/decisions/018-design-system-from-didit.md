@@ -3,7 +3,7 @@ type: decision
 tags: [디자인, 디자인 시스템, 토큰, 부품, 하단 시트, 입력]
 status: active
 last_reviewed: 2026-11-11
-superseded_by: 025-share-cards-light-typographic.md (공유 카드의 밤 바탕만. 나머지는 유효)
+superseded_by: 025-share-cards-light-typographic.md (공유 카드의 밤 바탕만) · 033-brand-dark-design-system.md (흰 바탕·초록·글꼴 굵기·웹 폭 390. 부품 모양은 유효)
 ---
 # 018. 화면은 디딧 프론트의 디자인 시스템(색·글꼴·부품)으로 다시 만든다
 

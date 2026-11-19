@@ -25,7 +25,7 @@ last_reviewed: 2026-11-19
   | | 웹 앱(Vercel) | 서버(API) | Vercel 환경 | 브랜치 |
   |---|---|---|---|---|
   | 운영 | `app.byeolmyeong.com` | `api.byeolmyeong.com` | Production | `main` |
-  | 스테이징 | `app.staging.byeolmyeong.com` | `api.staging.byeolmyeong.com` | Preview(`develop` 브랜치 도메인) | `develop` |
+  | 스테이징 | `app.staging.byeolmyeong.com` | `api-staging.byeolmyeong.com`(처음 `api.staging` 으로 적음) | Preview(`develop` 브랜치 도메인) | `develop` |
   | 그 밖의 PR | Vercel 이 주는 임시 주소 | 스테이징 서버 | Preview | 작업 브랜치 |
 - **환경 변수**(빌드 때 들어간다): `EXPO_PUBLIC_API_URL` · `EXPO_PUBLIC_WEB_URL` 을 환경마다. `EXPO_PUBLIC_DEV_SESSION=1` 은 **스테이징(Preview)에만** — 운영에서 켜면 아무나 개발용 세션을 받는다. 운영 공개는 소셜 로그인 뒤.
 - **주소에 식별자가 든 화면**(`/s/<id>` · `/synastry/<id>` · `/synastry/<id>/report` · `/synastry/<id>/direction`)은 정적 내보내기가 만든 `[id]` 화면 파일로 Vercel rewrite 한다. 화면은 브라우저에서 주소를 읽어 그린다.
@@ -107,3 +107,8 @@ $ vercel domains verify app.staging.byeolmyeong.com → valid configuration and 
 $ curl https://app.staging.byeolmyeong.com/login → 200
 ```
 - 남은 것: 운영 DNS(`app` CNAME, 같은 값), Vercel GitHub 연결(소유자), 소셜 로그인 웹 값 3개를 Vercel 두 환경에(값은 소유자 `.env`), 공급자 콘솔에 두 웹 주소, 서버(`api.` 443 거부 · `api.staging` DNS 없음 · `ALLOWED_ORIGINS`), 운영 배포.
+
+### 운영 배포 · 스테이징 서버 주소 (2026-11-19)
+- 소유자 "일단 배포를 하자": 최신 코드(이 브랜치, 소셜 로그인 · 브랜드 포함)로 `vercel deploy --prod` → https://byeolmyeong-32djg5vp5-swyp-fad73311.vercel.app (Production URL https://app.byeolmyeong.com). 정식으로는 GitHub 연결 뒤 `main` 에서 자동으로 올라간다.
+- 결정: 스테이징 서버는 서버 쪽이 만든 `api-staging.byeolmyeong.com`(A 134.185.114.131)을 따른다 — Preview 의 `EXPO_PUBLIC_API_URL` 을 덮어쓰고 다시 배포, 스테이징 번들에서 `https://api-staging.byeolmyeong.com` 확인 — 처음 `api.staging` 으로 적은 문서도 고쳤다.
+- 서버 확인(2026-11-19): `api.byeolmyeong.com`(168.110.120.209) · `api-staging.byeolmyeong.com`(134.185.114.131) 모두 443 · 80 연결 안 됨 — 서버 쪽 HTTPS · 방화벽 확인 필요.

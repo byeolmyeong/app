@@ -17,7 +17,7 @@ jest.mock('@/lib/api', () => ({
   api: { createInquiry: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -153,7 +153,7 @@ describe('문의하기(/settings/inquiry)', () => {
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
-  it('주소로 바로 들어와 돌아갈 곳이 없으면 마이로 간다(결정 034)', async () => {
+  it('주소로 바로 들어와 돌아갈 곳이 없으면 마이로 간다(결정 038)', async () => {
     (router.canGoBack as jest.Mock).mockReturnValue(false);
     await render(<InquiryScreen />);
     await fill();

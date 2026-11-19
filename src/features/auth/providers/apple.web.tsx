@@ -1,0 +1,48 @@
+/**
+ * 웹의 애플 로그인: Apple JS 팝업(결정 034). ID 토큰과 authorization code(서버가 탈퇴 때 철회용으로 바꾼다)를 받는다.
+ * Services ID(`EXPO_PUBLIC_APPLE_SERVICES_ID`)가 없거나 https 가 아니면 그리지 않는다(애플은 localhost 를 받지 않는다).
+ */
+import { useState } from 'react';
+
+import { Button } from '@/components/button';
+import { strings } from '@/content/strings';
+import type { LoginButtonProps } from '@/features/auth/providers/types';
+import { APPLE_RETURN_PATH, appleWebAvailable, webOrigin } from '@/features/auth/providers/web-redirect';
+import { loadScript } from '@/features/auth/providers/load-script';
+
+const APPLE_SCRIPT = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/ko_KR/appleid.auth.js';
+
+type AppleAuth = {
+  init(options: { clientId: string; scope: string; redirectURI: string; usePopup: boolean }): void;
+  signIn(): Promise<{ authorization?: { id_token?: string; code?: string } }>;
+};
+
+const appleAuth = () => (window as unknown as { AppleID?: { auth?: AppleAuth } }).AppleID?.auth;
+
+export function AppleLoginButton({ onCredential, onError, disabled }: LoginButtonProps) {
+  const servicesId = process.env.EXPO_PUBLIC_APPLE_SERVICES_ID?.trim();
+  const [busy, setBusy] = useState(false);
+  if (!servicesId || !appleWebAvailable(servicesId, window.location.protocol)) return null;
+
+  async function press() {
+    setBusy(true);
+    try {
+      await loadScript(APPLE_SCRIPT);
+      const auth = appleAuth();
+      if (!auth || !servicesId) throw new Error('apple');
+      const redirectUri = webOrigin() + APPLE_RETURN_PATH;
+      auth.init({ clientId: servicesId, scope: '', redirectURI: redirectUri, usePopup: true });
+      const { authorization } = await auth.signIn();
+      if (!authorization?.id_token) throw new Error('apple');
+      onCredential({ provider: 'APPLE', idToken: authorization.id_token, authorizationCode: authorization.code, redirectUri });
+    } catch (e) {
+      // 사용자가 팝업을 닫으면 { error: 'popup_closed_by_user' } 가 온다. 오류로 알리지 않는다.
+      const closed = typeof e === 'object' && e !== null && (e as { error?: unknown }).error === 'popup_closed_by_user';
+      if (!closed) onError();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <Button label={strings.login.apple} variant="line" onPress={() => void press()} disabled={disabled || busy} />;
+}

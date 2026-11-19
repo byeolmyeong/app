@@ -22,7 +22,7 @@ jest.mock('@/lib/api', () => ({
   api: { createReading: jest.fn(), createDirection: jest.fn(), saveProfile: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -34,7 +34,7 @@ const reading = fixtures.reading;
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockUseSession.mockReturnValue({ token: 'dev-token', ready: true });
+  mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
   await saveBirth({ profile, chart: fixtures.chart });
 });
@@ -143,7 +143,7 @@ describe('요약 해석 화면', () => {
   });
 
   it('세션 확인이 끝나기 전에는 요청하지 않는다', async () => {
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.generating)).toBeTruthy();
     await act(async () => {});
@@ -165,7 +165,7 @@ describe('요약 해석 화면', () => {
       JSON.stringify({ key: JSON.stringify([profile.date, profile.time, profile.place.id]), reading }),
     );
     // 세션을 아직 받는 중이다
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     expect(screen.queryByText(R.generating)).toBeNull();
@@ -174,7 +174,7 @@ describe('요약 해석 화면', () => {
 
   it('기기에서 글을 찾는 동안에는 "짓는 중" 을 보여 주지 않는다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     const view = await render(<ReadingScreen />);
     // 받아 둔 글이 없다는 것을 확인한 뒤에야 "짓는 중" 이 나온다
     expect(await screen.findByText(R.generating)).toBeTruthy();

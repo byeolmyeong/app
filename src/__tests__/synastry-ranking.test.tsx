@@ -23,7 +23,7 @@ jest.mock('@/lib/api', () => ({
   api: { listPlaces: jest.fn(), getSynastry: jest.fn(), listSynastries: jest.fn(), getSynastryRanking: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -44,7 +44,7 @@ const rowNames = () => screen.getAllByTestId('synastry-row').map((r) => r.props.
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockUseSession.mockReturnValue({ token: 'dev-token', ready: true });
+  mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockParams.mockReturnValue({});
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.listSynastries.mockResolvedValue({ ok: true, data: fixtures.synastryList });
@@ -113,7 +113,7 @@ describe('궁합 랭킹(/synastry/ranking)', () => {
   });
 
   it('세션 확인이 끝나기 전에는 서버를 부르지 않는다', async () => {
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<SynastryRankingScreen />);
     await act(async () => {});
     expect(mockApi.getSynastryRanking).not.toHaveBeenCalled();

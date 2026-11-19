@@ -32,14 +32,16 @@ flowchart LR
 ## 디렉터리 구조 (src/)
 ```
 app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇게: features 의 훅·부품을 조립만 한다
-  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 /login, 가입 중 /signup, /s · /auth 는 열림, 결정 034)
+  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 · 소개 안 봄 /intro, 로그인 전 /login, 가입 중 /signup/terms(가입 단계와 이용약관 · 처리방침은 열림), /s · /auth 는 열림, 결정 034 · 041)
   index.tsx          홈(출생 정보가 없으면 입력 · 서버의 것으로 되살리기)
-  login.tsx · signup.tsx · auth/kakao.tsx   로그인(공급자 버튼) · 가입 마지막 단계(출생 정보, 판정은 서버) · 카카오 웹 로그인에서 돌아오는 화면(결정 034)
+  intro.tsx · login.tsx · auth/kakao.tsx   소개 3장(이 기기에서 처음 한 번) · 로그인(공급자 버튼) · 카카오 웹 로그인에서 돌아오는 화면(결정 034 · 041)
+  signup/            단계식 가입(결정 041): terms.tsx(약관 동의) → nickname.tsx(닉네임 · 프로필) → birth.tsx(출생 정보, 여기서 POST /auth/signup 한 번)
   reading.tsx · report.tsx · direction.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · my.tsx(마이: 출생 정보 · 도움 · 약관 · 정보 · 로그아웃 · 계정 삭제, 결정 038) · settings/(자주 묻는 질문 · 문의하기 · 처리방침 · 약관 — 목록 화면은 없다)
 features/            기능별 로직과 기능 전용 부품
-  auth/              세션(session-store · use-session 의 useAuth — 소셜 로그인 · 가입 · 로그아웃, 개발용 세션), 공급자 버튼(providers/ — `google`·`apple`·`kakao` 의 기본(앱) · `.ios` · `.web` 파일, 같은 이름의 버튼), 세션 토큰 보관, 로그인 전 가드(guard.ts), 로그아웃(sign-out.ts — 기기 저장도 비움), 계정 삭제(확인 시트 · 기기 저장 비움)
-  chart/             차트 휠·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
-  reading/           요약 해석 요청 상태·문단 부품
+  auth/              세션(session-store · use-session 의 useAuth — 소셜 로그인 · 가입 · 닉네임 확인 · 가입 그만두기 · 로그아웃, 개발용 세션), 공급자 버튼(providers/ — `google`·`apple`·`kakao` 의 기본(앱) · `.ios` · `.web` 파일, 같은 이름의 버튼, 모양은 social-button.tsx 하나 — 웹 구글만 GIS), 세션 토큰 보관, 로그인 전 가드(guard.ts), 가입 단계 뼈대(signup-step.tsx) · 초안(signup-draft.ts, 메모리만) · 닉네임 규칙(nickname-rule.ts) · 프로필 고르기 시트(avatar-sheet.tsx), 로그아웃(sign-out.ts — 기기 저장도 비움), 계정 삭제(확인 시트 · 기기 저장 비움)
+  onboarding/        소개 3장의 그림(intro-art.tsx)과 이 기기에서 봤는지(intro-seen.ts — AsyncStorage `byeolmyeong-device.introSeen.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 041)
+  chart/             차트 휠·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) · 태어난 곳 시트(place-sheet.tsx — 검색 · 시 · 도 칩 → 시 · 군 · 구, 결정 041) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
+  reading/           요약 해석 요청 상태·문단 부품 · 별명 짓는 중(making-view.tsx, 결정 041)
   report/            심층 리포트·변곡점 타임라인
   synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts). 궁합 지우기(delete-synastry.ts · 확인 시트 synastry-delete-sheet.tsx)
   direction/         방향성 제시(이성 · 미래 · 궁합)의 요청 상태·글 부품. 기기 보관은 이성만(결정 023 · 026)
@@ -69,12 +71,12 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
 ## 데이터 흐름
 - 차트: 입력 → `POST /charts` → 받은 `Chart` 를 그리고 기기에 보관. 다시 열 때는 보관본을 쓴다.
 - 세션(개발용): 개발 빌드(`EXPO_PUBLIC_DEV_SESSION=1`)는 앱이 켜질 때 `POST /auth/dev` 로 세션을 받는다(결정 017, 서버 결정 005). Vercel 배포(스테이징 · 운영)에는 켜지 않는다(결정 037). 공유 페이지(`/s/…`)에서는 받지 않는다(결정 025).
-- 세션(소셜 로그인, 결정 034 · 서버 결정 021): 공급자에서 받은 자격 증명(ID 토큰, 카카오 웹은 인가 코드)을 `POST /auth/login` 에 보낸다. 계정이 있으면 세션, 처음 온 사람은 가입권을 받아 `/signup` 에서 출생 정보와 함께 `POST /auth/signup` — 서버가 만 14세를 판정한다(미만 403 `UNDER_AGE`). 로그아웃은 `DELETE /auth/session`. 웹이 켜질 때는 `GET /auth/session` 으로 쿠키 세션이 살아 있는지 본다.
+- 세션(소셜 로그인, 결정 034 · 서버 결정 021): 공급자에서 받은 자격 증명(ID 토큰, 카카오 웹은 인가 코드)을 `POST /auth/login` 에 보낸다. 계정이 있으면 세션, 처음 온 사람은 가입권을 받아 단계식 가입(`/signup/terms` → `/signup/nickname` → `/signup/birth`, 결정 041)을 밟는다. 앞 단계 값(약관 버전 · 동의 · 닉네임 · 프로필)은 메모리 초안에만 두고, 닉네임 중복은 "다음" 에서 `POST /auth/nickname-check` 한 번, 마지막에 출생 정보와 함께 `POST /auth/signup` 한 번 — 서버가 만 14세를 판정한다(미만 403 `UNDER_AGE`, 가입권을 지운다). 로그아웃은 `DELETE /auth/session`. 웹이 켜질 때는 `GET /auth/session` 으로 쿠키 세션이 살아 있는지 본다.
 - 세션 토큰: 앱(iOS·Android)은 기기 보안 저장소에만 두고 요청마다 `Authorization: Bearer <token>` 헤더로 보낸다. 웹은 서버의 httpOnly 쿠키 `bm_session` 에 맡기고 모든 요청에 `credentials: 'include'` 를 붙인다(토큰을 받지도 두지도 않는다).
 - 출생 정보: 입력 화면이 차트를 받은 뒤 세션이 있으면 `PUT /profile` 로 서버에도 저장한다. 요약 해석은 서버가 이 값으로 쓴다. 시각이 "모름"(`time: null`)이면 태어난 곳을 묻지 않고 `placeId: null` 을 보내며, 기기에도 곳 없이(`place: null`) 보관한다(결정 020).
 - 출생 정보 되살리기(결정 029): 홈(`/`)이 기기 저장소를 읽었는데 출생 정보가 없고 세션 토큰이 있으면 `GET /profile` 을 한 번 부른다(`features/chart/use-birth-restore.ts`). 200 이면 그 입력으로 `POST /charts` 를 받고, 시각을 알면 `GET /places` 에서 `placeId` 의 이름을 찾아(못 찾으면 이름을 비워 두고 식별자만) 입력 화면과 같은 `saveBirth` 로 기기에 둔 뒤 홈(카테고리)을 그린다. `PUT /profile` 은 다시 하지 않는다. 확인하는 동안(세션을 기다릴 때 포함)에는 "불러오는 중이에요" 만 보인다. 404 `NO_PROFILE` · 그 밖의 실패 · 차트를 받지 못함이면 입력 화면이다. 기기에 출생 정보가 있거나 세션이 없으면 부르지 않고, 가짜 서버는 404 로 답한다. 공유 페이지에서는 하지 않는다(홈이 아니다). 글(풀이 · 리포트 · 방향성)은 따로 되살리지 않는다 — 그 화면들이 서버에 묻고 서버가 저장된 글을 준다.
 - 글: 세션이 있어야 요청한다. 요약 해석(`POST /readings`, 본문 없음)은 바로 받아 출생 정보별로 기기에 보관하고, 다시 열 때는 보관본을 쓴다. 401 이면 세션을 한 번 다시 받는다. 리포트는 202 를 받은 뒤 상태를 확인하거나 알림으로 완성을 안다. 다 쓴 리포트도 기기에 보관해 바로 보여 주되, 시기의 "지금 나의 구간"(`timing.current`)은 서버가 그날 날짜로 만들므로 보관본의 `current.date` 가 기기의 오늘(한국 날짜)과 다르면 `GET /reports/me` 를 한 번 조용히 다시 부른다(결정 021). 시기 탭은 지금 · 올해 · 내년 · 앞으로 · 지나온 시기의 네 부분이다(결정 031). 앱은 서버가 준 날짜 글자를 비교해 나누고 묶기만 한다(`features/report/timing.ts`): 오늘(`current.date`, 기기 시계가 아니다)을 기준으로 지난 것 · 지금 걸친 것 · 올해 시작 · 내년 시작 · 내년 뒤로 나누고(`splitByNow`. 내년의 이름표는 `nextYearLabel` 한 곳에서 오늘의 해 글자로 만든다), 앞으로 · 지나온 시기의 목록에서는 "지금 앞뒤 10년" 을 먼저 거르고(`splitByWindow`) 시작한 해로 묶는다. 해 · 만 나이는 서버가 준 값만 적고, 앱이 셈한 "몇 년 뒤" 같은 숫자는 없다.
-- 계정 삭제: 마이의 확인 시트(결정 038) → `DELETE /account`(204) → 성공했을 때만 기기 저장소에서 이 앱의 키(`byeolmyeong.` 으로 시작하는 것 전부)와 보안 저장소의 세션 토큰을 지우고 로그인 화면(`/login`, 결정 034)으로 간다. 로그아웃도 마이에서 하고 같은 곳으로 간다. 실패하면 기기의 것은 건드리지 않는다. 기능이 기기에 새로 두는 키는 `byeolmyeong.<이름>.v<판>` 으로 짓는다(그래야 삭제 때 함께 지워진다).
+- 계정 삭제: 마이의 확인 시트(결정 038) → `DELETE /account`(204) → 성공했을 때만 기기 저장소에서 이 앱의 키(`byeolmyeong.` 으로 시작하는 것 전부)와 보안 저장소의 세션 토큰을 지우고 로그인 화면(`/login`, 결정 034)으로 간다. 로그아웃도 마이에서 하고 같은 곳으로 간다. 실패하면 기기의 것은 건드리지 않는다. 기능이 기기에 새로 두는 키는 `byeolmyeong.<이름>.v<판>` 으로 짓는다(그래야 삭제 때 함께 지워진다). 예외: 사람이 아니라 기기에 붙는 값(소개를 봤는지, 결정 041)은 일부러 `byeolmyeong-device.` 로 지어 로그아웃 · 탈퇴 뒤에도 남긴다.
 - 방향성 제시(이성): `/direction` 을 열 때만 `POST /directions`(`{ topic: "LOVE" }`)를 부른다(결정 023). 요약 해석 화면과 홈은 부르지 않고 들어가는 줄만 둔다. 서버가 글을 기다렸다 답해 처음에는 20초쯤 걸린다(그동안 기다리는 화면). 받은 글은 요약 해석과 같은 모양의 키(출생 정보별)로 기기에 두고(`features/direction/use-direction.ts`), 있으면 세션을 기다리지 않고 바로 보여 준다. 404 면 기기의 내 출생 정보를 `PUT /profile` 한 뒤 한 번만 더 요청하고, 502 는 "다시 시도" 를 보여 준다. 항목이 정확히 3개가 아니거나 근거가 빈 응답은 쓰지 않는다(`isDirection`).
 - 방향성 제시(미래): 심층 리포트의 시기 탭이 보일 때만 `POST /directions`(`{ topic: "FUTURE" }`)를 부르고 탭의 "지금" 바로 아래에 그린다(결정 026 · 031). 다른 탭을 보는 동안에는 부르지 않는다. 화면 `app/report.tsx` 가 `features/direction` 의 칸(`FutureDirection`)을 `ReportView` 의 `timingAfterNow` 자리에 넣는다(기능끼리는 서로 가져오지 않는다). 글은 "지금의 시기" 가 같은 동안만 같고 바뀌는 날은 서버만 알므로 **기기에 두지 않고 보일 때마다 받는다**(저장된 글은 서버가 바로 준다). 기다리는 중 · 실패("다시 시도")는 그 칸 안에서만 보이고 시기의 나머지는 그대로다. 404 면 `PUT /profile` 뒤 한 번만 더 요청한다.
 - 방향성 제시(궁합): 궁합 결과의 버튼을 눌러 `/synastry/<id>/direction` 을 열 때만 `POST /directions`(`{ topic: "SYNASTRY", synastryId }`)를 부른다(결정 026). 결과 화면은 부르지 않는다. 메모리에 상대의 출생 정보가 있으면(방금 계산한 궁합) 함께 보내고(`date` · `time` · 시각을 알 때만 `placeId`), 없으면 식별자만 먼저 보낸 뒤 `BIRTH_REQUIRED` 가 오면 화면에서 다시 입력받아 보낸다. `BIRTH_MISMATCH` · `INVALID_DATE` · `INVALID_TIME` · `UNKNOWN_PLACE` 는 다시 입력, `PROFILE_CHANGED` 는 궁합을 새로 보게 하고, `NOT_FOUND` 는 궁합 결과와 같은 안내다. 상대의 출생 정보도 받은 글도 기기에 두지 않는다.
@@ -101,7 +103,7 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
   - 이미지: 앱은 카드 뷰를 `react-native-view-shot` 으로 1080×1920 PNG 파일로 만들어 `expo-sharing` 의 시스템 공유 시트로, 링크는 React Native `Share` 로 보낸다(버튼 둘). 웹은 `html2canvas-pro` 로 같은 크기의 PNG 를 내려받고 링크는 `expo-clipboard` 로 복사한다.
   - 공유 페이지 `/s/<shareId>`: 세션 헤더 없는 `GET /shared/{shareId}` 하나만 부르고 카드와 "나도 보러 가기"(`/` 로)만 보여 준다. 루트 레이아웃은 첫 경로 조각이 `s` 인 동안 세션을 시작하지 않는다(`useSession(false)`). 링크 미리보기의 제목 · 설명은 `generateMetadata()` 의 고정 문구다.
   - `Reading.shareId` 는 읽지 않는다. `DELETE /shares/{shareId}` 는 호출(`api.deleteShare`)만 있고 화면이 없다.
-- 서버 오류의 이름: 실패 결과의 `code` 에 오류 본문 `{ error }` 의 값이 온다(`lib/api.ts`). 화면이 가려 쓰는 것은 `BIRTH_MISMATCH` · `PROFILE_CHANGED` 와 문의하기의 `INVALID_BODY` · `INVALID_EMAIL` 뿐이다.
+- 서버 오류의 이름: 실패 결과의 `code` 에 오류 본문 `{ error }` 의 값이 온다(`lib/api.ts`). 화면이 가려 쓰는 것은 `BIRTH_MISMATCH` · `PROFILE_CHANGED` 와 문의하기의 `INVALID_BODY` · `INVALID_EMAIL`, 로그인의 `EMAIL_REQUIRED`(알림 창), 가입의 `INVALID_NICKNAME` · `NICKNAME_TAKEN`(닉네임 단계로) · `TERMS_REQUIRED`(약관 단계로) · `UNDER_AGE`(생년월일 아래) · `SIGNUP_EXPIRED`(로그인으로)다.
 - 서버가 준비되기 전에는 `lib/fixtures/` 의 응답 예시로 화면을 만든다.
 
 ## 비즈니스 룰 (앱이 지키는 것)

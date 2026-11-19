@@ -60,6 +60,22 @@ describe('MakingView', () => {
     }
   });
 
+  it('뒤 빛은 시안의 CSS radial-gradient(circle) 처럼 가장 먼 모서리(50√2)까지 퍼진다(비교 9 — 빛이 어둡던 것)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    await render(<MakingView />);
+    type Node = { props?: Record<string, unknown>; children?: (Node | string)[] | null };
+    const radii: number[] = [];
+    const walk = (node: Node | string | null) => {
+      if (!node || typeof node === 'string') return;
+      // react-native-svg 의 RadialGradient 는 r 을 rx · ry 로 그린다
+      if (node.props?.name === 'makingGlow') radii.push(Number(node.props.rx));
+      node.children?.forEach(walk);
+    };
+    const tree = screen.toJSON() as Node | Node[];
+    (Array.isArray(tree) ? tree : [tree]).forEach(walk);
+    expect(radii.some((r) => Math.abs(r - 50 * Math.SQRT2) < 0.01)).toBe(true);
+  });
+
   it('동작 줄이기가 켜져 있으면 멈춘 첫 장면 — 첫 문구만 계속 보인다(1분이 넘어도, 리뷰 초점 3)', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
     await render(<MakingView />);

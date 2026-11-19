@@ -33,6 +33,8 @@ const GLOW_DIM = 0.55;
 const TWINKLE_DIM = 0.25;
 const TWINKLE_BRIGHT = 0.9;
 const LINE_RISE = 6;
+/** 뒤 빛 그림(0~100 칸)에서 빛이 퍼지는 반지름: 칸의 가장 먼 모서리까지(50√2) */
+const GLOW_RADIUS = 50 * Math.SQRT2;
 
 const ease = Easing.inOut(Easing.ease);
 
@@ -129,7 +131,8 @@ export function MakingView({ nav }: MakingViewProps) {
             ]}>
             <Svg width="100%" height="100%" viewBox="0 0 100 100">
               <Defs>
-                <RadialGradient id="makingGlow">
+                {/* 시안의 CSS radial-gradient(circle) 는 반지름이 가장 먼 모서리(50√2)까지라 그대로 맞춘다 */}
+                <RadialGradient id="makingGlow" cx={50} cy={50} r={GLOW_RADIUS} gradientUnits="userSpaceOnUse">
                   <Stop offset="0" stopColor={BrandColors.glowMid} stopOpacity={0.55} />
                   <Stop offset="0.7" stopColor={BrandColors.glowMid} stopOpacity={0} />
                 </RadialGradient>

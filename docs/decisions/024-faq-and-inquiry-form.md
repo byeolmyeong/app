@@ -3,7 +3,7 @@ type: decision
 tags: [설정, 자주 묻는 질문, 문의하기, 문의 메일, F9]
 status: active
 last_reviewed: 2026-11-12
-superseded_by: 028-faq-from-server.md (자주 묻는 질문의 글을 앱에 두는 부분만. 나머지는 유효)
+superseded_by: 028-faq-from-server.md (자주 묻는 질문의 글을 앱에 두는 부분만. 나머지는 유효) · 038-settings-into-my.md (설정 화면 자리 → 마이)
 ---
 # 024. 문의 메일 주소를 앱에서 빼고, "자주 묻는 질문" 과 "문의하기" 화면을 따로 둔다
 

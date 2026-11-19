@@ -42,6 +42,10 @@ beforeEach(async () => {
 });
 
 describe('문의하기(/settings/inquiry)', () => {
+  it('보낸 뒤의 버튼 이름은 도착지를 말하지 않는다(온 곳 — 마이 · 자주 묻는 질문 — 으로 돌아간다)', () => {
+    expect(I.done.back).toBe('돌아가기');
+  });
+
   it('종류 다섯 가지 · 내용 · 답장 받을 이메일 · 보내기 버튼을 보여 준다', async () => {
     await render(<InquiryScreen />);
     expect(screen.getByText(I.title)).toBeTruthy();
@@ -149,13 +153,13 @@ describe('문의하기(/settings/inquiry)', () => {
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
-  it('주소로 바로 들어와 돌아갈 곳이 없으면 설정으로 간다', async () => {
+  it('주소로 바로 들어와 돌아갈 곳이 없으면 마이로 간다(결정 038)', async () => {
     (router.canGoBack as jest.Mock).mockReturnValue(false);
     await render(<InquiryScreen />);
     await fill();
     await submit();
     await fireEvent.press(await screen.findByText(I.done.back));
-    expect(router.replace).toHaveBeenCalledWith('/settings');
+    expect(router.replace).toHaveBeenCalledWith('/my');
     (router.canGoBack as jest.Mock).mockReturnValue(true);
   });
 

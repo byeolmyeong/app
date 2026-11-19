@@ -46,7 +46,7 @@ export function useSession(start = true): Session {
   return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 }
 
-/** 로그인 화면 · 가입 화면 · 설정이 쓰는 세션과 동작(결정 034). 로그인 여부와 만 14세 판정은 서버 응답만 따른다 */
+/** 로그인 화면 · 가입 화면 · 마이가 쓰는 세션과 동작(결정 034). 로그인 여부와 만 14세 판정은 서버 응답만 따른다 */
 export function useAuth() {
   const session = useSession();
   return {

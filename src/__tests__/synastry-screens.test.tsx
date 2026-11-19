@@ -30,7 +30,7 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ token: 'dev-token', ready: true })),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -71,7 +71,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   forgetFresh();
-  mockUseSession.mockReturnValue({ token: 'dev-token', ready: true });
+  mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockParams.mockReturnValue({});
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
@@ -362,7 +362,7 @@ describe('궁합 결과(/synastry/[id])', () => {
   });
 
   it('세션 확인이 끝나기 전에는 서버를 부르지 않는다', async () => {
-    mockUseSession.mockReturnValue({ token: null, ready: false });
+    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<SynastryResultScreen />);
     expect(await screen.findByText(S.result.loading)).toBeTruthy();
     await act(async () => {});

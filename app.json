@@ -7,7 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "byeolmyeong",
     "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "com.byeolmyeong.app",
+      "usesAppleSignIn": true
+    },
     "android": {
+      "package": "com.byeolmyeong.app",
       "adaptiveIcon": {
         "backgroundColor": "#0D0E12",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -31,7 +36,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

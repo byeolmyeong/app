@@ -1,12 +1,22 @@
 import { createSessionStore, type SessionStoreDeps } from '@/features/auth/session-store';
+import type { ApiResult, LoginResult } from '@/lib/api';
 
 type Overrides = Partial<SessionStoreDeps> & { stored?: string | null };
+
+const ok = <T,>(data: T) => ({ ok: true as const, data });
+const fail = (error: 'LOGIN_REQUIRED' | 'SERVER' | 'NETWORK', status?: number, code?: string) =>
+  ({ ok: false as const, error, ...(status ? { status } : {}), ...(code ? { code } : {}) });
 
 function setup({ stored = null, ...overrides }: Overrides = {}) {
   let kept: string | null = stored;
   const deps = {
-    enabled: true,
-    createDevSession: jest.fn(async () => ({ ok: true as const, data: { token: 'dev-token' } })),
+    devSession: false,
+    cookieSession: false,
+    createDevSession: jest.fn(async () => ok({ token: 'dev-token' as string | null })),
+    login: jest.fn(async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNED_IN' as const, token: 'session-token' })),
+    signup: jest.fn(async () => ok({ token: 'new-session' as string | null })),
+    getSession: jest.fn(async (): Promise<ApiResult<null>> => ok(null)),
+    logout: jest.fn(async (): Promise<ApiResult<null>> => ok(null)),
     loadToken: jest.fn(async () => kept),
     saveToken: jest.fn(async (token: string) => {
       kept = token;
@@ -20,104 +30,214 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
   return { deps, store: createSessionStore(deps), kept: () => kept };
 }
 
-describe('개발용 세션', () => {
-  it('환경 변수가 꺼져 있으면 /auth/dev 를 부르지 않고 보관된 토큰도 읽지 않는다', async () => {
-    const { deps, store } = setup({ enabled: false });
-    await store.start();
-    expect(store.getSnapshot()).toEqual({ token: null, ready: true });
-    expect(deps.createDevSession).not.toHaveBeenCalled();
-    expect(deps.loadToken).not.toHaveBeenCalled();
-    expect(await store.refresh()).toBe(false);
-    expect(deps.createDevSession).not.toHaveBeenCalled();
-  });
+const birth = { date: '1995-05-05', time: null, placeId: null };
+const google = { provider: 'GOOGLE' as const, idToken: 'g' };
 
+describe('개발용 세션(결정 017)', () => {
   it('켜져 있으면 시작할 때 토큰을 받아 보안 저장소에 두고 api 에 건넨다', async () => {
-    const { deps, store, kept } = setup();
-    expect(store.getSnapshot()).toEqual({ token: null, ready: false });
+    const { deps, store, kept } = setup({ devSession: true });
+    expect(store.getSnapshot()).toMatchObject({ status: 'checking', token: null, ready: false });
     await store.start();
-    expect(store.getSnapshot()).toEqual({ token: 'dev-token', ready: true });
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'dev-token', ready: true });
     expect(deps.createDevSession).toHaveBeenCalledTimes(1);
     expect(kept()).toBe('dev-token');
     expect(deps.setApiToken).toHaveBeenLastCalledWith('dev-token');
   });
 
   it('보관된 토큰이 있으면 그것을 쓰고 새로 받지 않는다', async () => {
-    const { deps, store } = setup({ stored: 'kept-token' });
+    const { deps, store } = setup({ devSession: true, stored: 'kept-token' });
     await store.start();
-    expect(store.getSnapshot()).toEqual({ token: 'kept-token', ready: true });
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'kept-token' });
     expect(deps.createDevSession).not.toHaveBeenCalled();
-    expect(deps.setApiToken).toHaveBeenLastCalledWith('kept-token');
   });
 
   it('여러 번 시작해도 한 번만 받는다', async () => {
-    const { deps, store } = setup();
+    const { deps, store } = setup({ devSession: true });
     await Promise.all([store.start(), store.start()]);
     await store.start();
     expect(deps.createDevSession).toHaveBeenCalledTimes(1);
   });
 
-  it('받지 못하면 토큰 없이 준비가 끝난다', async () => {
-    const { deps, store } = setup({
-      createDevSession: jest.fn(async () => ({ ok: false as const, error: 'SERVER' as const, status: 404 })),
-    });
+  it('받지 못하면 로그인 전으로 준비가 끝난다', async () => {
+    const { deps, store } = setup({ devSession: true, createDevSession: jest.fn(async () => fail('SERVER', 404)) });
     await store.start();
-    expect(store.getSnapshot()).toEqual({ token: null, ready: true });
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null, ready: true });
     expect(deps.saveToken).not.toHaveBeenCalled();
   });
 
-  it('다시 받기는 보관된 토큰을 쓰지 않고 새로 받아 바꿔 둔다', async () => {
-    const { deps, store, kept } = setup({ stored: 'expired-token' });
-    await store.start();
-    expect(await store.refresh()).toBe(true);
-    expect(deps.createDevSession).toHaveBeenCalledTimes(1);
-    expect(store.getSnapshot()).toEqual({ token: 'dev-token', ready: true });
-    expect(kept()).toBe('dev-token');
-    expect(deps.setApiToken).toHaveBeenLastCalledWith('dev-token');
-  });
-
-  it('동시에 다시 받기를 여러 번 불러도 한 번만 받는다', async () => {
-    const { deps, store } = setup({ stored: 'expired-token' });
+  it('401 이면 새로 받아 바꿔 둔다. 동시에 여러 번 불러도 한 번만 받는다', async () => {
+    const { deps, store, kept } = setup({ devSession: true, stored: 'expired-token' });
     await store.start();
     expect(await Promise.all([store.refresh(), store.refresh()])).toEqual([true, true]);
     expect(deps.createDevSession).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'dev-token' });
+    expect(kept()).toBe('dev-token');
   });
 
-  it('다시 받지 못하면 false 이고 토큰을 비운다', async () => {
+  it('웹은 쿠키로 받아 토큰 없이 로그인 상태가 된다', async () => {
+    const { deps, store } = setup({ devSession: true, cookieSession: true, createDevSession: jest.fn(async () => ok({ token: null })) });
+    await store.start();
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: null });
+    expect(deps.saveToken).not.toHaveBeenCalled();
+    expect(deps.loadToken).not.toHaveBeenCalled();
+  });
+});
+
+describe('시작할 때 세션 확인(소셜 로그인)', () => {
+  it('앱: 보관된 토큰이 살아 있으면 로그인 상태다', async () => {
+    const { deps, store } = setup({ stored: 'kept-token' });
+    await store.start();
+    expect(deps.setApiToken).toHaveBeenCalledWith('kept-token');
+    expect(deps.getSession).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'kept-token', ready: true });
+    expect(deps.createDevSession).not.toHaveBeenCalled();
+  });
+
+  it('앱: 서버가 401 이면 보관된 토큰을 지우고 로그인 전이다', async () => {
+    const { store, kept } = setup({ stored: 'expired', getSession: jest.fn(async () => fail('LOGIN_REQUIRED', 401)) });
+    await store.start();
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null });
+    expect(kept()).toBeNull();
+  });
+
+  it('앱: 서버에 닿지 못하면 보관된 토큰을 믿는다(다음 401 에서 로그인 전이 된다)', async () => {
+    const { store } = setup({ stored: 'kept-token', getSession: jest.fn(async () => fail('NETWORK')) });
+    await store.start();
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'kept-token' });
+  });
+
+  it('앱: 보관된 토큰이 없으면 서버를 부르지 않고 로그인 전이다', async () => {
+    const { deps, store } = setup();
+    await store.start();
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null, ready: true });
+    expect(deps.getSession).not.toHaveBeenCalled();
+  });
+
+  it('웹: 쿠키 세션이 살아 있으면 토큰 없이 로그인 상태, 아니면 로그인 전이다', async () => {
+    const alive = setup({ cookieSession: true });
+    await alive.store.start();
+    expect(alive.store.getSnapshot()).toMatchObject({ status: 'signedIn', token: null });
+    expect(alive.deps.loadToken).not.toHaveBeenCalled();
+
+    const gone = setup({ cookieSession: true, getSession: jest.fn(async () => fail('LOGIN_REQUIRED', 401)) });
+    await gone.store.start();
+    expect(gone.store.getSnapshot()).toMatchObject({ status: 'signedOut' });
+  });
+});
+
+describe('로그인 · 가입 · 로그아웃', () => {
+  it('계정이 있으면 토큰을 보관하고 로그인 상태가 된다', async () => {
+    const { deps, store, kept } = setup();
+    await store.start();
+    expect(await store.signIn(google)).toBe('signedIn');
+    expect(deps.login).toHaveBeenCalledWith(google);
+    expect(kept()).toBe('session-token');
+    expect(deps.setApiToken).toHaveBeenLastCalledWith('session-token');
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'session-token', lastError: null });
+  });
+
+  it('처음 온 사람은 가입 중이 되고, 출생 정보로 가입을 마치면 로그인 상태다', async () => {
+    const { deps, store, kept } = setup({ login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })) });
+    await store.start();
+    expect(await store.signIn(google)).toBe('signingUp');
+    expect(store.getSnapshot()).toMatchObject({ status: 'signingUp', token: null });
+
+    expect(await store.completeSignup(birth)).toEqual({ ok: true, data: { token: 'new-session' } });
+    expect(deps.signup).toHaveBeenCalledWith('ticket', birth);
+    expect(kept()).toBe('new-session');
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: 'new-session' });
+  });
+
+  it('만 14세 미만이면 가입권을 버리고 로그인 전으로 돌아가며 이유를 남긴다', async () => {
     const { deps, store } = setup({
-      stored: 'expired-token',
-      createDevSession: jest.fn(async () => ({ ok: false as const, error: 'NETWORK' as const })),
+      login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })),
+      signup: jest.fn(async () => fail('SERVER', 403, 'UNDER_AGE')),
     });
     await store.start();
-    expect(await store.refresh()).toBe(false);
-    expect(store.getSnapshot()).toEqual({ token: null, ready: true });
-    expect(deps.setApiToken).toHaveBeenLastCalledWith(null);
+    await store.signIn(google);
+    await store.completeSignup(birth);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null, lastError: 'UNDER_AGE' });
+    expect(deps.saveToken).not.toHaveBeenCalled();
+    // 가입권을 버렸으니 다시 보내지 않는다
+    expect(await store.completeSignup(birth)).toEqual({ ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' });
+    expect(deps.signup).toHaveBeenCalledTimes(1);
   });
 
-  it('비우면 보관된 토큰을 지우고 토큰 없이 남는다. 새로 받는 것은 다음 401 이나 다음에 켤 때다', async () => {
+  it('가입권이 만료됐으면 로그인 전으로 돌아간다', async () => {
+    const { store } = setup({
+      login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })),
+      signup: jest.fn(async () => fail('LOGIN_REQUIRED', 401, 'SIGNUP_EXPIRED')),
+    });
+    await store.start();
+    await store.signIn(google);
+    await store.completeSignup(birth);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', lastError: 'SIGNUP_EXPIRED' });
+  });
+
+  it('출생 정보가 틀렸거나 네트워크가 끊겼으면 가입 중에 머물러 다시 보낼 수 있다', async () => {
+    const signup = jest
+      .fn()
+      .mockResolvedValueOnce(fail('SERVER', 400, 'INVALID_DATE'))
+      .mockResolvedValueOnce(fail('NETWORK'))
+      .mockResolvedValueOnce(ok({ token: 'new-session' }));
+    const { store } = setup({ login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })), signup });
+    await store.start();
+    await store.signIn(google);
+    expect(await store.completeSignup(birth)).toMatchObject({ ok: false, code: 'INVALID_DATE' });
+    expect(store.getSnapshot()).toMatchObject({ status: 'signingUp' });
+    await store.completeSignup(birth);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signingUp' });
+    await store.completeSignup(birth);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn' });
+    expect(signup).toHaveBeenCalledTimes(3);
+  });
+
+  it('로그인에 실패하면 로그인 전에 머물고 이유를 남긴다', async () => {
+    const { store } = setup({ login: jest.fn(async () => fail('LOGIN_REQUIRED', 401, 'INVALID_ID_TOKEN')) });
+    await store.start();
+    expect(await store.signIn(google)).toBe('failed');
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', lastError: 'INVALID_ID_TOKEN' });
+  });
+
+  it('웹은 토큰 없이 로그인 · 가입하고 기기에 아무것도 두지 않는다', async () => {
+    const { deps, store } = setup({
+      cookieSession: true,
+      getSession: jest.fn(async () => fail('LOGIN_REQUIRED', 401)),
+      login: jest.fn(async () => ok({ status: 'SIGNED_IN' as const, token: null })),
+    });
+    await store.start();
+    await store.signIn(google);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedIn', token: null });
+    expect(deps.saveToken).not.toHaveBeenCalled();
+  });
+
+  it('로그아웃은 서버 세션을 지우고 보관된 토큰도 지운다. 서버가 실패해도 기기에서는 로그아웃한다', async () => {
+    const { deps, store, kept } = setup({ stored: 'kept-token', logout: jest.fn(async () => fail('NETWORK')) });
+    await store.start();
+    await store.signOut();
+    expect(deps.logout).toHaveBeenCalledTimes(1);
+    expect(kept()).toBeNull();
+    expect(deps.setApiToken).toHaveBeenLastCalledWith(null);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null });
+  });
+
+  it('소셜 로그인 중 서버가 401 을 주면 다시 받지 않고 로그인 전이 된다', async () => {
     const { deps, store, kept } = setup({ stored: 'kept-token' });
+    await store.start();
+    expect(await store.refresh()).toBe(false);
+    expect(deps.createDevSession).not.toHaveBeenCalled();
+    expect(kept()).toBeNull();
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null });
+  });
+
+  it('계정을 지우면 보관된 토큰을 지우고 로그인 전이 된다', async () => {
+    const { store, kept } = setup({ stored: 'kept-token' });
     await store.start();
     const listener = jest.fn();
     store.subscribe(listener);
     await store.clear();
     expect(kept()).toBeNull();
-    expect(store.getSnapshot()).toEqual({ token: null, ready: true });
-    expect(deps.setApiToken).toHaveBeenLastCalledWith(null);
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null });
     expect(listener).toHaveBeenCalled();
-    expect(deps.createDevSession).not.toHaveBeenCalled();
-    // 그 뒤 서버가 401 을 주면 새로 받는다
-    expect(await store.refresh()).toBe(true);
-    expect(store.getSnapshot()).toEqual({ token: 'dev-token', ready: true });
-  });
-
-  it('바뀌면 듣는 쪽에 알린다', async () => {
-    const { store } = setup();
-    const listener = jest.fn();
-    const off = store.subscribe(listener);
-    await store.start();
-    expect(listener).toHaveBeenCalled();
-    off();
-    listener.mockClear();
-    await store.refresh();
-    expect(listener).not.toHaveBeenCalled();
   });
 });

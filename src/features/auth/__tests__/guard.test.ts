@@ -56,6 +56,7 @@ describe('guardRedirect', () => {
   it('가입 중에도 약관 단계의 "보기" 가 여는 이용약관 · 처리방침은 열린다(다른 설정 화면은 아니다)', () => {
     expect(guardRedirect('signingUp', 'settings', true, 'terms')).toBeNull();
     expect(guardRedirect('signingUp', 'settings', true, 'privacy')).toBeNull();
+    expect(guardRedirect('signingUp', 'settings', true, 'marketing')).toBeNull();
     expect(guardRedirect('signingUp', 'settings', true, 'faq')).toBe('/signup/terms');
     expect(guardRedirect('signingUp', 'settings')).toBe('/signup/terms');
     expect(guardRedirect('signedOut', 'settings', true, 'terms')).toBe('/login');

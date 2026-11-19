@@ -100,13 +100,13 @@ describe('약관 단계', () => {
     expect(nextDisabled()).toBe(false);
   });
 
-  it('보기는 무엇을 보는지 이름이 붙은 링크이고 약관 · 처리방침 화면으로 간다(마케팅은 처리방침, 리뷰 A5)', async () => {
+  it('보기는 무엇을 보는지 이름이 붙은 링크이고 약관 · 처리방침 · 마케팅 수신 동의 약관 화면으로 간다(리뷰 A5, 결정 043)', async () => {
     await render(<TermsStep />);
     await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.terms }));
     await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.privacy }));
     await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.marketing }));
     expect(screen.getAllByRole('link')).toHaveLength(3);
-    expect((router.push as jest.Mock).mock.calls).toEqual([['/settings/terms'], ['/settings/privacy'], ['/settings/privacy']]);
+    expect((router.push as jest.Mock).mock.calls).toEqual([['/settings/terms'], ['/settings/privacy'], ['/settings/marketing']]);
   });
 
   it('체크를 바꿀 때마다 초안에 쓴다 — 웹에서 앞으로 가기로 넘어가도 옛 동의가 가지 않는다(리뷰 A3)', async () => {

@@ -8,8 +8,8 @@ import type { SessionStatus } from '@/features/auth/session-store';
 
 export type GuardTarget = '/login' | '/signup/terms' | '/intro' | '/';
 
-/** 가입 중에도 열리는 화면: 약관 단계의 "보기" 가 여는 이용약관 · 처리방침(결정 042) */
-const SIGNUP_READABLE = new Set(['terms', 'privacy']);
+/** 가입 중에도 열리는 화면: 약관 단계의 "보기" 가 여는 이용약관 · 처리방침 · 마케팅 수신 동의 약관(결정 042 · 043) */
+const SIGNUP_READABLE = new Set(['terms', 'privacy', 'marketing']);
 
 /** 세션과 상관없이 열리는 첫 경로 조각 */
 const ALWAYS_OPEN = new Set(['s', 'auth']);

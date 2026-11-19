@@ -53,14 +53,15 @@ describe('약관 글에서 뒤로 가기', () => {
   });
 
   it.each([
-    [0, '/settings/terms', terms],
-    [1, '/settings/privacy', privacy],
-  ])('가입 약관 단계의 %d번째 "보기" 로 연 글에서 뒤로 가면 약관 단계로 돌아가고, 켜 둔 동의는 그대로다', async (index, path, doc) => {
+    ['terms', '/settings/terms', terms],
+    ['privacy', '/settings/privacy', privacy],
+    ['marketing', '/settings/marketing', marketing],
+  ] as const)('가입 약관 단계의 %s "보기" 로 연 글에서 뒤로 가면 약관 단계로 돌아가고, 켜 둔 동의는 그대로다', async (key, path, doc) => {
     const T = strings.terms;
     await renderRouter(routes, { initialUrl: '/signup/terms' });
     const required = `${T.required} ${T.items.terms}`;
     await fireEvent.press(screen.getByRole('checkbox', { name: required }));
-    await fireEvent.press(screen.getAllByRole('link', { name: T.view })[index]);
+    await fireEvent.press(screen.getByRole('link', { name: T.viewLabels[key] }));
     expect(screen).toHavePathname(path);
     expect(screen.getByText(doc.closing)).toBeTruthy();
     await back();

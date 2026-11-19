@@ -25,11 +25,11 @@ type Key = 'terms' | 'privacy' | 'push' | 'marketing';
 type Agreed = Record<Key, boolean>;
 
 /** 줄의 순서 · 필수 여부 · "보기" 가 여는 화면(마케팅은 처리방침의 수집 · 이용 목적) */
-const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '/settings/privacy'; label: string } }[] = [
+const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '/settings/privacy' | '/settings/marketing'; label: string } }[] = [
   { key: 'terms', required: true, view: { href: '/settings/terms', label: T.viewLabels.terms } },
   { key: 'privacy', required: true, view: { href: '/settings/privacy', label: T.viewLabels.privacy } },
   { key: 'push', required: false },
-  { key: 'marketing', required: false, view: { href: '/settings/privacy', label: T.viewLabels.marketing } },
+  { key: 'marketing', required: false, view: { href: '/settings/marketing', label: T.viewLabels.marketing } },
 ];
 
 const NONE: Agreed = { terms: false, privacy: false, push: false, marketing: false };

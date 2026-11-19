@@ -33,6 +33,7 @@
 - 브랜드 그림 PNG 다시 만들기(앱 아이콘 · 스플래시 · 공유 카드): `node scripts/render-brand.mjs`
 - 기기 개발 빌드(소셜 로그인은 Expo Go 에서 안 된다, 결정 034): `npx eas-cli@latest build --profile development`(iOS 시뮬레이터는 `development-simulator`). 공급자 값은 `.env` 의 `EXPO_PUBLIC_*` → `app.config.ts`
 - 웹 배포(Vercel, 결정 037): `develop` → app.staging.byeolmyeong.com, `main` → app.byeolmyeong.com. 작업 브랜치는 `develop` 으로 PR. 설정은 `vercel.json`
+- 테스트앱 "별명 테스트"(스테이징 서버, TestFlight 에만, 결정 041): `npx eas-cli@latest build --profile test --platform ios --auto-submit`. 운영앱은 `--profile production`. 값은 EAS 환경 변수(preview · production)
 
 ## 도구 (.claude/)
 - 스킬 `/plan-feature`(킷 제공): 한 커밋을 넘는 요청은 바로 만들지 않는다. `docs/plans/`에 계획 파일 → 승인 → 실행 → 검증.

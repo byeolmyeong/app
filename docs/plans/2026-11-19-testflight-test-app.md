@@ -194,3 +194,14 @@ last_reviewed: 2026-11-19
 - 정리: 스테이징 서버 `GOOGLE_CLIENT_IDS` 에서 옛 ID 를 뺐다(새 ID 하나, `/health` 200). 로컬 `byeolmyeong-api/.env` `GOOGLE_CLIENT_IDS` · `byeolmyeong-app/.env` `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` 를 새 웹 ID 로(백업은 저장소 밖). 로컬 개발은 카카오 운영 앱 그대로(개발 빌드가 운영 번들 ID 를 쓰므로).
 - 남은 것(소유자 콘솔): Default Gemini Project 의 옛 "웹" 클라이언트 삭제 · 운영 카카오 앱 "별명" 의 리디렉트 URI 에서 스테이징 웹 주소 빼기 · 구글 브랜드 인증. 8081 에 오늘 14:04 `.wt-app-login` 에서 띄운 시험용 웹 서버(옛 값을 명령에 넣어 띄움, 부르는 `localhost:8095` 는 꺼짐)가 남아 있다 — Claude 는 끄지 못했다(권한).
 - 다음: 태스크 1(결정 041)부터. 태스크 5 의 EAS 환경 변수에 공급자 값도 함께 — preview: 구글 웹 · "별명 테스트 iOS" · "별명 개발" 네이티브 키, production: 구글 웹 · "별명 iOS" · 운영 카카오 네이티브 키.
+
+### 리뷰 · 검증 (2026-11-19 밤, 태스크 1~6 뒤)
+- reviewer(깨끗한 컨텍스트, diff + 완료 기준표만): 막는 문제 없음, 수정 4 · 제안 4. eas-cli 27.10.0 소스로 사실 확인 뒤 반영했다.
+  - 수정 1 · 2(확인됨): 빈 제출 프로필은 App Store Connect 앱을 묻지 않고 en-US 로 만들고(`@expo/eas-json` 스키마 기본값, `ensureAppExists` 에 묻는 단계 없음), `eas submit` 을 따로 돌리면 빌드 프로필의 env 를 읽지 않아(`commands/submit.js:102`) 번들 ID 가 운영으로 풀린다 → 제출 프로필에 `bundleIdentifier` · `appName` · `language: "ko"`.
+  - 수정 3: `app.config.ts` 분기를 치는 자동 테스트가 없었다 → `src/__tests__/app-config.test.ts`(9개). develop 의 `app.config.ts` 로 5개 실패(red), 이 브랜치에서 9개 통과(green).
+  - 수정 4: CLAUDE.md 의 개발 빌드 줄("공급자 값은 `.env`")이 EAS 클라우드 개발 빌드에는 틀렸다(`.env` 는 gitignore 라 올라가지 않는다) → EAS `development` 환경에 production 과 같은 공급자 값 셋(구글 웹 · "별명 iOS" · 운영 카카오 네이티브)을 넣고(해시로 production 과 같음 확인, `eas config --profile development` 에 구글 · 카카오 플러그인), CLAUDE.md · 결정 041 · `.env.example` 을 고쳤다.
+  - 제안 5: 운영 빌드에 `env.APP_VARIANT: "production"` — 셸에 `APP_VARIANT=test` 가 남아 있어도 `--profile production` 이 `com.byeolmyeong.app` 으로 풀리는 것을 재현해 확인. 제안 6: `exp+byeolmyeong` scheme 이 두 변형에 함께 들어간다는 것을 결정 041 에 적음. 제안 7: `.env.example` 에 개발용 두 값은 EAS 에 넣지 않는다고 적음. 제안 8: PR 본문에 `usesNonExemptEncryption` 이 모든 iOS 빌드에 붙는다고 적는다.
+- `develop`(Expo 패치 버전 #31 — #26 이 main 으로만 들어가 있던 것)을 합쳤다. 충돌 없음.
+- `/verify`(Node 22, 합친 뒤): 1 타입 · 린트 exit 0 · 2 테스트 57 suites · 802 통과 · 3 웹 빌드 exit 0 · 5 expo-doctor 20/20 · 6 화면 — 응답 예시(`EXPO_PUBLIC_USE_FIXTURES=1` + 개발용 세션)로 웹을 띄워 설치된 Chrome(playwright-core, 저장소 밖)으로 390px: 입력(생년월일 · 시각 모름) → 해석(`/reading`) → 차트(`/chart`), 세 화면 모두 콘솔 에러 0 · 가로 넘침 0, 스크린샷으로 레이아웃 확인.
+- 로컬: `byeolmyeong-app/.env` 에 `EXPO_PUBLIC_API_URL=http://localhost:8080`(로컬 서버, 서버 `.env` 의 `ALLOWED_ORIGINS` 에 `http://localhost:8081` 있음).
+- 콘솔 정리(소유자 "다 했어"): [확인 필요] 2026-11-19 19:1x 에 옛 구글 웹 클라이언트로 인가 주소를 열면 `deleted_client` 가 아니라 `redirect_uri_mismatch` 였다(아직 살아 있거나 반영 전). 운영 카카오 앱의 스테이징 리디렉트 제거는 로그인 뒤에 검사돼 밖에서 확인할 수 없다.

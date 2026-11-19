@@ -1,12 +1,12 @@
 ---
 type: plan
-status: proposed
+status: approved
 tags: [제품 분석, 앰플리튜드, 파이어베이스, GA4]
 last_reviewed: 2026-11-19
 ---
 # 제품 분석 — 앰플리튜드 + 파이어베이스 애널리틱스(GA4), 1.0.0
 
-> 상태: 제안 · 기준 2026-11-19 · 서버 저장소 태스크 하나(분석용 id, 태스크 2) 포함
+> 상태: 승인(2026-11-19, 소유자 "승인") · 기준 2026-11-19 · 서버 저장소 태스크 하나(분석용 id, 태스크 2) 포함
 
 ## 목표
 - 무엇을: iOS·안드로이드·웹에 앰플리튜드와 파이어베이스 애널리틱스(GA4)를 넣고, 성공 지표(docs/product.md "성공 지표")에 맞춘 이벤트 11개를 두 곳에 같이 보낸다.
@@ -68,14 +68,14 @@ last_reviewed: 2026-11-19
 
 ## 태스크
 
-### 1. adr-040-analytics · 상태: 대기
+### 1. adr-040-analytics · 상태: 완료
 - 읽을 것: 이 계획의 "인터뷰 결과"·"내 결정"·"이벤트"·"전역 제약", docs/product.md "성공 지표", docs/decisions/037-web-deploy-vercel.md(형식)
 - 할 것: `docs/decisions/040-product-analytics-amplitude-ga4.md` — 맥락(성공 지표를 잴 도구가 없다), 결정(두 도구와 역할, 보내지 않는 것, 식별, 환경 분리, 동의 방식), 대안(GA4 만 · 앰플리튜드만 · PostHog)과 버린 이유, 무료 한도(이 문서 한 곳에만 적는다). `docs/release-1.0.0.md` 에 요구 한 줄("제품 분석: 결정 040")과 "사용자만 할 수 있는 준비"에 아래 "사용자만 할 수 있는 준비" 항목.
 - 주는 것: 결정 040.
 - 하지 말 것: 처리방침 문안 쓰기. 이유: 소유자가 확정한다(태스크 8 은 항목 목록만).
 - 검증: `ls docs/decisions/040-*` → 파일 하나, `git diff --stat` 에 release 문서.
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `docs/decisions/040-product-analytics-amplitude-ga4.md`(무료 한도의 단일 출처 포함), release-1.0.0 에 F12·출시 기준·사용자 준비 두 줄.
 
 ### 2. server-analytics-id (서버 저장소 byeolmyeong-api) · 상태: 대기
 - 읽을 것: 서버 `docs/architecture.md` 계약 표의 `GET /auth/session`, `src/main/kotlin/com/byeolmyeong/api/auth/AuthController.kt`, 서버 결정 021, 앱 결정 040
@@ -175,3 +175,4 @@ last_reviewed: 2026-11-19
 - 결정 번호 040 이 다른 브랜치에서 먼저 쓰이면 다음 빈 번호로 바꾼다.
 
 ## 실행 기록
+- 1(adr-040-analytics): 번호 확인 `git log --all -- docs/decisions` → 040 이상 없음. `ls docs/decisions/040-*` → `docs/decisions/040-product-analytics-amplitude-ga4.md`. `git diff --stat` → `docs/release-1.0.0.md | 11 +++++++++--`.

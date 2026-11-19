@@ -1,12 +1,12 @@
 ---
 type: plan
-status: proposed
+status: approved
 tags: [소셜 로그인, 이메일, 닉네임, 마케팅 수신 동의]
 last_reviewed: 2026-11-19
 ---
 # 소셜 로그인에서 이메일(필수)을 받고, 가입 때 닉네임과 마케팅 수신 동의를 받는다
 
-> 상태: 제안 · 기준 2026-11-19 · 앱 · 서버 · 랜딩 · 공급자 콘솔에 걸친다(앱 저장소가 계획의 원본)
+> 상태: 승인(2026-11-19 소유자 "승인") · 기준 2026-11-19 · 앱 · 서버 · 랜딩 · 공급자 콘솔에 걸친다(앱 저장소가 계획의 원본)
 
 ## 목표
 - 무엇을: 소셜 로그인(카카오 · 애플 · 구글)에서 **이메일만, 필수로** 받는다. 가입(온보딩) 화면에서 **닉네임 · 생년월일 · 태어난 시각 · 태어난 곳**을 받고, **마케팅 메일 수신 동의(선택)**를 따로 받는다.
@@ -69,16 +69,16 @@ last_reviewed: 2026-11-19
 
 ## 태스크
 
-### 1. app-adr-039  · 상태: 대기  · [앱]
+### 1. app-adr-039  · 상태: 완료  · [앱]
 - 읽을 것: 이 계획 전부, `docs/decisions/034-social-login-platforms.md`, 서버 결정 021
 - 할 것: `docs/decisions/039-social-email-nickname-marketing.md` — 결정: 소셜에서 이메일만 필수로 받는다(카카오 웹 `scope=openid account_email`, 애플 웹 `scope: 'email'` · iOS `requestedScopes: [EMAIL]`, 구글은 이미 ID 토큰에 있음), 가입 화면에 닉네임 · 마케팅 동의, 마이에 닉네임 · 이메일 · 동의 스위치, 처리 결과 알림은 앱 안. 034 의 카카오 `scope=openid` 줄에 "039 가 대체" 표시만 단다(본문 고쳐 쓰지 않음).
 - 주는 것: 결정 번호 039, 위 API 이름
 - 하지 말 것: 서버 결정을 앱 ADR 로 대신하지 않는다. 이유: 서버 계약은 서버 저장소의 ADR 이 원본이다.
 - 검증: `ls docs/decisions/039-*.md` → 파일 1개, `grep -n "039" docs/decisions/034-social-login-platforms.md` → 대체 표시 1줄
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `docs/decisions/039-social-email-nickname-marketing.md` 작성, 034 의 카카오 `scope=openid` 칸에 "039 가 대체" 표시(커밋 2ddc46f).
 
-### 2. server-request  · 상태: 대기  · [서버 — 서버 세션에 요청]
+### 2. server-request  · 상태: 진행(서버 세션에 보냄)  · [서버 — 서버 세션에 요청]
 서버 저장소에서 서버 세션이 계획(/plan-feature)으로 진행한다. 앱 세션은 아래 블록을 그대로 보낸다. 서버의 ADR · 마이그레이션 번호는 서버 세션이 develop 기준으로 정한다(지금 결정은 023, 마이그레이션은 V18 까지 보임).
 - S1 ADR: 결정 021 의 "이메일 · 이름은 받지 않는다(V2)" 를 대체 — 이메일(확인된 값, 새 가입 필수) · 닉네임(가입 때 필수) · 마케팅 동의(선택, 일시) · `GET/PATCH /account`. `V2__accounts_sessions_profiles.sql` 의 "이메일 같은 다른 정보는 받지 않는다" 주석은 새 마이그레이션 주석으로 바로잡는다.
 - S2 토큰 확인: `ProviderIdentity` 에 `email: String?`. 구글 · 애플은 `email_verified` 가 참일 때만, 카카오는 공식 문서(OIDC ID 토큰의 `email` 클레임 조건 · 확인 여부)를 확인해 규칙을 ADR "공급자 값" 표에 적는다. 카카오 웹 코드 교환 경로도 같은 확인을 탄다.
@@ -141,7 +141,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자(랜딩 저장소, main 단일 브랜치)
 - 결과 요약:
 
-### 9. owner-console  · 상태: 대기  · [소유자 콘솔]
+### 9. owner-console  · 상태: 진행(O1 완료 · O2 대기)  · [소유자 콘솔]
 - O1 카카오: 카카오 로그인 → 동의항목 → 카카오계정(이메일) → **필수 동의**, 목적 "서비스 안내 메일". 비즈 앱 전환을 요구하면 전환(사업자 또는 개인 개발자 비즈 앱). 전환하지 않기로 하면 **선택 동의**로 켜고, 이메일을 안 준 사람은 서버가 `EMAIL_REQUIRED` 로 막는다(앱이 다시 동의하라고 안내).
 - O2 애플: Certificates, Identifiers & Profiles → Services → Sign in with Apple for Email Communication → 도메인 `byeolmyeong.com` 과 보내는 주소(예: `noreply@byeolmyeong.com`)를 등록(SPF · DKIM 은 Resend 설정으로 이미 있음). 릴레이 주소로 메일이 가려면 필요 — 첫 메일 전까지.
 - O3 구글: 할 것 없음(ID 토큰에 이메일이 기본으로 든다). 동의 화면 범위에 민감한 범위를 더하지 않는다.
@@ -172,4 +172,12 @@ last_reviewed: 2026-11-19
 - 처리 결과 알림을 앱 안으로만 하는 해석이 틀리면 → 메일 발송 기능(S8)과 함께 메일로 보낸다. 비용: 메일 발송 계획을 앞당김.
 
 ## 실행 기록
-(승인 뒤 태스크별 검증 출력을 그대로 적는다)
+- 2026-11-19 소유자 "승인". 소유자가 카카오 비즈 앱 전환 · 이메일 필수 동의 설정(O1 완료, 소유자 말).
+- 결정: 작업 브랜치 `feat/social-email-nickname` 을 `feat/vercel-deploy`(#27) 위에 쌓음 — 이 계획이 #23(마이) · #24(공유 카드)의 코드를 고치기 때문 — 같은 날 소유자 "합쳐" 로 #22 → #23 → #24 → #27 이 develop 에 합쳐져 기준은 develop 이 됨(gh pr edit 은 토큰 권한 부족으로 실패 → REST `PATCH /pulls/{n}` base=develop 로 바꿈, 바꾼 뒤 파일 수가 예전 기준과 같음을 확인: 18 · 69 · 11).
+- 태스크 1 검증:
+```
+$ ls docs/decisions/039-*.md
+docs/decisions/039-social-email-nickname-marketing.md
+$ grep -n "039" docs/decisions/034-social-login-platforms.md
+25:   | 카카오 | 카카오 인가 주소로 이동(`scope=openid` — 결정 039 가 `openid account_email` 로 대체) → ...
+```

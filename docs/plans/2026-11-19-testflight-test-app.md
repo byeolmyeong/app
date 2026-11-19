@@ -205,3 +205,12 @@ last_reviewed: 2026-11-19
 - `/verify`(Node 22, 합친 뒤): 1 타입 · 린트 exit 0 · 2 테스트 57 suites · 802 통과 · 3 웹 빌드 exit 0 · 5 expo-doctor 20/20 · 6 화면 — 응답 예시(`EXPO_PUBLIC_USE_FIXTURES=1` + 개발용 세션)로 웹을 띄워 설치된 Chrome(playwright-core, 저장소 밖)으로 390px: 입력(생년월일 · 시각 모름) → 해석(`/reading`) → 차트(`/chart`), 세 화면 모두 콘솔 에러 0 · 가로 넘침 0, 스크린샷으로 레이아웃 확인.
 - 로컬: `byeolmyeong-app/.env` 에 `EXPO_PUBLIC_API_URL=http://localhost:8080`(로컬 서버, 서버 `.env` 의 `ALLOWED_ORIGINS` 에 `http://localhost:8081` 있음).
 - 콘솔 정리(소유자 "다 했어"): [확인 필요] 2026-11-19 19:1x 에 옛 구글 웹 클라이언트로 인가 주소를 열면 `deleted_client` 가 아니라 `redirect_uri_mismatch` 였다(아직 살아 있거나 반영 전). 운영 카카오 앱의 스테이징 리디렉트 제거는 로그인 뒤에 검사돼 밖에서 확인할 수 없다.
+
+### 태스크 7 진행 — 첫 TestFlight 빌드 · 제출 (2026-11-19 저녁)
+- #32 를 develop 에 합침(CI 통과 뒤, 소유자 "합쳐", 커밋 b2c4a13). 그 전에 #31(Expo 패치 버전 — #26 이 main 으로만 들어가 있던 것)을 develop 에 합침.
+- 소유자가 Apple ID 비밀번호를 몰라 **App Store Connect API 키**(팀 키 "EAS byeolmyeong", 관리자)로 갔다. 키 파일은 `~/.appstoreconnect/private_keys/`(권한 600, 저장소 밖). EAS 는 `EXPO_ASC_API_KEY_PATH` · `EXPO_ASC_KEY_ID` · `EXPO_ASC_ISSUER_ID` · `EXPO_APPLE_TEAM_ID` · `EXPO_APPLE_TEAM_TYPE`(멤버십 개인 → `INDIVIDUAL`)를 읽는다(eas-cli 27.10.0 소스).
+- API 키로는 App Store Connect 앱을 **만들 수 없다**(eas-cli `ensureAppExists` "Does not support App Store Connect API") → 소유자가 "별명 테스트"(iOS · 한국어 · `com.byeolmyeong.app.test` · SKU `byeolmyeong-test`)를 웹에서 만들었다. 앱 번호(`ascAppId`) 6836723418 을 제출 프로필에 적었다(이 브랜치).
+- 빌드: `eas build --profile test --platform ios --auto-submit`(소유자 터미널) → 배포 인증서 · 프로비저닝 프로필 새로 만듦(2027-11-19 만료), `Synced capabilities: No updates`(애플 그룹 묶기 그대로), 빌드 aae7c70b · 1.0.0(2) · 19:34→19:41 FINISHED.
+- 자동 제출은 일어나지 않았다(제출 기록 0). 다시 제출: 질문 없는 모드는 `ascAppId` 가 없으면 멈추고, 있어도 "App Store Connect API Keys cannot be set up in --non-interactive mode"(키를 EAS 에 등록하는 단계). 제출 프로필에 키 경로 · ID · Issuer 를 **커밋하지 않고 잠깐** 넣어 `eas submit --id aae7c70b --non-interactive` → 제출 0c88dcac FINISHED. 그 과정에서 EAS 가 내부 테스트 그룹 "Team (Expo)" 를 만들었다.
+- 다음에 `--auto-submit` 을 질문 없이 끝내려면: API 키를 EAS 에 한 번 등록(대화형 `eas credentials` 또는 제출 때 "[Choose an existing key]/[Add a new key]" 에서 키 파일 경로를 준다 — "Generate" 는 Apple ID 로그인이 필요). [확인 필요] 다음 빌드에서 확인.
+- 남은 것: 애플 처리 뒤 내부 테스터(Team (Expo))에 소유자 추가 → 아이폰 확인(이름 · 애플 · 구글 · 카카오 · 가입 · 탈퇴, 스테이징 `apple_token_failed` 없음). 테스트앱 전용 아이콘(소유자 요청, 다음 빌드).

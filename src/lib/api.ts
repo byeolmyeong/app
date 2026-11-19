@@ -1186,6 +1186,11 @@ const isNicknameAvailability = (v: unknown): v is NicknameAvailability => isObje
 /** 본문이 없는 성공(204) */
 const isEmpty = (v: unknown): v is null => v === null;
 
+/** `GET /auth/session` 의 결과. 분석용 id 는 서버가 계정 id 로 만든 되돌릴 수 없는 값이다(결정 040) */
+export type SessionInfo = { analyticsId: string | null };
+const isSessionBody204or200 = (v: unknown): v is null | { analyticsId: string } =>
+  v === null || (isObject(v) && typeof v.analyticsId === 'string');
+
 /** `PUT /profile` · `GET /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
   isObject(v) &&
@@ -1449,10 +1454,14 @@ export function createApi(config: ApiConfig) {
       return request('GET', `/account/nickname-check?nickname=${encodeURIComponent(nickname)}`, { validate: isNicknameAvailability });
     },
 
-    /** `GET /auth/session` 세션이 살아 있는지(204). 웹이 켜질 때 쿠키 세션을 확인한다 */
-    async getSession(): Promise<ApiResult<null>> {
-      if (config.useFixtures) return { ok: true, data: null };
-      return request('GET', '/auth/session', { validate: isEmpty });
+    /**
+     * `GET /auth/session` 세션이 살아 있는지. 웹이 켜질 때 쿠키 세션을 확인한다.
+     * 서버는 200 `{ analyticsId }`(결정 040)를 준다. 옛 서버의 204 도 받는다(분석용 id 없음).
+     */
+    async getSession(): Promise<ApiResult<SessionInfo>> {
+      if (config.useFixtures) return { ok: true, data: { analyticsId: null } };
+      const r = await request('GET', '/auth/session', { validate: isSessionBody204or200 });
+      return r.ok ? { ok: true, data: { analyticsId: r.data?.analyticsId ?? null } } : r;
     },
 
     /** `DELETE /auth/session` 로그아웃. 이 기기의 세션만 지운다(웹은 쿠키도) */

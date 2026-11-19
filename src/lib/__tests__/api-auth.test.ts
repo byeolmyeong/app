@@ -154,15 +154,29 @@ describe('api: 로그인 · 가입의 오류 이름', () => {
 });
 
 describe('api: 세션 확인과 로그아웃', () => {
-  it('GET /auth/session 은 204 면 성공이고 401 이면 로그인 필요다', async () => {
+  it('GET /auth/session 은 204(옛 서버)면 분석용 id 없이 성공이고 401 이면 로그인 필요다', async () => {
     const alive = fakeFetch(204);
-    expect(await createApi({ baseUrl: BASE, fetchFn: alive, getToken: () => 't' }).getSession()).toEqual({ ok: true, data: null });
+    expect(await createApi({ baseUrl: BASE, fetchFn: alive, getToken: () => 't' }).getSession()).toEqual({
+      ok: true,
+      data: { analyticsId: null },
+    });
     expect(headersOf(alive).Authorization).toBe('Bearer t');
     expect(await createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => 't' }).getSession()).toEqual({
       ok: false,
       error: 'LOGIN_REQUIRED',
       status: 401,
     });
+  });
+
+  it('GET /auth/session 이 200 이면 분석용 id 를 돌려준다(결정 040)', async () => {
+    const id = '0123456789abcdef0123456789abcdef';
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { analyticsId: id }), getToken: () => 't' });
+    expect(await api.getSession()).toEqual({ ok: true, data: { analyticsId: id } });
+  });
+
+  it('GET /auth/session 200 의 모양이 다르면 INVALID 다', async () => {
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { analyticsId: 42 }), getToken: () => 't' });
+    expect(await api.getSession()).toEqual({ ok: false, error: 'INVALID', status: 200 });
   });
 
   it('DELETE /auth/session 으로 로그아웃한다', async () => {
@@ -179,7 +193,7 @@ describe('api: 가짜 서버', () => {
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.login({ provider: 'GOOGLE', idToken: 'g' })).toEqual({ ok: true, data: { status: 'SIGNED_IN', token: 'fixture-session' } });
     expect(await api.signup('ticket', birth, extra)).toEqual({ ok: true, data: { token: 'fixture-session' } });
-    expect(await api.getSession()).toEqual({ ok: true, data: null });
+    expect(await api.getSession()).toEqual({ ok: true, data: { analyticsId: null } });
     expect(await api.logout()).toEqual({ ok: true, data: null });
     expect(fetchFn).not.toHaveBeenCalled();
   });

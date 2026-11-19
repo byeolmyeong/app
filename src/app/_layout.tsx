@@ -19,8 +19,11 @@ import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { usePushDeviceSync, usePushTapRouting } from '@/features/push/push';
 import { ChunkErrorBoundary } from '@/features/update/chunk-reload';
 import { UpdateGate } from '@/features/update/update-gate';
+import { initAnalytics } from '@/lib/analytics';
 
 SplashScreen.preventAutoHideAsync();
+// 제품 분석(결정 040). 키가 없으면(로컬 개발) 아무것도 보내지 않는다.
+initAnalytics();
 
 /** 아래에서 올라오는 창으로 여는 약관 글(결정 067 의 1). 가입 약관 단계의 "보기" 와 마이가 같은 화면을 연다 */
 const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];

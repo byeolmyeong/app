@@ -64,7 +64,9 @@ export function BirthForm({ stored, save, submit }: BirthFormProps) {
     const failed = !r.ok ? r : saved && !saved.ok ? saved : null;
     if (!r.ok || failed) {
       const kind = failed?.error;
-      setRequestError(kind === 'NETWORK' || kind === 'LIMIT' ? S.requestErrors[kind] : S.requestErrors.OTHER);
+      // 만 14세 미만 날짜는 서버가 거절한다(판정은 서버, 서버 결정 021).
+      if (failed?.code === 'UNDER_AGE') setRequestError(S.requestErrors.UNDER_AGE);
+      else setRequestError(kind === 'NETWORK' || kind === 'LIMIT' ? S.requestErrors[kind] : S.requestErrors.OTHER);
       return;
     }
     await save({ profile: v.profile, chart: r.data });

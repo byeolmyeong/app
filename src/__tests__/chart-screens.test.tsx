@@ -191,6 +191,17 @@ describe('출생 정보 입력(홈)', () => {
     expect(await loadBirth()).toBeNull();
   });
 
+  it('만 14세 미만 날짜로 고치려 하면 서버가 거절하고(403 UNDER_AGE) 그 이유를 보여 주며 보관하지 않는다', async () => {
+    mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'SERVER', status: 403, code: 'UNDER_AGE' });
+    await render(<HomeScreen />);
+    await fillDateAndTime('2020-06-15', null);
+    await fireEvent.press(screen.getByText(H.submit));
+    expect(await screen.findByText(H.requestErrors.UNDER_AGE)).toBeTruthy();
+    expect(router.push).not.toHaveBeenCalled();
+    expect(await loadBirth()).toBeNull();
+  });
+
   it('"모름" 을 고르면 태어난 곳 칸이 사라지고, 날짜만으로 time · placeId 를 null 로 보낸다(결정 020)', async () => {
     mockGetSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });

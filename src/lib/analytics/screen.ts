@@ -14,7 +14,6 @@ export const ROUTE_PATTERNS = [
   '/reading',
   '/report',
   '/s/[shareId]',
-  '/settings',
   '/settings/faq',
   '/settings/inquiry',
   '/settings/privacy',

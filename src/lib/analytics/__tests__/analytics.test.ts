@@ -160,7 +160,7 @@ describe('screenNameOf', () => {
 
   it('끝의 / 와 index 는 같은 화면이다', () => {
     expect(screenNameOf('/')).toBe('/');
-    expect(screenNameOf('/settings/')).toBe('/settings');
+    expect(screenNameOf('/settings/faq/')).toBe('/settings/faq');
     expect(screenNameOf('/chart')).toBe('/chart');
   });
 
@@ -178,7 +178,8 @@ describe('screenNameOf', () => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         if (entry.isDirectory()) {
           if (entry.name !== '__tests__') walk(`${dir}/${entry.name}`, `${prefix}/${entry.name}`);
-        } else if (entry.name.endsWith('.tsx') && !entry.name.startsWith('_')) {
+        } else if (entry.name.endsWith('.tsx') && !/^[_+]/.test(entry.name)) {
+          // _layout 은 틀, +html 같은 + 파일은 화면이 아니다
           const route = `${prefix}/${entry.name.replace(/\.tsx$/, '')}`.replace(/\/index$/, '');
           fromFiles.push(route === '' ? '/' : route);
         }

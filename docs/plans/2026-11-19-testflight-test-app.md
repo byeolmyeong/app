@@ -118,14 +118,14 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약: `eas.json` 에 `cli.appVersionSource: "remote"`, 빌드 `test`(store · preview · autoIncrement · `env.APP_VARIANT=test`) · `production`(store · production · autoIncrement), 제출 `test: {}` · `production: {}`. `app.json` 에 `ios.config.usesNonExemptEncryption: false`. 키는 Expo 문서(eas.json · environment-variables · app-versions · submit/ios · app config)로 확인 — `--auto-submit` 은 같은 이름의 제출 프로필을 쓰고 기본은 TestFlight 까지. 바꾸기 전: `eas config --profile test|production` → "config command failed". 바꾼 뒤: test → `별명 테스트` · `byeolmyeong-test` · `com.byeolmyeong.app.test` · store · preview · autoIncrement · APP_VARIANT test, production → `별명` · `com.byeolmyeong.app` · store · production, development → `com.byeolmyeong.app` · internal(그대로). `expo config --type introspect` 의 Info.plist `ITSAppUsesNonExemptEncryption` 가 두 변형 모두 false. [확인 필요] 빈 제출 프로필(`{}`)이 받아들여지는지는 문서에 없다 — `eas config` 가 eas.json 을 읽으며 오류를 내지 않았고, 최종 확인은 태스크 7 의 `--auto-submit`.
 
-### 5. eas-env-urls · 상태: 대기
+### 5. eas-env-urls · 상태: 완료(U4 포함)
 - 읽을 것: 결정 037 "결정 4"(환경 변수), EAS 환경 변수 문서, 태스크 3 결과
 - 할 것: EAS 환경 변수 넷을 만든다(visibility `plaintext`). preview 에는 `EXPO_PUBLIC_API_URL=https://api-staging.byeolmyeong.com` · `EXPO_PUBLIC_WEB_URL=https://app.staging.byeolmyeong.com`. production 에는 `EXPO_PUBLIC_API_URL=https://api.byeolmyeong.com` · `EXPO_PUBLIC_WEB_URL=https://app.byeolmyeong.com`. 저장소 파일은 바뀌지 않으므로 커밋 없이 실행 기록에만 남긴다.
 - 주는 것: 테스트앱 → 스테이징 서버, 운영앱 → 운영 서버
 - 하지 말 것: `EXPO_PUBLIC_DEV_SESSION` · `EXPO_PUBLIC_USE_FIXTURES` 를 어느 환경에든 넣기. 이유: 개발용이다(결정 037). 공급자 값 넣기. 이유: 소유자가 한다(U4).
 - 검증: `npx eas-cli@latest env:list --environment preview` → 두 이름과 스테이징 주소. `--environment production` → 두 이름과 운영 주소
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: 바꾸기 전 preview · production · development 모두 변수 없음. Claude 가 공개값을 넣었다 — preview `EXPO_PUBLIC_API_URL=https://api-staging.byeolmyeong.com` · `EXPO_PUBLIC_WEB_URL=https://app.staging.byeolmyeong.com`, production `https://api.byeolmyeong.com` · `https://app.byeolmyeong.com`, 두 환경의 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`(공개 스테이징 번들에서 꺼내 출력 없이). U4 는 소유자가 숨김 입력 스크립트로 넣었다 — `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`(preview "별명 테스트 iOS", production "별명 iOS") · `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY`(preview "별명 개발", production 운영 "별명"). 모두 plaintext(앱에 들어가는 값). 검증(값 대신 모양 · 해시 앞자리): 구글 ID 넷 모두 `byeolmyeong` 프로젝트, iOS 둘은 서로 다름, 카카오 둘은 32자리 16진수이고 서로 다름. preview 카카오 해시가 "별명 개발" 키와 같다. `eas config --profile test` → `com.byeolmyeong.app.test` + 구글 · 카카오 플러그인이 preview 값으로, `--profile production` → `com.byeolmyeong.app` + production 값으로 들어간다. 개발용 변수(`DEV_SESSION` · `USE_FIXTURES`) 0개. [확인 필요] 구글 iOS 테스트 · 운영 ID 가 뒤바뀌지 않았는지는 태스크 7 의 기기 구글 로그인으로 본다. development 환경은 비어 있다 — EAS 개발 빌드에 구글 · 카카오 플러그인이 필요하면 production 과 같은 공급자 값을 development 에도 넣는다(이 계획 밖).
 
 ### 6. docs-commands · 상태: 대기
 - 읽을 것: `CLAUDE.md`(80줄 제한), `.env.example`, 결정 041

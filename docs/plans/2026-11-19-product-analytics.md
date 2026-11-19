@@ -32,7 +32,7 @@ last_reviewed: 2026-11-19
 ### 내 결정 (묻지 않고 고른 기본값)
 - 분석용 id 는 계정 id 그대로가 아니라 계정 id 의 되돌릴 수 없는 해시다 — 외부 데이터와 DB 키가 바로 이어지지 않게. 같은 사람은 늘 같은 값.
 - 속성 값은 정해진 값 목록(문자열 리터럴)·참거짓만 받는다. 자유 글자(이름·날짜·주소·글)를 받는 자리를 만들지 않는다 — 타입과 실행 중 확인 둘 다.
-- 자동 화면·페이지 수집을 끄고 `screen_viewed` 를 직접 보낸다. 화면 이름은 경로 패턴(`/shared/[shareId]`)이고 실제 주소·쿼리는 보내지 않는다 — 공유·초대 id 는 그 자체로 열쇠고, 카카오 웹 로그인 주소에는 인증 코드(`?code=`)가 있다.
+- 자동 화면·페이지 수집을 끄고 `screen_viewed` 를 직접 보낸다. 화면 이름은 경로 패턴(`/s/[shareId]`)이고 실제 주소·쿼리는 보내지 않는다 — 공유·초대 id 는 그 자체로 열쇠고, 카카오 웹 로그인 주소에는 인증 코드(`?code=`)가 있다.
 - 광고 식별자(IDFA·AAID)와 IP 저장은 끈다 — 성공 지표에 필요 없고, 광고 식별자를 쓰면 iOS 추적 허용 창이 필요하다. 틀리면 비용: 지역별 숫자를 못 본다(켜면 그때부터 쌓인다).
 - "공유했다"는 공유 시트를 연 것으로 센다(`share_started`) — 안드로이드는 실제로 올렸는지 알려 주지 않는다.
 - 네이티브 파이어베이스 설정 파일(GoogleService-Info.plist · google-services.json)은 커밋하지 않고 EAS 파일 환경 변수로 넣는다 — 환경마다 파일이 다르다.
@@ -88,14 +88,14 @@ last_reviewed: 2026-11-19
 - 배포 순서: 태스크 3 이 204·200 둘 다 받게 먼저 고친다. 지금은 운영 사용자가 없어 같이 합쳐도 된다.
 - 결과 요약:
 
-### 3. analytics-core · 상태: 대기
+### 3. analytics-core · 상태: 완료
 - 읽을 것: 이 계획의 "이벤트"·"전역 제약"·"내 결정", `src/lib/api.ts`(`GET /auth/session`), `src/features/auth/session-store.ts`, AGENTS.md, 앰플리튜드 React Native SDK 공식 문서
 - 할 것: `src/lib/analytics/` — `initAnalytics(): void`, `track<E extends EventName>(event: E, props: EventProps[E]): void`, `identify(analyticsId: string): void`, `resetAnalytics(): void`, `screenNameOf(pathname: string): string`(경로 패턴으로 바꾸고 쿼리는 버린다). 이벤트·속성 타입은 "이벤트" 표 그대로. 실행 중에도 값 목록 밖의 값은 버리고 개발 중 경고. 키가 비면 콘솔에만. 이 태스크는 앰플리튜드까지 붙이고, 파이어베이스는 태스크 4·5 가 같은 자리에 붙인다. 앰플리튜드 SDK 가 웹을 지원하지 않으면 웹은 브라우저 SDK(`.web.ts`). 자동 수집(페이지 조회·폼·파일 내려받기)과 IP·광고 id 는 끈다. `api.ts` 의 `GET /auth/session` 검증이 204(빈 본문)·200(`{ analyticsId }`) 둘 다 받게.
 - 주는 것: `initAnalytics` · `track` · `identify` · `resetAnalytics` · `screenNameOf`.
 - 하지 말 것: 화면 코드에서 SDK 직접 부르기. 이유: 보내지 않는 것 규칙을 한 곳에서 지킨다.
-- 검증: 테스트 먼저(빨강). `npm test -- analytics` — 값 목록 밖의 값은 버림, `screenNameOf('/shared/abc?x=1')` = `/shared/[shareId]`, `screenNameOf('/auth/kakao?code=zzz')` = `/auth/kakao`, 키가 비면 SDK 호출 0회, `GET /auth/session` 이 204·200 둘 다 통과.
+- 검증: 테스트 먼저(빨강). `npm test -- analytics` — 값 목록 밖의 값은 버림, `screenNameOf('/s/abc?x=1')` = `/s/[shareId]`, `screenNameOf('/auth/kakao?code=zzz')` = `/auth/kakao`, 키가 비면 SDK 호출 0회, `GET /auth/session` 이 204·200 둘 다 통과.
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `src/lib/analytics/`(events.ts 표 · screen.ts 경로 패턴 22개 · index.ts), 루트 레이아웃에서 `initAnalytics()`, `api.getSession()` → `SessionInfo { analyticsId }`(204·200). 파이어베이스는 태스크 4·5 가 index.ts 의 `track`·`identify`·`resetAnalytics` 안에 붙인다.
 
 ### 4. firebase-native · 상태: 대기
 - 읽을 것: 태스크 3 결과, React Native Firebase 의 Expo 설치 공식 문서, `app.config.ts`, `eas.json`
@@ -176,3 +176,11 @@ last_reviewed: 2026-11-19
 
 ## 실행 기록
 - 1(adr-040-analytics): 번호 확인 `git log --all -- docs/decisions` → 040 이상 없음. `ls docs/decisions/040-*` → `docs/decisions/040-product-analytics-amplitude-ga4.md`. `git diff --stat` → `docs/release-1.0.0.md | 11 +++++++++--`.
+- 3(analytics-core): 빨강(SDK 없음 · 세션 응답 3건) → 초록. `npx jest src/lib/analytics src/lib/__tests__/api-auth.test.ts src/features/auth` → `Tests: 75 passed`. 전체 `npx jest` → `Test Suites: 56 passed · Tests: 787 passed`, `npx tsc --noEmit` exit 0, `npx expo lint` 경고 0, `npx expo export --platform web` 성공 · `웹 js 27개 중 앰플리튜드 포함: 2개`. 커밋 84ff30a.
+  - 처음 전체 실행에서 maintenance-gate·chart-screens 첫 테스트가 5초 시간 초과로 실패 → 따로 돌리면 이 브랜치·main 원본 모두 51개 통과, 다시 전체 실행에서 787 통과. 부하로 인한 흔들림이다(이번 변경과 무관).
+  - 결정: 공유 화면 경로는 `/s/[shareId]` 다 — 계획·결정 040 의 `/shared/…` 예시는 서버 API 경로였다. 둘 다 고쳤다 — 틀리면 비용: 없음.
+  - 결정: 앰플리튜드의 웹 유입 정보(attribution)를 끈다 — 레퍼러·첫 주소가 실려 갈 수 있고, 유입은 GA4 가 본다 — 틀리면 비용: 앰플리튜드에서 유입별 퍼널을 못 나눈다(GA4 와 사용자 id 로 맞춰 본다).
+  - 결정: IDFV·통신사도 끈다(결정 040 의 IP·광고 id 에 더해) — 성공 지표에 필요 없다 — 틀리면 비용: iOS 재설치 뒤 같은 기기를 못 알아본다(로그인하면 분석용 id 로 이어진다).
+  - 결정: `initAnalytics()` 를 루트 레이아웃에서 부르는 일까지 이 태스크에서 했다 — 웹 묶음에 SDK 가 실제로 들어가는지 확인하려고. 키가 없으면 아무것도 하지 않는다.
+  - 결정: 기존 테스트 2곳의 기대값을 바꿨다(`getSession` 의 `data: null` → `{ analyticsId: null }`, 세션 저장소 테스트의 가짜 응답) — 결정 040 의 계약 변경이다.
+

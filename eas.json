@@ -36,7 +36,8 @@
       "ios": {
         "bundleIdentifier": "com.byeolmyeong.app.test",
         "appName": "별명 테스트",
-        "language": "ko"
+        "language": "ko",
+        "ascAppId": "6836723418"
       }
     },
     "production": {

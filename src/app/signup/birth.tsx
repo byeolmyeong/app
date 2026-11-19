@@ -16,7 +16,7 @@ import { Button } from '@/components/button';
 import { Txt } from '@/components/txt';
 import { Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { clearDraft, dropTerms, getDraft, rejectNickname } from '@/features/auth/signup-draft';
+import { clearDraft, getDraft, rejectNickname, rejectTerms } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
 import { useAuth } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
@@ -76,7 +76,7 @@ export default function BirthStep() {
           rejectNickname(r.code);
           return setLeave({ href: '/signup/nickname', clear: false });
         case 'TERMS_REQUIRED':
-          dropTerms();
+          rejectTerms();
           return setLeave({ href: '/signup/terms', clear: false });
         case 'UNDER_AGE':
           return fields.setDateError(H.errors.underAge);

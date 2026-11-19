@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 import BirthStep from '@/app/signup/birth';
 import { strings } from '@/content/strings';
-import { clearDraft, getDraft, setDraft, takeNicknameRejection } from '@/features/auth/signup-draft';
+import { clearDraft, getDraft, setDraft, takeNicknameRejection, takeTermsRejection } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
 import { loadBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
@@ -98,6 +98,7 @@ describe('가입 마치기', () => {
     await submit();
     await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/signup/terms'));
     expect(getDraft()).toBeNull();
+    expect(takeTermsRejection()).toBe(true);
   });
 
   it('만 14세 미만(UNDER_AGE)이면 생년월일 칸 아래 빨강 안내 — 다른 단계로 가지 않는다', async () => {

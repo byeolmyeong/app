@@ -15,7 +15,7 @@ import { Txt } from '@/components/txt';
 import { Colors, LineWidth, Radius, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { LEGAL_VERSIONS } from '@/content/legal-versions';
 import { strings } from '@/content/strings';
-import { clearDraft, getDraft, setDraft } from '@/features/auth/signup-draft';
+import { clearDraft, getDraft, setDraft, takeTermsRejection } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
 import { useAuth } from '@/features/auth/use-session';
 
@@ -25,29 +25,48 @@ type Key = 'terms' | 'privacy' | 'push' | 'marketing';
 type Agreed = Record<Key, boolean>;
 
 /** 줄의 순서 · 필수 여부 · "보기" 가 여는 화면(마케팅은 처리방침의 수집 · 이용 목적) */
-const ITEMS: { key: Key; required: boolean; view?: '/settings/terms' | '/settings/privacy' }[] = [
-  { key: 'terms', required: true, view: '/settings/terms' },
-  { key: 'privacy', required: true, view: '/settings/privacy' },
+const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '/settings/privacy'; label: string } }[] = [
+  { key: 'terms', required: true, view: { href: '/settings/terms', label: T.viewLabels.terms } },
+  { key: 'privacy', required: true, view: { href: '/settings/privacy', label: T.viewLabels.privacy } },
   { key: 'push', required: false },
-  { key: 'marketing', required: false, view: '/settings/privacy' },
+  { key: 'marketing', required: false, view: { href: '/settings/privacy', label: T.viewLabels.marketing } },
 ];
+
+const NONE: Agreed = { terms: false, privacy: false, push: false, marketing: false };
+
+/** 체크를 바꿀 때마다 초안에 쓴다. 필수가 꺼지면 버전을 지워 앞으로 가기로 넘어가도 다음 단계가 약관 단계로 돌려보낸다 */
+function writeDraft(a: Agreed) {
+  const agreedRequired = a.terms && a.privacy;
+  setDraft({
+    termsVersion: agreedRequired ? LEGAL_VERSIONS.terms : undefined,
+    privacyVersion: agreedRequired ? LEGAL_VERSIONS.privacy : undefined,
+    pushConsent: a.push,
+    marketingConsent: a.marketing,
+  });
+}
 
 /** 초안이 있으면(닉네임 단계에서 돌아옴) 그 동의로, 없으면 모두 꺼짐 */
 function initial(): Agreed {
   const d = getDraft();
   return d
     ? { terms: true, privacy: true, push: d.pushConsent, marketing: d.marketingConsent }
-    : { terms: false, privacy: false, push: false, marketing: false };
+    : NONE;
 }
 
 export default function TermsStep() {
   const { status, cancelSignup } = useAuth();
   const [agreed, setAgreed] = useState<Agreed>(initial);
+  /** 마지막 단계에서 약관이 거절되어 돌아왔다(약관 버전이 바뀜) */
+  const [rejected, setRejected] = useState(false);
   /** 다음을 눌러 넘어가는 중(두 번 눌러 닉네임 단계가 두 번 쌓이지 않게). 이 화면으로 돌아오면 푼다 */
   const leaving = useRef(false);
   useFocusEffect(
     useCallback(() => {
       leaving.current = false;
+      if (takeTermsRejection()) {
+        setRejected(true);
+        setAgreed(NONE);
+      }
     }, []),
   );
 
@@ -62,19 +81,20 @@ export default function TermsStep() {
     void cancelSignup();
   }
 
+  function update(next: Agreed) {
+    setAgreed(next);
+    setRejected(false);
+    writeDraft(next);
+  }
+
   function next() {
     if (!canNext || leaving.current) return;
     leaving.current = true;
-    setDraft({
-      termsVersion: LEGAL_VERSIONS.terms,
-      privacyVersion: LEGAL_VERSIONS.privacy,
-      pushConsent: agreed.push,
-      marketingConsent: agreed.marketing,
-    });
+    writeDraft(agreed);
     router.push('/signup/nickname');
   }
 
-  const toggleAll = () => setAgreed({ terms: !all, privacy: !all, push: !all, marketing: !all });
+  const toggleAll = () => update({ terms: !all, privacy: !all, push: !all, marketing: !all });
 
   return (
     <SignupStep
@@ -82,7 +102,16 @@ export default function TermsStep() {
       onBack={back}
       title={T.title}
       guide={T.guide}
-      footer={<Button label={T.next} onPress={next} disabled={!canNext} />}>
+      footer={
+        <View style={styles.footer}>
+          {rejected ? (
+            <Txt variant="caption" color="danger">
+              {T.rejected}
+            </Txt>
+          ) : null}
+          <Button label={T.next} onPress={next} disabled={!canNext} />
+        </View>
+      }>
       <View style={styles.list}>
         <Pressable
           accessibilityRole="checkbox"
@@ -106,7 +135,7 @@ export default function TermsStep() {
                     accessibilityRole="checkbox"
                     accessibilityLabel={`${tag} ${label}`}
                     accessibilityState={{ checked: agreed[item.key] }}
-                    onPress={() => setAgreed((a) => ({ ...a, [item.key]: !a[item.key] }))}
+                    onPress={() => update({ ...agreed, [item.key]: !agreed[item.key] })}
                     style={styles.check}>
                     <CheckBox checked={agreed[item.key]} size={Sizes.checkSquare} />
                     <Txt variant="item" style={styles.label}>
@@ -117,7 +146,12 @@ export default function TermsStep() {
                     </Txt>
                   </Pressable>
                   {view ? (
-                    <Pressable accessibilityRole="link" accessibilityLabel={T.view} hitSlop={Spacing.xs} onPress={() => router.push(view)} style={styles.view}>
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel={view.label}
+                      hitSlop={Spacing.xs}
+                      onPress={() => router.push(view.href)}
+                      style={styles.view}>
                       <Txt variant="caption" color="hint">
                         {T.view}
                       </Txt>
@@ -162,4 +196,5 @@ const styles = StyleSheet.create({
   label: { flex: 1 },
   view: { flexDirection: 'row', alignItems: 'center', gap: Spacing.hairline },
   note: { paddingTop: Spacing.hairline, paddingLeft: Sizes.checkSquare + Spacing.sm },
+  footer: { gap: Spacing.sm },
 });

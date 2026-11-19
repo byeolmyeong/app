@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import TermsStep from '@/app/signup/terms';
 import { LEGAL_VERSIONS } from '@/content/legal-versions';
 import { strings } from '@/content/strings';
-import { clearDraft, getDraft, setDraft } from '@/features/auth/signup-draft';
+import { clearDraft, getDraft, rejectTerms, setDraft } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({
@@ -94,14 +94,34 @@ describe('약관 단계', () => {
     expect(nextDisabled()).toBe(false);
   });
 
-  it('보기는 약관 · 처리방침 화면으로(마케팅은 처리방침)', async () => {
+  it('보기는 무엇을 보는지 이름이 붙은 링크이고 약관 · 처리방침 화면으로 간다(마케팅은 처리방침, 리뷰 A5)', async () => {
     await render(<TermsStep />);
-    const views = screen.getAllByRole('link', { name: T.view });
-    expect(views).toHaveLength(3);
-    await fireEvent.press(views[0]);
-    await fireEvent.press(views[1]);
-    await fireEvent.press(views[2]);
+    await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.terms }));
+    await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.privacy }));
+    await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.marketing }));
+    expect(screen.getAllByRole('link')).toHaveLength(3);
     expect((router.push as jest.Mock).mock.calls).toEqual([['/settings/terms'], ['/settings/privacy'], ['/settings/privacy']]);
+  });
+
+  it('체크를 바꿀 때마다 초안에 쓴다 — 웹에서 앞으로 가기로 넘어가도 옛 동의가 가지 않는다(리뷰 A3)', async () => {
+    await render(<TermsStep />);
+    await fireEvent.press(check(T.all));
+    expect(getDraft()).toMatchObject({ termsVersion: LEGAL_VERSIONS.terms, pushConsent: true, marketingConsent: true });
+    await fireEvent.press(check(ITEMS[3]));
+    expect(getDraft()).toMatchObject({ marketingConsent: false });
+    // 필수가 꺼지면 버전을 지워 다음 단계들이 약관 단계로 돌려보낸다
+    await fireEvent.press(check(ITEMS[1]));
+    expect(getDraft()).toBeNull();
+    await fireEvent.press(check(ITEMS[1]));
+    expect(getDraft()).toMatchObject({ privacyVersion: LEGAL_VERSIONS.privacy, pushConsent: true, marketingConsent: false });
+  });
+
+  it('마지막 단계에서 약관이 거절되어(TERMS_REQUIRED) 돌아오면 이유 한 줄을 보여 주고 체크를 모두 푼다(리뷰 A2)', async () => {
+    rejectTerms();
+    await render(<TermsStep />);
+    expect(screen.getByText(T.rejected)).toBeTruthy();
+    for (const name of [T.all, ...ITEMS]) expect(isChecked(name)).toBe(false);
+    expect(nextDisabled()).toBe(true);
   });
 
   it('이미 가입을 마친 사람(로그인 상태)이 뒤로 가기로 돌아오면 홈으로 보낸다(리뷰 A1)', async () => {

@@ -42,5 +42,6 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: Colors.primary },
   line: { backgroundColor: Colors.fill },
   danger: { backgroundColor: Colors.danger },
-  disabled: { backgroundColor: Colors.hair },
+  /** 누를 수 없을 때: 채운 면에 흐린 글씨(결정 041 시안) */
+  disabled: { backgroundColor: Colors.fill },
 });

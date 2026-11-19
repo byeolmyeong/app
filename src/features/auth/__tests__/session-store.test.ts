@@ -163,6 +163,16 @@ describe('로그인 · 가입 · 로그아웃', () => {
     expect(deps.signup).toHaveBeenCalledTimes(1);
   });
 
+  it('가입을 그만두면(약관 단계에서 뒤로) 가입권을 버리고 이유 없이 로그인 전으로 간다(결정 041)', async () => {
+    const { deps, store } = setup({ login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })) });
+    await store.start();
+    await store.signIn(google);
+    await store.cancelSignup();
+    expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null, lastError: null });
+    expect(await store.completeSignup(birth)).toMatchObject({ ok: false, code: 'SIGNUP_EXPIRED' });
+    expect(deps.signup).not.toHaveBeenCalled();
+  });
+
   it('가입권이 만료됐으면 로그인 전으로 돌아간다', async () => {
     const { store } = setup({
       login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })),

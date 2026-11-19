@@ -6,7 +6,10 @@
  */
 import type { SessionStatus } from '@/features/auth/session-store';
 
-export type GuardTarget = '/login' | '/signup' | '/intro' | '/';
+export type GuardTarget = '/login' | '/signup/terms' | '/intro' | '/';
+
+/** 가입 중에도 열리는 화면: 약관 단계의 "보기" 가 여는 이용약관 · 처리방침(결정 041) */
+const SIGNUP_READABLE = new Set(['terms', 'privacy']);
 
 /** 세션과 상관없이 열리는 첫 경로 조각 */
 const ALWAYS_OPEN = new Set(['s', 'auth']);
@@ -19,13 +22,16 @@ export function guardRedirect(
   status: SessionStatus,
   first: string | undefined,
   introSeen: boolean | null = true,
+  second?: string,
 ): GuardTarget | null {
   if (first !== undefined && ALWAYS_OPEN.has(first)) return null;
   switch (status) {
     case 'checking':
       return null;
     case 'signingUp':
-      return first === 'signup' ? null : '/signup';
+      if (first === 'signup') return null;
+      if (first === 'settings' && second !== undefined && SIGNUP_READABLE.has(second)) return null;
+      return '/signup/terms';
     case 'signedOut':
       if (first === 'intro' || introSeen === null) return null;
       if (!introSeen) return '/intro';
@@ -36,9 +42,14 @@ export function guardRedirect(
 }
 
 /** 화면을 가려야 하는가: 확인 중(세션 · 소개)이거나 다른 곳으로 보내는 중인 보호된 화면 */
-export function guardCovers(status: SessionStatus, first: string | undefined, introSeen: boolean | null = true): boolean {
+export function guardCovers(
+  status: SessionStatus,
+  first: string | undefined,
+  introSeen: boolean | null = true,
+  second?: string,
+): boolean {
   if (first !== undefined && ALWAYS_OPEN.has(first)) return false;
   if (status === 'checking') return true;
   if (status === 'signedOut' && introSeen === null && first !== 'intro') return true;
-  return guardRedirect(status, first, introSeen) !== null;
+  return guardRedirect(status, first, introSeen, second) !== null;
 }

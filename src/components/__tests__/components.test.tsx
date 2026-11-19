@@ -31,6 +31,7 @@ describe('테마', () => {
       hair: '#2A2B33',
       fill: '#1C1D24',
       primary: '#4752FF',
+      accentText: '#9AA3FF',
       primarySoft: '#1D2050',
       danger: '#E5484D',
     });
@@ -54,7 +55,7 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'heading', 'button', 'body', 'lead', 'table', 'label', 'mono', 'number', 'picker',
+      'display', 'hero', 'title', 'heading', 'button', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'mono', 'number', 'picker',
     ]);
     // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 041 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
@@ -96,7 +97,7 @@ describe('Button', () => {
     expect((await bg('primary')).backgroundColor).toBe(Colors.primary);
     expect((await bg('line')).backgroundColor).toBe(Colors.fill);
     expect((await bg('danger')).backgroundColor).toBe(Colors.danger);
-    expect((await bg('primary', true)).backgroundColor).toBe(Colors.hair);
+    expect((await bg('primary', true)).backgroundColor).toBe(Colors.fill);
     expect((await bg('primary')).borderRadius).toBe(12);
   });
 

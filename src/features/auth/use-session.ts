@@ -54,6 +54,7 @@ export function useAuth() {
     lastError: session.lastError,
     signIn: store.signIn,
     completeSignup: store.completeSignup,
+    cancelSignup: store.cancelSignup,
     devSessionEnabled: store.devSessionEnabled(),
     devSignIn: store.devSignIn,
   };

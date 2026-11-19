@@ -32,6 +32,8 @@ export const Colors = {
   fill: '#1C1D24',
   /** 주색(푸른 보라) 하나. 주 버튼, 고른 것, 포커스 테두리, "지금". 대비 3.6, 그 위 ink 4.8 */
   primary: '#4752FF',
+  /** 주색 계열의 글씨: 약관의 [필수], 검색에서 맞은 글자(결정 041 시안). 주색은 바탕 위 글씨로 쓰기엔 어둡다 */
+  accentText: '#9AA3FF',
   /** 고른 칩의 옅은 푸른 보라 바탕 */
   primarySoft: '#1D2050',
   /** 오류 · 삭제. 대비 4.9, 그 위 ink 3.5 */
@@ -101,6 +103,21 @@ export const SocialButtonStyle = {
   },
 } as const;
 
+/** 가입 단계 화면(결정 041 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
+export const StepLayout = {
+  progressHeight: 3,
+  progressGap: 4,
+  titleTop: 28,
+  titleGap: 10,
+  contentTop: 32,
+  /** 뒤로 가기: 누르는 칸 40, 화살표 24, 칸이 왼쪽 여백 안으로 10 들어간다 */
+  back: 40,
+  backIcon: 24,
+  backInset: -10,
+  /** 키보드가 올라왔을 때 다음 버튼과 키보드 사이 */
+  keyboardGap: 12,
+} as const;
+
 /** 시트 뒤를 가리는 막. 검정 60%(어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(0,0,0,0.6)';
 
@@ -143,8 +160,18 @@ export const Typography = {
   body: type(15, 24, FontWeight.regular),
   /** 큰 제목 아래 안내 한두 줄(소개 · 가입 단계 · 로그인 한 줄) */
   lead: type(15, 23, FontWeight.regular),
+  /** 약관의 "모두 동의"(결정 041 시안) */
+  emphasis: type(17, 24, FontWeight.semibold),
+  /** 약관 항목 한 줄 */
+  item: type(15, 22, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
+  /** 입력칸 아래 도움말 · 오류, "보기"(결정 041 시안) */
+  caption: type(13, 18, FontWeight.regular),
+  /** 입력칸 이름 · "모름"(결정 041 시안) */
+  captionStrong: type(13, 18, FontWeight.medium),
+  /** 약관의 마케팅 설명처럼 두 줄이 되는 작은 안내 */
+  note: type(13, 19, FontWeight.regular),
   /** 도움말, 오류, 작은 라벨 */
   label: type(12, 17, FontWeight.medium),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
@@ -166,6 +193,8 @@ export const Spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  /** 글자와 작은 화살표 사이처럼 붙어 보여야 하는 틈(결정 041 시안) */
+  hairline: 2,
 } as const;
 
 /** 화면 좌우 여백 */
@@ -191,6 +220,12 @@ export const Sizes = {
   /** 화면 머리 양옆 칸의 너비 */
   navSide: 48,
   checkbox: 24,
+  /** 체크 칸(결정 041 시안): 모두 동의(동그라미) · 약관 항목 · 시각 "모름". 네모의 모서리 · 빈 칸 테두리 */
+  checkRound: 24,
+  checkSquare: 20,
+  checkSmall: 18,
+  checkRadius: 6,
+  checkBorder: 1.5,
   /** 그 사람의 하늘 그림: 풀이 글 머리 · 홈 카드 */
   readingPicture: 200,
   homePicture: 64,
@@ -203,6 +238,9 @@ export const Sizes = {
   tabIcon: 24,
   /** 목록 한 줄의 높이 */
   listRow: 48,
+  /** 약관의 "모두 동의" 줄 · "보기" 옆 작은 화살표(결정 041 시안) */
+  agreeAllRow: 60,
+  chevronSmall: 18,
   /** 고르는 칩(궁합의 관계 유형)의 높이 */
   chipHeight: 48,
   /** 태어난 곳 고르기: 왼쪽 시·도 칸의 너비 */

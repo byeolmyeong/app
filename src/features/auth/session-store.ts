@@ -5,7 +5,7 @@
  */
 import type { ApiResult, BirthInput, DevSession, LoginResult, ProviderCredential, SignupResult } from '@/lib/api';
 
-/** checking 시작할 때 확인 중 · signedOut 로그인 전 · signingUp 처음 온 사람이 출생 정보를 넣는 중 · signedIn 로그인 상태 */
+/** checking 시작할 때 확인 중 · signedOut 로그인 전 · signingUp 처음 온 사람이 가입 단계(약관 · 닉네임 · 출생 정보)를 밟는 중 · signedIn 로그인 상태 */
 export type SessionStatus = 'checking' | 'signedOut' | 'signingUp' | 'signedIn';
 
 export type Session = {
@@ -146,6 +146,11 @@ export function createSessionStore(deps: SessionStoreDeps) {
       if (r.code === 'UNDER_AGE' || r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
       else set('signingUp', null, reasonOf(r));
       return r;
+    },
+
+    /** 가입을 그만둔다(약관 단계에서 뒤로, 결정 041). 가입권을 버리고 이유 없이 로그인 전이 된다 */
+    async cancelSignup(): Promise<void> {
+      await signedOut();
     },
 
     /** 개발용 세션을 쓰는 빌드인가(로그인 화면의 "개발용으로 들어가기") */

@@ -217,14 +217,14 @@ last_reviewed: 2026-11-18
 - 실행 패턴: 혼자
 - 결과 요약: 앱 `ebd2f4c` — `src/app/login.tsx` · `src/app/signup.tsx`, 가드(`features/auth/guard.ts` 의 `guardRedirect` · `guardCovers`, 루트 레이아웃), `sign-out.ts`(+ `clearDeviceData`), 설정 로그아웃 줄, `BirthForm.submit`, `useAuth` 의 `devSessionEnabled` · `devSignIn`, `strings.login` · `strings.settings.logout`.
 
-### A8. real-round · 상태: 대기 (사용자 준비 2~5 필요)
+### A8. real-round · 상태: 차단 — 웹 쿠키 한 바퀴는 끝, 실제 공급자 · 기기는 사용자 준비 2~5 가 있어야 한다
 - 읽을 것: 이 파일 "검증"
 - 할 것: 로컬 서버 + 웹(8081, `EXPO_PUBLIC_DEV_SESSION` 끔)으로 구글 · 카카오 로그인 → 새 계정 가입 → 새로고침해도 로그인 유지 → 로그아웃 → 계정 삭제(카카오 연결 끊김 확인). EAS 개발 빌드로 iOS(애플 · 구글 · 카카오) · Android(구글 · 카카오) 한 바퀴. 스크린샷을 실행 기록에.
 - 주는 것: 실제 확인 기록
 - 하지 말 것: 실제 사람의 출생 정보로 시험. 이유: 개인정보다 — 가짜 날짜를 쓴다.
 - 검증: 위 흐름의 스크린샷과 서버 로그(토큰 · 출생 정보 없음)
 - 실행 패턴: 혼자(소유자와 함께)
-- 결과 요약:
+- 결과 요약: (진행 중) 새 서버 + 일회용 DB + 웹(8091)으로 쿠키 세션 한 바퀴 확인 — 남은 것: 구글 · 카카오 웹 실제 로그인, 애플 웹(스테이징 https 뒤), EAS 개발 빌드로 iOS · Android.
 
 ## 검증
 - 서버: `./gradlew build` → exit 0(Docker 필요, `/verify` 표 1 · 2).
@@ -413,3 +413,20 @@ last_reviewed: 2026-11-18
 - 빨강: 새 테스트 다섯 묶음 → `Test Suites: 5 failed, 5 total · Tests: 9 failed, 11 passed`.
 - 초록: `npx tsc --noEmit` 0 · `npx expo lint` 0 · `npm test` → `Tests: 770 passed, 770 total` · 웹 내보내기 성공.
 - 화면(웹, 8091, API 없음 · 가짜 공급자 값): `/` → `/login`(카카오 · 구글 공식 버튼 · 개발용 · 만 14세 안내, 애플은 http 라 없음, 콘솔 오류 0), `/settings` → `/login`, `/s/no-such-share` 그대로, 카카오 버튼 → `https://kauth.kakao.com/oauth/authorize?client_id=…&redirect_uri=http%3A%2F%2Flocalhost%3A8091%2Fauth%2Fkakao&response_type=code&scope=openid&state=<32자>`(요청은 브라우저에서 막아 카카오로 보내지 않았다), 위조 state 로 `/auth/kakao` → `/login`. 가입 화면은 실제 서버 로그인이 있어야 보여 A8 에서 본다. 스크린샷: scratchpad `shots/login-from-root.png`.
+
+### A8 앞 절반 — 웹 쿠키 세션 한 바퀴(2026-11-19, 실제 브라우저 · 서버 `360f2f6` · 앱 `bbfc179`)
+- 환경: 서버는 이 브랜치를 8095 에서(`./gradlew bootRun`, 일회용 PostgreSQL 컨테이너 `postgres:17` 55499 — 다른 작업의 개발 DB(55432)는 건드리지 않았다. 새 마이그레이션이 들어가면 그쪽 서버가 다음에 뜰 때 Flyway 가 막는다), `AUTH_DEV_ENABLED=true` · `SESSION_COOKIE_SECURE=false` · `ALLOWED_ORIGINS=http://localhost:8091`. 웹은 8091(`EXPO_PUBLIC_API_URL=http://localhost:8095`, 개발용 세션 끔). 헤드리스 크롬(CDP).
+- 결과(그대로):
+```
+start: /login · cookieBefore: []
+devLogin(브라우저 안에서 POST /auth/dev {cookie:true}): 200 {}
+cookieAfterLogin: bm_session httpOnly=true secure=false sameSite=Lax path=/ domain=localhost
+jsCanSeeCookie: false
+afterReload: /            ← 쿠키만으로 로그인 상태(GET /auth/session)
+settings → 로그아웃 클릭 → /login · cookieAfterLogout: [] · afterLogoutReload: /login
+putProfile: 200 · getProfile: 200 · deleteAccount: 204 · afterDelete GET /auth/session: 401
+errors: []
+```
+- 정리: 두 서버를 멈추고 컨테이너를 지웠다(포트 8091 · 8095 · 55499 비어 있음).
+- 남은 것(차단 — 소유자): 사용자 준비 2(구글 클라이언트 셋) · 3(애플 App ID · 키 · Services ID — Services ID 는 스테이징 https 뒤) · 4(카카오 앱 · OIDC · 리디렉트 URI · 키) · 5(Expo 계정 `eas login` · 기기). 받으면: 웹에서 구글 · 카카오 실제 로그인 → 새 계정 가입(만 14세 미만 거절 포함) → 새로고침 유지 → 로그아웃 → 계정 삭제(카카오 연결 끊김 확인), EAS 개발 빌드로 iOS(애플 · 구글 · 카카오) · Android(구글 · 카카오). 카카오 `scope=openid` 의 동의 화면 · ID 토큰도 이때 본다(A5 의 [확인 필요]).
+

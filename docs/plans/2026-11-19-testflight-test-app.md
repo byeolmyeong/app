@@ -20,7 +20,7 @@ last_reviewed: 2026-11-19
 - 소셜 로그인의 플랫폼별 방법, 앱의 공급자 값은 `.env` 의 `EXPO_PUBLIC_*` → `app.config.ts`: docs/decisions/034-social-login-platforms.md
 - 스토어 심사 제출은 1.0.0 계획 범위 밖(docs/plans/2026-11-10-app-1.0.0.md 태스크 11). 이 계획도 App Store 심사 요청은 하지 않는다.
 - 서버는 토큰의 aud 를 환경 변수로 받는다. 애플은 목록(`APPLE_CLIENT_IDS`), 카카오는 `KAKAO_REST_API_KEY` + `KAKAO_NATIVE_APP_KEY`(서버 `src/main/resources/application.properties` 55 · 57행). **서버 코드는 고치지 않고 스테이징 서버의 환경 변수만 바꾼다.**
-- 2026-11-19 확인한 지금 상태: `eas.json` 에는 `development` · `development-simulator` 만 있다. EAS 프로젝트가 연결되어 있지 않다(`eas project:info` 실패, `app.json` 에 `extra.eas.projectId` 없음). EAS 로그인 계정은 `monkeygarden`(`monkeygardens-team` 의 Owner). 스테이징 서버는 응답한다(401), 운영 서버(`api.byeolmyeong.com`)는 응답하지 않는다.
+- 2026-11-19 확인한 지금 상태: `eas.json` 에는 `development` · `development-simulator` 만 있다. EAS 프로젝트가 연결되어 있지 않다(`eas project:info` 실패, `app.json` 에 `extra.eas.projectId` 없음). EAS 로그인 계정은 `monkeygarden`(`monkeygardens-team` 의 Owner). 스테이징 서버는 응답한다(401). 운영 서버(`api.byeolmyeong.com`)는 같은 날 저녁 첫 배포를 마쳐 `/health` 가 200 이다. 다만 이메일 필수 · 닉네임은 아직 들어가지 않았다(태스크 8).
 
 ## 인터뷰 결과 (2026-11-19 소유자)
 | 질문 | 답 | 영향 |
@@ -147,8 +147,9 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자(소유자 단계가 끼어 있다)
 - 결과 요약:
 
-### 8. production-upload · 상태: 차단(운영 서버 `api.byeolmyeong.com` 이 뜰 때까지 — 소유자 2026-11-19)
-- 읽을 것: 결정 041, 태스크 4 · 5 결과
+### 8. production-upload · 상태: 차단(운영 서버와 앱의 가입 계약이 맞을 때까지)
+- 차단 사유: 처음 조건은 "운영 서버가 뜰 때까지"(소유자 2026-11-19)였다. 그 뒤 운영 서버가 떴다. 2026-11-19 `https://api.byeolmyeong.com/health` 가 200 을 돌려주는 것을 확인했다(서버 커밋 84701db). 그런데 운영 서버에는 아직 이메일 필수(서버 PR #19)와 닉네임(서버 PR #22, 초안)이 없다. 둘 다 `develop` 에만 있다. `develop` 에서 만든 운영앱이 새 가입 화면으로 운영 서버를 부르면 계약이 어긋난다. 그래서 두 PR 이 운영 서버에 들어간 뒤 올린다. 시작하기 전에 서버 저장소 `.local/handoff.md` 에서 운영 서버에 무엇이 들어갔는지 확인한다.
+- 읽을 것: 결정 041, 태스크 4 · 5 결과, 서버 저장소 `.local/handoff.md`
 - 준비(소유자): 운영 번들 ID 용 구글 iOS OAuth 클라이언트(이미 있으면 그 값). EAS production 환경의 공급자 값(운영 카카오 앱 네이티브 키 · 구글 웹 · 구글 iOS — U4 와 같은 명령에 `--environment production`). 운영 서버의 `APPLE_CLIENT_IDS` 에 `com.byeolmyeong.app`.
 - 할 것: 소유자가 `! npx eas-cli@latest build --profile production --platform ios --auto-submit` 을 실행한다. 운영앱 TestFlight 까지만 하고, App Store 심사 제출은 범위 밖이다.
 - 검증: `build:list` 에 프로필 `production` · `com.byeolmyeong.app`. 테스트앱과 운영앱을 한 아이폰에 같이 깔고, 두 앱 모두 카카오톡 로그인이 자기 앱으로 돌아오는지 본다

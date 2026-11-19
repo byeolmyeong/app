@@ -25,11 +25,26 @@
     "production": {
       "distribution": "store",
       "environment": "production",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "APP_VARIANT": "production"
+      }
     }
   },
   "submit": {
-    "test": {},
-    "production": {}
+    "test": {
+      "ios": {
+        "bundleIdentifier": "com.byeolmyeong.app.test",
+        "appName": "별명 테스트",
+        "language": "ko"
+      }
+    },
+    "production": {
+      "ios": {
+        "bundleIdentifier": "com.byeolmyeong.app",
+        "appName": "별명",
+        "language": "ko"
+      }
+    }
   }
 }

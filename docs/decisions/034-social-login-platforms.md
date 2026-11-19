@@ -22,7 +22,7 @@ superseded_by:
    |---|---|---|---|
    | 구글 | 구글 공식 웹 버튼(Google Identity Services) → ID 토큰 | `@react-native-google-signin/google-signin`(`webClientId`) → ID 토큰 | iOS 와 같음 |
    | 애플 | Apple JS 팝업 → ID 토큰 · authorization code(+ 로그인에 쓴 돌아올 주소) | `expo-apple-authentication` → identityToken · authorizationCode | **두지 않는다** |
-   | 카카오 | 카카오 인가 주소로 이동(`scope=openid`) → `/auth/kakao` 로 돌아온 `code` 를 서버에 | 카카오 네이티브 SDK(`@react-native-seoul/kakao-login`) → ID 토큰 | iOS 와 같음 |
+   | 카카오 | 카카오 인가 주소로 이동(`scope=openid` — 결정 039 가 `openid account_email` 로 대체) → `/auth/kakao` 로 돌아온 `code` 를 서버에 | 카카오 네이티브 SDK(`@react-native-seoul/kakao-login`) → ID 토큰 | iOS 와 같음 |
 
 2. **웹 세션은 서버의 httpOnly 쿠키 `bm_session` 이다.** 웹은 모든 요청에 `credentials: 'include'` 를 붙이고 로그인·가입에 `cookie: true` 를 보낸다. 앱 코드는 웹에서 세션 토큰을 받지도 두지도 않는다. 앱(iOS·Android)은 지금처럼 기기 보안 저장소 + `Authorization: Bearer`.
 3. **가입 흐름**: 스플래시 → 로그인 화면(그 플랫폼에서 되는 공급자 버튼만) → 처음 온 사람은 `/signup`(출생 정보 입력, 결정 020 의 입력 그대로) → 서버가 만 14세를 판정한다. 미만이면 "만 14세 이상만 가입할 수 있어요" 를 보여 주고 로그인 화면으로. 로그인하지 않으면 `/login`·`/auth/*`·`/s/*`(공유 페이지) 말고는 들어갈 수 없다.

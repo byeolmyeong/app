@@ -304,6 +304,15 @@ export const Sizes = {
   avatarCheck: 22,
   avatarCheckIcon: 12,
   avatarRing: 3,
+  /** 별명 짓는 중(결정 041 시안): 그림 칸 · 뒤 빛 · 안쪽 궤도가 칸에서 들어간 거리 · 궤도의 점 · 반짝임 · 안내 줄 높이 */
+  makingArt: 260,
+  makingGlowInset: 40,
+  makingInnerOrbit: 34,
+  makingOrbitDot: 12,
+  makingInnerDot: 7,
+  makingTwinkle: 4,
+  makingTwinkleSmall: 3,
+  makingLine: 24,
   /** 브랜드 그림: 홈 머리의 로고 높이 · 별이(화면 가운데 · 카드 안) · 홈 아이콘 카드 */
   brandMarkHeight: 20,
   byeoli: 160,

@@ -364,7 +364,6 @@ export const strings = {
   reading: {
     title: '내 별명',
     generating: '별명을 짓는 중이에요',
-    generatingNote: '태어난 순간의 하늘을 글로 옮기고 있어요. 길면 1분쯤 걸려요.',
     /** 문단 머리의 근거 줄: "근거 · 태양 · 쌍둥이 · 6하우스". 뒤의 낱말들은 서버가 준다 */
     basisLabel: '근거',
     basisSeparator: ' · ',

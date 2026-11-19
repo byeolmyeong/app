@@ -16,6 +16,7 @@ import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { ChartPicture } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
+import { MakingView } from '@/features/reading/making-view';
 import { ReadingView } from '@/features/reading/reading-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
 import { ShareEntry } from '@/features/share/share-entry';
@@ -58,12 +59,8 @@ export default function ReadingScreen() {
   // 기기를 찾아보는 동안에는 아무것도 그리지 않는다("짓는 중" 이 잠깐 비치지 않게).
   if (!stored.checked) return <Screen nav={nav}>{null}</Screen>;
 
-  if (state.status === 'loading')
-    return (
-      <Screen nav={nav}>
-        <StatusView state="think" title={S.generating} note={S.generatingNote} />
-      </Screen>
-    );
+  // 짓는 동안은 "별명 짓는 중"(결정 041 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
+  if (state.status === 'loading') return <MakingView />;
 
   if (state.status === 'failed')
     return (

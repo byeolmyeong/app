@@ -45,8 +45,10 @@ describe('요약 해석 화면', () => {
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.generating)).toBeTruthy();
-    // 기다리는 동안 생각하는 별이(결정 035)
-    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
+    // 기다리는 동안 "별명 짓는 중"(결정 041 보드 9): 움직이는 그림과 안내 문구, "길면 1분쯤" 은 없다
+    expect(screen.getByTestId('making-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByText(strings.making.lines[0])).toBeTruthy();
+    expect(screen.queryByText(/1분/)).toBeNull();
     expect(screen.queryByText(reading.headline)).toBeNull();
     await act(async () => resolve({ ok: true, data: reading }));
 

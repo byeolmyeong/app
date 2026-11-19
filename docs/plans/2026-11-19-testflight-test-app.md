@@ -96,7 +96,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약: `app.config.ts` 에 `isTestVariant()`(없음 · 빈 값 · `production` → 운영, `test` → 테스트, 그 밖 → Error)와 테스트 변형(이름 · scheme · iOS 번들 ID · 안드로이드 패키지)을 더했다(커밋은 git log 의 `feat(config)`). 바꾸기 전: `APP_VARIANT=test` 도 운영 값, `tset` 종료 코드 0. 바꾼 뒤: test → `별명 테스트 byeolmyeong-test com.byeolmyeong.app.test com.byeolmyeong.app.test`, 없음 · production → 운영 값, `tset` · `Test` → 종료 코드 1 + 메시지에 받은 값. `APP_VARIANT` 없을 때 `expo config --type public --json` 전체가 바꾸기 전과 같다(리뷰 초점 2). 운영 ↔ 테스트 설정 차이는 네 칸뿐. tsc · lint 통과, `expo export --platform web` 종료 코드 0. Expo 문서(app variants)의 `{ config }` 펼치기 · `env.APP_VARIANT` 방식과 같다(문서 예시에는 scheme 이 없어 계획대로 더함).
 
-### 3. eas-project-link · 상태: 대기
+### 3. eas-project-link · 상태: 완료
 - 읽을 것: 결정 041, `app.json`
 - 할 것: `npx eas-cli@latest init --account monkeygardens-team` 로 `@monkeygardens-team/byeolmyeong` 프로젝트를 만들어 잇는다. `app.config.ts` 가 동적이라 CLI 가 설정에 직접 못 쓰면, 출력된 프로젝트 ID 를 `app.json` 의 `expo.extra.eas.projectId` 에, `"monkeygardens-team"` 을 `expo.owner` 에 손으로 넣는다.
 - 주는 것: EAS 프로젝트 ID(`app.json`). 태스크 4 · 5 의 `eas config` · `eas env` 가 이 연결을 쓴다
@@ -104,7 +104,7 @@ last_reviewed: 2026-11-19
 - 검증: `npx eas-cli@latest project:info` → fullName `@monkeygardens-team/byeolmyeong`, ID 가 `app.json` 의 값과 같다
 - 차단 가능: 로그인이 만료됐으면 소유자에게 `! npx eas-cli@latest login` 을 부탁한다.
 - 실행 패턴: 혼자
-- 결과 요약:
+- 결과 요약: `npx eas-cli@latest init --account monkeygardens-team --non-interactive --force`(eas-cli 27.10.0) → `@monkeygardens-team/byeolmyeong` 생성 · 연결, 대시보드 아이콘은 앱 아이콘. CLI 가 동적 설정이어도 `app.json` 에 직접 썼다(`extra.eas.projectId` · `owner`). 함께 써 넣은 `extra.router`(expo-router 플러그인이 만드는 값)는 뺐다 — 빼도 최종 설정은 순서만 다르고 같다. 검증: `project:info` fullName `@monkeygardens-team/byeolmyeong`, ID 가 `app.json` 과 같다. `APP_VARIANT` 없음 · test 모두 같은 projectId · owner. 태스크 2 이전 운영 설정과의 차이는 `extra.eas` · `owner` 두 칸뿐.
 
 ### 4. eas-store-profiles · 상태: 대기
 - 읽을 것: 결정 041, `eas.json`, `app.json`, eas.json · 앱 버전 문서(전역 제약의 주소), 태스크 2 · 3 결과

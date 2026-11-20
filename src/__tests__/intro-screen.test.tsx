@@ -22,7 +22,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
 });
 
-// 소개 3장은 앱을 처음 받아 처음 켰을 때 한 번만(결정 042, 소유자 2026-11-19)
+// 소개(두 장, 결정 055 의 5)는 앱을 처음 받아 처음 켰을 때 한 번만(결정 042, 소유자 2026-11-19)
 describe('소개를 봤는지', () => {
   it('처음에는 안 봤고, 적으면 봤다', async () => {
     expect(await hasSeenIntro()).toBe(false);
@@ -50,24 +50,22 @@ describe('소개를 봤는지', () => {
 });
 
 describe('소개 화면', () => {
-  it('둘째 장 본문은 확정 시안(보드 3, 2026-11-20) 그대로', async () => {
-    const body = '궁합으로 서로 닮은 점과 부딪히는 점을 알아봐요. 연인 · 친구 · 동료 · 가족 모두요.';
-    expect(S.slides[1].body).toBe(body);
+  it('소개는 두 장 — 나 → 시기, 궁합 장은 없다(결정 055 의 5, 보드 1 · 3)', async () => {
+    expect(S.slides.map((slide) => slide.title)).toEqual(['별이 지어 주는 나의 별명', '지금 나는 어떤 시기일까']);
     await render(<IntroScreen />);
-    expect(screen.getByText(body)).toBeTruthy();
+    expect(screen.queryByText(/궁합/)).toBeNull();
+    expect(screen.queryByTestId('intro-heart', { includeHiddenElements: true })).toBeNull();
   });
 
   it('제목은 피그마 보드처럼 한 줄 — 줄을 억지로 나누지 않는다(비교 B1)', () => {
-    expect(S.slides.map((slide) => slide.title.includes('\n'))).toEqual([false, false, false]);
+    expect(S.slides.map((slide) => slide.title.includes('\n'))).toEqual([false, false]);
   });
 
-  it('하트 · 달은 보드의 그림(0~100 칸) 비율대로 — 카드 안에서 하트 96 · 달 100 칸을 꽉 채운다(비교 B2)', async () => {
+  it('달은 보드의 그림(0~100 칸) 비율대로 — 카드 안에서 100 칸을 꽉 채운다(비교 B2)', async () => {
     await render(<IntroScreen />);
-    for (const [id, size] of [['intro-heart', 96], ['intro-moon', 100]] as const) {
-      const art = screen.getByTestId(id, { includeHiddenElements: true });
-      expect(art.props.width).toBe(size);
-      expect(art.props.viewBox ?? art.props.vbWidth).toBeTruthy();
-    }
+    const art = screen.getByTestId('intro-moon', { includeHiddenElements: true });
+    expect(art.props.width).toBe(100);
+    expect(art.props.viewBox ?? art.props.vbWidth).toBeTruthy();
   });
 
   it('시기 줄의 글자 줄높이는 16(비교 B11)', async () => {
@@ -89,13 +87,11 @@ describe('소개 화면', () => {
     expect(router.replace).toHaveBeenCalledWith('/login');
   });
 
-  it('다음으로 셋째 장까지 넘기고 시작하기를 누르면 로그인 화면으로', async () => {
+  it('다음으로 둘째 장까지 넘기고 시작하기를 누르면 로그인 화면으로(점 1/2 · 2/2)', async () => {
     await render(<IntroScreen />);
-    expect(screen.getByLabelText(`1${strings.steps.separator}3`)).toBeTruthy();
+    expect(screen.getByLabelText(`1${strings.steps.separator}2`)).toBeTruthy();
     await fireEvent.press(screen.getByText(S.next));
-    expect(screen.getByLabelText(`2${strings.steps.separator}3`)).toBeTruthy();
-    await fireEvent.press(screen.getByText(S.next));
-    expect(screen.getByLabelText(`3${strings.steps.separator}3`)).toBeTruthy();
+    expect(screen.getByLabelText(`2${strings.steps.separator}2`)).toBeTruthy();
     expect(screen.queryByText(S.next)).toBeNull();
     await fireEvent.press(screen.getByText(S.start));
     expect(router.replace).toHaveBeenCalledWith('/login');

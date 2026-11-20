@@ -33,7 +33,7 @@ const store = createSessionStore({
     restoreDraft(resume.draft);
     return resume;
   },
-  saveSignup: (signupToken, provider) => startResume(signupToken, provider),
+  saveSignup: (signupToken, provider, expiresAt) => startResume(signupToken, provider, Date.now(), expiresAt),
   clearSignup: clearResume,
 });
 

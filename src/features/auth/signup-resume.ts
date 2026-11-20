@@ -1,6 +1,6 @@
 /**
  * 가입 이어 하기(결정 068 의 1). 가입권 · 그 공급자 · 적던 값(약관 동의 · 닉네임 · 프로필) · 지금 단계 · 가입권을 받은 시각을
- * 가입권 수명(받은 때부터 30분)만큼만 기기에 둔다 — 앱은 세션 토큰과 같은 보안 저장소, 웹은 sessionStorage(그 탭에만).
+ * 가입권 수명(받은 때부터 30분 · 서버가 준 만료 중 이른 쪽)만큼만 기기에 둔다 — 앱은 세션 토큰과 같은 보안 저장소, 웹은 sessionStorage(그 탭에만).
  * 출생 정보는 두지 않는다(결정 042 · 044). 가입권 · 닉네임은 로그에 남기지 않는다.
  * 가입을 마치거나 · 로그아웃 · 새 로그인 · 가입을 그만두면 세션이 지운다(session-store 의 clearSignup).
  */
@@ -24,7 +24,8 @@ export type ResumeDraft = {
   nickname?: string;
   avatar?: number;
 };
-export type SignupResume = { signupToken: string; provider: Provider; issuedAt: number; step: SignupStepName; draft: ResumeDraft };
+/** expiresAt: 서버가 준 가입권 만료(ms, 없으면 받은 때부터 30분만 본다) */
+export type SignupResume = { signupToken: string; provider: Provider; issuedAt: number; expiresAt?: number; step: SignupStepName; draft: ResumeDraft };
 
 const STEPS: readonly SignupStepName[] = ['terms', 'nickname', 'birth'];
 const PROVIDERS: readonly Provider[] = ['KAKAO', 'APPLE', 'GOOGLE'];
@@ -39,6 +40,7 @@ function isResume(v: unknown): v is SignupResume {
     r.signupToken.length > 0 &&
     PROVIDERS.includes(r.provider as Provider) &&
     typeof r.issuedAt === 'number' &&
+    (r.expiresAt === undefined || typeof r.expiresAt === 'number') &&
     STEPS.includes(r.step as SignupStepName) &&
     typeof d === 'object' &&
     d !== null &&
@@ -90,8 +92,8 @@ const enqueue = (job: () => Promise<void>) => {
 };
 
 /** 가입권을 받았다(처음 온 사람). 약관 단계 · 빈 초안으로 둔다 */
-export function startResume(signupToken: string, provider: Provider, now = Date.now()): Promise<void> {
-  current = { signupToken, provider, issuedAt: now, step: 'terms', draft: {} };
+export function startResume(signupToken: string, provider: Provider, now = Date.now(), expiresAt?: number): Promise<void> {
+  current = { signupToken, provider, issuedAt: now, ...(expiresAt === undefined ? {} : { expiresAt }), step: 'terms', draft: {} };
   const value = JSON.stringify(current);
   return enqueue(() => write(value));
 }
@@ -124,7 +126,9 @@ export async function loadResume(now = Date.now()): Promise<SignupResume | null>
   } catch {
     parsed = null;
   }
-  if (!isResume(parsed) || now - parsed.issuedAt >= SIGNUP_TICKET_MS || now < parsed.issuedAt) {
+  // 보관 수명: 받은 때부터 30분과 서버의 만료 중 이른 쪽
+  const until = isResume(parsed) ? Math.min(parsed.issuedAt + SIGNUP_TICKET_MS, parsed.expiresAt ?? Infinity) : 0;
+  if (!isResume(parsed) || now >= until || now < parsed.issuedAt) {
     await clearResume();
     return null;
   }

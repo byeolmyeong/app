@@ -73,7 +73,8 @@ describe('api: 앱은 토큰을 본문으로 받고 헤더로 보낸다', () => 
     const fetchFn = fakeFetch(200, { status: 'SIGNUP_REQUIRED', signupToken: 'ticket', expiresAt: '2026-11-18T10:30:00Z' });
     expect(await app(fetchFn).login({ provider: 'KAKAO', code: 'k', redirectUri: 'https://byeolmyeong.com/auth/kakao' })).toEqual({
       ok: true,
-      data: { status: 'SIGNUP_REQUIRED', signupToken: 'ticket' },
+      // 가입권 만료 시각(결정 068 — 보관 수명은 min(30분, expiresAt))
+      data: { status: 'SIGNUP_REQUIRED', signupToken: 'ticket', expiresAt: Date.parse('2026-11-18T10:30:00Z') },
     });
   });
 

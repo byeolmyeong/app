@@ -50,7 +50,7 @@ export type SessionStoreDeps = {
   saveLastProvider: (provider: ProviderCredential['provider']) => Promise<void>;
   /** 가입 이어 하기(결정 068 의 1): 기기에 둔 가입권(수명 안의 것만, 가입 초안도 되돌린다) · 두기 · 지우기 */
   loadSignup: () => Promise<{ signupToken: string; provider: ProviderCredential['provider'] } | null>;
-  saveSignup: (signupToken: string, provider: ProviderCredential['provider']) => Promise<void>;
+  saveSignup: (signupToken: string, provider: ProviderCredential['provider'], expiresAt?: number) => Promise<void>;
   clearSignup: () => Promise<void>;
 };
 
@@ -190,7 +190,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       if (r.data.status === 'SIGNUP_REQUIRED') {
         signupToken = r.data.signupToken;
         signupProvider = credential.provider;
-        await deps.saveSignup(r.data.signupToken, credential.provider);
+        await deps.saveSignup(r.data.signupToken, credential.provider, r.data.expiresAt);
         set('signingUp', null);
         return 'signingUp';
       }

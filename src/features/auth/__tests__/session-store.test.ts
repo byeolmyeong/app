@@ -374,13 +374,13 @@ describe('마지막에 쓴 공급자 적기', () => {
 
 // 가입 이어 하기(결정 068 의 1): 가입권은 보관 · 이어 하기 · 지우기를 deps 에 맡긴다
 describe('가입 이어 하기', () => {
-  const signupRequired = async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket-1' });
+  const signupRequired = async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket-1', expiresAt: 5_000 });
 
-  it('처음 온 사람이면 가입권과 공급자를 보관한다', async () => {
+  it('처음 온 사람이면 가입권 · 공급자 · 서버의 만료 시각을 보관한다', async () => {
     const { deps, store } = setup({ login: jest.fn(signupRequired) });
     await store.start();
     await store.signIn(google);
-    expect(deps.saveSignup).toHaveBeenCalledWith('ticket-1', 'GOOGLE');
+    expect(deps.saveSignup).toHaveBeenCalledWith('ticket-1', 'GOOGLE', 5_000);
   });
 
   it('켤 때 보관한 가입권이 있으면 서버에 묻지 않고 가입 중으로 시작하고, 그 가입권으로 가입을 마친다', async () => {

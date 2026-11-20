@@ -78,7 +78,10 @@ export type ProviderCredential =
   | { provider: 'KAKAO'; code: string; redirectUri: string };
 
 /** 로그인 결과: 계정이 있으면 세션(웹은 token 이 null), 처음 온 사람은 가입권 */
-export type LoginResult = { status: 'SIGNED_IN'; token: string | null } | { status: 'SIGNUP_REQUIRED'; signupToken: string };
+export type LoginResult =
+  | { status: 'SIGNED_IN'; token: string | null }
+  /** expiresAt: 가입권이 끝나는 때(ms). 서버가 주지 않았거나 읽을 수 없으면 없다 */
+  | { status: 'SIGNUP_REQUIRED'; signupToken: string; expiresAt?: number };
 
 /** 가입 결과. 웹은 token 이 null 이다 */
 export type SignupResult = { token: string | null };
@@ -977,7 +980,7 @@ const isSessionBody =
   (v: unknown): v is { token?: string } =>
     isObject(v) && (isNonEmptyString(v.token) || (cookie && v.token === undefined));
 
-type LoginBody = { status: 'SIGNED_IN'; token?: string } | { status: 'SIGNUP_REQUIRED'; signupToken: string };
+type LoginBody = { status: 'SIGNED_IN'; token?: string } | { status: 'SIGNUP_REQUIRED'; signupToken: string; expiresAt?: unknown };
 
 const isLoginBody =
   (cookie: boolean) =>
@@ -1184,7 +1187,14 @@ export function createApi(config: ApiConfig) {
         auth: false,
       });
       if (!r.ok) return r;
-      if (r.data.status === 'SIGNUP_REQUIRED') return { ok: true, data: { status: 'SIGNUP_REQUIRED', signupToken: r.data.signupToken } };
+      if (r.data.status === 'SIGNUP_REQUIRED') {
+        // 가입권이 끝나는 때 — 이어 하기의 보관 수명(min(30분, expiresAt), 결정 068). 읽을 수 없으면 버린다
+        const expiresAt = typeof r.data.expiresAt === 'string' ? Date.parse(r.data.expiresAt) : NaN;
+        return {
+          ok: true,
+          data: { status: 'SIGNUP_REQUIRED', signupToken: r.data.signupToken, ...(Number.isFinite(expiresAt) ? { expiresAt } : {}) },
+        };
+      }
       return { ok: true, data: { status: 'SIGNED_IN', token: cookie ? null : (r.data.token ?? null) } };
     },
 

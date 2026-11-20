@@ -108,3 +108,10 @@ describe('가입 이어 하기 보관', () => {
     }
   });
 });
+
+// 리뷰 PR #57 제안 9: 서버가 준 가입권 만료(expiresAt)가 30분보다 이르면 그때까지만
+it('서버의 만료 시각이 30분보다 이르면 그때 지운다', async () => {
+  await startResume('ticket-2', 'KAKAO', 1_000, 1_000 + 10 * 60_000);
+  expect(await loadResume(1_000 + 10 * 60_000 - 1)).toMatchObject({ signupToken: 'ticket-2' });
+  expect(await loadResume(1_000 + 10 * 60_000)).toBeNull();
+});

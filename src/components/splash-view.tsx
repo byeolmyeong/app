@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/screen';
@@ -55,5 +55,37 @@ export function useSplashDone(ready: boolean, skip = false): boolean {
   // skip: 스플래시를 아예 보이지 않는 곳(공유 페이지, 결정 068 의 3) — 처음부터 걷힌 것으로 둔다
   const now = skip || (ready && minPassed) || maxPassed;
   if (!done && now) setDone(true);
+  useEffect(() => {
+    if (done || now) markSplashGone();
+  }, [done, now]);
   return done || now;
+}
+
+/** 이번 실행에서 스플래시가 걷혔는가 — 루트가 한 번 걷으면 다시 그리지 않는다 */
+let splashGone = false;
+const goneListeners = new Set<() => void>();
+function markSplashGone() {
+  if (splashGone) return;
+  splashGone = true;
+  goneListeners.forEach((l) => l());
+}
+
+/**
+ * 스플래시가 걷힌 뒤에 true(이번 실행 동안 그대로). 화면 위에 뜨는 시트가 스플래시 · 정지 확인보다 먼저 올라오지 않게 기다릴 때 쓴다
+ * (홈의 알림 받기 권유, #67 리뷰). 루트의 useSplashDone 이 걷을 때 알린다.
+ */
+export function useSplashGone(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      goneListeners.add(listener);
+      return () => goneListeners.delete(listener);
+    },
+    () => splashGone,
+  );
+}
+
+/** 시험에서만: 스플래시가 걷혔는지 정한다(걷히면 기다리던 쪽에 알린다) */
+export function setSplashGoneForTest(gone: boolean) {
+  splashGone = false;
+  if (gone) markSplashGone();
 }

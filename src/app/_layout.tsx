@@ -2,9 +2,10 @@ import { useFonts } from 'expo-font';
 import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { useSlideUpScreenOptions } from '@/components/slide-up';
+import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { useSession } from '@/features/auth/use-session';
@@ -43,14 +44,15 @@ export default function RootLayout() {
     },
   ]);
 
+  // 스플래시(결정 067 의 3): 처음 열 때 글꼴 · 세션 확인 · (로그인 전이면) 소개 기록 확인이 끝나 보낼 곳에 간 뒤에 걷는다.
+  // 공유 페이지는 세션을 확인하지 않는다. 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지 둔다.
+  const splashDone = useSplashDone((loaded || !!error) && !covered && (first === 's' || session.ready));
   useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, error]);
+    if (splashDone) SplashScreen.hideAsync();
+  }, [splashDone]);
 
   if (!loaded && !error) {
-    return null;
+    return Platform.OS === 'web' ? <SplashView /> : null;
   }
 
   // 최소 버전보다 낮은 앱은 화면들 대신 막는 화면만 본다(결정 027). 세션과 상관없다.
@@ -63,6 +65,11 @@ export default function RootLayout() {
         ))}
       </Stack>
       {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
+      {Platform.OS === 'web' && !splashDone ? (
+        <View style={styles.cover}>
+          <SplashView />
+        </View>
+      ) : null}
     </UpdateGate>
   );
 }

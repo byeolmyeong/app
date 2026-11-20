@@ -1,9 +1,9 @@
 ---
 type: decision
 tags: [시기, 변곡점, 심층 리포트, 타임라인, 홈, 기기 보관]
-status: active
+status: superseded
 last_reviewed: 2026-11-11
-superseded_by: 031-timing-now-near-ahead-past.md (탭 안의 순서와 타임라인의 꼴만. 나머지는 유효)
+superseded_by: 031-timing-now-near-ahead-past.md (탭 안의 순서와 타임라인의 꼴만. 나머지는 유효) · 048-me-tab-and-me-report.md · 049-timing-tab-v2.md (시기를 심층 리포트의 다섯째 탭으로 둔 것과 그 화면 전부. 행성 · 각도 이름 금지는 이유 줄에 한해 054)
 ---
 # 021. 시기는 심층 리포트의 다섯째 탭이고, 홈의 시기 항목은 그 탭으로 바로 간다
 

@@ -3,7 +3,7 @@ type: decision
 tags: [방향성 제시, direction, 미래, 궁합, 시기 탭, 궁합 결과, 기기 보관, 출생 정보 저장 안 함]
 status: active
 last_reviewed: 2026-11-12
-superseded_by: 031-timing-now-near-ahead-past.md (미래가 놓이는 자리만: 시기 탭 끝 → "지금" 바로 아래. 나머지는 유효)
+superseded_by: 031-timing-now-near-ahead-past.md (미래가 놓이는 자리만: 시기 탭 끝 → "지금" 바로 아래. 나머지는 유효) · 049-timing-tab-v2.md (미래 칸. 궁합 방향성은 유효)
 ---
 # 026. 방향성 "미래" 는 시기 탭 끝에서 탭을 열 때마다 받아 기기에 두지 않고, "궁합" 은 따로 화면(`/synastry/<식별자>/direction`)에서 누를 때만 받는다
 

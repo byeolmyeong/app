@@ -3,7 +3,7 @@ type: decision
 tags: [공유, 공유 카드, 브랜딩, 별이, 로고]
 status: active
 last_reviewed: 2026-11-18
-superseded_by:
+superseded_by: 053-share-v2.md (카드 모양 · 종류. 궁합 카드는 궁합 시안 때까지 유효)
 ---
 # 036. 공유 카드에 별이와 로고를 넣는다("별이와 함께")
 

@@ -3,7 +3,7 @@ type: decision
 tags: [투두, 조각, 레벨업, 방향성 제시, 심층 리포트, 유료화, 1.0.0, 1.1.0]
 status: active
 last_reviewed: 2026-11-11
-superseded_by:
+superseded_by: 050-two-detailed-readings.md (방향성 제시의 1.1.0 유료화 · "심층 리포트는 계속 무료" 줄. 투두 · 조각 · 레벨업은 유효)
 ---
 # 014. 투두·조각·레벨업은 1.1.0 으로 옮기고, 방향성 제시는 무료로 시작해 나중에 유료화하며, 심층·궁합 리포트는 계속 무료로 둔다
 

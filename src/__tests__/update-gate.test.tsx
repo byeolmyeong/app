@@ -1,10 +1,13 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import * as Linking from 'expo-linking';
+import { useSegments } from 'expo-router';
 import { useState } from 'react';
 import { AppState, Pressable, Text, type AppStateStatus } from 'react-native';
 
 import RootLayout from '@/app/_layout';
 import { strings } from '@/content/strings';
+import { useSession } from '@/features/auth/use-session';
 import { UpdateGate, useGenerationBusy, useUpdateBusy } from '@/features/update/update-gate';
 import {
   api,
@@ -35,7 +38,7 @@ jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAs
 jest.mock('expo-router', () => {
   const { Text: T } = jest.requireActual('react-native');
   // 세션이 없으면 로그인 전 가드가 로그인 화면으로 보낸다(결정 034) — 여기서는 보내는 것만 받아 둔다.
-  return { Stack: () => <T>앱의 화면들</T>, useSegments: () => [], router: { replace: jest.fn() } };
+  return { Stack: () => <T>앱의 화면들</T>, useSegments: jest.fn(() => []), router: { replace: jest.fn() } };
 });
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })) }));
 // 소개는 이미 본 기기로 둔다(결정 042 — 로그인 전이면 로그인 화면으로)
@@ -301,5 +304,143 @@ describe('강제 업데이트(결정 027)', () => {
     await render(<RootLayout />);
     expect(screen.getByText(U.title)).toBeTruthy();
     expect(screen.queryByText('앱의 화면들')).toBeNull();
+  });
+});
+
+describe('업데이트 권유(결정 059)', () => {
+  const S = U.suggest;
+  const ASKED_KEY = 'byeolmyeong.updateAsked.v1';
+  /** 내 버전 1.0.0 보다 새 최신 1.1.0 이 나왔다(최소는 없다) */
+  const newer = configOf({ latestVersion: '1.1.0', storeUrl: STORE_URL });
+  /** 권유 창이 떠 있는가 — 막는 화면과 제목이 같아 설명으로 가린다 */
+  const dialog = () => screen.queryByText(S.body);
+  /** 기기 저장소를 읽고 쓰는 일이 끝나기를 기다린다 */
+  const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  const mockUseSession = useSession as jest.Mock;
+  const mockSegments = useSegments as jest.Mock;
+
+  /** 누르면 글이 바뀌는 화면(창이 떠도 다시 그려지지 않고 그대로 남는지 본다) */
+  function Pressed() {
+    const [pressed, setPressed] = useState(false);
+    return (
+      <Pressable onPress={() => setPressed(true)}>
+        <Text>{pressed ? '누른 홈' : '홈'}</Text>
+      </Pressable>
+    );
+  }
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockApi.getAppConfig.mockResolvedValue(newer);
+  });
+  afterEach(() => {
+    mockUseSession.mockReturnValue({ status: 'signedOut', token: null, ready: true, lastError: null });
+    mockSegments.mockReturnValue([]);
+  });
+
+  it('권해도 되는 자리면 앱 위에 가운데 창을 띄운다: 제목 · 두 줄 설명 · "나중에" · "업데이트"', async () => {
+    await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    expect(await screen.findByText('새 기능이 더해졌어요.\n지금 업데이트할까요?')).toBe(dialog());
+    expect(screen.getByRole('header', { name: '새 버전이 나왔어요' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '나중에' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '업데이트' })).toBeTruthy();
+    expect(screen.getByText('앱의 화면들')).toBeTruthy();
+  });
+
+  it('"나중에" 는 창을 닫고 그 최신 버전을 기기에 적는다 — 앞으로 돌아와 다시 확인해도 묻지 않는다', async () => {
+    const appState = spyAppState();
+    await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await fireEvent.press(await screen.findByRole('button', { name: S.later }));
+    expect(dialog()).toBeNull();
+    expect(mockOpenURL).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(ASKED_KEY)).toBe('1.1.0');
+
+    await appState.emit('active');
+    await settle();
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(2);
+    expect(dialog()).toBeNull();
+  });
+
+  it('"업데이트" 는 설정의 storeUrl 을 열고 창을 닫는다(다시 묻지 않는다)', async () => {
+    await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await fireEvent.press(await screen.findByRole('button', { name: S.update }));
+    expect(mockOpenURL).toHaveBeenCalledWith(STORE_URL);
+    expect(dialog()).toBeNull();
+    expect(await AsyncStorage.getItem(ASKED_KEY)).toBe('1.1.0');
+  });
+
+  it('같은 최신 버전을 이 기기에서 이미 물었으면 앱을 새로 켜도 묻지 않는다', async () => {
+    await AsyncStorage.setItem(ASKED_KEY, '1.1.0');
+    await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await settle();
+    expect(dialog()).toBeNull();
+    expect(screen.getByText('앱의 화면들')).toBeTruthy();
+  });
+
+  it('바쁜 화면이 떠 있으면 미루고, 그 화면에서 나오면 묻는다', async () => {
+    await render(
+      <UpdateGate canSuggest>
+        <BusyScreen />
+      </UpdateGate>,
+    );
+    await settle();
+    expect(dialog()).toBeNull();
+    await fireEvent.press(screen.getByText('글을 짓는 중'));
+    expect(await screen.findByText(S.body)).toBeTruthy();
+    expect(screen.getByText('홈')).toBeTruthy();
+  });
+
+  it('권해도 되는 자리가 아니면(로그인 전 · 가입 중) 묻지 않고, 그 자리가 되면 묻는다 — 뒤의 화면은 그대로 남는다', async () => {
+    const view = await render(
+      <UpdateGate canSuggest={false}>
+        <Pressed />
+      </UpdateGate>,
+    );
+    await settle();
+    expect(dialog()).toBeNull();
+    await fireEvent.press(screen.getByText('홈'));
+
+    await view.rerender(
+      <UpdateGate canSuggest>
+        <Pressed />
+      </UpdateGate>,
+    );
+    expect(dialog()).toBeTruthy();
+    expect(screen.getByText('누른 홈')).toBeTruthy();
+  });
+
+  it('최소 버전보다 낮으면 묻지 않고 막는다', async () => {
+    mockApi.getAppConfig.mockResolvedValue(configOf({ minVersion: '1.0.1', latestVersion: '1.1.0', storeUrl: STORE_URL }));
+    await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await settle();
+    expect(dialog()).toBeNull();
+    expect(screen.queryByText('앱의 화면들')).toBeNull();
+  });
+
+  it('웹이거나 스토어 주소가 없으면 묻지 않는다', async () => {
+    mockClient.current = null;
+    const web = await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await settle();
+    expect(dialog()).toBeNull();
+    await web.unmount();
+
+    mockClient.current = { platform: 'ios', version: '1.0.0' };
+    mockApi.getAppConfig.mockResolvedValue(configOf({ latestVersion: '1.1.0', storeUrl: null }));
+    await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await settle();
+    expect(dialog()).toBeNull();
+  });
+
+  it.each([
+    ['로그인 전', 'signedOut', [], false],
+    ['가입 중', 'signingUp', ['signup', 'birth'], false],
+    ['로그인했지만 홈이 아님', 'signedIn', ['reading'], false],
+    ['로그인한 홈', 'signedIn', [], true],
+  ] as const)('루트 레이아웃: %s → 묻는가 %s', async (_name, status, segments, shown) => {
+    mockUseSession.mockReturnValue({ status, token: null, ready: true, lastError: null });
+    mockSegments.mockReturnValue(segments);
+    await render(<RootLayout />);
+    await settle();
+    expect(dialog() !== null).toBe(shown);
   });
 });

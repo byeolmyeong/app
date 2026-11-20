@@ -48,9 +48,10 @@ export default function RootLayout() {
     return null;
   }
 
-  // 최소 버전보다 낮은 앱은 화면들 대신 "업데이트가 필요해요" 만 본다(결정 027). 세션과 상관없다.
+  // 최소 버전보다 낮은 앱은 화면들 대신 막는 화면만 본다(결정 027). 세션과 상관없다.
+  // 최신 버전보다 낮으면 로그인한 홈에서만 한 번 권한다 — 로그인 전 · 가입 중에는 묻지 않는다(결정 059).
   return (
-    <UpdateGate>
+    <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }} />
       {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
     </UpdateGate>

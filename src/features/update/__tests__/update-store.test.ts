@@ -11,11 +11,19 @@ const configOf = (mine: Partial<PlatformConfig>, other: Partial<PlatformConfig> 
   data: { ios: { ...open, ...mine }, android: { ...open, ...other } },
 });
 
+/** 기기에 적어 둔 "물은 최신 버전"(결정 059). 처음에는 아무것도 묻지 않았다 */
+function askedStorage(initial: string | null = null) {
+  return {
+    loadAsked: jest.fn<Promise<string | null>, []>(async () => initial),
+    saveAsked: jest.fn<Promise<void>, [string]>(async () => {}),
+  };
+}
+
 function setup(client: AppClient | null, ...results: ApiResult<AppConfig>[]) {
   const getAppConfig = jest.fn<Promise<ApiResult<AppConfig>>, []>();
   for (const r of results) getAppConfig.mockResolvedValueOnce(r);
   getAppConfig.mockResolvedValue(results[results.length - 1] ?? { ok: false, error: 'NETWORK' });
-  const store = createUpdateStore({ client, getAppConfig });
+  const store = createUpdateStore({ client, getAppConfig, ...askedStorage() });
   return { store, getAppConfig };
 }
 
@@ -135,7 +143,7 @@ describe('강제 업데이트 판정(결정 027)', () => {
 
   it('설정 요청이 426 을 받아 알림이 또 와도 다시 묻지 않는다(되풀이하지 않는다)', async () => {
     const getAppConfig = jest.fn<Promise<ApiResult<AppConfig>>, []>();
-    const store = createUpdateStore({ client: ios, getAppConfig });
+    const store = createUpdateStore({ client: ios, getAppConfig, ...askedStorage() });
     getAppConfig.mockImplementation(async () => {
       store.force();
       return { ok: false, error: 'SERVER', status: 426, code: 'UPDATE_REQUIRED' };
@@ -316,7 +324,7 @@ describe('점검 판정(결정 030)', () => {
 
   it('설정 요청이 503 을 받아 알림이 또 와도 다시 묻지 않는다(되풀이하지 않는다)', async () => {
     const getAppConfig = jest.fn<Promise<ApiResult<AppConfig>>, []>();
-    const store = createUpdateStore({ client: ios, getAppConfig });
+    const store = createUpdateStore({ client: ios, getAppConfig, ...askedStorage() });
     getAppConfig.mockImplementation(async () => {
       store.maintain();
       return { ok: false, error: 'SERVER', status: 503, code: 'MAINTENANCE' };
@@ -325,5 +333,113 @@ describe('점검 판정(결정 030)', () => {
     await settle();
     expect(getAppConfig).toHaveBeenCalledTimes(1);
     expect(store.getSnapshot().maintenance).not.toBeNull();
+  });
+});
+
+describe('업데이트 권유 판정(결정 059)', () => {
+  /** 내 버전 1.0.0 보다 새 최신 1.1.0 이 나왔다(최소는 없다) */
+  const newer = configOf({ latestVersion: '1.1.0', storeUrl: STORE_URL });
+  /** 물은 버전을 읽고 쓰는 일이 끝나기를 기다린다 */
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  function setupSuggest(client: AppClient | null, asked: string | null, ...results: ApiResult<AppConfig>[]) {
+    const getAppConfig = jest.fn<Promise<ApiResult<AppConfig>>, []>();
+    for (const r of results) getAppConfig.mockResolvedValueOnce(r);
+    getAppConfig.mockResolvedValue(results[results.length - 1]);
+    const storage = askedStorage(asked);
+    const store = createUpdateStore({ client, getAppConfig, ...storage });
+    return { store, ...storage };
+  }
+
+  it('최신보다 낮고 최소 이상이면 물은 버전을 읽은 뒤 그 최신 버전을 권한다. 막지는 않는다', async () => {
+    const { store, loadAsked } = setupSuggest(ios, null, newer);
+    expect(store.getSuggestion()).toBeNull();
+    const listener = jest.fn();
+    store.subscribe(listener);
+    await store.check();
+    await settle();
+    expect(loadAsked).toHaveBeenCalledTimes(1);
+    expect(store.getSuggestion()).toBe('1.1.0');
+    expect(store.getSnapshot().blocked).toBe(false);
+    expect(listener).toHaveBeenCalled();
+  });
+
+  it('권할 일이 없으면 기기 저장소를 읽지 않는다(최신이 없음 · 최신과 같음)', async () => {
+    for (const config of [configOf({}), configOf({ latestVersion: '1.0.0' })]) {
+      const { store, loadAsked } = setupSuggest(ios, null, config);
+      await store.check();
+      await settle();
+      expect(store.getSuggestion()).toBeNull();
+      expect(loadAsked).not.toHaveBeenCalled();
+    }
+  });
+
+  it('같은 최신 버전을 이미 물었으면 권하지 않고, 더 새 최신이 나오면 다시 권한다', async () => {
+    const { store } = setupSuggest(ios, '1.1.0', newer, configOf({ latestVersion: '1.2.0', storeUrl: STORE_URL }));
+    await store.check();
+    await settle();
+    expect(store.getSuggestion()).toBeNull();
+    await store.check();
+    expect(store.getSuggestion()).toBe('1.2.0');
+  });
+
+  it('창을 닫으면(나중에 · 업데이트) 그 최신 버전을 기기에 적고 다시 권하지 않는다', async () => {
+    const { store, saveAsked } = setupSuggest(ios, null, newer);
+    await store.check();
+    await settle();
+    store.dismissSuggestion();
+    expect(store.getSuggestion()).toBeNull();
+    expect(saveAsked).toHaveBeenCalledWith('1.1.0');
+    await store.check();
+    expect(store.getSuggestion()).toBeNull();
+  });
+
+  it('바쁜 화면이 있으면 미루고, 모두 나오면 권한다', async () => {
+    const { store } = setupSuggest(ios, null, newer);
+    const leave = store.enterBusy();
+    await store.check();
+    await settle();
+    expect(store.getSuggestion()).toBeNull();
+    leave();
+    expect(store.getSuggestion()).toBe('1.1.0');
+  });
+
+  it('최소보다 낮으면 권하지 않고 막는다', async () => {
+    const { store, loadAsked } = setupSuggest(ios, null, configOf({ minVersion: '1.0.1', latestVersion: '1.1.0', storeUrl: STORE_URL }));
+    await store.check();
+    await settle();
+    expect(store.getSuggestion()).toBeNull();
+    expect(store.getSnapshot().blocked).toBe(true);
+    expect(loadAsked).not.toHaveBeenCalled();
+  });
+
+  it('426 으로 막히거나 점검 중이면 권하지 않는다', async () => {
+    const forced = setupSuggest(ios, null, newer);
+    await forced.store.check();
+    await settle();
+    forced.store.force();
+    expect(forced.store.getSuggestion()).toBeNull();
+
+    const down = newer.ok ? { ...newer, data: { ...newer.data, maintenance: { active: true, message: null } } } : newer;
+    const maintenance = setupSuggest(ios, null, down);
+    await maintenance.store.check();
+    await settle();
+    expect(maintenance.store.getSuggestion()).toBeNull();
+  });
+
+  it('웹(client 가 없다)에서는 권하지 않는다', async () => {
+    const { store, loadAsked } = setupSuggest(null, null, newer);
+    await store.check();
+    await settle();
+    expect(store.getSuggestion()).toBeNull();
+    expect(loadAsked).not.toHaveBeenCalled();
+  });
+
+  it('기기 저장소를 읽지 못하면 이번에는 권하지 않는다', async () => {
+    const { store, loadAsked } = setupSuggest(ios, null, newer);
+    loadAsked.mockRejectedValueOnce(new Error('storage'));
+    await store.check();
+    await settle();
+    expect(store.getSuggestion()).toBeNull();
   });
 });

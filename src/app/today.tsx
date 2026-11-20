@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import { MakingView } from '@/components/making-view';
 import { NavBar } from '@/components/nav-bar';
+import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
 import { StateScreen } from '@/components/state-screen';
 import { useLoadingPhase } from '@/components/use-loading-phase';
@@ -72,6 +73,8 @@ export default function TodayScreen() {
   const share = <ShareEntry target={{ kind: 'DAY_SKY', date: state.sky.date }} trigger="icon" />;
   return (
     <Screen nav={nav(share)} footer={<MainTabs active="home" nested />}>
+      {/* 연결 끊김(결정 061 의 4): 받은 글은 그대로 두고 머리 아래 띠 */}
+      {online ? null : <OfflineBanner />}
       {/* 이 화면의 글은 늘 오늘 것이다 — 서버의 오늘(한국 날짜)을 그대로 오늘로 그린다("오늘의 흐름" · 이유 머리 "오늘") */}
       <DayView sky={state.sky} chart={chart} today={state.sky.date} />
     </Screen>

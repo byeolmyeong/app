@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -34,8 +35,15 @@ const sky: DaySky = {
   reason: { when: 'DAY', items: [{ kind: 'TRANSIT', mover: 'MOON', target: 'VENUS', type: 'CONJUNCTION' }] },
 };
 
+type NetListener = (s: { isConnected: boolean; isInternetReachable: boolean }) => void;
+let netListener: NetListener | null = null;
 let nowSpy: jest.SpyInstance;
 beforeEach(async () => {
+  netListener = null;
+  (NetInfo.addEventListener as jest.Mock).mockImplementation((cb: NetListener) => {
+    netListener = cb;
+    return () => {};
+  });
   await AsyncStorage.clear();
   jest.clearAllMocks();
   nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-19T01:00:00Z'));
@@ -74,6 +82,15 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     expect(within(panel).queryByText(strings.share.open)).toBeNull();
     expect(mockApi.createShare).toHaveBeenCalledTimes(1);
     expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'DAY_SKY', date: '2026-11-19' });
+  });
+
+  it('보던 중 연결이 끊기면 받은 글은 그대로 두고 머리 아래 띠(결정 061 의 4)', async () => {
+    await render(<TodayScreen />);
+    expect(await screen.findByText(sky.title)).toBeTruthy();
+    expect(screen.queryByText(strings.states.offline.title)).toBeNull();
+    await act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
+    expect(screen.getByText(strings.states.offline.title)).toBeTruthy();
+    expect(screen.getByText(sky.title)).toBeTruthy();
   });
 
   it('기기에 둔 오늘 것을 바로 그리고 서버를 부르지 않는다', async () => {

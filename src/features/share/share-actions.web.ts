@@ -8,9 +8,19 @@ import { html2canvas } from 'html2canvas-pro';
 import { Colors } from '@/constants/theme';
 import { SHARE_IMAGE } from '@/features/share/share-card';
 
-import type { CardRef } from './share-actions';
+import type { CardRef, SaveResult, StoryShareResult } from './share-actions';
 
 const FILE_NAME = 'byeolmyeong-card.png';
+
+/** 이미지 저장(공유 v2, 결정 053 의 5): 웹은 PNG 내려받기다(사진 앱 · 권한 없음) */
+export async function saveImage(card: CardRef): Promise<SaveResult> {
+  return (await sendImage(card)) ? 'SAVED' : 'FAILED';
+}
+
+/** 웹에는 스토리가 없다(시트에 버튼이 없다, 결정 053 의 1) */
+export async function shareStory(_card: CardRef, _appId: string | null): Promise<StoryShareResult> {
+  return 'FAILED';
+}
 
 /** 카드 요소를 가로 1080 이 되는 배율로 그려 PNG 로 내려받는다 */
 export async function sendImage(card: CardRef): Promise<boolean> {

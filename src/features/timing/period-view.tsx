@@ -6,8 +6,8 @@ import { BrandColors, Colors, FontWeight, LineWidth, ReasonLayout, TimingLayout 
 import { strings } from '@/content/strings';
 import { ReasonLine } from '@/features/reason/reason-line';
 import { formatMonthOnly, formatPeriod, periodNow } from '@/features/timing/dates';
-import { Skeleton } from '@/components/skeleton';
-import { PracticeCards, PracticeCardsSkeleton, SkBlock, SkLine, Tag, TimingArt, areaLabel } from '@/features/timing/timing-parts';
+import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
+import { PracticeCards, PracticeCardsSkeleton, SkBlock, Tag, TimingArt, areaLabel } from '@/features/timing/timing-parts';
 import type { Chart, TimingDetail, TimingInterval } from '@/lib/api';
 
 const T = strings.timing;
@@ -108,17 +108,18 @@ export function PeriodView({ interval, detail, today, chart }: { interval: Timin
 /** 시기 자세히의 뼈대(결정 071): 머리 카드(딱지 · 이름 두 줄 · 영역과 기간 · 시작 ~ 끝 줄) · 이유 상자 · 01 ~ 03 · 작은 실천 셋 */
 export function PeriodSkeleton() {
   return (
-    <View style={styles.root}>
+    <SkeletonGroup testID="period-skeleton">
+      <View style={styles.root}>
       <View style={styles.head}>
         <SkBlock of="period-hero" style={styles.hero}>
           <Skeleton width={P.badgeBar} height={L.tag.height} pill />
           <View style={styles.title}>
-            <SkLine width="90%" variant="title" />
-            <SkLine width="44%" variant="title" />
+            <SkeletonText widths={['90%']} variant="title" />
+            <SkeletonText widths={['44%']} variant="title" />
           </View>
           <View style={styles.meta}>
             <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
-            <SkLine width="44%" variant="desc" />
+            <SkeletonText widths={['44%']} variant="desc" />
           </View>
           <View style={styles.trackTop}>
             <View style={styles.track}>
@@ -128,28 +129,29 @@ export function PeriodSkeleton() {
           </View>
         </SkBlock>
         <SkBlock of="period-reason" style={styles.reasonBox}>
-          <SkLine width="28%" variant="label" />
+          <SkeletonText widths={['28%']} variant="label" />
           {/* 이유 문장은 한 글 안의 두 줄 — 줄 사이 틈 없이 */}
           <View>
-            <SkLine width="96%" variant="reason" />
-            <SkLine width="40%" variant="reason" />
+            <SkeletonText widths={['96%']} variant="reason" />
+            <SkeletonText widths={['40%']} variant="reason" />
           </View>
         </SkBlock>
       </View>
       {/* 줄 수는 시안 14-3 의 글(세 줄 · 두 줄 · 두 줄) */}
       {SECTIONS.map((key, n) => (
         <SkBlock key={key} of="period-section">
-          <SkLine width={P.numberBar} variant="label" />
-          <SkLine width="44%" variant="paragraphTitle" style={styles.sectionTitle} />
+          <SkeletonText widths={[P.numberBar]} variant="label" />
+          <SkeletonText widths={['44%']} variant="paragraphTitle" style={styles.sectionTitle} />
           <View style={styles.sectionBody}>
-            <SkLine width="100%" variant="paragraph" />
-            {n === 0 ? <SkLine width="96%" variant="paragraph" /> : null}
-            <SkLine width="38%" variant="paragraph" />
+            <SkeletonText widths={['100%']} variant="paragraph" />
+            {n === 0 ? <SkeletonText widths={['96%']} variant="paragraph" /> : null}
+            <SkeletonText widths={['38%']} variant="paragraph" />
           </View>
         </SkBlock>
       ))}
       <PracticeCardsSkeleton />
-    </View>
+      </View>
+    </SkeletonGroup>
   );
 }
 

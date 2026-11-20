@@ -7,8 +7,8 @@ import { Txt } from '@/components/txt';
 import { Colors, FontWeight, LineWidth, Spacing, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth } from '@/features/timing/dates';
-import { Skeleton } from '@/components/skeleton';
-import { ChevronRight, SkBlock, SkLine, TodoList } from '@/features/timing/timing-parts';
+import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
+import { ChevronRight, SkBlock, TodoList } from '@/features/timing/timing-parts';
 import type { TimingReportView } from '@/features/timing/use-timing-report';
 import { shownTiming } from '@/features/timing/time-known';
 import { mainInterval } from '@/features/timing/year-view';
@@ -141,28 +141,30 @@ export function HomeTimingCards({
 /** 홈 시기 칸의 뼈대(결정 071, 보드 24): 다 그려진 "지금 나의 시기" 카드(이름표 · 줄 · 이름 · 언제까지)와 작은 실천 카드(셋)를 본뜬다 */
 export function HomeTimingSkeleton() {
   return (
-    <>
+    <SkeletonGroup testID="home-timing-skeleton">
+      <View style={styles.cards}>
       <SkBlock of="home-timing-card" style={styles.card}>
-        <SkLine width="36%" variant="captionStrong" />
+        <SkeletonText widths={['36%']} variant="captionStrong" />
         <View style={styles.lineBox}>
           <Skeleton width="100%" height={P.track} pill />
           <View style={styles.labels} />
         </View>
-        <SkLine width="66%" variant="emphasis" style={styles.title} />
-        <SkLine width="40%" variant="desc" style={styles.sub} />
+        <SkeletonText widths={['66%']} variant="emphasis" style={styles.title} />
+        <SkeletonText widths={['40%']} variant="desc" style={styles.sub} />
       </SkBlock>
       <SkBlock of="home-timing-practices" style={styles.card}>
-        <SkLine width="40%" variant="captionStrong" />
+        <SkeletonText widths={['40%']} variant="captionStrong" />
         <View style={styles.todos}>
           {[0, 1, 2].map((i) => (
             <View key={i} testID="sk-timing-todo" style={styles.todo}>
               <Skeleton width={L.badge} height={L.badge} pill />
-              <SkLine width={i === 1 ? '50%' : '62%'} variant="item" style={styles.flex} />
+              <SkeletonText widths={[i === 1 ? '50%' : '62%']} variant="item" style={styles.flex} />
             </View>
           ))}
         </View>
       </SkBlock>
-    </>
+      </View>
+    </SkeletonGroup>
   );
 }
 
@@ -200,6 +202,8 @@ const styles = StyleSheet.create({
   sub: { marginTop: H.subTop },
   link: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: Spacing.hairline, marginTop: H.linkTop },
   todos: { marginTop: H.todosTop },
+  /** 뼈대 두 카드 사이 — 홈의 카드 사이(보드 11)와 같다 */
+  cards: { gap: H.cardGap },
   todo: { flexDirection: 'row', alignItems: 'center', gap: L.card.gap, minHeight: L.day.todo },
   flex: { flex: 1 },
 });

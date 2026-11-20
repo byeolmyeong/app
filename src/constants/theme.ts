@@ -510,7 +510,7 @@ export const TimingLayout = {
     todo: 44,
   },
   /** 홈의 시기 칸(보드 11): 카드 · 이름표 줄 · 지나온 — 지금 — 큰 변화 줄(지금 점의 자리는 시안의 그림 그대로) · 제목 */
-  home: { radius: 20, pad: 20, chevron: 16, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, linkTop: 14, todosTop: 6 },
+  home: { radius: 20, pad: 20, cardGap: 12, chevron: 16, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, linkTop: 14, todosTop: 6 },
   /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */
   detail: { radius: 24, padTop: 22, padX: 18, padBottom: 18, art: 76, artInset: 12, titleTop: 6, titleRight: 80, bodyTop: 6, buttonTop: 18, glow: { x: 0.85, y: 0.1, extent: 0.58 } },
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */

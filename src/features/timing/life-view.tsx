@@ -5,8 +5,8 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { Skeleton } from '@/components/skeleton';
-import { PracticeCards, PracticeCardsSkeleton, SectionTitle, SectionTitleSkeleton, SkBlock, SkLine } from '@/features/timing/timing-parts';
+import { Skeleton, SkeletonText } from '@/components/skeleton';
+import { PracticeCards, PracticeCardsSkeleton, SectionTitle, SectionTitleSkeleton, SkBlock } from '@/features/timing/timing-parts';
 import { shownTiming } from '@/features/timing/time-known';
 import { mainInterval } from '@/features/timing/year-view';
 import type { TimingMilestone, TimingReport } from '@/lib/api';
@@ -111,15 +111,15 @@ export function LifeSkeleton() {
       <View>
         <SectionTitleSkeleton width="40%" note />
         <SkBlock of="life-next" style={styles.next}>
-          <SkLine width="24%" variant="captionStrong" />
+          <SkeletonText widths={['24%']} variant="captionStrong" />
           <View style={styles.yearRow}>
-            <SkLine width={F.yearBar} variant="yearBig" />
-            <SkLine width="24%" variant="clause" />
+            <SkeletonText widths={[F.yearBar]} variant="yearBig" />
+            <SkeletonText widths={['24%']} variant="clause" />
           </View>
-          <SkLine width="64%" variant="heading" style={styles.nextTitle} />
+          <SkeletonText widths={['64%']} variant="heading" style={styles.nextTitle} />
           <View style={styles.nextBody}>
-            <SkLine width="100%" variant="reason" />
-            <SkLine width="56%" variant="reason" />
+            <SkeletonText widths={['100%']} variant="reason" />
+            <SkeletonText widths={['56%']} variant="reason" />
           </View>
         </SkBlock>
         <SkBlock of="life-path" style={styles.path}>
@@ -131,8 +131,8 @@ export function LifeSkeleton() {
                 </View>
               </View>
               <View style={[styles.stepText, i < 3 && styles.stepGap]}>
-                <SkLine width="36%" variant="captionStrong" style={styles.stepYearBox} />
-                <SkLine width={i === 1 ? '76%' : '58%'} variant="clause" />
+                <SkeletonText widths={['36%']} variant="captionStrong" style={styles.stepYearBox} />
+                <SkeletonText widths={[i === 1 ? '76%' : '58%']} variant="clause" />
               </View>
             </View>
           ))}

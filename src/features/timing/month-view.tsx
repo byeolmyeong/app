@@ -3,12 +3,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { CardFail } from '@/components/card-fail';
-import { Skeleton } from '@/components/skeleton';
+import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { calendarCells, formatMonth, formatMonthDay, inCalendarRange, weekdayOf } from '@/features/timing/dates';
-import { CATEGORY_DOT, CATEGORY_TEXT, SectionTitle, SectionTitleSkeleton, SkBlock, SkLine, Tag, areaLabel, categoryLabel } from '@/features/timing/timing-parts';
+import { CATEGORY_DOT, CATEGORY_TEXT, SectionTitle, SectionTitleSkeleton, SkBlock, Tag, areaLabel, categoryLabel } from '@/features/timing/timing-parts';
 import { shownMonth } from '@/features/timing/time-known';
 import type { MonthState } from '@/features/timing/use-month';
 import type { MonthDay, MonthSky } from '@/lib/api';
@@ -233,7 +233,7 @@ export function MonthSkeleton({ head, month }: { head?: ReactNode; month: string
       <View>
         {head ?? (
           <SkBlock of="month-head" style={styles.head}>
-            <SkLine width="36%" variant="paragraphTitle" />
+            <SkeletonText widths={['36%']} variant="paragraphTitle" />
             <View style={styles.arrows}>
               <Skeleton width={M.arrow} height={M.arrow} pill />
               <Skeleton width={M.arrow} height={M.arrow} pill />
@@ -245,7 +245,7 @@ export function MonthSkeleton({ head, month }: { head?: ReactNode; month: string
             <View style={styles.week}>
               {T.weekdays.map((w) => (
                 <View key={w} style={[styles.cellBox, styles.centerBox]}>
-                  <SkLine width={M.weekBar} variant="label" />
+                  <SkeletonText widths={[M.weekBar]} variant="label" />
                 </View>
               ))}
             </View>
@@ -260,7 +260,7 @@ export function MonthSkeleton({ head, month }: { head?: ReactNode; month: string
               {[0, 1].map((i) => (
                 <View key={i} style={styles.legendRow}>
                   <Skeleton width={M.swatch.width} height={M.swatch.height} pill />
-                  <SkLine width={i === 0 ? '58%' : '66%'} variant="label" style={styles.flex} />
+                  <SkeletonText widths={[i === 0 ? '58%' : '66%']} variant="label" style={styles.flex} />
                 </View>
               ))}
             </View>
@@ -272,12 +272,12 @@ export function MonthSkeleton({ head, month }: { head?: ReactNode; month: string
         {[0, 1, 2].map((i) => (
           <SkBlock key={i} of="month-day" style={styles.dayRow}>
             <View style={styles.date}>
-              <SkLine width={M.dateBar} variant="heading" style={styles.dateBox} />
-              <SkLine width={M.weekBar} variant="badge" />
+              <SkeletonText widths={[M.dateBar]} variant="heading" style={styles.dateBox} />
+              <SkeletonText widths={[M.weekBar]} variant="badge" />
             </View>
             <View style={styles.dayText}>
               <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
-              <SkLine width={i === 1 ? '62%' : '72%'} variant="clause" />
+              <SkeletonText widths={[i === 1 ? '62%' : '72%']} variant="clause" />
             </View>
           </SkBlock>
         ))}

@@ -4,9 +4,9 @@ import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-nativ
 
 import { Button } from '@/components/button';
 import { GlowBackdrop } from '@/components/glow';
-import { Skeleton } from '@/components/skeleton';
+import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, FontWeight, LineWidth, Sizes, TimingLayout as L, Typography, type ColorName, type TypographyName } from '@/constants/theme';
+import { BrandColors, Colors, FontWeight, LineWidth, Sizes, TimingLayout as L, type ColorName } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { lookup } from '@/features/reason/reason-sentence';
 import { formatPeriod } from '@/features/timing/dates';
@@ -294,21 +294,12 @@ export function LockedView({ chip, blocked, onRequest, ghost }: { chip: 'year' |
 }
 
 /**
- * 뼈대의 한 줄(결정 065 의 2 · 071): 그 글자 단계의 줄 높이만큼 칸을 잡고 가운데에 막대 — 다 그려진 글과 같은 자리 · 같은 높이가 된다.
+ * 뼈대가 본뜬 칸 하나(결정 071): 다 그려진 화면의 그 칸과 같은 모양(style)이고 testID 는 그 칸의 testID 앞에 "sk-" — 시험 · 화면 비교가
+ * 뼈대와 다 그려진 화면의 칸 차례 · 자리를 견준다. 화면 읽기는 화면마다 한 번(`SkeletonGroup`)이라 여기서는 읽지 않는다.
  */
-export function SkLine({ width, variant, style }: { width: DimensionValue; variant: TypographyName; style?: StyleProp<ViewStyle> }) {
-  const t = Typography[variant];
-  return (
-    <View style={[{ height: t.lineHeight, justifyContent: 'center' }, style]}>
-      <Skeleton width={width} height={t.fontSize - L.skeleton.barInset} />
-    </View>
-  );
-}
-
-/** 뼈대 묶음: 화면 읽기는 "불러오는 중이에요" 한 번(막대는 숨김). testID 는 본뜬 칸의 testID 앞에 "sk-" */
 export function SkBlock({ of, style, children }: { of: string; style?: StyleProp<ViewStyle>; children?: React.ReactNode }) {
   return (
-    <View testID={`sk-${of}`} accessible accessibilityLabel={strings.states.loading} style={style}>
+    <View testID={`sk-${of}`} style={style}>
       {children}
     </View>
   );
@@ -318,18 +309,18 @@ export function SkBlock({ of, style, children }: { of: string; style?: StyleProp
 export function NowCardSkeleton() {
   return (
     <SkBlock of="timing-now-card" style={styles.hero}>
-      <SkLine width="30%" variant="captionStrong" />
+      <SkeletonText widths={['30%']} variant="captionStrong" />
       <View style={styles.heroTitle}>
-        <SkLine width="90%" variant="title" />
-        <SkLine width="50%" variant="title" />
+        <SkeletonText widths={['90%']} variant="title" />
+        <SkeletonText widths={['50%']} variant="title" />
       </View>
       <View style={styles.meta}>
         <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
-        <SkLine width="44%" variant="desc" />
+        <SkeletonText widths={['44%']} variant="desc" />
       </View>
       <View style={styles.summary}>
-        <SkLine width="100%" variant="body" />
-        <SkLine width="60%" variant="body" />
+        <SkeletonText widths={['100%']} variant="body" />
+        <SkeletonText widths={['60%']} variant="body" />
       </View>
     </SkBlock>
   );
@@ -352,8 +343,8 @@ export function ChipsSkeleton() {
 export function SectionTitleSkeleton({ width = '44%', note = false }: { width?: DimensionValue; note?: boolean }) {
   return (
     <SkBlock of="timing-section-title" style={styles.sectionTitle}>
-      <SkLine width={width} variant="paragraphTitle" />
-      {note ? <SkLine width="86%" variant="desc" /> : null}
+      <SkeletonText widths={[width]} variant="paragraphTitle" />
+      {note ? <SkeletonText widths={['86%']} variant="desc" /> : null}
     </SkBlock>
   );
 }
@@ -367,7 +358,7 @@ export function PracticeCardsSkeleton() {
         {[0, 1, 2].map((i) => (
           <SkBlock key={i} of="timing-practice" style={styles.practice}>
             <Skeleton width={L.badge} height={L.badge} pill />
-            <SkLine width={i === 1 ? '54%' : '64%'} variant="clause" style={styles.flex} />
+            <SkeletonText widths={[i === 1 ? '54%' : '64%']} variant="clause" style={styles.flex} />
           </SkBlock>
         ))}
       </View>
@@ -380,10 +371,10 @@ export function IntervalRowSkeleton() {
   return (
     <SkBlock of="timing-interval" style={styles.row}>
       <View style={styles.rowText}>
-        <SkLine width="70%" variant="stat" />
+        <SkeletonText widths={['70%']} variant="stat" />
         <View style={styles.rowMeta}>
           <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
-          <SkLine width="30%" variant="caption" />
+          <SkeletonText widths={['30%']} variant="caption" />
         </View>
       </View>
     </SkBlock>
@@ -394,11 +385,11 @@ export function IntervalRowSkeleton() {
 export function DetailCardSkeleton() {
   return (
     <SkBlock of="timing-detail-card" style={styles.detail}>
-      <SkLine width="24%" variant="captionStrong" />
-      <SkLine width="70%" variant="cardTitle" style={styles.detailTitle} />
+      <SkeletonText widths={['24%']} variant="captionStrong" />
+      <SkeletonText widths={['70%']} variant="cardTitle" style={styles.detailTitle} />
       <View style={styles.detailBody}>
-        <SkLine width="100%" variant="desc" />
-        <SkLine width="40%" variant="desc" />
+        <SkeletonText widths={['100%']} variant="desc" />
+        <SkeletonText widths={['40%']} variant="desc" />
       </View>
       <View style={styles.request}>
         <Skeleton width="100%" height={Sizes.buttonHeight} />

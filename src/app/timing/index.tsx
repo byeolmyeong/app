@@ -7,6 +7,7 @@ import { MakingView } from '@/components/making-view';
 import { NavBar } from '@/components/nav-bar';
 import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
+import { SkeletonGroup } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
 import { useLoadingPhase } from '@/components/use-loading-phase';
@@ -226,7 +227,7 @@ export default function TimingScreen() {
 function TimingTabSkeleton({ chip, month }: { chip: TimingChip; month: string }) {
   const done = chip !== 'month';
   return (
-    <View testID="timing-skeleton">
+    <SkeletonGroup testID="timing-skeleton">
       {done ? <NowCardSkeleton /> : null}
       <View style={done ? styles.chips : styles.chipsBare}>
         <ChipsSkeleton />
@@ -243,7 +244,7 @@ function TimingTabSkeleton({ chip, month }: { chip: TimingChip; month: string })
           <LifeSkeleton />
         )}
       </View>
-    </View>
+    </SkeletonGroup>
   );
 }
 

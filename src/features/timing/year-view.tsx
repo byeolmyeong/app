@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -14,7 +15,6 @@ import {
   SectionTitle,
   SectionTitleSkeleton,
   SkBlock,
-  SkLine,
 } from '@/features/timing/timing-parts';
 import { shownTiming } from '@/features/timing/time-known';
 import type { LifeArea, TimingInterval, TimingReport } from '@/lib/api';
@@ -138,7 +138,7 @@ export function YearSkeleton() {
         <SkBlock of="year-flow" style={styles.card}>
           {ROWS.map((area) => (
             <View key={area} style={styles.row}>
-              <SkLine width={Y.labelBar} variant="label" style={styles.label} />
+              <SkeletonText widths={[Y.labelBar]} variant="label" style={styles.label} />
               <View style={styles.track}>
                 <View style={styles.line} />
               </View>
@@ -146,7 +146,7 @@ export function YearSkeleton() {
           ))}
           <View style={styles.ticks}>
             {T.year.ticks.map((t) => (
-              <SkLine key={t} width={Y.tickBar} variant="badge" />
+              <SkeletonText key={t} widths={[Y.tickBar]} variant="badge" />
             ))}
           </View>
         </SkBlock>

@@ -96,10 +96,10 @@ function NotificationsSkeleton() {
   return (
     <View accessible accessibilityLabel={strings.states.loading} style={styles.column}>
       <ListCard>
-        <SkeletonRow descLines={1} trailing="switch" />
+        <SkeletonRow trailing="switch" />
       </ListCard>
       <ListCard>
-        <SkeletonRow descLines={1} trailing="switch" />
+        <SkeletonRow trailing="switch" />
         <SkeletonRow trailing="value" />
       </ListCard>
       <ListCard>
@@ -112,7 +112,7 @@ function NotificationsSkeleton() {
 /**
  * 마이 › 알림(결정 057 · 066, 보드 16-2 · 16-2-2): 푸시 알림 받기 / 오늘의 하늘 알림 · 받는 시간(5분 단위 시트) / 이벤트 · 혜택 알림.
  * 누르면 바로 바뀌고 그 칸만 저장한다. 못 하면 되돌리고 짧은 알림(결정 065 의 1).
- * 푸시를 끄면 오늘의 하늘 묶음은 흐리게(누를 수 없음, 값은 서버가 준 그대로) 두고 그 아래에 "푸시 알림을 켜면 고를 수 있어요".
+ * 푸시를 끄면 오늘의 하늘 묶음은 흐리게(누를 수 없음, 값은 서버가 준 그대로) — 안내 줄은 두지 않는다(소유자 2026-11-21).
  * 오늘의 하늘 묶음은 서버가 그 두 칸을 줄 때만 그린다(서버 S10-2 전에는 없음). 처음 불러올 때 0.3초가 넘으면 뼈대, 10초가 넘거나 못 받으면
  * 실패 화면, 끊겨서 못 받았으면 20-1 — 연결이 돌아오면 다시 부른다(결정 061 · 065 의 2).
  */
@@ -169,7 +169,6 @@ export default function NotificationsScreen() {
           <ListCard>
             <ListCardRow
               label={N.push.label}
-              description={N.push.description}
               toggle={{
                 value: s.pushConsent,
                 onChange: (on) =>
@@ -192,18 +191,12 @@ export default function NotificationsScreen() {
                 <ListCard>
                   <ListCardRow
                     label={N.todaySky.label}
-                    description={N.todaySky.description}
                     toggle={{ value: s.todaySky.on, onChange: (on) => save({ todaySkyPush: on }) }}
                     disabled={!s.pushConsent}
                   />
                   <ListCardRow label={N.time} value={formatClock(s.todaySky.time)} onPress={() => setTimeOpen(true)} disabled={!s.pushConsent} />
                 </ListCard>
               </View>
-              {!s.pushConsent ? (
-                <Txt variant="caption" color="hint" keepAll style={styles.hint}>
-                  {N.pushOff}
-                </Txt>
-              ) : null}
             </>
           ) : null}
           <ListCard>
@@ -262,7 +255,6 @@ const styles = StyleSheet.create({
   osOffText: { flex: 1, gap: L.descGap },
   osOffTitle: { fontWeight: FontWeight.medium },
   osOffAction: { flexDirection: 'row', alignItems: 'center', gap: NL.osOff.actionGap },
-  hint: { paddingHorizontal: NL.hintPadH },
   skeletonRow: {
     minHeight: L.row,
     flexDirection: 'row',

@@ -34,18 +34,18 @@ beforeEach(() => {
 });
 
 describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
-  it('푸시 알림 받기 / 오늘의 하늘 알림 · 받는 시간 / 이벤트 · 혜택 알림을 서버 값대로, 설명과 함께 보인다', async () => {
+  it('푸시 알림 받기 / 오늘의 하늘 알림 · 받는 시간 / 이벤트 · 혜택 알림을 서버 값대로 — 설명은 이벤트 · 혜택에만(소유자 2026-11-21)', async () => {
     await render(<NotificationsScreen />);
     expect(await screen.findByText(N.push.label)).toBeTruthy();
-    expect(screen.getByText(N.push.description)).toBeTruthy();
-    expect(screen.getByText(N.todaySky.description)).toBeTruthy();
-    expect(screen.getByText(N.marketing.description)).toBeTruthy();
+    expect(screen.getByText('새 기능과 혜택 소식을 푸시와 이메일로 보내요')).toBeTruthy();
+    expect(screen.queryByText(/선택/)).toBeNull();
+    expect(screen.queryByText('풀이 완성 · 문의 답변 · 오늘의 하늘을 알려 드려요')).toBeNull();
+    expect(screen.queryByText('매일 아침 오늘의 하늘을 보내 드려요')).toBeNull();
     expect(isOn(N.push.label)).toBe(true);
     expect(isOn(N.todaySky.label)).toBe(true);
     expect(isOn(N.marketing.label)).toBe(false);
     expect(within(screen.getByRole('button', { name: N.time })).getByText('오전 8:00')).toBeTruthy();
-    // 푸시가 켜져 있으면 안내 글은 없고 흐리지 않다
-    expect(screen.queryByText(N.pushOff)).toBeNull();
+    // 푸시가 켜져 있으면 흐리지 않다
     expect(screen.getByTestId('today-sky').props.accessibilityState).toEqual({ disabled: false });
   });
 
@@ -75,8 +75,9 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
     await screen.findByText(N.push.label);
     await fireEvent.press(sw(N.push.label));
     expect(mockApi.updateAccount).toHaveBeenCalledWith({ pushConsent: false });
-    expect(await screen.findByText(N.pushOff)).toBeTruthy();
     await waitFor(() => expect(isOn(N.todaySky.label)).toBe(false));
+    // 흐리게만 — 안내 줄은 두지 않는다(소유자 2026-11-21)
+    expect(screen.queryByText('푸시 알림을 켜면 고를 수 있어요')).toBeNull();
     expect(screen.getByTestId('today-sky').props.accessibilityState).toEqual({ disabled: true });
     expect(screen.getByTestId('today-sky').props.pointerEvents).toBe('none');
     // 웹 키보드 · 화면 낭독기에도 누를 수 없다고 알린다(줄 자체가 disabled, #59 리뷰)
@@ -92,7 +93,7 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
   it('직접 켜 둔 오늘의 하늘은 푸시를 꺼도 서버가 켠 값 그대로 준다 — 흐리게 켠 채로 그린다', async () => {
     mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...full, pushConsent: false } });
     await render(<NotificationsScreen />);
-    await screen.findByText(N.pushOff);
+    await screen.findByText(N.todaySky.label);
     expect(isOn(N.todaySky.label)).toBe(true);
     expect(screen.getByTestId('today-sky').props.accessibilityState).toEqual({ disabled: true });
   });
@@ -104,7 +105,7 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
     await fireEvent.press(sw(N.push.label));
     expect(await screen.findByText(N.saveFailed)).toBeTruthy();
     expect(isOn(N.push.label)).toBe(true);
-    expect(screen.queryByText(N.pushOff)).toBeNull();
+    expect(screen.getByTestId('today-sky').props.accessibilityState).toEqual({ disabled: false });
   });
 
   it('빨리 두 번 바꾸면 마지막 요청의 답만 쓴다 — 늦게 온 앞 요청의 답이 덮지 않는다', async () => {
@@ -169,7 +170,6 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
     expect(screen.getByText(N.marketing.label)).toBeTruthy();
     expect(screen.queryByText(N.todaySky.label)).toBeNull();
     expect(screen.queryByText(N.time)).toBeNull();
-    expect(screen.queryByText(N.pushOff)).toBeNull();
   });
 
   it('푸시 동의 칸도 없는 옛 서버면 불러오지 못한 화면(바꿀 수 없다)', async () => {

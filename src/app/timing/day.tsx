@@ -34,7 +34,8 @@ const back = () => (router.canGoBack() ? router.back() : router.replace('/timing
 
 /**
  * 그날의 하늘 `/timing/day?date=YYYY-MM-DD`(결정 049 의 6 · 061 의 2, 캔버스 14-4 · 쓰는 중 · 못 썼을 때).
- * 열 때 `POST /day-sky { date }` — 0.3초가 넘으면 뼈대, 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리(뒤로)만 · 아래 탭 없음), 다 오면 글과 아래 탭.
+ * 열 때 `POST /day-sky { date }` — 0.3초가 넘으면 뼈대, 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리 · 아래 탭 없이 별명 짓는 중처럼 — 뒤로는 기기의
+ * 뒤로 · 밀어서 돌아가기, 3분이 넘으면 못 썼을 때로 — 소유자 지적 2026-11-21), 다 오면 글과 아래 탭.
  * 못 썼으면 다시 쓰기 · 나중에 하기(뒤로), 생성 한도(429)면 한 줄 안내, 범위 밖(400)이면 돌아가기. 달력에서 오늘을 누르면 이 화면이 아니라 오늘의 하늘(`/today`)로 간다(계획 A④).
  * 다 쓰면 머리 오른쪽에 공유 아이콘(그날의 하늘 카드 — 결정 053, 시트를 열 때 만든다).
  */
@@ -72,7 +73,7 @@ export default function TimingDayScreen() {
 
   if (state.status === 'loading')
     return making ? (
-      <MakingView nav={nav()} title={T.day.making.title} lines={T.day.making.lines} />
+      <MakingView title={T.day.making.title} lines={T.day.making.lines} />
     ) : (
       // 뼈대는 다 그려진 화면처럼 아래 탭과 함께(결정 065 의 2 · 071) — 쓰는 중 · 못 썼을 때만 탭이 없다(결정 061 의 2)
       <Screen nav={nav()} footer={<MainTabs active="timing" nested />}>

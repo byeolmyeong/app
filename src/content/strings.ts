@@ -195,6 +195,8 @@ export const strings = {
       todaySky: { label: '오늘의 하늘 알림', description: '매일 아침 오늘의 하늘을 보내 드려요' },
       time: '받는 시간',
       pushOff: '푸시 알림을 켜면 고를 수 있어요',
+      /** 휴대폰 설정에서 이 앱 알림을 꺼 두었을 때 맨 위 줄(16-2-1, 결정 066 의 3) — 누르면 휴대폰 설정으로 */
+      osOff: { title: '휴대폰 알림이 꺼져 있어요', description: '켜야 알림을 받을 수 있어요', action: '설정 열기' },
       marketing: { label: '이벤트 · 혜택 알림', description: '새 기능과 혜택 소식을 푸시와 이메일로 보내요 (선택)' },
       loadFail: '알림 설정을 불러오지 못했어요',
       saveFailed: '바꾸지 못했어요. 잠시 뒤 다시 해 주세요',

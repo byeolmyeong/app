@@ -212,21 +212,21 @@ last_reviewed: 2026-11-20
 
 ### A④ 오늘의 하늘 + 알림함 (서버 S④ · S⑤ 뒤)
 
-#### 26. api-notifications · strings · 상태: 대기
+#### 26. api-notifications · strings · 상태: 완료(A④)
 - 할 것: `getNotifications()` · `markNotificationRead(id)` 타입 · 검사, `strings.today` · `strings.notifications`(종류 넷 문구 · 묶음 이름 · 빈 안내).
 - 검증: 모르는 `kind` 줄은 숨김(테스트)
 
-#### 27. today-screen · home-today-card · 상태: 대기
+#### 27. today-screen · home-today-card · 상태: 완료(A④)
 - 읽을 것: 결정 051, 보드 11 · 11-4 · 11-5
 - 할 것: `/today`(날짜 · 요일 · 제목 · 오늘의 흐름 셋 · `ReasonLine`(TRANSIT, 휠 없음) · 작은 실천 3 · 공유 자리), 홈 오늘의 하늘 카드(`POST /day-sky` 날짜 없이, 보관 `byeolmyeong.daySky.v1`, 쓰는 중 작은 `MakingView` · 실패 다시 쓰기). 달력의 오늘 → `/today`.
 - 검증: 보관본 먼저 그림 · 날이 바뀌면 다시 부름 · 쓰는 중/실패(테스트)
 
-#### 28. notifications-screen · home-bell · 상태: 대기
+#### 28. notifications-screen · home-bell · 상태: 완료(A④)
 - 읽을 것: 결정 052, 보드 11-3
 - 할 것: `/notifications`(오늘 · 최근 7일 · 최근 30일 묶음, 안 읽음 점, 누르면 읽음 + 이동 — 읽음 실패해도 이동), 홈 종(안 읽음 1 이상이면 점, 홈을 열 때 · 알림함에서 돌아올 때 다시 물음).
 - 검증: 묶음 경계(한국 날짜) · 이동 대상 넷 · 점 표시(테스트)
 
-#### 29. docs-a4 · verify-a4 · 상태: 대기
+#### 29. docs-a4 · verify-a4 · 상태: 완료(A④)
 - 할 것: docs/product.md 44 · 67줄과 docs/release-1.0.0.md 196줄 · "화면" 표를 결정 051 에 맞춰 고친다(오늘의 하늘 1.0.0, 매주 글 · 알림은 그대로 뒤). `/verify` + 보드 11 · 11-3 · 11-4 · 11-5 와 나란히.
 
 ### A⑤ 공유 v2 (서버 S⑥ · Meta 앱 ID · 새 개발 빌드 뒤)
@@ -355,3 +355,8 @@ last_reviewed: 2026-11-20
   - 계획과 다르게 한 것: 그날의 하늘(오늘이 아닌 날)의 한 줄 소개 "하늘의 움직임으로 읽는 하루"(시안 없음) · 칩 "11월 21일 · 그날의 하늘" · 이름표 "새벽별 님의 11월 21일"(053 의 2 그대로). 닉네임이 없으면 "나의 …". 오늘인지는 한국 날짜로 가린다. 받은 카드 기억(소유자 지적 — 다시 열면 바로, 뒤에서 확인). 궁합 SCORE · RANKING 대상 · 내 이름 칸은 남김(055 의 1).
   - 독립 리뷰(#61, 69acd7b — 차단 1 · 수정 1 · 제안 9, develop `82f48dc` 위로 다시 올림): 차단 — 화면에 들어올 때 미리 받기가 공유하지 않은 사람의 공개 스냅샷 · `SHARE_CREATED` 를 만들었다(서버 결정 012 · 053 의 3) → 뺌(코디네이터 결정, 미리 받기는 서버의 저장하지 않는 미리보기 길이 생기면 — 소유자 결정 대기). 수정 2 — 진행 중 요청이 기기 지우기 뒤에 끝나면 앞사람 카드를 다시 썼다 → 세대 표식(리뷰 재현 R1 을 반대로 지키는 시험). 제안 3 키마다 따로(R2) · 4 안드로이드 11 이상은 권한을 묻지 않음 · 5 한국 날짜의 오늘을 `lib/korea-date.ts` 하나로(시기 보관본도) · 6 한 줄 소개 굵기 400 · 7 뼈대 값은 `ShareCardLayout.skeleton` + 공용 `Skeleton`/`SkeletonGroup`, 10초면 실패 안내, 뼈대 ↔ 카드 크기 시험 · 8 app.config 플러그인 분기 시험 · 9 카드만 보관 · 지난 그날의 하늘 정리 · 11 두 번 눌림 막기를 ref 로. 진행 중 요청 같이 쓰기는 미리 받기가 없어져 뺐다(멈춘 요청이 다시 시도를 막지 않게). 10(product 지표)은 소유자 문서라 손대지 않음.
   - A③(#63, develop `ec0a796`) 뒤 다시 올림: 옛 시기 화면(`app/timing.tsx` · `timing-view.tsx` · `use-report.ts`)은 지우는 쪽을 따름, 시기 탭의 `koreaToday` 도 `lib/korea-date.ts` 하나로. 그날의 하늘 머리 오른쪽 `ShareEntry DAY_SKY`(그날 날짜) · 인생 칩의 다음 큰 변화 카드 오른쪽 위 `ShareEntry NEXT_BIG`(카드 안 작은 아이콘 `cardIcon` — 누르는 칸 40 · 아이콘 20, 보드 14 인생 · 14-5). 시험: 아이콘 → 시트(제목 없음) · 열 때 createShare 1회.
+- 2026-11-21 묶음 A④(워크트리 `.wt-app-a4`, 브랜치 `feat/today-inbox`, A③ `feat/timing-tab`(PR #63) 위에 쌓음 — `postDaySky` · `DaySky` · `DayView` · 날짜 도구를 A③ 것 그대로 쓴다). 상위 계획의 "바뀌는 줄"(알림 종류에 `INQUIRY_ANSWERED` · 궁합 리포트 숨김 · 면책 문구 없음 · `StateScreen`) · 결정 071(뼈대는 다 그려진 배치를 본뜬다)을 따름.
+  - 태스크 26: `getNotifications` · `markNotificationRead` · `isNotificationList`(종류는 비지 않은 글자면 받고 알림함이 숨김) · 예시 `notifications.json` · `strings.notifications`. 확인: `api-notifications.test` 6 먼저 실패 → 통과, 문구 시험 3.
+  - 태스크 28: `/notifications`(오늘 · 최근 7일 · 최근 30일 — 받은 시각을 한국 시간대로 읽어 견줌, 안 읽음 점, 누르면 읽음 + 이동 · 읽음 실패해도 이동, 비었을 때 11-3-1, 뼈대 · 19 · 20-1) · 홈 종(점 · 홈을 열 때 · 알림함에서 돌아올 때 다시 물음 · 404 면 숨김). 확인: 줄 규칙 9 · 화면 6 · 홈 종 3.
+  - 태스크 27: `/today`(DayView — 오늘이면 "오늘의 흐름" · "오늘의 작은 실천" · 이유 머리 "오늘", 공유 자리만) · `useTodaySky`(날짜 없이 POST, `byeolmyeong.daySky.v1` · 날이 바뀌면 다시 · 한 번만 묻기 · 다시 쓰기는 새로) · 홈 카드(짧은 이유 `reasonBrief` · 뼈대 → 쓰는 중 카드 · 19-1 · 404 숨김) · 달력의 오늘 → `/today`. 확인: 짧은 이유 4 먼저 실패 → 통과 · 훅 8 · 화면 5 · 홈 카드 4 · 달력 1.
+  - 계획과 다르게 한 것: ① `strings.today` 는 태스크 27 커밋에(태스크 26 에는 알림함 문구만) ② 알림함의 갈 곳은 6a 의 `pushTarget`(아직 develop 에 없음)과 같은 표를 `features/notifications/notification-rows.ts` 에 두었다 — 그 모듈이 들어오면 하나로 ③ 홈 종의 점은 서버 `unread` 대신 "보이는 줄 가운데 안 읽은 것" — 숨기는 궁합 리포트만 안 읽었을 때 누를 수 없는 점이 남지 않게 ④ 문의 답변 줄의 본문은 서버가 답 글을 주지 않아 정한 한 줄("문의 내역에서 답변을 확인해 보세요.") — 보드 11-3 은 답 첫 줄 ⑤ 오늘 것을 기기에 두었으면 서버를 다시 부르지 않는다(같은 날 · 같은 차트는 같은 글 — 결정 047 의 2 "조용히 다시 묻는다" 대신) ⑥ 달력의 오늘 → `/today` 는 달력을 누를 때 가른다(`/timing/day?date=오늘` 주소를 바로 열면 그날의 하늘 그대로) ⑦ 홈 쓰는 중 카드의 궤도 점은 멈춰 있다(빛 · 별이 둥실만).

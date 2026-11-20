@@ -19,9 +19,21 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
 }));
+// 홈은 로그인한 사람만 온다(루트 가드) — 계정은 로그인이 확인된 뒤에 묻는다
+jest.mock('@/features/auth/use-session', () => ({
+  ...jest.requireActual('@/features/auth/use-session'),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 't', ready: true, lastError: null })),
+}));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn(), getAccount: jest.fn() },
+  api: {
+    listPlaces: jest.fn(),
+    createChart: jest.fn(),
+    saveProfile: jest.fn(),
+    getAccount: jest.fn(),
+    // 기기가 비어 있으면 서버의 출생 정보로 되살려 본다(결정 029) — 이 테스트들에서는 저장된 것이 없다
+    getProfile: jest.fn(async () => ({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' })),
+  },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;

@@ -37,8 +37,8 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
   it('푸시 알림 받기 / 오늘의 하늘 알림 · 받는 시간 / 이벤트 · 혜택 알림을 서버 값대로 — 설명은 이벤트 · 혜택에만(소유자 2026-11-21)', async () => {
     await render(<NotificationsScreen />);
     expect(await screen.findByText(N.push.label)).toBeTruthy();
-    expect(screen.getByText('새 기능과 혜택 소식을 푸시와 이메일로 보내요')).toBeTruthy();
-    expect(screen.queryByText(/선택/)).toBeNull();
+    expect(screen.getByText(N.marketing.description)).toBeTruthy();
+    expect(N.marketing.description).not.toMatch(/선택/);
     expect(screen.queryByText('풀이 완성 · 문의 답변 · 오늘의 하늘을 알려 드려요')).toBeNull();
     expect(screen.queryByText('매일 아침 오늘의 하늘을 보내 드려요')).toBeNull();
     expect(isOn(N.push.label)).toBe(true);

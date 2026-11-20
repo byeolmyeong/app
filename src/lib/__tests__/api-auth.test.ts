@@ -319,3 +319,34 @@ describe('api: 이용 정지', () => {
     expect(await app({ ...account, suspended: 'yes' }).getMyAccount()).toMatchObject({ ok: false, error: 'INVALID' });
   });
 });
+
+// 휴대폰 푸시 기기(서버 S10-2, 계획 A8-1)
+describe('api: 푸시 기기 등록 · 해제', () => {
+  const app = (fetchFn: jest.MockedFunction<typeof fetch>) => createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
+
+  it('POST /push/devices 에 토큰 · 기기 종류만 싣고 204 를 받는다', async () => {
+    const fetchFn = fakeFetch(204);
+    const res = await app(fetchFn).registerPushDevice({ expoToken: 'ExponentPushToken[abc]', platform: 'IOS' });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/push/devices`);
+    expect(initOf(fetchFn).method).toBe('POST');
+    expect(bodyOf(fetchFn)).toEqual({ expoToken: 'ExponentPushToken[abc]', platform: 'IOS' });
+    expect(res).toEqual({ ok: true, data: null });
+  });
+
+  it('DELETE /push/devices/{토큰} 은 경로에 URL 인코딩([ ] → %5B %5D)', async () => {
+    const fetchFn = fakeFetch(204);
+    const res = await app(fetchFn).deletePushDevice('ExponentPushToken[abc]');
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/push/devices/ExponentPushToken%5Babc%5D`);
+    expect(initOf(fetchFn).method).toBe('DELETE');
+    expect(res).toEqual({ ok: true, data: null });
+  });
+
+  it.each([
+    [400, 'INVALID_PUSH_TOKEN'],
+    [400, 'INVALID_PLATFORM'],
+  ])('POST 의 %i %s 를 code 로 돌려준다', async (status, code) => {
+    const res = await app(fakeFetch(status, { error: code })).registerPushDevice({ expoToken: 'x', platform: 'ANDROID' });
+    expect(res).toEqual({ ok: false, error: 'SERVER', status, code });
+  });
+});
+

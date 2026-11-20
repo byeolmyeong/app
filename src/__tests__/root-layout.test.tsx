@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useSegments } from 'expo-router';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import type { ReactNode } from 'react';
 import { Platform } from 'react-native';
@@ -22,7 +23,7 @@ jest.mock('expo-router', () => ({
     },
   }),
   useSegments: jest.fn(() => []),
-  router: { replace: jest.fn(), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
+  router: { replace: jest.fn(), push: jest.fn(), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
 }));
 // 글꼴을 받았는지는 시험이 정한다(기본: 받음)
 let mockFontsLoaded = true;
@@ -415,3 +416,42 @@ describe('루트 레이아웃의 이용 정지 문(결정 065 의 5)', () => {
     expect(setAudioModeAsync).not.toHaveBeenCalled();
   });
 });
+
+describe('루트 레이아웃의 휴대폰 푸시(결정 057 · 066)', () => {
+  const N = Notifications as jest.Mocked<typeof Notifications>;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSegments.mockReturnValue([]);
+    markHomeReady();
+    N.getLastNotificationResponse.mockReturnValue(null);
+  });
+  afterEach(() => (useSession as jest.Mock).mockReturnValue(session('checking')));
+
+  it('로그인돼 있으면 켤 때 이 기기 등록을 맞춘다(권한부터 본다) — 로그인 전에는 하지 않는다', async () => {
+    (useSession as jest.Mock).mockReturnValue(session('signedOut'));
+    mockSegments.mockReturnValue(['login']);
+    const view = await render(<RootLayout />);
+    await act(async () => {});
+    expect(N.getPermissionsAsync).not.toHaveBeenCalled();
+    (useSession as jest.Mock).mockReturnValue(session('signedIn'));
+    mockSegments.mockReturnValue([]);
+    await view.rerender(<RootLayout />);
+    await waitFor(() => expect(N.getPermissionsAsync).toHaveBeenCalled());
+  });
+
+  it('알림으로 켜면 로그인 · 정지 확인이 끝난 뒤에 그 화면으로 간다', async () => {
+    N.getLastNotificationResponse.mockReturnValue({
+      actionIdentifier: 'default',
+      notification: { request: { identifier: 'n1', content: { data: { type: 'TIMING_REPORT_DONE' } } } },
+    } as never);
+    let answer: () => void = () => {};
+    mockGetMyAccount.mockReturnValue(new Promise((resolve) => (answer = () => resolve(accountAnswer(false)))));
+    (useSession as jest.Mock).mockReturnValue(session('signedIn'));
+    await render(<RootLayout />);
+    await act(async () => {});
+    expect(router.push).not.toHaveBeenCalled();
+    await act(async () => answer());
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/timing'));
+  });
+});
+

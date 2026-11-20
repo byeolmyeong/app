@@ -1,5 +1,5 @@
 import { useFonts } from 'expo-font';
-import { router, Stack, useSegments } from 'expo-router';
+import { router, Stack, useSegments, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -12,6 +12,7 @@ import { resumeStep } from '@/features/auth/signup-resume';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { useHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
+import { ChunkErrorBoundary, useClearChunkReloadWhenSettled } from '@/features/update/chunk-reload';
 import { UpdateGate } from '@/features/update/update-gate';
 
 SplashScreen.preventAutoHideAsync();
@@ -20,6 +21,14 @@ SplashScreen.preventAutoHideAsync();
 const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];
 /** 확인하지 못한 세션을 다시 확인하는 간격 */
 const RECHECK_MS = 30_000;
+
+/**
+ * 루트의 오류 경계(Expo Router). 웹에서 화면 조각을 불러오지 못하면(배포가 바뀐 뒤 열려 있던 탭) 한 번만 새로 고치고,
+ * 그래도 안 되면 20-1. 그 밖의 오류는 위로 넘긴다(features/update/chunk-reload.tsx).
+ */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <ChunkErrorBoundary {...props} />;
+}
 
 export default function RootLayout() {
   // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
@@ -34,6 +43,8 @@ export default function RootLayout() {
   const target = guardRedirect(session.status, first, introSeen, second, resumeStep());
   const covered = guardCovers(session.status, first, introSeen, second);
   const slideUp = useSlideUpScreenOptions();
+  // 조각 실패로 새로 고친 뒤 잘 떴으면 표시를 지운다(다음 배포 때 다시 한 번 새로 고칠 수 있게)
+  useClearChunkReloadWhenSettled();
   useEffect(() => {
     if (target) router.replace(target);
   }, [target]);

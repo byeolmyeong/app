@@ -4,7 +4,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import type { ReactNode } from 'react';
 import { Platform } from 'react-native';
 
-import RootLayout from '@/app/_layout';
+import RootLayout, { ErrorBoundary } from '@/app/_layout';
+import { strings } from '@/content/strings';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
@@ -274,5 +275,20 @@ describe('확인하지 못한 세션', () => {
     await view.rerender(<RootLayout />);
     await act(async () => jest.advanceTimersByTime(60_000));
     expect(recheckSession).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 조각 불러오기 실패(배포가 바뀐 뒤 열려 있던 탭): 루트의 오류 경계가 받는다 — 웹은 한 번 새로 고치고, 고칠 수 없으면 20-1
+describe('루트의 오류 경계', () => {
+  const original = Platform.OS;
+  afterEach(() => {
+    Platform.OS = original;
+  });
+
+  it('웹의 조각 실패를 받는다(새로 고칠 저장소가 없으면 20-1)', async () => {
+    Platform.OS = 'web';
+    const error = Object.assign(new Error('Loading module /_expo/static/js/web/terms-1.js failed.'), { name: 'AsyncRequireError' });
+    await render(<ErrorBoundary error={error} retry={jest.fn(async () => {})} />);
+    expect(screen.getByText(strings.states.offlineEmpty.title)).toBeTruthy();
   });
 });

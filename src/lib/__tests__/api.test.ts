@@ -149,7 +149,8 @@ describe('fixtures: 서버 계약의 모양', () => {
 
   it('요약 해석은 계약의 필드만 갖는다', () => {
     expect(Object.keys(fixtures.reading).sort()).toEqual(['cautions', 'headline', 'sections', 'strengths']);
-    expect(Object.keys(fixtures.reading.sections[0]).sort()).toEqual(['basis', 'body', 'title']);
+    // 요약 해석 v2: 근거 구조(reason)와, 옮기는 동안 함께 오는 옛 낱말(basis — 서버 S⑦ 에 빠진다)
+    expect(Object.keys(fixtures.reading.sections[0]).sort()).toEqual(['basis', 'body', 'reason', 'title']);
   });
 });
 

@@ -18,7 +18,7 @@ export function ReadingView({ reading }: { reading: Reading }) {
     <View style={styles.root}>
       <Txt variant="display">{reading.headline}</Txt>
       {reading.sections.map((section, i) => (
-        <Paragraph key={i} title={section.title} body={section.body} basis={section.basis} />
+        <Paragraph key={i} title={section.title} body={section.body} basis={section.basis ?? []} />
       ))}
       <ItemList title={S.strengths} items={reading.strengths} />
       <ItemList title={S.cautions} items={reading.cautions} />

@@ -104,7 +104,7 @@ describe('요약 해석 화면', () => {
   });
 
   it('근거가 없는 문단에는 근거 줄을 그리지 않는다', async () => {
-    const section = { title: '제목', body: '본문', basis: [] };
+    const section = { title: '제목', body: '본문', reason: reading.sections[0].reason, basis: [] };
     mockApi.createReading.mockResolvedValue({ ok: true, data: { ...reading, sections: [section] } });
     await render(<ReadingScreen />);
     expect(await screen.findByText('본문')).toBeTruthy();

@@ -24,7 +24,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   // 공유는 시트를 열 때 만든다 — 이 화면의 시험에서는 끝나지 않는 요청으로 둔다
-  api: { createReading: jest.fn(), createDirection: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn(() => new Promise(() => {})) },
+  api: { createReading: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn(() => new Promise(() => {})) },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
@@ -159,7 +159,6 @@ describe('요약 해석 화면', () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     expect(screen.queryByText('연애에서 해 볼 만한 것 보기')).toBeNull();
-    expect(mockApi.createDirection).not.toHaveBeenCalled();
   });
 
   it('누를 수 있는 것은 뒤로 가기 · 머리의 공유하기 · 내 하늘 지도 보기 · 문단마다의 이유 줄뿐이다(다시 생성 · 리포트 없음, 보드 12)', async () => {

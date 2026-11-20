@@ -337,31 +337,9 @@ describe('api: 요약 해석', () => {
   });
 });
 
-describe('api: 방향성 제시(이성)', () => {
-  it('POST /directions 에 { topic: "LOVE" } 를 세션 헤더와 함께 보내고 글을 받는다', async () => {
-    const fetchFn = fakeFetch(200, fixtures.direction);
-    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
-    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
-    const [url, init] = fetchFn.mock.calls[0];
-    expect(url).toBe(`${BASE}/directions`);
-    expect(init?.method).toBe('POST');
-    expect(JSON.parse(init?.body as string)).toEqual({ topic: 'LOVE' });
-    expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
-  });
-
-  it('출생 정보가 없으면(404 NO_PROFILE)·생성에 실패하면(502 GENERATION_FAILED) 서버 오류에 code 가 온다', async () => {
-    const call = (status: number, error: string) =>
-      createApi({ baseUrl: BASE, fetchFn: fakeFetch(status, { error }), getToken: () => null }).createDirection('LOVE');
-    expect(await call(404, 'NO_PROFILE')).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
-    expect(await call(502, 'GENERATION_FAILED')).toEqual({
-      ok: false,
-      error: 'SERVER',
-      status: 502,
-      code: 'GENERATION_FAILED',
-    });
-  });
-
-  it('항목이 정확히 3개가 아니거나, 빈 글·빈 근거가 있으면 계약과 다른 모양이다', async () => {
+// 이성 · 미래 주제(POST /directions {LOVE|FUTURE})는 앱이 더 부르지 않는다(결정 048 · 049). 글의 모양은 궁합 주제와 같다
+describe('api: 방향성 제시의 모양', () => {
+  it('항목이 정확히 3개가 아니거나, 빈 글·빈 근거가 있으면 계약과 다른 모양이다', () => {
     const d = fixtures.direction;
     const [a, b, c] = d.items;
     expect(isDirection(d)).toBe(true);
@@ -383,21 +361,10 @@ describe('api: 방향성 제시(이성)', () => {
       { ...d, items: [a, b, null] },
     ];
     for (const v of broken) expect(isDirection(v)).toBe(false);
-    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ...d, items: [a, b] }), getToken: () => null });
-    expect(await api.createDirection('LOVE')).toEqual({ ok: false, error: 'INVALID', status: 200 });
-  });
-
-  it('예시 글은 계약의 필드만 갖고, 가짜 서버를 켜면 fetch 없이 그 글을 준다', async () => {
-    expect(Object.keys(fixtures.direction).sort()).toEqual(['items', 'title', 'topic']);
-    expect(Object.keys(fixtures.direction.items[0]).sort()).toEqual(['basis', 'body', 'title']);
-    const fetchFn = fakeFetch(500);
-    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
-    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
-    expect(fetchFn).not.toHaveBeenCalled();
   });
 });
 
-describe('api: 방향성 제시(미래 · 궁합)', () => {
+describe('api: 방향성 제시(궁합)', () => {
   const future = fixtures.directionFuture;
   const synastry = fixtures.directionSynastry;
   const bodyOf = (fetchFn: jest.MockedFunction<typeof fetch>) => JSON.parse(fetchFn.mock.calls[0][1]?.body as string);
@@ -409,15 +376,6 @@ describe('api: 방향성 제시(미래 · 궁합)', () => {
       expect(isDirection(d)).toBe(true);
       expect(Object.keys(d).sort()).toEqual(['items', 'title', 'topic']);
     }
-  });
-
-  it('미래: POST /directions 에 { topic: "FUTURE" } 만 보낸다', async () => {
-    const fetchFn = fakeFetch(200, future);
-    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
-    expect(await api.createDirection('FUTURE')).toEqual({ ok: true, data: future });
-    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/directions`);
-    expect(fetchFn.mock.calls[0][1]?.method).toBe('POST');
-    expect(bodyOf(fetchFn)).toEqual({ topic: 'FUTURE' });
   });
 
   it('궁합: 상대의 출생 정보 없이는 { topic, synastryId } 만 보낸다', async () => {
@@ -446,9 +404,6 @@ describe('api: 방향성 제시(미래 · 궁합)', () => {
   it('요청한 주제와 다른 주제의 글이 오면 쓰지 않는다', async () => {
     const answer = (body: unknown) => createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => null });
     const invalid = { ok: false, error: 'INVALID', status: 200 };
-    expect(await answer(fixtures.direction).createDirection('FUTURE')).toEqual(invalid);
-    expect(await answer(future).createDirection('LOVE')).toEqual(invalid);
-    expect(await answer(synastry).createDirection('FUTURE')).toEqual(invalid);
     expect(await answer(future).createSynastryDirection('syn-1')).toEqual(invalid);
     expect(await answer(fixtures.direction).createSynastryDirection('syn-1', input)).toEqual(invalid);
   });
@@ -469,11 +424,9 @@ describe('api: 방향성 제시(미래 · 궁합)', () => {
       expect(await call(status, code)).toEqual({ ok: false, error: 'SERVER', status, code });
   });
 
-  it('가짜 서버를 켜면 fetch 없이 주제에 맞는 예시 글을 준다', async () => {
+  it('가짜 서버를 켜면 fetch 없이 예시 글을 준다', async () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
-    expect(await api.createDirection('FUTURE')).toEqual({ ok: true, data: future });
-    expect(await api.createDirection('LOVE')).toEqual({ ok: true, data: fixtures.direction });
     expect(await api.createSynastryDirection('syn-1')).toEqual({ ok: true, data: synastry });
     expect(fetchFn).not.toHaveBeenCalled();
   });

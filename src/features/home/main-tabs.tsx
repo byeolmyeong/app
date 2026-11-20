@@ -8,10 +8,10 @@ import { strings } from '@/content/strings';
 export type MainTab = 'home' | 'me' | 'timing' | 'my';
 
 /**
- * 탭마다 가는 곳(결정 055 의 2). 나는 나 탭(`/me`, 결정 048 의 1). 시기는 새 화면이 생기기 전까지 지금 화면으로 간다(결정 046 의 4) —
- * 계획 묶음 A③ 이 시기를 `/timing` 으로 바꾼다.
+ * 탭마다 가는 곳(결정 055 의 2). 나는 나 탭(`/me`, 결정 048 의 1), 시기는 `/timing` — 계획 묶음 A③ 이 새 시기 탭으로 바꾸기 전까지는
+ * 심층 리포트의 시기 부분을 그리는 임시 화면이다(심층 리포트 화면 `/report` 는 없앴다, 결정 048 의 6).
  */
-const PATHS = { home: '/', me: '/me', timing: '/report?area=TIMING', my: '/my' } as const;
+const PATHS = { home: '/', me: '/me', timing: '/timing', my: '/my' } as const;
 
 const icon = (draw: (stroke: object) => React.ReactNode) =>
   function TabIcon(color: string) {

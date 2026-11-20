@@ -138,7 +138,7 @@ describe('홈', () => {
     expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
   });
 
-  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /report?area=TIMING(결정 046 의 4)', async () => {
+  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /timing(A③ 전까지 임시 화면)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findByTestId('nickname-card');
@@ -148,7 +148,7 @@ describe('홈', () => {
     await fireEvent.press(tabs[1]);
     expect(router.replace).toHaveBeenLastCalledWith('/me');
     await fireEvent.press(tabs[2]);
-    expect(router.replace).toHaveBeenLastCalledWith('/report?area=TIMING');
+    expect(router.replace).toHaveBeenLastCalledWith('/timing');
     await fireEvent.press(tabs[3]);
     expect(router.replace).toHaveBeenLastCalledWith('/my');
     // 지금 있는 탭을 눌러도 아무 데도 가지 않는다

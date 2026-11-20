@@ -4,9 +4,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import type { ReactElement } from 'react';
 import { AppState, Text, type AppStateStatus } from 'react-native';
 
-import DirectionScreen from '@/app/direction';
 import ReadingScreen from '@/app/reading';
-import ReportScreen from '@/app/report';
+import TimingScreen from '@/app/timing';
 import NewInquiryScreen from '@/app/my/inquiries/new';
 import SynastryDirectionScreen from '@/app/synastry/[id]/direction';
 import SynastryResultScreen from '@/app/synastry/[id]/index';
@@ -34,7 +33,6 @@ jest.mock('@/lib/api', () => ({
     listPlaces: jest.fn(),
     saveProfile: jest.fn(),
     createReading: jest.fn(),
-    createDirection: jest.fn(),
     createSynastryDirection: jest.fn(),
     getReport: jest.fn(),
     requestReport: jest.fn(),
@@ -127,25 +125,9 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('방향성 제시: 기다리는 중과 방금 받은 글이 떠 있는 동안 미룬다', async () => {
-    let resolve: (r: ApiResult<typeof fixtures.direction>) => void = () => {};
-    mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
-    const view = await render(gate(<DirectionScreen />));
-    expect(await screen.findByText(strings.direction.generating)).toBeTruthy();
-    await comeBackToUpdateRequired();
-    expect(blocked()).toBe(false);
-
-    await act(async () => resolve({ ok: true, data: fixtures.direction }));
-    expect(await screen.findByText(fixtures.direction.title)).toBeTruthy();
-    expect(blocked()).toBe(false);
-
-    await view.rerender(home);
-    expect(blocked()).toBe(true);
-  });
-
-  it('심층 리포트: 쓰는 중에는 미루고, 화면에서 나오면 막는다', async () => {
+  it('시기 탭(임시 화면의 심층 리포트): 쓰는 중에는 미루고, 화면에서 나오면 막는다', async () => {
     mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
-    const view = await render(gate(<ReportScreen />));
+    const view = await render(gate(<TimingScreen />));
     expect(await screen.findByText(strings.report.writing)).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
@@ -154,10 +136,10 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('심층 리포트: 이미 다 쓰인 글을 연 것은 미루지 않는다', async () => {
+  it('시기 탭: 이미 다 쓰인 글을 연 것은 미루지 않는다', async () => {
     mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
-    await render(gate(<ReportScreen />));
-    expect(await screen.findByText(fixtures.report.sections[0].title)).toBeTruthy();
+    await render(gate(<TimingScreen />));
+    expect(await screen.findByTestId('timing-view')).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(true);
   });
@@ -209,20 +191,6 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(await screen.findByText(S.result.noWheel)).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(true);
-  });
-
-  it('시기 탭의 방향성(미래): 글을 기다리는 중에는 미루고, 글이 오면 막는다(리포트는 받아 둔 것)', async () => {
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
-    let resolve: (r: ApiResult<typeof fixtures.directionFuture>) => void = () => {};
-    mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
-    await render(gate(<ReportScreen />));
-    expect(await screen.findByText(strings.direction.future.generating)).toBeTruthy();
-    await comeBackToUpdateRequired();
-    expect(blocked()).toBe(false);
-
-    await act(async () => resolve({ ok: true, data: fixtures.directionFuture }));
-    await waitFor(() => expect(blocked()).toBe(true));
   });
 
   it('궁합의 방향성: 기다리는 중과 방금 받은 글이 떠 있는 동안 미루고, 화면에서 나오면 막는다', async () => {

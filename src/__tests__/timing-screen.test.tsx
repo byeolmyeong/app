@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
-import ReportScreen from '@/app/report';
+import TimingScreen from '@/app/timing';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
@@ -13,7 +13,6 @@ import { REPORT_POLL_MS } from '@/features/report/use-report';
 import {
   api,
   type ApiResult,
-  type Direction,
   type Report,
   type ReportState,
   type TimingCurrent,
@@ -31,7 +30,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { requestReport: jest.fn(), getReport: jest.fn(), saveProfile: jest.fn(), createDirection: jest.fn() },
+  api: { requestReport: jest.fn(), getReport: jest.fn(), saveProfile: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
@@ -43,17 +42,13 @@ const mockParams = useLocalSearchParams as jest.Mock;
 const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 const R = strings.report;
 const report = fixtures.report;
-const [personality, relationship, work, emotion] = report.sections;
 const got = (status: 'NONE' | 'WRITING' | 'FAILED'): ApiResult<ReportState> => ({ ok: true, data: { status } });
 const done: ApiResult<ReportState> = { ok: true, data: { status: 'DONE', report } };
-/** 영역 탭 다섯(`Tabs`). 화면 아래에는 앱의 아래 탭 넷(`BottomTabs`)이 따로 있다(결정 046 의 4 · 055) */
-const areas = () => within(screen.getByTestId('tabs'));
 /* 연결 상태(netinfo) 가짜 */
 type NetListener = (state: { isConnected: boolean; isInternetReachable: boolean }) => void;
 let netListener: NetListener | null = null;
 const goOffline = () => act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
 const goOnline = () => act(async () => netListener?.({ isConnected: true, isInternetReachable: true }));
-const selectedTabs = () => areas().getAllByRole('tab').map((t) => t.props.accessibilityState.selected);
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -62,7 +57,6 @@ beforeEach(async () => {
   mockParams.mockReturnValue({});
   mockApi.getReport.mockResolvedValue(done);
   mockApi.requestReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
-  mockApi.createDirection.mockResolvedValue({ ok: true, data: fixtures.directionFuture });
   mockApi.saveProfile.mockImplementation(async (i) => ({ ok: true, data: i }));
   await saveBirth({ profile, chart: fixtures.chart });
   netListener = null;
@@ -76,14 +70,13 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-describe('심층 리포트 화면', () => {
+// 심층 리포트 화면(/report)을 없애고(결정 048 의 6) 그 시기 부분만 시기 탭의 임시 화면(/timing)에 그린다 — 계획 A③ 이 새 시기 탭으로 바꾼다
+describe('시기 탭의 임시 화면', () => {
   it('아직 없으면 한 줄 설명과 "리포트 받기" 를 보여 주고, 누르면 쓰는 중이 되었다가 다 쓰이면 글을 보여 준다', async () => {
     jest.useFakeTimers();
     mockApi.getReport.mockResolvedValueOnce(got('NONE')).mockResolvedValueOnce(got('WRITING'));
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     expect(await screen.findByText(R.intro)).toBeTruthy();
-    // 영역 탭은 글이 생긴 뒤에만 있다(아래 탭 넷은 늘 있다)
-    expect(screen.queryByTestId('tabs')).toBeNull();
     expect(mockApi.requestReport).not.toHaveBeenCalled();
 
     await fireEvent.press(screen.getByText(R.request));
@@ -97,88 +90,31 @@ describe('심층 리포트 화면', () => {
     await act(async () => void (await jest.advanceTimersByTimeAsync(REPORT_POLL_MS)));
     expect(screen.getByText(R.writing)).toBeTruthy();
     await act(async () => void (await jest.advanceTimersByTimeAsync(REPORT_POLL_MS)));
-    expect(screen.getByText(personality.title)).toBeTruthy();
+    expect(screen.getByTestId('timing-view')).toBeTruthy();
     expect(screen.queryByText(R.writing)).toBeNull();
   });
 
   it('열었을 때 쓰는 중이면 쓰는 중을 보여 준다', async () => {
     mockApi.getReport.mockResolvedValue(got('WRITING'));
-    const view = await render(<ReportScreen />);
+    const view = await render(<TimingScreen />);
     expect(await screen.findByText(R.writing)).toBeTruthy();
     expect(mockApi.requestReport).not.toHaveBeenCalled();
     await view.unmount();
   });
 
-  it('다 쓰였으면 영역 탭 다섯(성격 · 관계 · 일 · 감정 · 시기)과 첫 영역의 제목 · 문단을 서버가 준 그대로 보여 준다', async () => {
-    await render(<ReportScreen />);
-    expect(await screen.findByText(personality.title)).toBeTruthy();
-    const tabs = areas().getAllByRole('tab');
-    expect(tabs).toHaveLength(5);
-    ['성격', '관계', '일', '감정', '시기'].forEach((label, i) => expect(within(tabs[i]).getByText(label)).toBeTruthy());
-    // 탭 다섯이 폭을 똑같이 나눠 쓴다
-    for (const tab of tabs) expect(StyleSheet.flatten(tab.props.style).flex).toBe(1);
-    expect(selectedTabs()).toEqual([true, false, false, false, false]);
-    for (const paragraph of personality.paragraphs) {
-      expect(screen.getByText(paragraph.title)).toBeTruthy();
-      expect(screen.getByText(paragraph.body)).toBeTruthy();
-    }
-    // 문단마다 근거가 된 차트 요소를 작게 적는다
-    expect(screen.getByText('근거 · 태양 · 쌍둥이 · 6하우스')).toBeTruthy();
-    // 고르지 않은 영역의 글은 그리지 않는다
-    expect(screen.queryByText(relationship.title)).toBeNull();
-    // 요약 해석과 같은 면책 문구
-    expect(screen.getByText(strings.reading.disclaimer)).toBeTruthy();
-  });
-
-  it('탭을 누르면 그 영역의 글로 바뀐다', async () => {
-    await render(<ReportScreen />);
-    await screen.findByText(personality.title);
-    for (const [label, section, other] of [
-      ['관계', relationship, personality],
-      ['일', work, relationship],
-      ['감정', emotion, work],
-      ['성격', personality, emotion],
-    ] as const) {
-      await fireEvent.press(screen.getByText(label));
-      expect(screen.getByText(section.title)).toBeTruthy();
-      expect(screen.getByText(section.paragraphs[0].body)).toBeTruthy();
-      expect(screen.queryByText(other.title)).toBeNull();
-    }
-  });
-
-  it('주소의 area 로 처음 보일 탭을 고른다(/report?area=RELATIONSHIP)', async () => {
-    mockParams.mockReturnValue({ area: 'RELATIONSHIP' });
-    await render(<ReportScreen />);
-    expect(await screen.findByText(relationship.title)).toBeTruthy();
-    expect(selectedTabs()).toEqual([false, true, false, false, false]);
-    expect(screen.queryByText(personality.title)).toBeNull();
-  });
-
-  it('area 가 모르는 값이면 첫 영역을 보여 준다', async () => {
-    mockParams.mockReturnValue({ area: 'FUTURE' });
-    await render(<ReportScreen />);
-    expect(await screen.findByText(personality.title)).toBeTruthy();
-    expect(selectedTabs()).toEqual([true, false, false, false, false]);
-  });
-
-  it('글 아래에 앱의 아래 탭 넷이 있고, area=TIMING 이면 시기 · 아니면 나가 골라져 있다(결정 046 의 4 · 055 의 2)', async () => {
+  it('아래 탭 넷이 있고 시기가 골라져 있다, 탭의 첫 화면이라 뒤로 가기가 없다(결정 046 의 2 · 055 의 2)', async () => {
     const bottom = () => within(screen.getByTestId('bottom-tabs')).getAllByRole('tab');
-    const view = await render(<ReportScreen />);
-    await screen.findByText(personality.title);
-    expect(bottom().map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
-    expect(bottom().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
-    await view.unmount();
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     await screen.findByTestId('timing-view');
+    expect(bottom().map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
     expect(bottom().map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false]);
+    expect(screen.queryByLabelText(strings.common.backLabel)).toBeNull();
   });
 
-  it('시기 탭의 자리인 동안 리포트가 없거나 · 쓰는 중이거나 · 실패해도 아래 탭이 있다(리뷰 PR #41)', async () => {
-    mockParams.mockReturnValue({ area: 'TIMING' });
+  it('리포트가 없거나 · 쓰는 중이거나 · 실패해도 아래 탭이 있다(리뷰 PR #41)', async () => {
     for (const state of [got('NONE'), got('WRITING'), got('FAILED')]) {
       mockApi.getReport.mockResolvedValueOnce(state);
-      const view = await render(<ReportScreen />);
+      const view = await render(<TimingScreen />);
       await waitFor(() => expect(mockApi.getReport).toHaveBeenCalled());
       const bottom = await screen.findByTestId('bottom-tabs');
       expect(within(bottom).getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false]);
@@ -187,42 +123,20 @@ describe('심층 리포트 화면', () => {
     }
   });
 
-  it('위의 영역을 바꾸면 아래 탭도 따라간다(시기 ↔ 나), 두 탭 줄은 이름으로 구분된다(리뷰 PR #41)', async () => {
-    await render(<ReportScreen />);
-    await screen.findByText(personality.title);
-    const bottom = () => within(screen.getByTestId('bottom-tabs')).getAllByRole('tab').map((t) => t.props.accessibilityState.selected);
-    expect(bottom()).toEqual([false, true, false, false]);
-    await fireEvent.press(areas().getByText('시기'));
-    expect(bottom()).toEqual([false, false, true, false]);
-    await fireEvent.press(areas().getByText('성격'));
-    expect(bottom()).toEqual([false, true, false, false]);
-    expect(screen.getByTestId('tabs').props.accessibilityLabel).toBe(strings.report.areasLabel);
-    expect(screen.getByTestId('bottom-tabs').props.accessibilityLabel).toBe(strings.common.bottomTabsLabel);
-  });
-
-  it('글 영역에서 누를 수 있는 것은 뒤로 가기와 탭 다섯뿐이다(공유·다시 생성 없음)', async () => {
-    await render(<ReportScreen />);
-    await screen.findByText(personality.title);
-    expect(areas().getAllByRole('tab')).toHaveLength(5);
-    expect(screen.queryAllByRole('button')).toHaveLength(1);
-    expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
-  });
-
   it('실패하면 안내와 "다시 시도" 를 보여 주고, 누르면 요청부터 다시 한다', async () => {
     mockApi.getReport.mockResolvedValueOnce(got('FAILED'));
     mockApi.requestReport.mockResolvedValue({ ok: true, data: { status: 'DONE' } });
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     expect(await screen.findByText(strings.states.writeFail.title.report)).toBeTruthy();
     expect(mockApi.requestReport).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByText(strings.states.writeFail.retry));
-    expect(await screen.findByText(personality.title)).toBeTruthy();
+    expect(await screen.findByTestId('timing-view')).toBeTruthy();
     expect(mockApi.requestReport).toHaveBeenCalledTimes(1);
   });
 
   it('연결이 돌아오면 상태만 다시 확인한다 — 누르지 않았는데 리포트를 만들기 시작하지 않는다(리뷰 PR #44)', async () => {
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' }).mockResolvedValueOnce(got('NONE'));
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     await goOffline();
     expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
     await goOnline();
@@ -233,16 +147,16 @@ describe('심층 리포트 화면', () => {
 
   it('연결은 됐는데 서버에 닿지 못하면(NETWORK) 끊김 화면이 아니라 보드 19 — 다시 보기는 상태 확인만(리뷰 PR #44)', async () => {
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' }).mockResolvedValueOnce(done);
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     expect(await screen.findByText(strings.states.loadFail.title.report)).toBeTruthy();
     await fireEvent.press(screen.getByText(strings.states.loadFail.retry));
-    expect(await screen.findByText(personality.title)).toBeTruthy();
+    expect(await screen.findByTestId('timing-view')).toBeTruthy();
     expect(mockApi.requestReport).not.toHaveBeenCalled();
   });
 
   it('"다시 보기" 를 연달아 눌러도 상태 확인(GET)은 하나다(리뷰 PR #44)', async () => {
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502 });
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     const again = await screen.findByText(strings.states.loadFail.retry);
     let resolve: (r: ApiResult<ReportState>) => void = () => {};
     mockApi.getReport.mockReturnValue(new Promise((r) => (resolve = r)));
@@ -250,25 +164,25 @@ describe('심층 리포트 화면', () => {
     await fireEvent.press(again);
     expect(mockApi.getReport).toHaveBeenCalledTimes(2);
     await act(async () => resolve(done));
-    expect(await screen.findByText(personality.title)).toBeTruthy();
+    expect(await screen.findByTestId('timing-view')).toBeTruthy();
   });
 
   it('서버가 끝내 못 쓴 리포트(FAILED)는 "리포트를 쓰지 못했어요" · 다시 쓰기(결정 061 의 1, 리뷰 PR #44)', async () => {
     mockApi.getReport.mockResolvedValueOnce(got('FAILED'));
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     expect(await screen.findByText(strings.states.writeFail.title.report)).toBeTruthy();
     expect(screen.getByText(strings.states.writeFail.retry)).toBeTruthy();
   });
 
   it('끊겨서 못 받으면 보드 20-1("인터넷에 연결되어 있지 않아요"), 요청이 많으면 그 안내(결정 061 의 4)', async () => {
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
-    const first = await render(<ReportScreen />);
+    const first = await render(<TimingScreen />);
     await goOffline();
     expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
     expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
     await first.unmount();
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     expect(await screen.findByText(R.failed.LIMIT)).toBeTruthy();
   });
 
@@ -277,17 +191,17 @@ describe('심층 리포트 화면', () => {
     const date = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const today = { ...report, timing: { ...report.timing, current: { ...report.timing.current, date } } };
     mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: today } });
-    const first = await render(<ReportScreen />);
-    await screen.findByText(personality.title);
+    const first = await render(<TimingScreen />);
+    await screen.findByTestId('timing-view');
     await first.unmount();
-    await render(<ReportScreen />);
-    expect(await screen.findByText(personality.title)).toBeTruthy();
+    await render(<TimingScreen />);
+    expect(await screen.findByTestId('timing-view')).toBeTruthy();
     expect(mockApi.getReport).toHaveBeenCalledTimes(1);
   });
 
   it('세션 확인이 끝나기 전에는 서버를 부르지 않는다', async () => {
     mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     expect(await screen.findByText(R.checking)).toBeTruthy();
     await act(async () => {});
     expect(mockApi.getReport).not.toHaveBeenCalled();
@@ -295,7 +209,7 @@ describe('심층 리포트 화면', () => {
 
   it('출생 정보가 없으면 입력으로 가는 안내를 보여 주고 서버를 부르지 않는다', async () => {
     await AsyncStorage.clear();
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     expect(await screen.findByText(strings.chart.empty)).toBeTruthy();
     await waitFor(() => expect(mockApi.getReport).not.toHaveBeenCalled());
     await fireEvent.press(screen.getByText(strings.chart.goHome));
@@ -318,7 +232,7 @@ const titlesIn = (root: ReturnType<typeof within>) =>
     .queryAllByTestId('timing-interval')
     .map((row) => within(row).getByTestId('timing-interval-title').props.children);
 
-describe('심층 리포트 화면: 시기 탭', () => {
+describe('시기 탭의 임시 화면: 변곡점 · 구간', () => {
   const T = strings.report.timing;
   const { timing } = report;
   const [i1] = timing.intervals;
@@ -340,8 +254,7 @@ describe('심층 리포트 화면: 시기 탭', () => {
   async function openTiming(changed: Partial<Report['timing']> = {}, source: Report = report) {
     const data: ReportState = { status: 'DONE', report: { ...source, timing: { ...source.timing, ...changed } } };
     mockApi.getReport.mockResolvedValue({ ok: true, data });
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     await screen.findByTestId('timing-view');
   }
   const press = async (root: ReturnType<typeof within>, label: string) =>
@@ -356,17 +269,6 @@ describe('심층 리포트 화면: 시기 탭', () => {
     while (part('ahead').queryByText(T.later, { exact: false })) await press(part('ahead'), T.later);
     while (part('past').queryByText(T.earlier, { exact: false })) await press(part('past'), T.earlier);
   }
-
-  it('주소의 area=TIMING 으로 시기 탭을 바로 열고, 탭을 눌러서도 오간다', async () => {
-    await openTiming();
-    expect(selectedTabs()).toEqual([false, false, false, false, true]);
-    expect(screen.queryByText(personality.title)).toBeNull();
-    await fireEvent.press(areas().getByText('성격'));
-    expect(screen.getByText(personality.title)).toBeTruthy();
-    expect(screen.queryByTestId('timing-view')).toBeNull();
-    await fireEvent.press(areas().getByText('시기'));
-    expect(screen.getByTestId('timing-view')).toBeTruthy();
-  });
 
   it('네 부분이 지금 → 올해 · 내년 → 앞으로 → 지나온 시기 순서로 있고, 저마다 제목과 한 줄 설명이 있다', async () => {
     await openTiming();
@@ -386,9 +288,8 @@ describe('심층 리포트 화면: 시기 탭', () => {
     );
     expect(order.every((at) => at > -1)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    // 고지 문구는 네 부분보다 앞, 면책 문구는 맨 아래
+    // 고지 문구는 네 부분보다 앞
     expect(before(T.notice, T.sections.now.intro)).toBe(true);
-    expect(before(T.sections.past.intro, strings.reading.disclaimer)).toBe(true);
   });
 
   it('"지금" 은 오늘에 걸친 구간마다 제목 · 본문 · 언제까지를 보여 준다', async () => {
@@ -862,129 +763,8 @@ describe('심층 리포트 화면: 시기 탭', () => {
     expect(before(strings.share.openNextTurn, T.milestonesNote)).toBe(true);
   });
 
-  it('면책 문구는 시기 탭에서도 맨 아래에 있다', async () => {
+  it('면책 문구는 두지 않는다(결정 064 의 3 — 시안 14 대로)', async () => {
     await openTiming();
-    expect(screen.getByText(strings.reading.disclaimer)).toBeTruthy();
-  });
-});
-
-describe('심층 리포트 화면: 시기 탭 "지금" 아래의 방향성 제시(미래)', () => {
-  const T = strings.report.timing;
-  const F = strings.direction.future;
-  const future = fixtures.directionFuture;
-  const ok: ApiResult<Direction> = { ok: true, data: future };
-  const failed: ApiResult<Direction> = { ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' };
-  const headings = () => screen.getAllByTestId('timing-heading').map((h) => h.props.children);
-  const allHeadings = ['지금', '올해 · 내년', '앞으로', '지나온 시기'];
-
-  it('다른 탭을 보는 동안에는 부르지 않고, 시기 탭을 열 때 미래 주제로 부른다', async () => {
-    await render(<ReportScreen />);
-    expect(await screen.findByText(personality.title)).toBeTruthy();
-    await fireEvent.press(areas().getByText('관계'));
-    await act(async () => {});
-    expect(mockApi.createDirection).not.toHaveBeenCalled();
-    expect(screen.queryByText(F.heading)).toBeNull();
-
-    await fireEvent.press(areas().getByText('시기'));
-    expect(await screen.findByText(future.title)).toBeTruthy();
-    expect(mockApi.createDirection).toHaveBeenCalledTimes(1);
-    expect(mockApi.createDirection).toHaveBeenCalledWith('FUTURE');
-  });
-
-  it('"지금" 바로 아래(지금의 구간 뒤, 올해 · 내년 앞)에 제목과 해 볼 만한 것 3개를 근거와 함께 그대로 보여 준다', async () => {
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
-    expect(await screen.findByText(future.title)).toBeTruthy();
-    expect(screen.getByText(F.heading)).toBeTruthy();
-    for (const item of future.items) {
-      expect(screen.getByText(item.title)).toBeTruthy();
-      expect(screen.getByText(item.body)).toBeTruthy();
-      expect(screen.getByText(['근거', ...item.basis].join(' · '))).toBeTruthy();
-    }
-    // "지금" 부분 안에 있고, 지금의 구간 카드 다음이다
-    const now = screen.getByTestId('timing-section-now');
-    expect(within(now).getByTestId('future-direction')).toBeTruthy();
-    const currentIntervals = report.timing.current.intervals;
-    expect(before(currentIntervals[currentIntervals.length - 1].body, F.heading)).toBe(true);
-    expect(before(future.items[2].body, T.sections.near.intro)).toBe(true);
-    expect(before(future.items[2].body, strings.reading.disclaimer)).toBe(true);
-  });
-
-  it('글을 기다리는 동안에도 시기는 그대로 보이고, 그 칸에만 기다리는 문구가 있다', async () => {
-    let resolve: (r: ApiResult<Direction>) => void = () => {};
-    mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
-    expect(await screen.findByText(F.generating)).toBeTruthy();
-    expect(within(screen.getByTestId('future-direction')).getByText(F.generating)).toBeTruthy();
-    expect(headings()).toEqual(allHeadings);
-    expect(screen.getByTestId('timing-now')).toBeTruthy();
-    expect(screen.queryByText(future.title)).toBeNull();
-    await act(async () => resolve(ok));
-    expect(await screen.findByText(future.title)).toBeTruthy();
-    expect(screen.queryByText(F.generating)).toBeNull();
-  });
-
-  it('실패해도 시기(지금 · 올해 · 내년 · 앞으로 · 지나온 시기)는 그대로 보이고, "다시 시도" 를 누르면 한 번 더 요청해 글을 보여 준다', async () => {
-    mockApi.createDirection.mockResolvedValueOnce(failed);
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
-    expect(await screen.findByText(F.failed.OTHER)).toBeTruthy();
-    expect(headings()).toEqual(allHeadings);
-    for (const interval of report.timing.current.intervals) {
-      expect(within(screen.getByTestId('timing-now')).getByText(interval.body)).toBeTruthy();
-    }
-    expect(screen.getAllByTestId('timing-milestone-next')).toHaveLength(1);
-    expect(screen.getAllByTestId('timing-milestone-later')).toHaveLength(2);
-    expect(titlesIn(part('near'))).toHaveLength(3);
-    expect(titlesIn(part('ahead')).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: T.pastShow })).toBeTruthy();
-    expect(mockApi.createDirection).toHaveBeenCalledTimes(1);
-    await fireEvent.press(screen.getByText(F.retry));
-    expect(await screen.findByText(future.title)).toBeTruthy();
-    expect(screen.queryByText(F.retry)).toBeNull();
-    expect(mockApi.createDirection).toHaveBeenCalledTimes(2);
-  });
-
-  it('인터넷이 끊겼을 때는 그에 맞는 안내를 보여 준다', async () => {
-    mockApi.createDirection.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
-    expect(await screen.findByText(F.failed.NETWORK)).toBeTruthy();
-  });
-
-  it('서버에 출생 정보가 없으면(404 NO_PROFILE) 내 출생 정보를 저장하고 한 번만 다시 요청한다', async () => {
-    mockApi.createDirection.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
-    expect(await screen.findByText(future.title)).toBeTruthy();
-    expect(mockApi.saveProfile).toHaveBeenCalledWith({ date: profile.date, time: profile.time, placeId: 1841277 });
-    expect(mockApi.createDirection).toHaveBeenCalledTimes(2);
-  });
-
-  it('글을 기기에 두지 않는다: 다시 열면 다시 불러, 그사이 시기가 바뀌었으면 서버가 준 새 글을 보여 준다', async () => {
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    const first = await render(<ReportScreen />);
-    expect(await screen.findByText(future.title)).toBeTruthy();
-    await first.unmount();
-    const stored = await AsyncStorage.multiGet(await AsyncStorage.getAllKeys());
-    expect(JSON.stringify(stored)).not.toContain(future.title);
-    mockApi.createDirection.mockResolvedValue({ ok: true, data: { ...future, title: '새 시기의 글' } });
-    await render(<ReportScreen />);
-    expect(await screen.findByText('새 시기의 글')).toBeTruthy();
-    expect(screen.queryByText(future.title)).toBeNull();
-    expect(mockApi.createDirection).toHaveBeenCalledTimes(2);
-  });
-
-  it('세션 확인이 끝나기 전에는 부르지 않는다(보관된 리포트의 시기 탭이 먼저 보여도)', async () => {
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    const first = await render(<ReportScreen />);
-    expect(await screen.findByText(future.title)).toBeTruthy();
-    await first.unmount();
-    mockApi.createDirection.mockClear();
-    mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
-    await render(<ReportScreen />);
-    await act(async () => {});
-    expect(mockApi.createDirection).not.toHaveBeenCalled();
+    expect(screen.queryByText(strings.reading.disclaimer)).toBeNull();
   });
 });

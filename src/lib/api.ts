@@ -1257,16 +1257,6 @@ export function createApi(config: ApiConfig) {
       return request('POST', '/readings', { validate: isReading });
     },
 
-    /**
-     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)의 이성 · 미래 주제. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
-     * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
-     * 미래는 "지금의 시기" 가 달라진 날부터 같은 요청이 새 글을 준다. 그래서 볼 때마다 부른다(결정 026).
-     */
-    async createDirection(topic: 'LOVE' | 'FUTURE'): Promise<ApiResult<Direction>> {
-      if (config.useFixtures)
-        return { ok: true, data: topic === 'FUTURE' ? fixtures.directionFuture : fixtures.direction };
-      return request('POST', '/directions', { body: { topic }, validate: isDirectionOf(topic) });
-    },
 
     /**
      * `POST /directions` 의 궁합 주제: 직접 입력 궁합 한 건(`synastryId`)에 대한 글. birth 는 상대의 출생 정보이고

@@ -486,3 +486,49 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(screen.queryByTestId('card-fail')).toBeNull();
   });
 });
+
+/**
+ * 홈 뼈대(결정 071, 보드 24). 처음 열 때는 스플래시가 홈의 첫 데이터까지 가려(결정 068 의 2) 보이지 않고,
+ * 스플래시가 이미 걷힌 뒤 기기가 비어 서버에서 되살릴 때(다른 기기 · 웹에서 로그인 · 로그아웃 뒤 다시 로그인 · 19 의 다시 보기) 보인다.
+ * 그때의 홈은 받아 둔 풀이가 없는 별명 카드 · 오늘의 하늘 · 시기 · 작은 실천 — 뼈대는 그 배치 그대로, 각 칸은 그 카드의 뼈대를 쓴다.
+ */
+describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071, 보드 24)', () => {
+  const report = fixtures.timingReport;
+  const restored = { date: profile.date, time: profile.time, placeId: profile.place.id };
+  /** 칸 이름(뼈대는 sk- 를 앞에, -skeleton 을 뒤에 붙인다) */
+  const BLOCKS = ['nickname-card', 'home-today-card', 'home-timing-card', 'home-timing-practices'];
+  const blocks = () =>
+    screen
+      .queryAllByTestId(/./, { includeHiddenElements: true })
+      .map((e) => String(e.props.testID).replace(/^sk-/, '').replace(/-skeleton$/, ''))
+      .filter((id) => BLOCKS.includes(id));
+  afterEach(() => jest.useRealTimers());
+
+  it('0.3초 전에는 머리(로고) · 아래 탭만, 넘으면 별명 카드(받아 둔 풀이가 없는 꼴) · 오늘의 하늘 · 시기 · 작은 실천의 뼈대 — 종은 없다(리뷰 #66)', async () => {
+    jest.useFakeTimers();
+    mockApi.getProfile.mockReturnValue(new Promise(() => {}));
+    await render(<HomeScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(100)));
+    expect(screen.queryByTestId('home-skeleton')).toBeNull();
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
+    expect(screen.getByTestId('home-skeleton').props.accessibilityLabel).toBe(strings.states.loading);
+    expect(blocks()).toEqual(BLOCKS);
+    // 받아 둔 풀이가 없다(기기가 비었다) — 한 줄 별명 두 줄 대신 "아직 별명을 짓지 않았어요" 한 줄 자리
+    expect(screen.getByTestId('nickname-card-skeleton')).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
+    expect(screen.queryByTestId('home-bell')).toBeNull();
+    expect(screen.queryByText(M.readingEmpty)).toBeNull();
+  });
+
+  it('뼈대의 칸 = 되살린 뒤 다 그려진 홈의 칸(같은 순서 · 같은 수)', async () => {
+    mockApi.getProfile.mockResolvedValue({ ok: true, data: restored });
+    mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-timing-practices')).toBeTruthy();
+    expect(await screen.findByTestId('home-today-card')).toBeTruthy();
+    expect(screen.getByText(M.readingEmpty)).toBeTruthy();
+    expect(blocks()).toEqual(BLOCKS);
+  });
+});

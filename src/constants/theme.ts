@@ -268,6 +268,8 @@ export const NicknameCardLayout = {
   chevron: 16,
   glow: { x: 0.88, y: 0.08, extent: 0.58 },
   art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55 },
+  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." · "내 별명 읽기" 막대 폭 */
+  skeleton: { name: 72, meta: 64, empty: 168, more: 72 },
 } as const;
 
 /** 별명 짓는 중의 반짝임 셋의 자리(그림 칸 260 기준, 결정 042 시안 보드 9) */

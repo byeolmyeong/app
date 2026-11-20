@@ -1,8 +1,9 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
+import { useSlideUp } from '@/components/slide-up';
 import { Txt } from '@/components/txt';
 import { Colors, LegalLayout, LineWidth, Radius, ScreenPaddingX, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { legalInfo, type LegalBlock, type LegalDocument } from '@/content/legal';
@@ -23,8 +24,18 @@ export type TextPageProps = {
  * 그 아래 시행일 한 줄. 본문은 랜딩(byeolmyeong.com)의 같은 글과 같은 순서로 머리말 → 조항(제목 · 문단 · 글머리 목록 · 번호 목록 · 표)
  * → 마지막 시행 문구다. 표는 폰 폭에서 칸이 좁아지지 않게 행마다 카드 한 장으로 쌓고, 카드 안에 "머리 · 값" 을 위아래로 적는다.
  * 가입 약관 단계에서 연 글이면 맨 아래에 "동의하기" 가 위로 사라지는 바탕 위에 떠 있다.
+ * 아래에서 올라오는 창이다(결정 067 의 1): 웹은 이 화면이 스스로 올라오고, 뒤로 · 동의하기는 내려간 뒤에 돌아간다.
  */
 export function TextPage({ doc, onBack, onAgree }: TextPageProps) {
+  const slide = useSlideUp();
+  return (
+    <Animated.View testID="slide-up-page" style={slide.style}>
+      <TextPageScreen doc={doc} onBack={() => slide.close(onBack)} onAgree={onAgree ? () => slide.close(onAgree) : undefined} />
+    </Animated.View>
+  );
+}
+
+function TextPageScreen({ doc, onBack, onAgree }: TextPageProps) {
   return (
     <Screen scroll={false} nav={<Header title={doc.title} onBack={onBack} />} bottomInset={onAgree ? Sizes.stepBottom : undefined}>
       <ScrollView

@@ -13,6 +13,7 @@ import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
 import { BackdropShape, BrandColors, Colors, LineWidth, MakingTwinkles, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { useSoundtrack } from '@/features/audio/use-soundtrack';
 
 const M = strings.making;
 const useNativeDriver = Platform.OS !== 'web';
@@ -98,6 +99,8 @@ export type MakingViewProps = {
 };
 
 export function MakingView({ nav }: MakingViewProps) {
+  // 몇십 초 기다리는 화면이라 기다릴 때 음악(결정 062 의 1). 결과 · 실패로 넘어가면 배경으로 돌아간다
+  useSoundtrack('waiting');
   const reduce = useReduceMotion();
   const run = !reduce;
   const float = usePulse(run, FLOAT_MS);

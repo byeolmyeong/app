@@ -22,7 +22,7 @@ const R = M.rows;
 
 /**
  * 마이 v2(결정 056, 보드 16): 위 별명 카드(계정 · 프로필 / 출생 정보 바꾸기) · 아래 묶음 제목 없는 카드 둘.
- * 로그아웃 · 계정 삭제는 계정 화면에 있다(056 의 3). 알림 · 음악 줄은 그 화면이 생길 때 더한다(계획 A8-2 · A9-2).
+ * 로그아웃 · 계정 삭제는 계정 화면에 있다(056 의 3). 알림 줄은 그 화면이 생길 때(계획 A8-2), 음악 줄은 음악이 실제로 날 때 더한다.
  * 출생 정보가 없어도(기기 저장소가 비었다) 카드는 닉네임과 버튼만으로 그리고, 줄들과 아래 탭은 그대로 보인다.
  * 서버를 부르는 것은 계정(`GET /account`)뿐이다 — 별자리 · 한 줄 별명 · 받은 날은 기기에 받아 둔 것을 쓴다.
  */
@@ -55,6 +55,7 @@ export default function MyScreen() {
         />
         <View style={styles.listTop} />
         <ListCard>
+          {/* 음악 줄(/my/music)은 루트에 음악 줄을 거는 PR(길 A 의 스플래시 PR 뒤)에서 더한다 — 그 전에는 소리가 나지 않아 스위치가 아무 일도 하지 않는다 */}
           <ListCardRow label={R.faq} onPress={() => router.push('/settings/faq')} />
           <ListCardRow label={R.inquiry} onPress={() => router.push('/my/inquiries')} />
         </ListCard>

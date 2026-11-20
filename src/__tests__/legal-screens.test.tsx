@@ -14,6 +14,7 @@ const flat = (node: { props: Record<string, any> }) => StyleSheet.flatten(node.p
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
+  useCanGoBack: jest.fn(() => true),
   useLocalSearchParams: jest.fn(() => ({})),
 }));
 

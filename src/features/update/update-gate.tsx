@@ -28,9 +28,11 @@ export type UpdateGateProps = {
   children: ReactNode;
   /** 업데이트를 권해도 되는 자리인가(로그인했고 홈이다 — 로그인 전 · 가입 중에는 묻지 않는다). 주지 않으면 권하지 않는다 */
   canSuggest?: boolean;
+  /** 화면들 대신 막는 화면(점검 · 업데이트 필요)을 띄우는지 알린다 — 루트가 스플래시를 걷는다(결정 067 의 3) */
+  onBlockedChange?: (blocked: boolean) => void;
 };
 
-export function UpdateGate({ children, canSuggest = false }: UpdateGateProps) {
+export function UpdateGate({ children, canSuggest = false, onBlockedChange }: UpdateGateProps) {
   const [store] = useState(() =>
     createUpdateStore({
       client: appClient,
@@ -41,6 +43,10 @@ export function UpdateGate({ children, canSuggest = false }: UpdateGateProps) {
   );
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const suggestion = useSyncExternalStore(store.subscribe, store.getSuggestion, store.getSuggestion);
+  const blocking = !!state.maintenance || state.blocked;
+  useEffect(() => {
+    onBlockedChange?.(blocking);
+  }, [blocking, onBlockedChange]);
 
   useEffect(() => {
     // 어느 호출이든 426 UPDATE_REQUIRED 를 받으면 바로 막는다.

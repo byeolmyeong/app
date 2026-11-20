@@ -1,12 +1,44 @@
-import { render, screen } from '@testing-library/react-native';
+import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import type { ReactNode } from 'react';
+import { Platform } from 'react-native';
 
 import RootLayout from '@/app/_layout';
 import { useSession } from '@/features/auth/use-session';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 
-jest.mock('expo-router', () => ({ Stack: () => null, useSegments: jest.fn(() => []), router: { replace: jest.fn() } }));
-jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
+// Stack.Screen 은 받은 화면 옵션을 mockScreen 에 남긴다(약관 글이 아래에서 올라오는지 본다)
+const mockScreen = jest.fn();
+jest.mock('expo-router', () => ({
+  Stack: Object.assign(({ children }: { children?: ReactNode }) => children ?? null, {
+    Screen: (props: unknown) => {
+      mockScreen(props);
+      return null;
+    },
+  }),
+  useSegments: jest.fn(() => []),
+  router: { replace: jest.fn() },
+}));
+// 글꼴을 받았는지는 시험이 정한다(기본: 받음)
+let mockFontsLoaded = true;
+jest.mock('expo-font', () => ({ useFonts: () => [mockFontsLoaded, null] }));
+// 스플래시가 몇 번 새로 그려졌는지 센다(걷는 때 판단 useSplashDone 은 진짜)
+let mockSplashMounts = 0;
+jest.mock('@/components/splash-view', () => {
+  const actual = jest.requireActual('@/components/splash-view');
+  const { useEffect } = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
+  return {
+    ...actual,
+    SplashView: () => {
+      useEffect(() => {
+        mockSplashMounts += 1;
+      }, []);
+      return <View testID="splash" />;
+    },
+  };
+});
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() }));
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null })) }));
 jest.mock('@/features/onboarding/intro-seen', () => ({ useIntroSeen: jest.fn(() => true) }));
@@ -75,5 +107,124 @@ describe('로그인 전 가드(결정 034)', () => {
     await render(<RootLayout />);
     expect(screen.queryByTestId('guard-cover')).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+});
+
+// 약관 글 네 화면은 아래에서 올라오는 창(결정 067 의 1). 가입 중 "보기" 와 마이가 같은 화면을 연다
+describe('약관 글 화면의 열림', () => {
+  beforeEach(() => {
+    mockSegments.mockReturnValue([]);
+    mockUseSession.mockReturnValue(session('signedIn'));
+  });
+
+  it('이용약관 · 처리방침 · 개인정보 수집 · 이용 동의 · 마케팅 수신 동의 약관을 아래에서 올라오게 연다', async () => {
+    await render(<RootLayout />);
+    await waitFor(() => {
+      const options = Object.fromEntries(mockScreen.mock.calls.map(([p]) => [p.name, p.options]));
+      for (const name of ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing']) {
+        expect(options[name]).toMatchObject({ animation: 'slide_from_bottom', contentStyle: { backgroundColor: '#0D0E12' } });
+      }
+    });
+  });
+});
+
+// 스플래시(결정 067 의 3): 웹은 앱이 보드 1 모양을 그리고, 앱(iOS · 안드로이드)은 네이티브 스플래시를 같은 때까지 둔다
+describe('스플래시', () => {
+  const original = Platform.OS;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockSegments.mockReturnValue([]);
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    Platform.OS = original;
+    (useIntroSeen as jest.Mock).mockReturnValue(true);
+  });
+
+  it('웹: 세션 확인 중에는 스플래시를 그리고, 확인이 끝나 보낼 곳에 가도 0.8초가 지나기 전에는 걷지 않는다', async () => {
+    Platform.OS = 'web';
+    mockUseSession.mockReturnValue(session('checking'));
+    const view = await render(<RootLayout />);
+    expect(screen.getByTestId('splash')).toBeTruthy();
+
+    // 확인이 끝나 로그인 화면에 왔다(0.5초)
+    await act(async () => jest.advanceTimersByTime(500));
+    mockSegments.mockReturnValue(['login']);
+    mockUseSession.mockReturnValue(session('signedOut'));
+    await view.rerender(<RootLayout />);
+    expect(screen.getByTestId('splash')).toBeTruthy();
+
+    await act(async () => jest.advanceTimersByTime(300));
+    expect(screen.queryByTestId('splash')).toBeNull();
+  });
+
+  it('웹: 0.8초가 지나도 세션 · 소개 기록 확인이 끝나지 않았으면 그대로 둔다. 한 번 걷히면 다시 그리지 않는다', async () => {
+    Platform.OS = 'web';
+    mockUseSession.mockReturnValue(session('signedOut'));
+    (useIntroSeen as jest.Mock).mockReturnValue(null);
+    const view = await render(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(2000));
+    expect(screen.getByTestId('splash')).toBeTruthy();
+
+    (useIntroSeen as jest.Mock).mockReturnValue(true);
+    mockSegments.mockReturnValue(['login']);
+    await view.rerender(<RootLayout />);
+    expect(screen.queryByTestId('splash')).toBeNull();
+
+    // 로그아웃처럼 나중에 다시 확인 중이 되어도 스플래시가 아니라 바탕만 가린다
+    mockSegments.mockReturnValue([]);
+    mockUseSession.mockReturnValue(session('checking'));
+    await view.rerender(<RootLayout />);
+    expect(screen.queryByTestId('splash')).toBeNull();
+    expect(screen.getByTestId('guard-cover')).toBeTruthy();
+  });
+
+  it('웹: 글꼴을 받는 동안과 받은 뒤의 스플래시가 같은 자리라 다시 그려지지 않는다(깜빡임 없음)', async () => {
+    Platform.OS = 'web';
+    mockSplashMounts = 0;
+    mockFontsLoaded = false;
+    mockUseSession.mockReturnValue(session('checking'));
+    try {
+      const view = await render(<RootLayout />);
+      expect(screen.getByTestId('splash')).toBeTruthy();
+      mockFontsLoaded = true;
+      await view.rerender(<RootLayout />);
+      expect(screen.getByTestId('splash')).toBeTruthy();
+      expect(mockSplashMounts).toBe(1);
+    } finally {
+      mockFontsLoaded = true;
+    }
+  });
+
+  it('웹: 공유 페이지는 세션을 확인하지 않으므로 0.8초만 보인다', async () => {
+    Platform.OS = 'web';
+    mockSegments.mockReturnValue(['s', '[shareId]']);
+    mockUseSession.mockReturnValue(session('checking'));
+    await render(<RootLayout />);
+    expect(screen.getByTestId('splash')).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(800));
+    expect(screen.queryByTestId('splash')).toBeNull();
+  });
+
+  it('앱: 세션 확인이 5초 넘게 끝나지 않아도 네이티브 스플래시를 걷는다(최대 대기)', async () => {
+    mockUseSession.mockReturnValue(session('checking'));
+    await render(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(4999));
+    expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
+    await act(async () => jest.advanceTimersByTime(1));
+    expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('앱: 앱이 그린 스플래시는 없고, 네이티브 스플래시는 세션 확인이 끝나 보낼 곳에 간 뒤에 걷는다(글꼴만으로는 걷지 않는다)', async () => {
+    mockUseSession.mockReturnValue(session('checking'));
+    const view = await render(<RootLayout />);
+    expect(screen.queryByTestId('splash')).toBeNull();
+    expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
+
+    mockSegments.mockReturnValue(['login']);
+    mockUseSession.mockReturnValue(session('signedOut'));
+    await view.rerender(<RootLayout />);
+    expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
   });
 });

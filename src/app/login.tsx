@@ -41,7 +41,8 @@ function alertEmailRequired() {
 
 export default function LoginScreen() {
   const { lastError, signIn, devSessionEnabled, devSignIn } = useAuth();
-  const [busy, setBusy] = useState(false);
+  /** 자격 증명을 받아 서버를 기다리는 공급자. 그 버튼은 돌기, 나머지는 막는다(결정 067 의 2) */
+  const [pending, setPending] = useState<LoginProvider | null>(null);
   const [failed, setFailed] = useState(false);
   const [recent, setRecent] = useState<LoginProvider | null>(null);
   const alerted = useRef(false);
@@ -70,18 +71,25 @@ export default function LoginScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 기다리는 동안 따로 화면 없이 여기 머문다. 로그인되면 가드가 다음 화면으로 보낼 때까지 돌기를 둔다.
   async function handle(credential: ProviderCredential) {
-    setBusy(true);
+    setPending(credential.provider);
     setFailed(false);
     const outcome = await signIn(credential);
-    setBusy(false);
     if (outcome !== 'failed') return;
+    setPending(null);
     if (getSession().lastError === EMAIL_REQUIRED) alertEmailRequired();
     else setFailed(true);
   }
 
   const message = failed ? S.failed : reasonMessage(lastError);
-  const buttonProps = { onCredential: (c: ProviderCredential) => void handle(c), onError: () => setFailed(true), disabled: busy };
+  const buttonProps = (provider: LoginProvider) => ({
+    onCredential: (c: ProviderCredential) => void handle(c),
+    onError: () => setFailed(true),
+    loading: pending === provider,
+    disabled: pending !== null && pending !== provider,
+    recent: recent === provider,
+  });
 
   return (
     <Screen scroll={false} bottomInset={BOTTOM}>
@@ -98,10 +106,10 @@ export default function LoginScreen() {
             {message}
           </Txt>
         ) : null}
-        <KakaoLoginButton {...buttonProps} recent={recent === 'KAKAO'} />
-        <AppleLoginButton {...buttonProps} recent={recent === 'APPLE'} />
-        <GoogleLoginButton {...buttonProps} recent={recent === 'GOOGLE'} />
-        {devSessionEnabled ? <Button label={S.dev} variant="line" onPress={() => void devSignIn()} disabled={busy} /> : null}
+        <KakaoLoginButton {...buttonProps('KAKAO')} />
+        <AppleLoginButton {...buttonProps('APPLE')} />
+        <GoogleLoginButton {...buttonProps('GOOGLE')} />
+        {devSessionEnabled ? <Button label={S.dev} variant="line" onPress={() => void devSignIn()} disabled={pending !== null} /> : null}
       </View>
     </Screen>
   );

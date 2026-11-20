@@ -5,8 +5,9 @@ import { router } from 'expo-router';
 import BirthChangeScreen from '@/app/my/birth';
 import { strings } from '@/content/strings';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
+import { clearPendingReveal, pendingReveal } from '@/features/reading/reveal-once';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
-import { api } from '@/lib/api';
+import { api, type MyAccount } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -15,10 +16,15 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => true), dismissAll: jest.fn() },
   usePreventRemove: jest.fn(),
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
+}));
+jest.mock('@/features/auth/use-session', () => ({
+  ...jest.requireActual('@/features/auth/use-session'),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 't', ready: true, lastError: null })),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { createChart: jest.fn(), saveProfile: jest.fn(), getProfile: jest.fn(), listPlaces: jest.fn() },
+  api: { createChart: jest.fn(), saveProfile: jest.fn(), getProfile: jest.fn(), listPlaces: jest.fn(), getMyAccount: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -26,6 +32,8 @@ const B = strings.my.birth;
 const H = strings.home;
 const profile = { date: '1999-03-08', time: null, place: null };
 const DEVICE_KEY = 'byeolmyeong-device.music.v1';
+/** 별명 짓는 중 → 새 별명 공개 → 풀이(소유자 2026-11-20) */
+const TO_READING = { pathname: '/reading', params: { from: 'birth' } };
 
 const date = () => screen.getByLabelText(H.dateLabel);
 const submit = () => screen.getByRole('button', { name: B.submit });
@@ -34,6 +42,9 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
+  // `as MyAccount`: 이용 정지 PR(#52)이 계정에 suspended 를 더해도 이 시험은 그대로 돈다
+  mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false } as MyAccount });
+  clearPendingReveal();
   await saveBirth({ profile, chart: fixtures.chartTimeUnknown });
   await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: 'old', reading: fixtures.reading }));
   await AsyncStorage.setItem(DEVICE_KEY, '{"background":false}');
@@ -77,7 +88,7 @@ describe('출생 정보 바꾸기(/my/birth, 보드 16-4)', () => {
     await fireEvent.changeText(date(), '20000615');
     await fireEvent.press(submit());
     await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/reading'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
     expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
     expect(mockApi.saveProfile).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
     expect((await loadBirth())?.profile).toEqual({ date: '2000-06-15', time: null, place: null });
@@ -85,6 +96,8 @@ describe('출생 정보 바꾸기(/my/birth, 보드 16-4)', () => {
     expect(await AsyncStorage.getItem(READING_STORAGE_KEY)).toBeNull();
     expect(await AsyncStorage.getItem(DEVICE_KEY)).toBe('{"background":false}');
     expect(router.dismissAll).toHaveBeenCalled();
+    // 새 별명 공개에 쓸 닉네임을 넘겨 둔다
+    expect(pendingReveal()).toBe('새벽별');
   });
 
   it('만 14세 미만 날짜면(서버 403 UNDER_AGE) 생년월일 칸 아래에 알리고 기기의 것은 그대로', async () => {
@@ -127,7 +140,7 @@ describe('출생 정보 바꾸기(/my/birth, 보드 16-4)', () => {
     await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
     await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalledTimes(1));
     if (changed) {
-      await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/reading'));
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
       expect((await loadBirth())?.profile.date).toBe('2000-06-15');
     } else {
       expect(await screen.findByText(H.requestErrors.NETWORK)).toBeTruthy();
@@ -162,7 +175,7 @@ describe('출생 정보 바꾸기(/my/birth, 보드 16-4)', () => {
     await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
     expect(router.back).not.toHaveBeenCalled();
     await act(async () => finish({ ok: true, data: fixtures.chartTimeUnknown }));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/reading'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
     expect(usePreventRemove).toHaveBeenLastCalledWith(false, expect.any(Function));
   });
 
@@ -193,7 +206,7 @@ describe('출생 정보 바꾸기(/my/birth, 보드 16-4)', () => {
     await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
     expect(submit().props.accessibilityState?.disabled).toBe(true);
     await act(async () => finish({ ok: true, data: fixtures.chartTimeUnknown }));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/reading'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
     expect(mockApi.createChart).toHaveBeenCalledTimes(1);
   });
 });

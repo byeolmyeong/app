@@ -15,6 +15,8 @@ import { clearDeviceData } from '@/features/auth/delete-account';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
 import { birthInputOf, sameBirth, type BirthProfile } from '@/features/chart/birth-input';
 import { useBirthProfile, type StoredBirth } from '@/features/chart/use-birth-profile';
+import { useMyAccount } from '@/features/my/use-my-account';
+import { revealNextReading } from '@/features/reading/reveal-once';
 import { api, type BirthInput } from '@/lib/api';
 
 const B = strings.my.birth;
@@ -26,7 +28,8 @@ const back = () => (router.canGoBack() ? router.back() : router.replace('/my'));
 /**
  * 출생 정보 바꾸기(결정 056 의 6, 보드 16-4): 안내 · 생년월일 · 시각(모름) · 태어난 곳(온보딩 8 과 같은 칸) · 맨 아래 "바꾸기".
  * "바꾸기" → 가운데 창으로 한 번 더 묻고 → 차트를 받아 서버에 저장(`PUT /profile` — 바뀌면 서버가 옛 별명 · 풀이 저장분을 지운다, 서버 결정 041)
- * → 기기에 둔 이 사람의 것(별명 · 풀이 · 이번 달 · 오늘의 하늘 보관)을 모두 지우고 새 출생 정보만 둔 뒤 → 별명 짓는 중부터(`/reading`).
+ * → 기기에 둔 이 사람의 것(별명 · 풀이 · 이번 달 · 오늘의 하늘 보관)을 모두 지우고 새 출생 정보만 둔 뒤 → 별명 짓는 중부터(`/reading?from=birth`)
+ * → 새 별명 공개(보드 10, 별명이 같아도 한 번 — 소유자 2026-11-20) → 풀이.
  * 바뀐 것이 없으면 묻지 않고 돌아간다(시각 "모름" 인 채 곳만 바꿨으면 기기의 곳만 바꾼다). 만 14세 미만 날짜는 서버가 거절하고(403 `UNDER_AGE`)
  * 생년월일 칸 아래에 알린다. 그 밖의 실패는 이 화면에 머물며 짧은 알림(결정 065 의 1). 기기 · 서버의 출생 정보가 어긋나지 않게 서버가 받은 뒤에만
  * 기기를 바꾼다 — 저장의 응답을 잃었으면(끊김 · 서버 오류) `GET /profile` 로 서버에 새 값이 있는지 확인한다. 바꾸는 동안은 뒤로 갈 수 없다.
@@ -47,6 +50,8 @@ const uncertain = (r: { error: string; status?: number }) => r.error === 'NETWOR
 function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (value: StoredBirth) => Promise<void> }) {
   const fields = useBirthFields(stored?.profile);
   const { toast, show, hide } = useToast();
+  // 바꾼 뒤 새 별명 공개(보드 10)에 쓸 닉네임(소유자 2026-11-20 — 별명이 같아도 한 번 보인다). 받지 못했으면 공개 없이 글로
+  const { account } = useMyAccount();
   const [asking, setAsking] = useState<{ profile: BirthProfile; input: BirthInput } | null>(null);
   const [busy, setBusy] = useState(false);
   /** 바꾸기를 마쳐 떠날 곳. 뒤로 막기가 풀린 뒤에 떠난다(막힌 채로 떠나면 막기에 걸린다) */
@@ -60,7 +65,7 @@ function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (
     if (!leave || busy) return;
     if (leave === 'back') return back();
     if (router.canDismiss()) router.dismissAll();
-    router.replace('/reading');
+    router.replace({ pathname: '/reading', params: { from: 'birth' } });
   }, [leave, busy]);
 
   async function onSubmit() {
@@ -95,6 +100,7 @@ function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (
         if (!(uncertain(saved) && (await savedOnServer(next.input))))
           return show('error', saved.error === 'NETWORK' ? H.requestErrors.NETWORK : strings.my.account.saveFailed);
       }
+      if (account?.nickname) revealNextReading(account.nickname);
       try {
         // 옛 출생 정보로 만든 것이 보이지 않게 이 사람의 기기 보관을 모두 지우고 새 출생 정보만 둔다(기기 값은 남는다)
         await clearDeviceData();

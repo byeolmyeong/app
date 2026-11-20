@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import MyScreen from '@/app/my';
+import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -132,6 +134,15 @@ describe('홈', () => {
     (router.replace as jest.Mock).mockClear();
     await fireEvent.press(tabs[0]);
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('탭 이름은 시안 11 의 11/15 — 고른 탭은 600 · 본문색, 나머지는 500 · 안내색', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    const style = (label: string) => StyleSheet.flatten(within(screen.getByLabelText(label)).getByText(label).props.style);
+    expect(style('홈')).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '600', color: Colors.ink });
+    expect(style('나')).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '500', color: Colors.hint });
   });
 
   it('출생 정보를 넣기 전(입력 화면)에는 탭이 없다', async () => {

@@ -36,7 +36,7 @@ export function BottomTabs<K extends string>({ tabs, value, onChange }: BottomTa
             style={styles.tab}
           >
             {tab.icon(on ? Colors.ink : Colors.hint)}
-            <Txt variant="label" color={on ? 'ink' : 'hint'} style={styles.label}>
+            <Txt variant="badge" color={on ? 'ink' : 'hint'} style={!on && styles.off}>
               {tab.label}
             </Txt>
           </Pressable>
@@ -54,5 +54,6 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.hair,
   },
   tab: { flex: 1, height: Sizes.tabBarHeight, alignItems: 'center', justifyContent: 'center', gap: Spacing.xxs / 2 },
-  label: { fontWeight: FontWeight.semibold },
+  /** 탭 이름은 11/15(시안 11) — 고른 탭은 600, 나머지는 500 */
+  off: { fontWeight: FontWeight.medium },
 });

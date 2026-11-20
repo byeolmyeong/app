@@ -218,16 +218,6 @@ export type Direction = {
   items: { title: string; body: string; basis: string[] }[];
 };
 
-/** 심층 리포트의 글 영역. 서버는 이 순서로 네 영역을 모두 준다. 다섯째 영역인 시기는 `Report.timing` 으로 따로 온다 */
-export const REPORT_AREAS = ['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
-export type ReportArea = (typeof REPORT_AREAS)[number];
-
-export type ReportSection = {
-  area: ReportArea;
-  title: string;
-  paragraphs: { title: string; body: string; basis: string[] }[];
-};
-
 /** 시기의 날짜는 모두 한국 달력의 YYYY-MM-DD 글자다. 글자를 그대로 비교해 거르고 정렬한다(앱은 날짜를 계산하지 않는다) */
 export const MILESTONE_KINDS = ['SATURN_SQUARE', 'SATURN_RETURN', 'URANUS_OPPOSITION', 'SECOND_SATURN_RETURN'] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
@@ -273,7 +263,7 @@ export type TimingInterval = {
   reason?: Reason;
 };
 
-/** 지금 나의 구간. 서버가 `GET /reports/me` 때마다 그날(date)로 만든다. 없는 값은 키가 없다 */
+/** 지금 나의 구간. 서버가 `GET /timing-report` 때마다 그날(date)로 만든다. 없는 값은 키가 없다 */
 export type TimingCurrent = {
   date: string;
   /** 오늘에 걸쳐 있는 구간. 없으면 빈 배열 */
@@ -288,25 +278,17 @@ export type TimingCurrent = {
   mainId?: string;
 };
 
-/** 심층 리포트의 시기 영역. milestones 는 언제나 넷이 시간 순서로, intervals 는 시작 순서로 온다(서로 겹칠 수 있다) */
-export type ReportTiming = {
-  /** false 면 상승점 구간과 운명적 만남 구간이 빠져 있다 */
+/**
+ * 시기 풀이(결정 049 · 050, 서버 결정 033): 옛 심층 리포트의 시기 모양에 모델이 쓴 칸 · 대표 구간이 더해진 것. milestones 는 언제나 넷이
+ * 시간 순서로, intervals 는 시작 순서로 온다(서로 겹칠 수 있다). 지금(current)은 GET 할 때마다 그날로 붙는다.
+ */
+export type TimingReport = {
+  /** false 면 상승점 · 중천 · 하우스 · 버텍스가 대상인 구간(운명적 만남 · 돈)이 빠져 있다 */
   timeKnown: boolean;
   milestones: TimingMilestone[];
   intervals: TimingInterval[];
   current: TimingCurrent;
 };
-
-export type Report = { sections: ReportSection[]; timing: ReportTiming };
-
-/** `GET /reports/me`. 글은 DONE 일 때만 온다 */
-export type ReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: Report };
-
-/** `POST /reports` 의 응답(202). WRITING 쓰기 시작했거나 쓰는 중 · DONE 이미 써 둠 */
-export type ReportRequest = { status: 'WRITING' | 'DONE' };
-
-/** 시기 풀이(결정 049 · 050, 서버 결정 033): 시기의 모양에 모델이 쓴 칸 · 대표 구간이 더해진 것. 지금(current)은 GET 할 때마다 그날로 붙는다 */
-export type TimingReport = ReportTiming;
 
 /** `GET /timing-report`. 풀이는 DONE 일 때만 온다(지금 프로필의 차트 기준 — 출생 정보를 고치면 NONE) */
 export type TimingReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: TimingReport };
@@ -773,7 +755,7 @@ const isTimingCurrent = (v: unknown): v is TimingCurrent =>
   (v.mainId === undefined || isNonEmptyText(v.mainId));
 
 /** 변곡점은 계약의 순서대로 넷이 모두 있어야 한다(화면이 그 순서를 믿고 "첫 번째~네 번째" 로 그린다) */
-const isTiming = (v: unknown): v is ReportTiming =>
+const isTiming = (v: unknown): v is TimingReport =>
   isObject(v) &&
   typeof v.timeKnown === 'boolean' &&
   Array.isArray(v.milestones) &&
@@ -803,36 +785,6 @@ export function isDirection(v: unknown): v is Direction {
         item.basis.every(isText),
     )
   );
-}
-
-/**
- * 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 시기(timing)도 계약의 모양이어야 한다.
- * 시기가 생기기 전에 받아 기기에 둔 리포트는 여기서 걸러진다. 그 밖의 계약에 없는 필드는 보지 않는다.
- */
-export function isReport(v: unknown): v is Report {
-  return (
-    isObject(v) &&
-    isTiming(v.timing) &&
-    Array.isArray(v.sections) &&
-    v.sections.length === REPORT_AREAS.length &&
-    v.sections.every(
-      (s, i) =>
-        isObject(s) &&
-        s.area === REPORT_AREAS[i] &&
-        typeof s.title === 'string' &&
-        Array.isArray(s.paragraphs) &&
-        s.paragraphs.length > 0 &&
-        s.paragraphs.every(
-          (p) => isObject(p) && typeof p.title === 'string' && typeof p.body === 'string' && isStringList(p.basis),
-        ),
-    )
-  );
-}
-
-export function isReportState(v: unknown): v is ReportState {
-  if (!isObject(v)) return false;
-  if (v.status === 'DONE') return isReport(v.report);
-  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
 }
 
 /** 시기 풀이: 마디 넷이 계약의 순서대로 · 구간 · 지금(대표 구간은 있으면 글자) — 모델이 쓴 칸은 구간마다 isInterval 이 본다 */
@@ -934,7 +886,7 @@ export function isSynastryRanking(v: unknown): v is SynastryRankingEntry[] {
   );
 }
 
-/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다([isReport] 와 같은 기준) */
+/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다 */
 function isSynastryReport(v: unknown): v is SynastryReport {
   return (
     isObject(v) &&
@@ -1041,9 +993,6 @@ const isDirectionOf =
   (topic: DirectionTopic) =>
   (v: unknown): v is Direction =>
     isDirection(v) && v.topic === topic;
-
-const isReportRequest = (v: unknown): v is ReportRequest =>
-  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE');
 
 const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
 
@@ -1440,21 +1389,6 @@ export function createApi(config: ApiConfig) {
         body: { topic: 'SYNASTRY', synastryId, ...(birth ? partnerBirthBody(birth) : {}) },
         validate: isDirectionOf('SYNASTRY'),
       });
-    },
-
-    /**
-     * `POST /reports` 심층 리포트를 써 달라고 한다. 본문은 없고 서버가 저장된 출생 정보로 쓴다(없으면 404).
-     * 글은 뒤에서 1~2분 동안 쓰이므로 여기서는 상태만 온다. 이미 쓰는 중이거나 써 두었으면 새로 쓰지 않는다.
-     */
-    async requestReport(): Promise<ApiResult<ReportRequest>> {
-      if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
-      return request('POST', '/reports', { validate: isReportRequest });
-    },
-
-    /** `GET /reports/me` 내 리포트의 상태. 다 썼으면(DONE) 글이 함께 온다 */
-    async getReport(): Promise<ApiResult<ReportState>> {
-      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.report } };
-      return request('GET', '/reports/me', { validate: isReportState });
     },
 
     /** `POST /me-report` 나 탭 풀이를 쓰기 시작한다(결정 048). 202 로 바로 답하고 글은 뒤에서 쓴다. 402 `PURCHASE_REQUIRED` 는 1.1.0 예약 */

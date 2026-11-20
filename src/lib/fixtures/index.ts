@@ -8,9 +8,6 @@
  * - reading.json: 글은 시안의 예시 문장이다. 요약 해석 v2 의 모양(문단마다 근거 구조 `reason` + 옮기는 동안 함께 오는 옛 낱말 `basis`, 보완점 2).
  * - me-report.json: `GET /me-report` 의 다 쓴 나 탭 풀이(다섯 영역). 글은 시안 12-8~12-12 의 예시 문장이고, 근거 · 쓰인 별 · 일 방식 값은
  *   chart.json(쌍둥이자리 해 · 6하우스에 별 셋)에 맞춰 쓴 예시다(서버가 계산한 값이 아니다).
- * - report.json: 심층 리포트의 네 영역(성격 · 관계 · 일 · 감정)과 시기(`timing`: 변곡점 넷, 구간 23개, 오늘은 2026-11-11).
- *   글과 날짜는 계약의 모양에 맞춰 쓴 예시다(서버가 계산한 값이 아니다).
- * - report-timing-time-unknown.json: 시각 모름일 때의 시기 예시. 운명적 만남 구간과 돈 영역이 없다. `reportTimeUnknown` 이 쓴다.
  * - timing-report.json: `GET /timing-report` 의 다 쓴 시기 풀이(결정 049 · 서버 결정 033). 구간 이름 · 기간 · 한 줄 · 자세히 · 실천 · 마디의 해와 나이는
  *   캔버스 14 보드(14 · 14-1 · 14-2 · 14-3)의 글에 맞춘 예시이고(오늘 2026-11-19, 대표 구간 i11), 서버가 계산한 값이 아니다.
  *   timing-report-time-unknown.json 은 같은 것의 시각 모름(운명적 만남 · 돈 · 상승점 · 중천 · 하우스 · 버텍스가 대상인 구간이 없다).
@@ -35,8 +32,6 @@ import type {
   MonthSky,
   Place,
   Reading,
-  Report,
-  ReportTiming,
   ShareCard,
   Synastry,
   SynastryReport,
@@ -55,8 +50,6 @@ import meReport from './me-report.json';
 import monthSky from './month-sky.json';
 import places from './places.json';
 import reading from './reading.json';
-import reportTimingTimeUnknown from './report-timing-time-unknown.json';
-import report from './report.json';
 import shareCards from './share-cards.json';
 import synastryList from './synastry-list.json';
 import synastryReport from './synastry-report.json';
@@ -70,8 +63,6 @@ export const fixtures = {
   chartTimeUnknown: chartTimeUnknown as Chart,
   reading: reading as Reading,
   meReport: meReport as MeReport,
-  report: report as Report,
-  reportTimeUnknown: { sections: report.sections, timing: reportTimingTimeUnknown as ReportTiming } as Report,
   timingReport: timingReport as TimingReport,
   timingReportTimeUnknown: timingReportTimeUnknown as TimingReport,
   monthSky: monthSky as MonthSky,

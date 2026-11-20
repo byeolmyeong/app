@@ -50,6 +50,8 @@ export default function ReadingScreen() {
   const generating = profile !== null && stored.checked && !stored.reading && state.status === 'loading';
   useGenerationBusy(generating, !stored.reading && state.status === 'done');
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  // 나 탭이 새 화면(/me)이 되기 전까지 글 화면이 나 탭의 자리다 — 받아 둔 글이든 방금 받은 글이든(결정 046 의 4)
+  const tabs = <MainTabs active="me" />;
 
   if (loaded && !profile)
     return (
@@ -75,7 +77,7 @@ export default function ReadingScreen() {
 
   if (stored.reading)
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <ReadingBody reading={stored.reading} chart={chart} />
       </Screen>
     );
@@ -95,9 +97,8 @@ export default function ReadingScreen() {
       </Screen>
     );
 
-  // 나 탭이 새 화면(/me)이 되기 전까지 글 화면이 나 탭의 자리다(결정 046 의 4)
   return (
-    <Screen nav={nav} footer={<MainTabs active="me" />}>
+    <Screen nav={nav} footer={tabs}>
       <ReadingBody reading={state.reading} chart={chart} />
     </Screen>
   );

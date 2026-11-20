@@ -207,6 +207,15 @@ describe('스플래시', () => {
     expect(screen.queryByTestId('splash')).toBeNull();
   });
 
+  it('앱: 세션 확인이 5초 넘게 끝나지 않아도 네이티브 스플래시를 걷는다(최대 대기)', async () => {
+    mockUseSession.mockReturnValue(session('checking'));
+    await render(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(4999));
+    expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
+    await act(async () => jest.advanceTimersByTime(1));
+    expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  });
+
   it('앱: 앱이 그린 스플래시는 없고, 네이티브 스플래시는 세션 확인이 끝나 보낼 곳에 간 뒤에 걷는다(글꼴만으로는 걷지 않는다)', async () => {
     mockUseSession.mockReturnValue(session('checking'));
     const view = await render(<RootLayout />);

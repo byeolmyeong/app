@@ -1,7 +1,7 @@
 import { useFonts } from 'expo-font';
 import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { useSlideUpScreenOptions } from '@/components/slide-up';
@@ -45,9 +45,11 @@ export default function RootLayout() {
   ]);
 
   // 스플래시(결정 067 의 3): 처음 열 때 글꼴 · 세션 확인 · (로그인 전이면) 소개 기록 확인이 끝나 보낼 곳에 간 뒤에 걷는다.
-  // 공유 페이지는 세션을 확인하지 않는다. 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지 둔다.
+  // 공유 페이지는 세션을 확인하지 않는다. 문이 막는 화면을 띄우면 화면들이 빠져 보낼 수 없으니 바로 걷는다.
+  // 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지(최대 5초) 둔다.
+  const [gateBlocked, setGateBlocked] = useState(false);
   const fontsDone = loaded || !!error;
-  const splashDone = useSplashDone(fontsDone && !covered && (first === 's' || session.ready));
+  const splashDone = useSplashDone(fontsDone && (gateBlocked || (!covered && (first === 's' || session.ready))));
   useEffect(() => {
     if (splashDone) SplashScreen.hideAsync();
   }, [splashDone]);
@@ -58,7 +60,7 @@ export default function RootLayout() {
   return (
     <>
       {fontsDone ? (
-        <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined}>
+        <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined} onBlockedChange={setGateBlocked}>
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
             {SLIDE_UP_ROUTES.map((name) => (
               <Stack.Screen key={name} name={name} options={slideUp} />

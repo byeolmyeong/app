@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { fetchShare, readCachedShare, SHARE_CARDS_STORAGE_PREFIX, shareKeyOf } from '@/features/share/share-cache';
+import { fetchShare, prefetchShare, readCachedShare, resetPrefetchedForTest, SHARE_CARDS_STORAGE_PREFIX, shareKeyOf } from '@/features/share/share-cache';
 import { api, type ShareCard } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { createShare: jest.fn() },
+  api: { createShare: jest.fn(), previewShare: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -18,6 +18,46 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   jest.useRealTimers();
+  resetPrefetchedForTest();
+});
+
+describe('공유 카드 미리 받기(POST /shares/preview, 서버 결정 051)', () => {
+  it('받아서 기억에 둔다 — 첫 열기에 바로 보인다. 같은 키는 이 실행에서 한 번만', async () => {
+    mockApi.previewShare.mockResolvedValue({ ok: true, data: C.nickname });
+    await prefetchShare({ kind: 'NICKNAME' });
+    await prefetchShare({ kind: 'NICKNAME' });
+    expect(mockApi.previewShare).toHaveBeenCalledTimes(1);
+    expect(await readCachedShare('NICKNAME')).toEqual(C.nickname);
+    expect(mockApi.createShare).not.toHaveBeenCalled();
+  });
+
+  it('실패로는 받아 둔 카드를 지우지 않는다 — 끊김은 다음에 다시, 미리보기 길이 없는 옛 서버(404)는 이 실행에서 다시 안 부름', async () => {
+    mockApi.createShare.mockResolvedValue(made());
+    await fetchShare({ kind: 'NICKNAME' });
+    mockApi.previewShare.mockResolvedValue({ ok: false, error: 'SERVER', status: 404 });
+    await prefetchShare({ kind: 'NICKNAME' });
+    expect(await readCachedShare('NICKNAME')).toEqual(C.nickname);
+    await prefetchShare({ kind: 'NICKNAME' });
+    expect(mockApi.previewShare).toHaveBeenCalledTimes(1);
+    mockApi.previewShare.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await prefetchShare({ kind: 'NEXT_BIG' });
+    await prefetchShare({ kind: 'NEXT_BIG' });
+    expect(mockApi.previewShare).toHaveBeenCalledTimes(3);
+  });
+
+  it('기기 기억이 지워지면(로그아웃 · 계정 삭제 · 출생 정보 바꾸기 — 세대가 바뀐다) 같은 카드를 다시 받는다(결정 073)', async () => {
+    mockApi.previewShare.mockResolvedValue({ ok: true, data: C.nickname });
+    await prefetchShare({ kind: 'NICKNAME' });
+    await AsyncStorage.clear();
+    await prefetchShare({ kind: 'NICKNAME' });
+    expect(mockApi.previewShare).toHaveBeenCalledTimes(2);
+    expect(await readCachedShare('NICKNAME')).toEqual(C.nickname);
+  });
+
+  it('궁합 카드(기억하지 않는 종류)는 미리 받지 않는다', async () => {
+    await prefetchShare({ kind: 'RANKING', relation: 'FRIEND' });
+    expect(mockApi.previewShare).not.toHaveBeenCalled();
+  });
 });
 
 describe('공유 카드 기억', () => {

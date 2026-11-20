@@ -1639,6 +1639,19 @@ export function createApi(config: ApiConfig) {
       });
     },
 
+    /**
+     * `POST /shares/preview` 공유 카드를 미리 받는다(서버 결정 051 — 소유자 2026-11-21). 요청은 `POST /shares` 와 같고 응답은 `{ card }` 뿐이다.
+     * 서버에 공유가 저장되지 않아(공유 행 · shareId · 감사 기록 없음) 화면에 들어올 때 불러도 된다. 공유를 누르면 그때 `POST /shares`.
+     */
+    async previewShare(input: ShareRequest): Promise<ApiResult<ShareCard>> {
+      if (config.useFixtures) return { ok: true, data: fixtureShare(input).card };
+      const res = await request('POST', '/shares/preview', {
+        body: shareBody(input),
+        validate: (v): v is { card: ShareCard } => isObject(v) && isShareCard(v.card) && v.card.kind === input.kind,
+      });
+      return res.ok ? { ok: true, data: res.data.card } : res;
+    },
+
     /** `GET /shared/{shareId}` 공유 카드 하나. 세션 없이 부른다(공유 페이지). 없는 · 지워진 식별자는 404 `NOT_FOUND` */
     async getSharedCard(shareId: string): Promise<ApiResult<ShareCard>> {
       if (config.useFixtures) {

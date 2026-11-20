@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -13,6 +13,8 @@ import { Colors, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveImage, shareStory, type CardRef } from '@/features/share/share-actions';
 import { ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
+import { useSession } from '@/features/auth/use-session';
+import { prefetchShare } from '@/features/share/share-cache';
 import { storyAppId } from '@/features/share/story';
 import { useShareCard } from '@/features/share/use-share-card';
 import type { MeArea, Relation, ShareRequest } from '@/lib/api';
@@ -40,6 +42,7 @@ let lastMyName = '';
 /**
  * "공유하기" 와 그것이 여는 시트(결정 053 의 1, 보드 12-4 · 12-5 · 12-13 · 11-6 · 14-5): 제목 없이 카드 미리보기와 아래 버튼.
  * 공유는 시트를 열 때 만든다 — 화면을 여는 것만으로는 `POST /shares` 를 부르지 않는다(서버 결정 012 "공유하는 순간만 저장", 결정 053 의 3).
+ * 대신 화면에 들어올 때 저장 없는 미리보기(`POST /shares/preview`)로 카드를 받아 두어 첫 열기도 바로 보인다(소유자 2026-11-21).
  * 전에 받은 카드(share-cache.ts)가 있으면 먼저 보이고 뒤에서 확인한다. 열 때마다 처음 상태로 시작한다.
  * trigger="icon" 이면 보조 버튼 대신 머리 오른쪽의 공유 아이콘으로 연다(내 별명 · 나 탭 · 오늘의/그날의 하늘 — 보드 12 · 12-8 · 11-6),
  * "cardIcon" 이면 카드 안 오른쪽 위의 작은 아이콘(그 자리를 채우는 누르는 칸, 시기 · 인생의 다음 큰 변화 — 보드 14 인생).
@@ -48,6 +51,13 @@ export function ShareEntry({ target, label = S.open, trigger = 'button' }: { tar
   const [visible, setVisible] = useState(false);
   /** 연 횟수. 열 때마다 시트의 내용을 새로 만든다 */
   const [opened, setOpened] = useState(0);
+  // 미리 받기는 기억하는 종류만(궁합 카드는 내 이름 · 이름 표시에 따라 달라 받지 않는다)
+  const prefetchKey = target.kind === 'NICKNAME' || target.kind === 'NEXT_BIG' || target.kind === 'ME_AREA' || target.kind === 'DAY_SKY' ? JSON.stringify(target) : null;
+  // 로그인이 확인된 뒤에만(확인 전에 부르면 토큰 없이 401 — 다른 화면과 같게, 결정 073)
+  const signedIn = useSession().status === 'signedIn';
+  useEffect(() => {
+    if (prefetchKey && signedIn) void prefetchShare(JSON.parse(prefetchKey) as ShareRequest);
+  }, [prefetchKey, signedIn]);
   const open = () => {
     setOpened((n) => n + 1);
     setVisible(true);

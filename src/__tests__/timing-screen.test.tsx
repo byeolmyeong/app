@@ -248,7 +248,7 @@ describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)',
     await storeReport();
     mockApi.getTimingReport.mockResolvedValue(done);
     await render(<TimingScreen />);
-    expect(await screen.findByText(T.month.days)).toBeTruthy();
+    expect(await screen.findByText(`${T.month.thisMonth}${T.month.daysSuffix}`)).toBeTruthy();
     await fireEvent.press(screen.getAllByTestId('month-day')[0]);
     expect(router.push).toHaveBeenCalledWith('/today');
     nowSpy.mockRestore();

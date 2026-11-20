@@ -194,6 +194,24 @@ describe('홈', () => {
     expect(screen.queryByTestId('offline-banner')).toBeNull();
   });
 
+  it('끊긴 채 열어 계정을 못 받았으면, 연결이 돌아올 때 다시 받는다(띠의 "연결되면 새로 불러올게요", 리뷰 PR #44)', async () => {
+    let listener: ((s: { isConnected: boolean; isInternetReachable: boolean }) => void) | null = null;
+    (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
+      listener = cb;
+      return () => {};
+    });
+    mockApi.getAccount.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    expect(screen.queryByText('새벽별 님')).toBeNull();
+    await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
+    await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
+    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(mockApi.getAccount).toHaveBeenCalledTimes(2);
+  });
+
   it('출생 정보를 넣기 전(입력 화면)에는 탭이 없다', async () => {
     await render(<HomeScreen />);
     await screen.findByPlaceholderText(strings.home.datePlaceholder);

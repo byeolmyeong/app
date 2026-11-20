@@ -6,6 +6,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { NavBar } from '@/components/nav-bar';
 import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
+import { SkeletonGroup } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
 import { useLoadingPhase } from '@/components/use-loading-phase';
@@ -21,15 +22,15 @@ import { useBirthRestore } from '@/features/chart/use-birth-restore';
 import { daysSince } from '@/features/home/days-since';
 import { markHomeReady } from '@/features/home/home-ready';
 import { MainTabs } from '@/features/home/main-tabs';
-import { NicknameCard } from '@/features/home/nickname-card';
+import { NicknameCard, NicknameCardSkeleton } from '@/features/home/nickname-card';
 import { useAccount } from '@/features/home/use-account';
 import { HomeBell } from '@/features/notifications/home-bell';
 import { hasUnread } from '@/features/notifications/notification-rows';
 import { useNotifications } from '@/features/notifications/use-notifications';
 import { useStoredHeadline } from '@/features/reading/use-reading';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
-import { HomeTimingCards } from '@/features/timing/home-timing-card';
-import { HomeTodayCard } from '@/features/timing/home-today-card';
+import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timing-card';
+import { HomeTodayCard, HomeTodaySkeleton } from '@/features/timing/home-today-card';
 import { useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 
@@ -37,8 +38,9 @@ import { useTimingReport } from '@/features/timing/use-timing-report';
  * 홈 v2(결정 047 · 055, 보드 11 · 11-1 · 11-2). 출생 정보가 있으면 머리(로고) · 별명 카드 · 지금 나의 시기 · 작은 실천 · 아래 탭 넷을 보여 주고
  * 머리 오른쪽에 알림 종, 별명 카드 아래 오늘의 하늘 카드(A④), 없으면 출생 정보 입력부터 받는다. 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
  * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
- * 기기에 출생 정보가 없고 세션이 있으면 서버에 저장된 것으로 한 번 되살려 본다(결정 029). 그동안에는 불러오는 중만 보여 주고,
- * 되살리지 못하면 입력부터 받는다. 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts).
+ * 기기에 출생 정보가 없고 세션이 있으면 서버에 저장된 것으로 한 번 되살려 본다(결정 029). 그동안 0.3초가 넘으면 되살린 뒤의 홈을 본뜬 뼈대를
+ * 보여 주고(결정 071), 되살리지 못하면 입력부터 받는다. 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts) —
+ * 뼈대가 보이는 때는 스플래시가 이미 걷힌 뒤(로그인하고 오기 · 19 의 다시 보기 · 앱 스플래시가 5초를 넘김)다.
  */
 export default function HomeScreen() {
   // 불러오지 못한 화면(19)의 "다시 보기" 는 처음부터(기기 읽기 · 되살리기) 다시 한다
@@ -118,14 +120,20 @@ function Home({ onRetry }: { onRetry: () => void }) {
         primary={{ label: strings.states.offlineEmpty.retry, onPress: () => void recheckSession() }}
       />
     );
+  // 되살리는 동안(결정 029): 되살린 뒤의 홈(받아 둔 풀이가 없는 별명 카드 · 오늘의 하늘 · 시기 · 작은 실천)을 본뜬 뼈대와 아래 탭(결정 071).
+  // 종은 출생 정보가 있는 홈에만(리뷰 #66). 0.3초 전 빈 단계도 같은 머리 · 탭
   if (empty && (!session.ready || (canRestore && !restoreSettled)))
     return (
-      <Screen nav={nav}>
-        <View style={styles.intro}>
-          <Txt variant="table" color="gray">
-            {strings.home.restoring}
-          </Txt>
-        </View>
+      <Screen nav={nav} footer={<MainTabs active="home" />}>
+        {phase === 'skeleton' ? (
+          <SkeletonGroup testID="home-skeleton">
+            <View style={styles.column}>
+              <NicknameCardSkeleton />
+              <HomeTodaySkeleton />
+              <HomeTimingSkeleton />
+            </View>
+          </SkeletonGroup>
+        ) : null}
       </Screen>
     );
   if (profile && chart) {

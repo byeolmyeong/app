@@ -112,27 +112,6 @@ export function SocialButton({ provider, label, onPress, disabled = false, loadi
   );
 }
 
-export type SocialButtonFaceProps = Omit<SocialButtonProps, 'onPress'> & {
-  /** 위에 겹친 버튼(GIS)에 키보드 포커스가 있다 — 주색 테두리 */
-  focused?: boolean;
-};
-
-/**
- * 누름이 없는 같은 모양(결정 067 의 4). 웹 구글은 이 위에 GIS 버튼을 투명하게 겹쳐 누름을 GIS 가 받는다.
- * 키보드 포커스와 화면 읽기는 겹친 GIS 버튼이 받으므로 이 모양은 화면 읽기에서 숨기고, 그 버튼에 포커스가 있으면 주색 테두리를 보인다.
- */
-export function SocialButtonFace({ provider, label, disabled = false, loading = false, recent = false, focused = false }: SocialButtonFaceProps) {
-  return (
-    <View
-      testID={`social-button-${provider}`}
-      aria-hidden
-      importantForAccessibility="no-hide-descendants"
-      style={[styles.base, styles[provider], disabled && !loading && styles.disabled, focused && styles.focused]}>
-      <Content provider={provider} label={label} loading={loading} recent={recent} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   base: {
     height: B.height,
@@ -149,7 +128,6 @@ const styles = StyleSheet.create({
   APPLE: { backgroundColor: B.apple.background },
   GOOGLE: { backgroundColor: B.google.background, borderWidth: LineWidth, borderColor: B.google.border },
   disabled: { opacity: B.disabledOpacity },
-  focused: { borderColor: Colors.primary },
   logo: {
     position: 'absolute',
     left: B.logoInset,

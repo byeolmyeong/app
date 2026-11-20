@@ -141,6 +141,8 @@ export const strings = {
   /** 마이에 펼치는 설정의 줄(F7 · F9, 결정 034 · 038). 알림은 푸시가 생길 때 더한다 */
   settings: {
     privacy: '개인정보 처리방침',
+    /** 가입 때 동의한 글을 다시 보는 줄(결정 045) */
+    privacyConsent: '개인정보 수집 · 이용 동의',
     terms: '이용약관',
     faq: '자주 묻는 질문',
     inquiry: '문의하기',

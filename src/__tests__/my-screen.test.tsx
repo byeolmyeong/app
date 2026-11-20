@@ -83,11 +83,13 @@ describe('마이(/my) — 설정을 합쳤다(결정 038)', () => {
     expect(router.replace).toHaveBeenCalledWith('/');
   });
 
-  it('처리방침 · 약관 줄은 그 글 화면으로 간다', async () => {
+  it('처리방침 · 수집 · 이용 동의 · 약관 줄은 그 글 화면으로 간다(결정 045)', async () => {
     await render(<MyScreen />);
     await screen.findByText(S.faq);
     await fireEvent.press(screen.getByText(S.privacy));
     expect(router.push).toHaveBeenLastCalledWith('/settings/privacy');
+    await fireEvent.press(screen.getByText(S.privacyConsent));
+    expect(router.push).toHaveBeenLastCalledWith('/settings/privacy-consent');
     await fireEvent.press(screen.getByText(S.terms));
     expect(router.push).toHaveBeenLastCalledWith('/settings/terms');
   });

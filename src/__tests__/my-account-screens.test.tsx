@@ -26,7 +26,7 @@ jest.mock('@/features/auth/use-session', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { getMyAccount: jest.fn(), updateAccount: jest.fn(), deleteAccount: jest.fn() },
+  api: { getMyAccount: jest.fn(), updateAccount: jest.fn(), deleteAccount: jest.fn(), checkMyNickname: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -40,6 +40,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: account });
+  mockApi.checkMyNickname.mockResolvedValue({ ok: true, data: { available: true } });
 });
 
 describe('계정(/my/account, 보드 16-1)', () => {
@@ -177,6 +178,49 @@ describe('닉네임(/my/nickname, 보드 16-5)', () => {
     await fireEvent.changeText(box(), '별빛나');
     expect(screen.queryByText(message)).toBeNull();
     expect(disabled()).toBe(false);
+  });
+
+  describe('치기를 멈추면 쓸 수 있는지 묻는다(가입처럼, 소유자 2026-11-21)', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+    const typed = async (text: string) => {
+      await render(<NicknameScreen />);
+      await act(async () => {});
+      await fireEvent.changeText(box(), text);
+    };
+
+    it('0.5초 멈추면 한 번 묻고, 쓸 수 있으면 칸 아래 초록 안내', async () => {
+      await typed('별빛');
+      expect(mockApi.checkMyNickname).not.toHaveBeenCalled();
+      await act(async () => jest.advanceTimersByTime(500));
+      expect(mockApi.checkMyNickname).toHaveBeenCalledWith('별빛');
+      expect(screen.getByText(N.available)).toBeTruthy();
+      expect(disabled()).toBe(false);
+    });
+
+    it('이미 있으면 빨강 "이미 있는 닉네임" 이고 저장이 꺼진다', async () => {
+      mockApi.checkMyNickname.mockResolvedValue({ ok: true, data: { available: false } });
+      await typed('별빛');
+      await act(async () => jest.advanceTimersByTime(500));
+      expect(screen.getByText(N.taken)).toBeTruthy();
+      expect(disabled()).toBe(true);
+    });
+
+    it('지금 닉네임 그대로거나 규칙에 어긋나면 묻지 않는다', async () => {
+      await typed('새벽별');
+      await act(async () => jest.advanceTimersByTime(500));
+      await fireEvent.changeText(box(), '별1');
+      await act(async () => jest.advanceTimersByTime(500));
+      expect(mockApi.checkMyNickname).not.toHaveBeenCalled();
+    });
+
+    it('묻지 못하면(끊김 · 옛 서버) 아무것도 적지 않고 저장할 수 있다 — 판정은 저장 때 서버', async () => {
+      mockApi.checkMyNickname.mockResolvedValue({ ok: false, error: 'NETWORK' });
+      await typed('별빛');
+      await act(async () => jest.advanceTimersByTime(500));
+      expect(screen.getByText(N.rule)).toBeTruthy();
+      expect(disabled()).toBe(false);
+    });
   });
 
   it('그 밖의 실패는 짧은 알림이고 적던 글은 그대로다(결정 065 의 1)', async () => {

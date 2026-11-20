@@ -1440,6 +1440,15 @@ export function createApi(config: ApiConfig) {
       });
     },
 
+    /**
+     * `GET /account/nickname-check?nickname=` 마이 › 닉네임 바꾸기에서 그 닉네임을 쓸 수 있는지(서버 결정 051, 가입 중 확인과 같은 규칙 —
+     * 내 지금 닉네임이면 true). 틀리거나 비면 400 `INVALID_NICKNAME` 이 code 로 온다. 저장은 그대로 `PATCH /account`(그사이 가져가면 409)
+     */
+    async checkMyNickname(nickname: string): Promise<ApiResult<NicknameAvailability>> {
+      if (config.useFixtures) return { ok: true, data: { available: true } };
+      return request('GET', `/account/nickname-check?nickname=${encodeURIComponent(nickname)}`, { validate: isNicknameAvailability });
+    },
+
     /** `GET /auth/session` 세션이 살아 있는지(204). 웹이 켜질 때 쿠키 세션을 확인한다 */
     async getSession(): Promise<ApiResult<null>> {
       if (config.useFixtures) return { ok: true, data: null };

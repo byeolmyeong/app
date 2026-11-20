@@ -1,0 +1,68 @@
+{
+  "month": "2026-11",
+  "timeKnown": true,
+  "themes": [
+    {
+      "area": "WORK",
+      "title": "일의 방식을 새로 다지는 시기",
+      "from": "2026-09-03",
+      "to": "2027-01-28"
+    },
+    {
+      "area": "PEOPLE",
+      "title": "도움이 되는 사람을 만나기 쉬운 시기",
+      "from": "2026-06-08",
+      "to": "2026-12-14"
+    }
+  ],
+  "days": [
+    {
+      "date": "2026-11-21",
+      "category": "PEOPLE",
+      "text": "대화가 잘 풀리기 쉬운 날",
+      "reason": {
+        "when": "DAY",
+        "items": [
+          {
+            "kind": "TRANSIT",
+            "mover": "MERCURY",
+            "target": "SUN",
+            "type": "SEXTILE"
+          }
+        ]
+      }
+    },
+    {
+      "date": "2026-11-25",
+      "category": "WORK",
+      "text": "하던 일을 정리하기 좋은 날",
+      "reason": {
+        "when": "DAY",
+        "items": [
+          {
+            "kind": "TRANSIT",
+            "mover": "MARS",
+            "target": "SATURN",
+            "type": "TRINE"
+          }
+        ]
+      }
+    },
+    {
+      "date": "2026-11-28",
+      "category": "MIND",
+      "text": "혼자만의 시간이 반가운 날",
+      "reason": {
+        "when": "DAY",
+        "items": [
+          {
+            "kind": "TRANSIT",
+            "mover": "VENUS",
+            "target": "MOON",
+            "type": "SQUARE"
+          }
+        ]
+      }
+    }
+  ]
+}

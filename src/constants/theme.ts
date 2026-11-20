@@ -102,6 +102,12 @@ export const BrandColors = {
   /** 나 탭 영역 그림의 옅은 보라 반짝임 · 일 그림의 계단 면(보드 12 · 12-8~12-12) */
   sparkle: '#C9CEFF',
   stepFill: '#2A2F8F',
+  /** 시기 · 인생의 "다음 큰 변화" 카드 위쪽의 옅은 남색(보드 14-2 — 아래로 카드 면에 스민다) */
+  lifeCard: '#1B1F5E',
+  /** 올해 흐름 띠 · 이번 달 내내 첫 줄의 빛(보드 14 · 14-1): 빛 → 한 단 밝은 보라, 띠의 번짐 · 둘째 줄의 옅은 보라 */
+  bandGlow: 'rgba(79,91,255,0.6)',
+  todayGlow: 'rgba(71,82,255,0.6)',
+  themeSoft: 'rgba(201,206,255,0.55)',
 } as const;
 
 /**
@@ -353,6 +359,166 @@ export const MeLayout = {
   },
 } as const;
 
+/**
+ * 시기 탭(결정 049, 캔버스 14 · 14-1 ~ 14-4 · 14-7 · 14-8 · 14 잠긴 칩) · 홈의 시기 칸(보드 11 · 11-1).
+ * 맨 위 "지금 나의 시기" 카드 · 칩 셋 · 칸 사이 · 이번 달 달력 · 눈여겨볼 날 · 올해 띠 · 인생의 길 · 시기 자세히 · 그날의 하늘 · 작은 실천.
+ */
+export const TimingLayout = {
+  heroTop: 8,
+  hero: {
+    radius: 24,
+    padTop: 22,
+    padX: 20,
+    padBottom: 20,
+    art: 96,
+    artInset: 12,
+    titleTop: 10,
+    titleRight: 100,
+    metaTop: 12,
+    metaGap: 8,
+    summaryTop: 14,
+    glow: { x: 0.85, y: 0.14, extent: 0.58 },
+  },
+  /** 영역 · 칩 딱지(보드 14 — 키워드 칩과 같은 옅은 보라) */
+  tag: { height: 24, padX: 9, radius: 12 },
+  /** 칩 셋: 맨 위 카드 아래 · 카드가 없을 때 머리 아래(잠긴 칩을 골랐을 때) · 높이 · 사이 */
+  chips: { top: 20, topBare: 4, topLocked: 8, height: 36, gap: 6 },
+  timeUnknownTop: 12,
+  contentTop: 24,
+  contentBottom: 34,
+  sectionGap: 32,
+  listGap: 10,
+  practicesTop: 12,
+  practiceGap: 8,
+  card: { radius: 16, pad: 16, padV: 14, gap: 12, chevron: 18 },
+  badge: 24,
+  month: {
+    arrow: 32,
+    arrowIcon: 16,
+    arrowGap: 6,
+    /** 끝에 닿아 누를 수 없는 ‹ › */
+    disabledOpacity: 0.4,
+    cardTop: 12,
+    padTop: 14,
+    padX: 10,
+    padBottom: 10,
+    radius: 20,
+    weekBottom: 8,
+    cell: 46,
+    day: 32,
+    dot: 5,
+    dotGap: 3,
+    legendInset: 6,
+    legendTop: 10,
+    legendGap: 6,
+    swatch: { width: 36, height: 6 },
+    swatchGap: 8,
+    dayGap: 14,
+    dateWidth: 40,
+    dateLine: 22,
+    /** 뼈대: 날 숫자 · 요일 막대의 폭 */
+    dateBar: 22,
+    weekBar: 12,
+    dayTextGap: 4,
+    quietPadV: 20,
+    quietGap: 6,
+  },
+  year: {
+    cardTop: 14,
+    padTop: 16,
+    padX: 14,
+    padBottom: 14,
+    radius: 20,
+    row: 34,
+    label: 64,
+    track: 26,
+    line: 2,
+    lineTop: 12,
+    band: 14,
+    bandTop: 6,
+    nowWidth: 2,
+    nowTop: -6,
+    nowBottom: -4,
+    nowLabelTop: -22,
+    ticksTop: 8,
+    itemGap: 6,
+    /** 뼈대: 영역 이름 · 달 눈금 막대 */
+    labelBar: 40,
+    tickBar: 20,
+  },
+  life: {
+    noteGap: 4,
+    cardTop: 14,
+    radius: 20,
+    pad: 20,
+    shareSpot: 40,
+    shareInset: 8,
+    yearTop: 8,
+    yearGap: 10,
+    titleTop: 8,
+    bodyTop: 6,
+    pathPad: 18,
+    rail: 20,
+    dot: 12,
+    dotNext: 16,
+    railLine: 2,
+    stepBottom: 22,
+    stepGap: 14,
+    textGap: 2,
+    pastOpacity: 0.55,
+    /** 뼈대: 다음 큰 변화의 해 막대 */
+    yearBar: 96,
+  },
+  period: {
+    top: 8,
+    reasonGap: 12,
+    badgePadX: 10,
+    titleTop: 12,
+    trackTop: 18,
+    track: 14,
+    trackInset: 5,
+    dot: 10,
+    now: 14,
+    labelsTop: 6,
+    labels: 15,
+    sectionTitleTop: 4,
+    sectionBodyTop: 10,
+    /** 01 · 02 · 03 의 자간(0.04em) */
+    numberTracking: 0.48,
+    /** 뼈대: 딱지 · 번호 막대 */
+    badgeBar: 92,
+    numberBar: 18,
+  },
+  day: {
+    heroTop: 16,
+    padV: 24,
+    padX: 20,
+    moon: 64,
+    moonInset: 20,
+    titleRight: 80,
+    glow: { x: 0.8, y: 0.18, extent: 0.6 },
+    sectionTop: 36,
+    flowTop: 6,
+    rowPadV: 14,
+    rowGap: 12,
+    rowLabel: 44,
+    rowLabelLine: 24,
+    /** 뼈대: 흐름 이름 막대 */
+    labelBar: 30,
+    reasonTop: 20,
+    todosTop: 8,
+    todo: 44,
+  },
+  /** 홈의 시기 칸(보드 11): 카드 · 이름표 줄 · 지나온 — 지금 — 큰 변화 줄(지금 점의 자리는 시안의 그림 그대로) · 제목 */
+  home: { radius: 20, pad: 20, cardGap: 12, chevron: 16, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, linkTop: 14, todosTop: 6 },
+  /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */
+  detail: { radius: 24, padTop: 22, padX: 18, padBottom: 18, art: 76, artInset: 12, titleTop: 6, titleRight: 80, bodyTop: 6, buttonTop: 18, glow: { x: 0.85, y: 0.1, extent: 0.58 } },
+  /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */
+  /** 뼈대(결정 065 의 2 · 071 — 다 그려진 화면의 배치를 본뜬다): 글자 막대는 글자 크기보다 이만큼 낮게 · 딱지 폭 */
+  skeleton: { barInset: 2, tag: 44 },
+  locked: { height: 640, padX: 20, padBottom: 16, padTop: 24, cardPadTop: 24, cardPadX: 20, cardPadBottom: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18, fill: 'rgba(22,23,29,0.92)', ghostOpacity: 0.55 },
+} as const;
+
 /** 카드 하나만 못 불러왔을 때 그 카드 자리(보드 19-1, 결정 061 의 3): 카드 · 이름표 아래 제목 · 설명 · 작은 "다시 보기" 단추 */
 export const CardFailLayout = { padding: 20, radius: 20, titleTop: 10, bodyTop: 4, buttonTop: 14, button: 40, buttonPadX: 16, buttonRadius: 10 } as const;
 
@@ -470,6 +636,8 @@ export const Typography = {
   kicker: type(15, 22, FontWeight.medium),
   stat: type(16, 24, FontWeight.semibold),
   statLabel: type(12, 17, FontWeight.regular),
+  /** 시기 · 인생의 "다음 큰 변화" 해(보드 14-2) */
+  yearBig: type(40, 46, FontWeight.semibold),
   /** 별명 짓는 중의 제목(결정 042 시안) */
   headline: type(22, 32, FontWeight.semibold),
   /** 하단 시트의 가운데 제목(결정 042 시안) */

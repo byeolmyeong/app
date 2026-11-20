@@ -1,14 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import ReadingScreen from '@/app/reading';
-import TimingScreen from '@/app/timing';
 import SynastryResultScreen from '@/app/synastry/[id]/index';
 import SynastryRankingScreen from '@/app/synastry/ranking';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
-import { api, type Report } from '@/lib/api';
+import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -23,8 +22,6 @@ jest.mock('@/lib/api', () => ({
   api: {
     createShare: jest.fn(),
     createReading: jest.fn(),
-    getReport: jest.fn(),
-    requestReport: jest.fn(),
     saveProfile: jest.fn(),
     getSynastry: jest.fn(),
     getSynastryRanking: jest.fn(),
@@ -61,7 +58,6 @@ beforeEach(async () => {
     },
   }));
   mockApi.createReading.mockResolvedValue({ ok: true, data: fixtures.reading });
-  mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
   mockApi.getSynastry.mockResolvedValue({ ok: true, data: fixtures.synastryList[0] });
   mockApi.getSynastryRanking.mockImplementation(async (relation) => ({
     ok: true,
@@ -108,24 +104,5 @@ describe('공유로 들어가는 곳', () => {
     await render(<SynastryRankingScreen />);
     expect(await screen.findByText(strings.synastry.ranking.empty)).toBeTruthy();
     expect(screen.queryByRole('button', { name: S.open })).toBeNull();
-  });
-
-  it('시기 탭(임시 화면 /timing): 다음 변곡점이 있으면 "다음 변곡점 공유하기" 가 있고 그 카드를 만든다', async () => {
-    await render(<TimingScreen />);
-    await screen.findByTestId('timing-view');
-    await fireEvent.press(await shareButton(S.openNextTurn));
-    expect(await screen.findByTestId('share-card')).toBeTruthy();
-    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NEXT_TURN' });
-  });
-
-  it('시기 탭: 다음 변곡점이 없으면(네 번을 모두 지났다) 공유 버튼이 없다', async () => {
-    const { nextMilestone: _gone, ...current } = fixtures.report.timing.current;
-    const report: Report = { ...fixtures.report, timing: { ...fixtures.report.timing, current } };
-    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
-    await render(<TimingScreen />);
-    await screen.findByTestId('timing-view');
-    expect(screen.getByText(strings.report.timing.milestonesDone)).toBeTruthy();
-    await act(async () => {});
-    expect(screen.queryByRole('button', { name: S.openNextTurn })).toBeNull();
   });
 });

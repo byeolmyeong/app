@@ -1,0 +1,21 @@
+[
+  {
+    "id": "8f2c4a10-1b2c-4d3e-9f40-0a1b2c3d4e5f",
+    "category": "IDEA",
+    "body": "별명을 다시 받을 수 있나요?",
+    "createdAt": "2026-11-20T01:00:00Z",
+    "answer": null,
+    "emailed": false
+  },
+  {
+    "id": "0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10",
+    "category": "BUG",
+    "body": "아침에 오늘의 하늘 알림이 오지 않아요.",
+    "createdAt": "2026-11-18T01:00:00Z",
+    "answer": {
+      "body": "알려 주셔서 고마워요. 휴대폰 설정 › 알림에서 별명 알림이 켜져 있는지 확인해 주세요. 마이 › 알림에서 오늘의 하늘 알림이 켜져 있는지도 함께 봐 주세요. 그래도 오지 않으면 다시 알려 주세요.",
+      "answeredAt": "2026-11-19T02:00:00Z"
+    },
+    "emailed": false
+  }
+]

@@ -123,8 +123,7 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     // 새 출생 정보 바꾸기(/my/birth)는 서버 S⑨ 뒤 — 그 전에는 지금 화면
     [M.card.birth, '/birth'],
     [R.faq, '/settings/faq'],
-    // 앱 안 문의(/my/inquiries)는 계획 A7-4 — 그 전에는 지금 화면
-    [R.inquiry, '/settings/inquiry'],
+    [R.inquiry, '/my/inquiries'],
     [R.terms, '/settings/terms'],
     [R.privacy, '/settings/privacy'],
   ])('"%s" 는 %s 로 간다', async (label, path) => {

@@ -16,12 +16,14 @@
  * - faqs.json: `GET /faqs` 의 예시(결정 028). 지어낸 두 줄이다. 실제 질문과 답은 관리 화면이 주인이라 여기에 옮겨 두지 않는다.
  * - share-cards.json: 공유 카드 네 종류의 예시(`ShareCard`, 서버 결정 012). 랭킹은 이니셜(`ranking`)과 이름 그대로(`rankingNames`) 두 가지.
  * - direction-future.json · direction-synastry.json: `POST /directions` 의 미래 · 궁합 주제 응답 예시. 조언형이고 숫자가 없다.
+ * - inquiries.json: 내 문의 둘(앱이 읽은 모양 `InquiryItem`, 답 없는 것 · 답 있는 것). 글은 시안 16-8 의 예시 문장이다.
  * - 초대 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
  */
 import type {
   Chart,
   Direction,
   Faq,
+  InquiryItem,
   Place,
   Reading,
   Report,
@@ -37,6 +39,7 @@ import directionFuture from './direction-future.json';
 import directionSynastry from './direction-synastry.json';
 import direction from './direction.json';
 import faqs from './faqs.json';
+import inquiries from './inquiries.json';
 import places from './places.json';
 import reading from './reading.json';
 import reportTimingTimeUnknown from './report-timing-time-unknown.json';
@@ -55,6 +58,7 @@ export const fixtures = {
   reportTimeUnknown: { sections: report.sections, timing: reportTimingTimeUnknown as ReportTiming } as Report,
   direction: direction as Direction,
   faqs: faqs as Faq[],
+  inquiries: inquiries as InquiryItem[],
   directionFuture: directionFuture as Direction,
   directionSynastry: directionSynastry as Direction,
   synastry: synastry as Synastry,

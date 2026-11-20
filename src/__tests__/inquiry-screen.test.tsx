@@ -215,6 +215,17 @@ describe('새 문의(/my/inquiries/new, 보드 16-8)', () => {
     expect(submit().props.accessibilityState.disabled).toBe(true);
   });
 
+  it('10자가 안 되면 내용 칸 아래에 "10자 이상 적어 주세요." — 비었을 때와 10자를 넘기면 없다', async () => {
+    await render(<NewInquiryScreen />);
+    expect(screen.queryByText(F.tooShort)).toBeNull();
+    await fireEvent.changeText(body(), '짧아요');
+    expect(screen.getByText(F.tooShort)).toBe(screen.getByText('10자 이상 적어 주세요.'));
+    await fireEvent.changeText(body(), '열 글자가 넘는 문의 내용이에요.');
+    expect(screen.queryByText(F.tooShort)).toBeNull();
+    await fireEvent.changeText(body(), '');
+    expect(screen.queryByText(F.tooShort)).toBeNull();
+  });
+
   it('보내면 종류 · 내용만 서버에 보내고 "문의를 보냈어요", "문의 내역 보기" 는 내역으로 돌아간다', async () => {
     mockApi.createInquiry.mockResolvedValue({ ok: true, data: { id: 'c' } });
     await render(<NewInquiryScreen />);

@@ -4,7 +4,7 @@ import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-nativ
 
 import { Button } from '@/components/button';
 import { GlowBackdrop } from '@/components/glow';
-import { Skeleton, SkeletonText } from '@/components/skeleton';
+import { Skeleton, SkeletonStill, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, Sizes, TimingLayout as L, type ColorName } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -263,7 +263,8 @@ export function LockedView({ chip, blocked, onRequest, ghost }: { chip: 'year' |
     <View testID="timing-locked" style={styles.locked}>
       {/* 흐린 미리보기: 그 칩이 다 그려졌을 때의 배치를 본뜬 옅은 모양(시안의 흐림 대신 — 브랜드 자리 밖의 흐림은 쓰지 않는다, DESIGN.md) */}
       <View aria-hidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={styles.ghost}>
-        {ghost}
+        {/* 멈춘 막대 — 반짝이면 "불러오는 중" 으로 읽힌다(리뷰 #63) */}
+        <SkeletonStill>{ghost}</SkeletonStill>
       </View>
       <View style={styles.lockedOver}>
         <View style={styles.lockedCard}>

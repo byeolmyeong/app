@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { Sheet } from '@/components/sheet';
@@ -33,8 +33,9 @@ export function InfoButton({ title, items, testID }: InfoButtonProps) {
           {strings.help.mark}
         </Txt>
       </Pressable>
-      <Sheet visible={open} onClose={() => setOpen(false)} title={title}>
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.items} showsVerticalScrollIndicator={false}>
+      {/* 낱말이 많으면 시트가 화면 위까지 늘고 그 안에서 굴린다. 닫기는 굴리는 칸 밖 맨 아래(결정 061 의 5) */}
+      <Sheet visible={open} onClose={() => setOpen(false)} title={title} footer={<Button label={strings.help.close} onPress={() => setOpen(false)} />}>
+        <View testID="info-items" style={styles.items}>
           {items.map((item) => (
             <View key={item.term} style={styles.item}>
               <Txt variant="table" style={styles.term}>
@@ -45,8 +46,7 @@ export function InfoButton({ title, items, testID }: InfoButtonProps) {
               </Txt>
             </View>
           ))}
-        </ScrollView>
-        <Button label={strings.help.close} onPress={() => setOpen(false)} />
+        </View>
       </Sheet>
     </>
   );
@@ -62,7 +62,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scroll: { maxHeight: Sizes.infoSheetHeight, flexGrow: 0 },
   items: { gap: Spacing.md },
   item: { gap: Spacing.xxs },
   term: { fontWeight: FontWeight.semibold },

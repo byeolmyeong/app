@@ -17,6 +17,7 @@ import { recheckSession, useSession } from '@/features/auth/use-session';
 import { BirthForm } from '@/features/chart/birth-form';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { signName } from '@/features/chart/chart-rows';
+import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { useBirthRestore } from '@/features/chart/use-birth-restore';
 import { daysSince } from '@/features/home/days-since';
@@ -150,6 +151,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
             nickname={account?.nickname ?? null}
             avatar={account?.avatar ?? null}
             sunSign={sun ? signName(sun.sign) + strings.chart.signSuffix : null}
+            // 오른쪽 위 그림도 해 별자리(서버 값)로 고른다 — 사람마다 다르다
+            art={sun && CONSTELLATIONS[sun.sign] ? { sign: sun.sign, ...CONSTELLATIONS[sun.sign] } : null}
             days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
             headline={reading?.headline ?? null}
             onOpen={() => router.push('/reading')}

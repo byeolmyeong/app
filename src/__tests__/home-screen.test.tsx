@@ -97,6 +97,21 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
+  it('별명 카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 사람마다 다르다(소유자 지적: 처녀자리인데 다른 자리)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    const view = await render(<HomeScreen />);
+    const card = within(await screen.findByTestId('nickname-card'));
+    expect(card.getByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeTruthy();
+    await view.unmount();
+    // 해가 처녀자리인 차트 — 달 · 상승궁이 아니라 해의 별자리로 고른다
+    const virgo = { ...fixtures.chart, positions: fixtures.chart.positions.map((p) => (p.body === 'SUN' ? { ...p, sign: 'VIRGO' } : p)) };
+    await saveBirth({ profile, chart: virgo });
+    await render(<HomeScreen />);
+    const again = within(await screen.findByTestId('nickname-card'));
+    expect(again.getByTestId('card-constellation-VIRGO', { includeHiddenElements: true })).toBeTruthy();
+    expect(again.queryByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeNull();
+  });
+
   it('만든 때(createdAt)가 없는 옛 풀이면 해 별자리만 적는다(결정 047 의 3)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);

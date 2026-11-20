@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { AccessibilityInfo, Animated, Dimensions, StyleSheet } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/button';
@@ -7,6 +7,7 @@ import { Byeoli } from '@/components/byeoli';
 import { DataTable } from '@/components/data-table';
 import { Field, FieldInput, FieldSelect } from '@/components/field';
 import { GlowShape } from '@/components/glow';
+import { InfoButton } from '@/components/info-button';
 import { ListRow } from '@/components/list-row';
 import { Paragraph } from '@/components/paragraph';
 import { SectionLabel } from '@/components/section-label';
@@ -261,6 +262,48 @@ describe('Sheet', () => {
     );
     expect(StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).backgroundColor).toBe(Colors.raised);
     expect(StyleSheet.flatten(screen.getByTestId('sheet-handle').props.style).backgroundColor).toBe(Colors.handle);
+  });
+
+  // 소유자 지적: 시트가 좁아 내용이 잘린다 → 내용만큼 늘리고, 화면 위는 남기고, 길면 시트 안에서 굴린다
+  it('내용만큼 늘어나고 화면 위 64 는 남긴다 — 넘치면 시트 안에서 굴리고, 들어가면 굴리지 않는다(드럼과 다투지 않게)', async () => {
+    await render(
+      <Sheet visible onClose={() => {}} gap={12}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    const panel = StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style);
+    expect(panel.maxHeight).toBe(Dimensions.get('window').height - Sizes.sheetTop);
+    expect(panel.height).toBeUndefined();
+    const scroll = screen.getByTestId('sheet-scroll');
+    expect(StyleSheet.flatten(scroll.props.contentContainerStyle)).toMatchObject({ gap: 12 });
+    expect(scroll.props.scrollEnabled).toBe(false);
+    await fireEvent(scroll, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 350, height: 300 } } });
+    await fireEvent(scroll, 'contentSizeChange', 350, 600);
+    expect(screen.getByTestId('sheet-scroll').props.scrollEnabled).toBe(true);
+    await fireEvent(scroll, 'contentSizeChange', 350, 280);
+    expect(screen.getByTestId('sheet-scroll').props.scrollEnabled).toBe(false);
+  });
+
+  it('높이를 정한 시트(태어난 곳)는 그 높이 그대로 — 안의 목록이 스스로 굴려 감싸지 않는다', async () => {
+    await render(
+      <Sheet visible onClose={() => {}} height={500} flush>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    const panel = StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style);
+    expect(panel.height).toBe(500);
+    expect(panel.maxHeight).toBeUndefined();
+    expect(screen.queryByTestId('sheet-scroll')).toBeNull();
+  });
+
+  it('주 버튼(footer)은 굴리는 칸 밖, 시트 맨 아래 같은 자리(결정 061 의 5) — 도움말 시트의 낱말도 따로 높이를 자르지 않는다', async () => {
+    await render(<InfoButton title="도움말" items={[{ term: '하우스', text: '삶의 영역' }]} testID="help" />);
+    await fireEvent.press(screen.getByTestId('help'));
+    const close = screen.getByRole('button', { name: strings.help.close });
+    expect(within(screen.getByTestId('sheet-footer')).getByRole('button', { name: strings.help.close })).toBe(close);
+    expect(within(screen.getByTestId('sheet-scroll')).queryByRole('button', { name: strings.help.close })).toBeNull();
+    expect(within(screen.getByTestId('sheet-scroll')).getByText('하우스')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('info-items').props.style)?.maxHeight).toBeUndefined();
   });
 });
 

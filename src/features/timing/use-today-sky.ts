@@ -1,8 +1,8 @@
 /**
  * 오늘의 하늘(결정 051): 홈의 오늘의 하늘 카드와 `/today` 가 함께 쓴다. `POST /day-sky` 를 날짜 없이 부르면 서버가 한국 날짜의 오늘 것을 준다 —
  * 그날 처음이면 서버가 그때 써서 저장하고(수십 초, 동기 응답), 다시 부르면 저장본이 바로 온다.
- * 받은 글은 그날 동안 기기에 둔다(`byeolmyeong.daySky.v1` — 마지막에 받은 것 하나, 출생 정보와 함께). 다시 열면 그것을 먼저 그리고 서버를 부르지 않는다
- * (같은 날 · 같은 차트는 서버도 같은 글이다). 받아 둔 날이 오늘(기기의 한국 날짜)이 아니면 지난날 것은 그리지 않고 다시 부른다 — 화면이 보일 때 · 앱으로 돌아올 때도 견준다.
+ * 받은 글은 그날 동안 기기에 둔다(`byeolmyeong.daySky.v1` — 마지막에 받은 것 하나, 출생 정보와 함께). 다시 열면 그것을 먼저 그리고 뒤에서 한 번
+ * 새로 받는다(같은 날 · 같은 차트는 서버도 같은 글이라 저장본이 바로 온다). 받아 둔 날이 오늘(기기의 한국 날짜)이 아니면 지난날 것은 그리지 않고 다시 부른다 — 화면이 보일 때 · 앱으로 돌아올 때도 견준다.
  * 홈 카드와 오늘의 하늘이 같은 때 열려도 서버에는 한 번만 묻는다(같은 출생 정보의 요청을 함께 기다린다).
  * 서버에 출생 정보가 없으면(404 `NO_PROFILE`) 저장하고 한 번만 더 부른다. 다시 쓰기(retry)는 사람이 누를 때만 — 스스로 다시 부르지 않는다.
  */
@@ -105,6 +105,14 @@ export function useTodaySky(input: BirthInput | null) {
       if (stored && stored.date === koreaToday()) {
         shownDate.current = stored.date;
         setState({ status: 'done', sky: stored });
+        // 뒤에서 한 번 새로 받는다(같은 날 · 같은 차트면 서버도 같은 글이라 저장본이 바로 온다). 못 받으면 보관본 그대로
+        const [date, time, placeId] = JSON.parse(key) as [string, string | null, number | null];
+        const mine = ++requests.current;
+        void load(key, { date, time, placeId }, false).then((r) => {
+          if (!alive || !r.ok || requests.current !== mine) return;
+          shownDate.current = r.data.date;
+          setState({ status: 'done', sky: r.data });
+        });
       } else fetchToday();
     });
     return () => {
@@ -163,16 +171,22 @@ export function useTodaySky(input: BirthInput | null) {
  */
 const WRITING_AFTER_MS = 3000;
 
-/** loading 이 3초 넘게 이어졌는가(쓰는 중으로 볼 때) */
-export function useWritingAfter(loading: boolean): boolean {
+/**
+ * 홈 카드는 더 일찍 쓰는 중으로 본다: 처음 들어올 때 스플래시가 홈 카드의 첫 상태까지 가리는데(결정 068 의 2), 그날 처음 쓰는 글(수십 초)을
+ * 기다리지 않게 이만큼 넘으면 쓰는 중 카드로 그리고 스플래시를 걷는다 — 뼈대 없이(소유자 "접속하자마자 바로")
+ */
+export const TODAY_CARD_WRITING_AFTER_MS = 1000;
+
+/** loading 이 ms(기본 3초) 넘게 이어졌는가(쓰는 중으로 볼 때) */
+export function useWritingAfter(loading: boolean, ms: number = WRITING_AFTER_MS): boolean {
   const [writing, setWriting] = useState(false);
   useEffect(() => {
     if (!loading) return;
-    const timer = setTimeout(() => setWriting(true), WRITING_AFTER_MS);
+    const timer = setTimeout(() => setWriting(true), ms);
     return () => {
       clearTimeout(timer);
       setWriting(false);
     };
-  }, [loading]);
+  }, [loading, ms]);
   return writing;
 }

@@ -44,11 +44,15 @@ beforeEach(async () => {
 afterEach(() => nowSpy.mockRestore());
 
 describe('오늘의 하늘(결정 051 의 2)', () => {
-  it('기기에 둔 오늘 것이 있으면 그것을 그리고 서버를 부르지 않는다', async () => {
+  it('기기에 둔 오늘 것이 있으면 묻는 중 없이 바로 그리고, 뒤에서 한 번 새로 받는다(못 받아도 보관본 그대로)', async () => {
     await store(sky('2026-11-19'));
+    let answer: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (answer = r)));
     const { result } = await renderHook(() => useTodaySky(birth));
     await waitFor(() => expect(result.current.state).toEqual({ status: 'done', sky: sky('2026-11-19') }));
-    expect(mockApi.postDaySky).not.toHaveBeenCalled();
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    await act(async () => answer({ ok: false, error: 'NETWORK' }));
+    expect(result.current.state).toEqual({ status: 'done', sky: sky('2026-11-19') });
   });
 
   it('없으면 날짜 없이 POST /day-sky 를 부르고 받은 것을 기기에 둔다', async () => {
@@ -81,12 +85,13 @@ describe('오늘의 하늘(결정 051 의 2)', () => {
     await store(sky('2026-11-19'));
     const { result } = await renderHook(() => useTodaySky(birth));
     await waitFor(() => expect(result.current.state.status).toBe('done'));
-    expect(mockApi.postDaySky).not.toHaveBeenCalled();
+    // 보관본 뒤의 한 번(같은 날 것)
+    await waitFor(() => expect(mockApi.postDaySky).toHaveBeenCalledTimes(1));
     nowSpy.mockReturnValue(Date.parse('2026-11-19T15:30:00Z')); // 한국 11-20 00:30
     mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky('2026-11-20') });
     await act(async () => listener?.('active'));
     await waitFor(() => expect(result.current.state).toEqual({ status: 'done', sky: sky('2026-11-20') }));
-    expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
     // RN 의 가짜 AppState 처럼 해지 함수를 돌려주는 것으로 되돌린다(mockRestore 는 구현을 비운다)
     spy.mockImplementation(() => ({ remove: jest.fn() }) as unknown as ReturnType<typeof AppState.addEventListener>);
   });

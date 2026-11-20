@@ -7,7 +7,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { api, isMeReport, type ApiErrorKind, type ApiResult, type BirthInput, type MeReport } from '@/lib/api';
+import { api, isMeReport, type ApiErrorKind, type BirthInput, type MeReport } from '@/lib/api';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout';
 
 export const ME_REPORT_STORAGE_KEY = 'byeolmyeong.meReport.v1';
 
@@ -18,7 +19,7 @@ export const ME_REPORT_POLL_MS = 5000;
  * 한 번의 요청을 기다리는 한도(처음 불러올 때의 10초 — 결정 065 의 2). 넘으면 못 받은 것으로 보고, 늦게 온 답은 버린다.
  * 쓰는 중 화면에는 머리 · 아래 탭이 없어(보드 11-8) 응답이 멈추면 갇히므로 끝없이 기다리지 않는다(리뷰).
  */
-export const ME_REPORT_TIMEOUT_MS = 10_000;
+export const ME_REPORT_TIMEOUT_MS = REQUEST_TIMEOUT_MS;
 
 /** 쓰는 중을 기다리는 한도(서버의 생성은 1분 안팎, 멈춘 생성은 2분 뒤 FAILED). 넘으면 확인을 멈추고 보드 19(다시 보기 = 상태만)로 */
 export const ME_REPORT_MAX_WRITING_MS = 180_000;
@@ -40,17 +41,6 @@ export type MeReportView =
   | { status: 'failed'; error: ApiErrorKind | 'FAILED'; stage: 'request' | 'poll' };
 
 const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
-
-/** 한도 안에 오지 않으면 서버 실패로 본다 */
-function withTimeout<T>(promise: Promise<ApiResult<T>>): Promise<ApiResult<T>> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve({ ok: false, error: 'SERVER' }), ME_REPORT_TIMEOUT_MS);
-    void promise.then((r) => {
-      clearTimeout(timer);
-      resolve(r);
-    });
-  });
-}
 
 /** 이 출생 정보로 받아 둔 풀이. 없거나 다른 출생 정보의 것이거나 옛 모양이면 null */
 async function loadReport(key: string): Promise<MeReport | null> {

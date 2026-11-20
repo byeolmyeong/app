@@ -1,28 +1,33 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { InfoButton } from '@/components/info-button';
+import { ListRow } from '@/components/list-row';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { SectionHead } from '@/components/section-head';
-import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { showsHouses } from '@/features/chart/chart-rows';
 import { ChartWheel } from '@/features/chart/ChartWheel';
-import { KeyThree } from '@/features/chart/key-three';
+import { SkyList } from '@/features/chart/sky-list';
+import { SkySheet } from '@/features/chart/sky-sheet';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 
-const S = strings.chart;
-const H = strings.help;
+const S = strings.skyMap;
+/** 처음 들어오면 해를 고른 채로 보여 준다(시안 13) */
+const FIRST_SELECTED = 'SUN';
 
-/** 차트: 휠과 핵심 3요소를 쉬운 말 설명과 함께 보여 준다. 숫자 표는 "자세히" 화면에 있다. 로그인 없이 본다. */
+/**
+ * 내 하늘 지도(시안 13 · 13-1 · 13-2): 휠 + "별마다 있던 자리". 줄을 누르면 그 별이 휠에서 빛나고 시트가 열린다.
+ * 시각 "모름" 이면 하우스 · 첫인상 · 꿈의 자리를 보여 주지 않는다. 숫자 표는 맨 아래 "차트 자세히" 에 있다.
+ */
 export default function ChartScreen() {
   const { loaded, chart } = useBirthProfile();
-  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  const [selected, setSelected] = useState(FIRST_SELECTED);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (!chart)
     return (
@@ -31,43 +36,41 @@ export default function ChartScreen() {
       </Screen>
     );
 
-  const withHouses = showsHouses(chart);
+  const select = (key: string) => {
+    setSelected(key);
+    setSheetOpen(true);
+  };
 
   return (
     <Screen nav={nav}>
-      <SectionHead title={S.wheelHeading}>
-        <InfoButton testID="info-wheel" title={H.wheel.title} items={H.wheel.items} />
-      </SectionHead>
-      <Txt variant="table" color="gray">
-        {S.wheelCaption}
-      </Txt>
-      <ChartWheel chart={chart} />
-      <SectionHead title={S.keyThreeHeading}>
-        {/* 시각을 모르면 상승점(첫인상)을 보여 주지 않으므로 설명에서도 뺀다 */}
-        <InfoButton
-          testID="info-key-three"
-          title={H.keyThree.title}
-          items={withHouses ? [...H.keyThree.items, H.keyThree.asc] : H.keyThree.items}
-        />
-      </SectionHead>
-      <Txt variant="table" color="gray">
-        {S.keyThreeCaption}
-      </Txt>
-      <KeyThree chart={chart} />
-      {withHouses ? null : (
-        <Txt variant="label" color="gray">
-          {S.timeUnknownNote}
+      <View>
+        <View style={styles.wheel}>
+          <ChartWheel chart={chart} selected={selected} />
+        </View>
+        <Txt variant="note" color="hint" style={styles.hint}>
+          {S.hint}
         </Txt>
-      )}
-      <TextLink label={S.seeAll} onPress={() => router.push('/chart/detail')} />
-      <View style={styles.actions}>
-        <Button label={S.readReading} onPress={() => router.push('/reading')} />
-        <Button label={S.seeSynastry} variant="line" onPress={() => router.push('/synastry')} />
+        <View style={styles.list}>
+          <SkyList chart={chart} selected={selected} onSelect={select} />
+        </View>
+        {showsHouses(chart) ? null : (
+          <Txt variant="label" color="gray" style={styles.note}>
+            {S.timeUnknownNote}
+          </Txt>
+        )}
+        <View style={styles.detail}>
+          <ListRow label={S.detail} onPress={() => router.push('/chart/detail')} />
+        </View>
       </View>
+      <SkySheet chart={chart} selected={selected} visible={sheetOpen} onClose={() => setSheetOpen(false)} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: { marginTop: 'auto', gap: Spacing.xs, paddingTop: Spacing.xs },
+  wheel: { marginTop: Spacing.md },
+  hint: { marginTop: Spacing.sm, textAlign: 'center' },
+  list: { marginTop: Spacing.xl },
+  note: { marginTop: Spacing.md },
+  detail: { marginTop: Spacing.lg },
 });

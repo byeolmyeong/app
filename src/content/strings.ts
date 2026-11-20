@@ -339,12 +339,8 @@ export const strings = {
     },
   },
   chart: {
-    title: '내 하늘',
     wheelLabel: '출생 차트 휠',
-    wheelHeading: '태어난 순간의 하늘',
-    wheelCaption: '내가 태어난 순간, 해와 달과 행성이 하늘 어디에 있었는지 그린 그림이에요. 점 하나가 천체 하나입니다.',
     keyThreeHeading: '나를 이루는 세 가지',
-    keyThreeCaption: '그중에서 나를 읽을 때 가장 먼저 보는 세 자리예요.',
     keySunCaption: '힘을 내는 방식',
     keyMoonCaption: '편안함을 느끼는 방식',
     keyAscCaption: '처음 보이는 모습',
@@ -353,12 +349,37 @@ export const strings = {
     keySun: '나의 중심',
     keyMoon: '나의 마음',
     keyAsc: '나의 첫인상',
-    seeAll: '천체별로 자세히 보기',
-    readReading: '내 별명 읽기',
-    seeSynastry: '궁합 보기',
     empty: '출생 정보를 먼저 넣어 주세요.',
     goHome: '출생 정보 넣기',
     timeUnknownNote: '태어난 시각을 몰라 하우스와 상승점은 보여 드리지 않아요.',
+  },
+  /** 내 하늘 지도(시안 13 · 13-1 · 13-2). 용어의 별명과 뜻은 아래 glossary */
+  skyMap: {
+    title: '내 하늘 지도',
+    wheelLabel: '태어난 순간의 하늘 지도',
+    /** 휠의 읽기 이름 뒤에 붙는 고른 별 */
+    selectedPrefix: '고른 별: ',
+    hint: '별을 누르면 지도에서 그 자리가 빛나요',
+    listHeading: '별마다 있던 자리',
+    separator: ' · ',
+    /** 5 → 5하우스 */
+    houseSuffix: '하우스',
+    /** 상승점 · 중천 줄: 1 → 1하우스가 시작되는 곳 */
+    houseStartSuffix: '하우스가 시작되는 곳',
+    timeUnknownNote: '태어난 시각을 몰라 하우스와 첫인상 · 꿈의 자리는 보여 드리지 않아요.',
+    detail: '차트 자세히',
+    relations: '다른 별과의 관계',
+    relationsQuestion: '별과 별의 관계가 뭔가요?',
+    relationsTip: '두 별이 하늘에서 이루는 각도로 읽어요.',
+    noRelations: '다른 별과 이루는 큰 각도는 없어요.',
+    /** 물음표의 읽기 이름: 물병자리 → 물병자리가 뭔가요? */
+    questionSuffix: '가 뭔가요?',
+    /** 별자리 · 하우스 팁: 열두 개 중 몇째인지 */
+    signTipPrefix: '해가 지나는 하늘길을 열두 별자리로 나눈 것 중 ',
+    signTipSuffix: ' 자리예요.',
+    houseTipPrefix: '하늘을 열두 칸으로 나눈 것 중 ',
+    houseTipSuffix: ' 칸이에요.',
+    ordinals: ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째', '일곱째', '여덟째', '아홉째', '열째', '열한째', '열두째'],
   },
   reading: {
     title: '내 별명',
@@ -725,17 +746,9 @@ export const strings = {
   help: {
     buttonLabel: '설명 보기',
     mark: '?',
+    /** 말풍선(InfoTip)이 열려 있을 때 물음표의 읽기 이름 */
+    tipClose: '팁 닫기',
     close: '확인',
-    wheel: {
-      title: '이 그림 읽는 법',
-      items: [
-        { term: '바깥 고리', text: '하늘을 열두 칸으로 나눈 별자리예요. 양자리부터 물고기자리까지 한 바퀴를 돕니다.' },
-        { term: '점', text: '태어난 순간 해·달·행성이 있던 자리예요. 점 옆 글자는 이름의 줄임말입니다(해, 달, 수, 금, 화, 목, 토, 천, 해왕, 명).' },
-        { term: '안쪽 숫자 1~12', text: '하우스예요. 하늘의 자리를 삶의 열두 영역(나, 돈, 배움, 집, 사랑, 일…)에 나눠 놓은 칸입니다. 태어난 시각을 알아야 그릴 수 있어요.' },
-        { term: '가운데 선', text: '두 천체가 서로 특별한 각도를 이룰 때 잇는 선이에요. 이어진 둘은 함께 읽습니다. 실선은 잘 어울리는 각도, 점선은 서로 당기는 각도예요.' },
-        { term: '왼쪽 끝', text: '태어난 순간 동쪽 지평선에 떠오르던 별자리(상승점)를 왼쪽에 둡니다. 시각을 모르면 양자리가 왼쪽에 와요.' },
-      ],
-    },
     overlay: {
       title: '겹친 그림 읽는 법',
       items: [
@@ -745,14 +758,6 @@ export const strings = {
         { term: '가운데 선', text: '상대의 천체가 내 해·달·수성·금성·화성과 특별한 각도를 이룰 때 잇는 선이에요. 실선은 잘 어울리는 각도, 점선은 서로 당기는 각도입니다. 같은 자리에 겹친 둘은 선 없이 함께 읽어요.' },
         { term: '왼쪽 끝의 선', text: '내가 태어난 순간 동쪽 지평선에 떠오르던 자리(상승점)예요. 내 태어난 시각을 알 때만 그립니다.' },
       ],
-    },
-    keyThree: {
-      title: '세 가지가 뜻하는 것',
-      items: [
-        { term: '나의 중심 · 태양', text: '태양이 있던 별자리예요. 흔히 말하는 "내 별자리"가 이것이고, 점성술에서는 그 사람이 힘을 내는 방식으로 봅니다.' },
-        { term: '나의 마음 · 달', text: '달이 있던 별자리예요. 점성술에서는 편안함을 느끼는 방식, 감정이 움직이는 결로 봅니다.' },
-      ],
-      asc: { term: '나의 첫인상 · 상승점', text: '태어난 순간 동쪽 지평선에 떠오르던 별자리예요. 점성술에서는 처음 만난 사람에게 보이는 모습으로 봅니다. 4분만 달라도 바뀔 수 있어 태어난 시각이 필요해요.' },
     },
     planets: {
       title: '행성 표 읽는 법',
@@ -875,5 +880,65 @@ export const strings = {
     SQUARE: '사분',
     TRINE: '삼분',
     OPPOSITION: '충',
+  },
+  /**
+   * 용어 사전: 내 하늘 지도(시안 13 · 13-1)와 나 탭의 "이렇게 풀이한 이유"가 함께 쓴다. 키는 서버가 주는 식별자다.
+   * 별명은 시안의 말을 따르고, 시안에 없는 것은 같은 말투로 채웠다(채운 목록: docs/plans/2026-11-20-sky-map.md 실행 기록).
+   * name 이름 · nickname 별명 · topic 목록에 적는 짧은 주제 · meaning 한 줄 뜻. 사람을 단정하지 않는다(golden-rules).
+   */
+  glossary: {
+    bodies: {
+      SUN: { name: '해', nickname: '나의 중심', topic: '나의 중심', meaning: '내가 힘을 내는 방식' },
+      MOON: { name: '달', nickname: '나의 마음', topic: '마음', meaning: '편안함을 느끼는 방식' },
+      MERCURY: { name: '수성', nickname: '말을 맡은 별', topic: '말과 생각', meaning: '생각하고 말을 건네는 방식' },
+      VENUS: { name: '금성', nickname: '좋아하는 것', topic: '좋아하는 것', meaning: '끌리고 좋아하는 것' },
+      MARS: { name: '화성', nickname: '밀어붙이는 힘', topic: '밀어붙이는 힘', meaning: '원하는 것을 향해 움직이는 방식' },
+      JUPITER: { name: '목성', nickname: '기회를 맡은 별', topic: '기회', meaning: '넓히고 키워 가는 힘' },
+      SATURN: { name: '토성', nickname: '책임을 맡은 별', topic: '책임', meaning: '버티며 차곡차곡 쌓아 가는 힘' },
+      URANUS: { name: '천왕성', nickname: '변화를 맡은 별', topic: '변화', meaning: '틀을 깨고 새롭게 바꾸는 힘' },
+      NEPTUNE: { name: '해왕성', nickname: '꿈을 맡은 별', topic: '꿈과 상상', meaning: '보이지 않는 것을 그려 보는 힘' },
+      PLUTO: { name: '명왕성', nickname: '깊은 변화를 맡은 별', topic: '깊은 변화', meaning: '끝까지 파고들어 새로 태어나는 힘' },
+    },
+    /** 상승점 · 중천. short 는 휠의 축 옆에 적는 짧은 이름이다 */
+    angles: {
+      ASC: { name: '상승점', nickname: '첫인상의 자리', short: '첫인상', meaning: '처음 만난 사람에게 보이는 모습' },
+      MC: { name: '중천', nickname: '꿈의 자리', short: '꿈', meaning: '오래 바라고 이루고 싶은 모습' },
+    },
+    signs: {
+      ARIES: { nickname: '용기', meaning: '먼저 나서고 바로 움직이는 성향' },
+      TAURUS: { nickname: '꾸준함', meaning: '천천히, 그러나 단단하게 쌓아 가는 성향' },
+      GEMINI: { nickname: '호기심', meaning: '궁금한 게 많고 생각과 말이 빠른 성향' },
+      CANCER: { nickname: '다정함', meaning: '가까운 사람을 품고 돌보는 성향' },
+      LEO: { nickname: '당당함', meaning: '나를 드러내고 빛나고 싶은 성향' },
+      VIRGO: { nickname: '꼼꼼함', meaning: '작은 것까지 살피고 다듬는 성향' },
+      LIBRA: { nickname: '균형', meaning: '균형을 찾고 함께 어울리는 성향' },
+      SCORPIO: { nickname: '깊이', meaning: '한번 마음먹으면 깊이 파고드는 성향' },
+      SAGITTARIUS: { nickname: '모험', meaning: '넓은 세상으로 나아가고 싶은 성향' },
+      CAPRICORN: { nickname: '성실함', meaning: '목표를 세우고 차근차근 쌓는 성향' },
+      AQUARIUS: { nickname: '자유로움', meaning: '자유롭고 독창적인 성향' },
+      PISCES: { nickname: '공감', meaning: '다른 마음에 깊이 스며드는 성향' },
+    },
+    houses: {
+      1: { nickname: '나 자신의 자리', topic: '나 자신', meaning: '나를 드러내는 모습 · 시작하는 힘' },
+      2: { nickname: '돈과 가치의 자리', topic: '돈과 가치', meaning: '돈 · 가진 것 · 소중히 여기는 것' },
+      3: { nickname: '배움과 말의 자리', topic: '배움과 말', meaning: '배우는 것 · 말 · 가까운 이웃' },
+      4: { nickname: '집과 가족의 자리', topic: '집과 가족', meaning: '집 · 가족 · 마음의 뿌리' },
+      5: { nickname: '즐거움의 자리', topic: '즐거움', meaning: '노는 것 · 만드는 것 · 연애' },
+      6: { nickname: '일상의 자리', topic: '일상', meaning: '하루하루의 일 · 습관 · 돌봄' },
+      7: { nickname: '관계의 자리', topic: '관계', meaning: '가까운 짝 · 함께하는 사람' },
+      8: { nickname: '깊은 나눔의 자리', topic: '깊은 나눔', meaning: '깊은 관계 · 함께 나누는 것' },
+      9: { nickname: '넓은 세상의 자리', topic: '넓은 세상', meaning: '먼 곳 · 공부 · 넓은 생각' },
+      10: { nickname: '일과 사회의 자리', topic: '일과 사회', meaning: '일 · 사회에서의 모습 · 이루고 싶은 것' },
+      11: { nickname: '친구와 모임의 자리', topic: '친구와 모임', meaning: '친구 · 모임 · 바라는 내일' },
+      12: { nickname: '혼자만의 자리', topic: '혼자만의 시간', meaning: '혼자만의 시간 · 숨은 마음 · 쉼' },
+    },
+    /** 각도의 말(시안: 합 · 사분 · 육분. 삼분 · 충은 같은 말투의 기본값) */
+    aspects: {
+      CONJUNCTION: { phrase: '겹쳐요', meaning: '두 별이 같은 자리에서 만나요' },
+      SEXTILE: { phrase: '잘 어울려요', meaning: '두 별이 서로 돕기 좋은 각도예요' },
+      SQUARE: { phrase: '부딪혀요', meaning: '두 별이 다른 쪽으로 당겨 맞춰 가야 해요' },
+      TRINE: { phrase: '자연스럽게 통해요', meaning: '두 별의 힘이 막힘없이 흘러요' },
+      OPPOSITION: { phrase: '마주 봐요', meaning: '두 별이 하늘의 맞은편에서 서로를 비춰요' },
+    },
   },
 } as const;

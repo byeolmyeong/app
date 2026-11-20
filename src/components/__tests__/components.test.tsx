@@ -25,6 +25,8 @@ describe('테마', () => {
       // 화면 밖 여백: 웹 넓은 화면만 흰색이고, 앱(태블릿·폴드)은 바탕색이다. jest 는 앱(ios)으로 돈다
       canvas: '#0D0E12',
       ink: '#F2F3F7',
+      // 말풍선의 설명 · 관계의 각도 말(시안 13-1 · 13-2)
+      inkSoft: '#DADCE3',
       gray: '#A9ABB7',
       hint: '#7C7E8A',
       muted: '#4D4F5A',
@@ -58,7 +60,7 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
+      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'desc', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
     ]);
     // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 042 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });

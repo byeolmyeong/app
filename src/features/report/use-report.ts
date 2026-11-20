@@ -158,6 +158,12 @@ export function useReport(input: BirthInput | null) {
     if (current.current) void request(current.current);
   }, []);
 
+  /** 상태만 다시 확인한다(GET) — 연결이 돌아왔을 때 · 불러오지 못해 "다시 보기" 를 눌렀을 때. 만들기(POST)는 사람이 누를 때만이다 */
+  const recheck = useCallback(() => {
+    const run = current.current;
+    if (run && !run.busy) void check(run);
+  }, []);
+
   const state: ReportViewState = settled && settled.key === key ? settled.state : { status: 'checking' };
-  return { state, start };
+  return { state, start, recheck };
 }

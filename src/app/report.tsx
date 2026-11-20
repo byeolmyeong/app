@@ -39,7 +39,7 @@ export default function ReportScreen() {
   const { loaded, profile } = useBirthProfile();
   // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다.
   const input = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
-  const { state, start } = useReport(input);
+  const { state, start, recheck } = useReport(input);
   // 쓰는 중이거나 방금 다 쓰인 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
   useGenerationBusy(state.status === 'writing', state.status === 'done');
   // 시기 탭의 방향성(미래) 글을 기다리는 동안에도 미룬다.
@@ -53,7 +53,7 @@ export default function ReportScreen() {
   // 연결 끊김(결정 061 의 4): 다 쓴 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 다시 부른다
   const online = useOnline();
   useOnReconnect(online, () => {
-    if (state.status === 'failed' && state.error === 'NETWORK') start();
+    if (state.status === 'failed' && state.error === 'NETWORK') recheck();
   });
 
   if (loaded && !profile)
@@ -96,25 +96,39 @@ export default function ReportScreen() {
       </Screen>
     );
 
-  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겼으면 보드 20-1, 그 밖에는 보드 19 틀. 서버가 끝내 못 쓴 것(FAILED)은 그 안내와 "다시 시도"
-  if (state.status === 'failed')
-    return state.error === 'NETWORK' ? (
-      <StateScreen
-        nav={nav}
-        tabs={tabs}
-        title={ST.offlineEmpty.title}
-        body={ST.offlineEmpty.body}
-        primary={{ label: ST.offlineEmpty.retry, onPress: start }}
-      />
-    ) : (
+  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겨서면 보드 20-1, 서버가 끝내 못 썼으면(FAILED) "다시 쓰기", 그 밖에는 보드 19.
+  // "다시 보기" 와 연결이 돌아왔을 때는 상태만 다시 확인한다 — 만들기(POST)는 사람이 누를 때만(리뷰 PR #44)
+  if (state.status === 'failed') {
+    if (state.error === 'NETWORK' && !online)
+      return (
+        <StateScreen
+          nav={nav}
+          tabs={tabs}
+          title={ST.offlineEmpty.title}
+          body={ST.offlineEmpty.body}
+          primary={{ label: ST.offlineEmpty.retry, onPress: recheck }}
+        />
+      );
+    if (state.error === 'FAILED')
+      return (
+        <StateScreen
+          nav={nav}
+          tabs={tabs}
+          title={ST.writeFail.title.report}
+          body={ST.writeFail.body}
+          primary={{ label: ST.writeFail.retry, onPress: start }}
+        />
+      );
+    return (
       <StateScreen
         nav={nav}
         tabs={tabs}
         title={ST.loadFail.title.report}
-        body={state.error === 'LIMIT' ? S.failed.LIMIT : state.error === 'FAILED' ? S.failed.OTHER : ST.loadFail.body}
-        primary={{ label: state.error === 'FAILED' ? S.retry : ST.loadFail.retry, onPress: start }}
+        body={state.error === 'LIMIT' ? S.failed.LIMIT : ST.loadFail.body}
+        primary={{ label: ST.loadFail.retry, onPress: recheck }}
       />
     );
+  }
 
   return (
     <Screen nav={nav} footer={tabs}>

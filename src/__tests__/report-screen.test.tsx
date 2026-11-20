@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native';
@@ -47,6 +48,11 @@ const got = (status: 'NONE' | 'WRITING' | 'FAILED'): ApiResult<ReportState> => (
 const done: ApiResult<ReportState> = { ok: true, data: { status: 'DONE', report } };
 /** 영역 탭 다섯(`Tabs`). 화면 아래에는 앱의 아래 탭 넷(`BottomTabs`)이 따로 있다(결정 046 의 4 · 055) */
 const areas = () => within(screen.getByTestId('tabs'));
+/* 연결 상태(netinfo) 가짜 */
+type NetListener = (state: { isConnected: boolean; isInternetReachable: boolean }) => void;
+let netListener: NetListener | null = null;
+const goOffline = () => act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
+const goOnline = () => act(async () => netListener?.({ isConnected: true, isInternetReachable: true }));
 const selectedTabs = () => areas().getAllByRole('tab').map((t) => t.props.accessibilityState.selected);
 
 beforeEach(async () => {
@@ -59,6 +65,11 @@ beforeEach(async () => {
   mockApi.createDirection.mockResolvedValue({ ok: true, data: fixtures.directionFuture });
   mockApi.saveProfile.mockImplementation(async (i) => ({ ok: true, data: i }));
   await saveBirth({ profile, chart: fixtures.chart });
+  netListener = null;
+  (NetInfo.addEventListener as jest.Mock).mockImplementation((cb: NetListener) => {
+    netListener = cb;
+    return () => {};
+  });
 });
 
 afterEach(() => {
@@ -202,16 +213,44 @@ describe('심층 리포트 화면', () => {
     mockApi.getReport.mockResolvedValueOnce(got('FAILED'));
     mockApi.requestReport.mockResolvedValue({ ok: true, data: { status: 'DONE' } });
     await render(<ReportScreen />);
-    expect(await screen.findByText(R.failed.OTHER)).toBeTruthy();
+    expect(await screen.findByText(strings.states.writeFail.title.report)).toBeTruthy();
     expect(mockApi.requestReport).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByText(R.retry));
+    await fireEvent.press(screen.getByText(strings.states.writeFail.retry));
     expect(await screen.findByText(personality.title)).toBeTruthy();
     expect(mockApi.requestReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('연결이 돌아오면 상태만 다시 확인한다 — 누르지 않았는데 리포트를 만들기 시작하지 않는다(리뷰 PR #44)', async () => {
+    mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' }).mockResolvedValueOnce(got('NONE'));
+    await render(<ReportScreen />);
+    await goOffline();
+    expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
+    await goOnline();
+    expect(await screen.findByText(R.intro)).toBeTruthy();
+    expect(mockApi.getReport).toHaveBeenCalledTimes(2);
+    expect(mockApi.requestReport).not.toHaveBeenCalled();
+  });
+
+  it('연결은 됐는데 서버에 닿지 못하면(NETWORK) 끊김 화면이 아니라 보드 19 — 다시 보기는 상태 확인만(리뷰 PR #44)', async () => {
+    mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' }).mockResolvedValueOnce(done);
+    await render(<ReportScreen />);
+    expect(await screen.findByText(strings.states.loadFail.title.report)).toBeTruthy();
+    await fireEvent.press(screen.getByText(strings.states.loadFail.retry));
+    expect(await screen.findByText(personality.title)).toBeTruthy();
+    expect(mockApi.requestReport).not.toHaveBeenCalled();
+  });
+
+  it('서버가 끝내 못 쓴 리포트(FAILED)는 "리포트를 쓰지 못했어요" · 다시 쓰기(결정 061 의 1, 리뷰 PR #44)', async () => {
+    mockApi.getReport.mockResolvedValueOnce(got('FAILED'));
+    await render(<ReportScreen />);
+    expect(await screen.findByText(strings.states.writeFail.title.report)).toBeTruthy();
+    expect(screen.getByText(strings.states.writeFail.retry)).toBeTruthy();
   });
 
   it('끊겨서 못 받으면 보드 20-1("인터넷에 연결되어 있지 않아요"), 요청이 많으면 그 안내(결정 061 의 4)', async () => {
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     const first = await render(<ReportScreen />);
+    await goOffline();
     expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
     expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
     await first.unmount();

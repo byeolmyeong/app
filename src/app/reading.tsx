@@ -101,10 +101,11 @@ export default function ReadingScreen() {
   // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겼으면 보드 20-1, 가입 직후면 보드 9-1(머리 · 탭 없이 다시 짓기만),
   // 그 밖에는 보드 19 — 요청이 많을 때만 그 안내로
   if (state.status === 'failed')
-    return state.error === 'NETWORK' ? (
+    return state.error === 'NETWORK' && !online ? (
       <StateScreen
-        nav={nav}
-        tabs={tabs}
+        // 가입 직후면 머리 · 아래 탭 없이 — 갈 곳이 없고 별명 공개(결정 044)를 놓치지 않게(결정 065 의 4)
+        nav={from === 'signup' ? undefined : nav}
+        tabs={from === 'signup' ? undefined : tabs}
         title={ST.offlineEmpty.title}
         body={ST.offlineEmpty.body}
         primary={{ label: ST.offlineEmpty.retry, onPress: retry }}

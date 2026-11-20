@@ -2,12 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
+import MeScreen from '@/app/me';
 import ReadingScreen from '@/app/reading';
 import SynastryResultScreen from '@/app/synastry/[id]/index';
 import SynastryRankingScreen from '@/app/synastry/ranking';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
-import { api } from '@/lib/api';
+import { api, type MeReportState } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -25,12 +26,15 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     getSynastry: jest.fn(),
     getSynastryRanking: jest.fn(),
+    getMeReport: jest.fn(),
+    requestMeReport: jest.fn(),
+    getAccount: jest.fn(),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
-jest.mock('@/features/share/share-actions', () => ({ sendImage: jest.fn(), sendLink: jest.fn() }));
+jest.mock('@/features/share/share-actions', () => ({ saveImage: jest.fn(), shareStory: jest.fn() }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 const mockParams = useLocalSearchParams as jest.Mock;
@@ -48,7 +52,11 @@ beforeEach(async () => {
     data: {
       shareId: 's1',
       card:
-        request.kind === 'READING'
+        request.kind === 'NICKNAME'
+          ? C.nickname
+          : request.kind === 'ME_AREA'
+            ? { ...C.meArea, area: request.area }
+            : request.kind === 'READING'
           ? C.reading
           : request.kind === 'SCORE'
             ? C.score
@@ -58,6 +66,8 @@ beforeEach(async () => {
     },
   }));
   mockApi.createReading.mockResolvedValue({ ok: true, data: fixtures.reading });
+  mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } as MeReportState });
+  mockApi.getAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
   mockApi.getSynastry.mockResolvedValue({ ok: true, data: fixtures.synastryList[0] });
   mockApi.getSynastryRanking.mockImplementation(async (relation) => ({
     ok: true,
@@ -67,13 +77,38 @@ beforeEach(async () => {
 });
 
 describe('공유로 들어가는 곳', () => {
-  it('요약 해석: "공유하기" 를 누르면 요약 해석 카드를 만든다(화면을 여는 것만으로는 만들지 않는다)', async () => {
+  it('내 별명(/reading): 머리의 공유 아이콘을 누르면 내 별명 카드(NICKNAME)를 만든다(화면을 여는 것만으로는 만들지 않는다)', async () => {
     await render(<ReadingScreen />);
     const entry = await shareButton();
     expect(mockApi.createShare).not.toHaveBeenCalled();
     await fireEvent.press(entry);
     expect(await screen.findByTestId('share-card')).toBeTruthy();
-    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'READING' });
+    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NICKNAME' });
+  });
+
+  it('나 탭 받기 전: 머리의 공유 아이콘은 내 별명 카드(NICKNAME)다(결정 053 의 2)', async () => {
+    await render(<MeScreen />);
+    await screen.findByTestId('me-detail-card');
+    await fireEvent.press(await shareButton());
+    expect(await screen.findByTestId('share-card')).toBeTruthy();
+    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NICKNAME' });
+  });
+
+  it('나 탭 받은 뒤: 머리의 공유 아이콘은 지금 고른 칩의 영역 카드(ME_AREA)다(보드 12-13)', async () => {
+    mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
+    const view = await render(<MeScreen />);
+    await screen.findByTestId('me-chip-LOVE');
+    await fireEvent.press(await shareButton());
+    expect(await screen.findByTestId('share-card')).toBeTruthy();
+    expect(mockApi.createShare).toHaveBeenLastCalledWith({ kind: 'ME_AREA', area: 'PERSONALITY' });
+    await view.unmount();
+
+    await render(<MeScreen />);
+    await fireEvent.press(await screen.findByTestId('me-chip-LOVE'));
+    await fireEvent.press(await shareButton());
+    expect(await screen.findByTestId('share-card')).toBeTruthy();
+    expect(mockApi.createShare).toHaveBeenLastCalledWith({ kind: 'ME_AREA', area: 'LOVE' });
   });
 
   it('궁합 결과: "공유하기" 는 내 이름을 묻고, 그 궁합의 점수 카드를 만든다', async () => {

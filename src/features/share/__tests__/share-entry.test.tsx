@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { Linking, Platform, StyleSheet } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { Colors, Sizes } from '@/constants/theme';
 
 import { strings } from '@/content/strings';
 import { saveImage, shareStory } from '@/features/share/share-actions';
@@ -184,6 +184,31 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     mockStory.mockResolvedValueOnce('FAILED');
     await fireEvent.press(button(S.actions.story));
     expect(within(await screen.findByTestId('toast')).getByText(S.notices.storyFailed)).toBeTruthy();
+  });
+
+  it('카드를 기다리는 동안(0.3초가 넘으면) 미리보기 자리에 같은 크기 · 같은 줄 배치의 9:16 카드 뼈대(결정 065 의 2 · 071)', async () => {
+    jest.useFakeTimers();
+    try {
+      mockApi.createShare.mockImplementation(() => new Promise(() => {}));
+      await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+      await open();
+      // 0.3초 전에는 빈 자리(같은 크기)만 — 빨리 오면 뼈대가 번쩍이지 않게
+      const frame = screen.getByTestId('share-card-skeleton');
+      expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
+      await act(async () => {
+        jest.advanceTimersByTime(300);
+      });
+      const { width, height, borderRadius } = StyleSheet.flatten(screen.getByTestId('share-card-skeleton').props.style);
+      expect([width, height]).toEqual([Sizes.shareCardWidth, 372]);
+      expect(borderRadius).toBe(16);
+      expect(frame).toBeTruthy();
+      // 그림 · 칩 · 이름표 · 제목 두 줄 · 아래 줄(로고 · 한 줄 소개)
+      expect(screen.getAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(7);
+      expect(screen.getByLabelText(strings.states.loading)).toBeTruthy();
+      expect(actionLabels()).toEqual([]);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('공유할 것이 없으면(404) 그 말만 보이고 버튼이 없다', async () => {

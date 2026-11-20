@@ -2,6 +2,7 @@ import type { ComponentRef, Ref } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
+import { Skeleton } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, CardRadius, Colors, LineWidth, ShareCardLayout as L, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -68,6 +69,49 @@ export function ShareCardView({ card, width = Sizes.shareCardWidth, ref }: Share
       </View>
       {/* 테두리는 카드 위에 덧그린다(이미지에는 들어가지 않고 카드 면의 비율도 바꾸지 않는다) */}
       <View pointerEvents="none" style={styles.border} />
+    </View>
+  );
+}
+
+/**
+ * 카드를 기다리는 동안의 미리보기 자리(결정 065 의 2 · 071): 다 그린 카드와 같은 크기 · 같은 자리에 그림 · 칩 · 이름표 · 제목 두 줄 · 아래 줄(로고 · 한 줄 소개)
+ * 막대를 둔다. 해 별자리 그림(내 별명)과 그 밖의 그림(200)은 크기가 달라 kind 로 고른다. bars 가 false 면(0.3초 전) 같은 크기의 빈 자리만.
+ */
+export function ShareCardSkeleton({ kind, bars, width = Sizes.shareCardWidth }: { kind: ShareCard['kind']; bars: boolean; width?: number }) {
+  const height = Math.round((width * SHARE_IMAGE.height) / SHARE_IMAGE.width);
+  const k = width / L.base;
+  const sign = kind === 'NICKNAME';
+  const chipHeight = (L.chip.text.lineHeight + L.chip.padV * 2) * k;
+  /** 한 줄 칸 안에 글자 높이만큼의 막대(줄 사이 여백은 칸이 맡는다) */
+  const line = (text: { fontSize: number; lineHeight: number }, barWidth: number, top = 0) => (
+    <View style={{ height: text.lineHeight * k, marginTop: top * k, justifyContent: 'center', alignItems: 'center', alignSelf: 'stretch' }}>
+      <Skeleton width={barWidth * k} height={text.fontSize * k} />
+    </View>
+  );
+  return (
+    <View
+      testID="share-card-skeleton"
+      accessible
+      accessibilityLabel={strings.states.loading}
+      style={[styles.frame, styles.skeleton, { width, height }]}>
+      {bars ? (
+        <View style={[styles.story, { paddingTop: L.padTop * k, paddingHorizontal: L.padX * k, paddingBottom: L.padBottom * k }]}>
+          {sign ? (
+            <Skeleton width={L.sign.width * k} height={L.sign.height * k} />
+          ) : (
+            <Skeleton width={L.art * k} height={L.art * k} pill style={{ marginTop: L.artTop * k }} />
+          )}
+          <Skeleton width={90 * k} height={chipHeight} pill style={{ marginTop: L.chip.top * k }} />
+          {line(L.label.text, 140, L.label.top)}
+          {line(L.title.text, 260, L.title.top)}
+          {line(L.title.text, 180)}
+          <View style={styles.grow} />
+          <View style={[styles.storyFoot, { paddingTop: L.foot.padTop * k }]}>
+            <Skeleton width={Math.round((L.foot.mark * 212) / 112) * k} height={L.foot.mark * k} />
+            <Skeleton width={150 * k} height={L.foot.text.fontSize * k} />
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -297,6 +341,7 @@ function CardBody({ card }: { card: ByeoliCard }) {
 const styles = StyleSheet.create({
   frame: { borderRadius: CardRadius, overflow: 'hidden' },
   card: { flex: 1, backgroundColor: Colors.paper },
+  skeleton: { backgroundColor: Colors.paper, borderWidth: LineWidth, borderColor: Colors.hair },
   byeoli: { flex: 1, alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md },
   story: { flex: 1, alignItems: 'center', overflow: 'hidden' },
   chip: { borderWidth: LineWidth, borderColor: Colors.hair, borderRadius: 999 },

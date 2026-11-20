@@ -7,11 +7,12 @@ import { Checkbox } from '@/components/checkbox';
 import { Field, FieldInput } from '@/components/field';
 import { Sheet } from '@/components/sheet';
 import { Toast, useToast } from '@/components/toast';
+import { useLoadingPhase } from '@/components/use-loading-phase';
 import { Txt } from '@/components/txt';
 import { Colors, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveImage, shareStory, type CardRef } from '@/features/share/share-actions';
-import { SHARE_IMAGE, ShareCardView } from '@/features/share/share-card';
+import { ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
 import { storyAppId } from '@/features/share/story';
 import { useShareCard } from '@/features/share/use-share-card';
 import type { MeArea, Relation, ShareRequest } from '@/lib/api';
@@ -87,6 +88,8 @@ function ShareBody({ target }: { target: ShareTarget }) {
     return { kind: target.kind };
   }, [target, myName, showNames]);
   const { state, retry } = useShareCard(request);
+  // 기다리는 동안 0.3초가 넘으면 카드 모양 뼈대(결정 065 의 2 · 071)
+  const phase = useLoadingPhase(state.status === 'loading');
   const cardRef: CardRef = useRef(null);
   const { toast, show, hide } = useToast();
   /** 이미지를 찍는 동안 버튼을 다시 누르지 못하게(같은 그림이 두 장 저장되지 않게) */
@@ -125,10 +128,8 @@ function ShareBody({ target }: { target: ShareTarget }) {
   return (
     <View style={styles.body}>
       {state.status === 'loading' ? (
-        <View style={styles.pending}>
-          <Txt variant="table" color="gray" style={styles.center}>
-            {S.making}
-          </Txt>
+        <View style={styles.preview}>
+          <ShareCardSkeleton kind={target.kind} bars={phase === 'skeleton' || phase === 'timeout'} />
         </View>
       ) : state.status === 'failed' ? (
         state.notFound ? (
@@ -202,13 +203,5 @@ const styles = StyleSheet.create({
   },
   body: { gap: Spacing.lg },
   preview: { alignItems: 'center' },
-  /** 카드를 만드는 동안 미리보기 자리를 그대로 둔다(시트가 들썩이지 않게) */
-  pending: {
-    alignSelf: 'center',
-    width: Sizes.shareCardWidth,
-    height: Math.round((Sizes.shareCardWidth * SHARE_IMAGE.height) / SHARE_IMAGE.width),
-    justifyContent: 'center',
-  },
-  center: { textAlign: 'center' },
   actions: { gap: Spacing.xs },
 });

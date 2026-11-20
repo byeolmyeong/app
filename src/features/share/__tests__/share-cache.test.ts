@@ -2,13 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   fetchShare,
-  prefetchShare,
   readCachedShare,
   resetShareRequests,
   SHARE_CARDS_STORAGE_KEY,
   shareKeyOf,
 } from '@/features/share/share-cache';
-import { api, type ShareCard, type ShareRequest } from '@/lib/api';
+import { api, type ShareCard } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@/lib/api', () => ({
@@ -19,7 +18,6 @@ jest.mock('@/lib/api', () => ({
 const mockApi = api as jest.Mocked<typeof api>;
 const C = fixtures.shareCards;
 const made = (card: ShareCard = C.nickname, shareId = 's1') => ({ ok: true as const, data: { shareId, card } });
-const flush = () => new Promise((r) => setTimeout(r, 0));
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -27,7 +25,7 @@ beforeEach(async () => {
   resetShareRequests();
 });
 
-describe('공유 카드 기억 · 미리 받기', () => {
+describe('공유 카드 기억', () => {
   it('키는 종류(+영역 · 날짜)이고, 궁합 카드(이름 · 이름 표시가 바뀐다)는 기억하지 않는다', () => {
     expect(shareKeyOf({ kind: 'NICKNAME' })).toBe('NICKNAME');
     expect(shareKeyOf({ kind: 'ME_AREA', area: 'LOVE' })).toBe('ME_AREA:LOVE');
@@ -56,27 +54,6 @@ describe('공유 카드 기억 · 미리 받기', () => {
     // 끝난 뒤에는 새로 묻는다
     mockApi.createShare.mockResolvedValue(made(C.nextBig));
     await fetchShare({ kind: 'NEXT_BIG' });
-    expect(mockApi.createShare).toHaveBeenCalledTimes(2);
-  });
-
-  it('미리 받기: 기억한 카드가 없을 때만 묻고, 실패는 조용히 넘긴다', async () => {
-    mockApi.createShare.mockResolvedValue({ ok: false, error: 'NETWORK' });
-    prefetchShare({ kind: 'ME_AREA', area: 'WORK' });
-    await flush();
-    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
-    expect(await readCachedShare('ME_AREA:WORK')).toBeNull();
-
-    mockApi.createShare.mockResolvedValue(made({ ...C.meArea, area: 'WORK' }));
-    prefetchShare({ kind: 'ME_AREA', area: 'WORK' });
-    await flush();
-    await flush();
-    expect(mockApi.createShare).toHaveBeenCalledTimes(2);
-    prefetchShare({ kind: 'ME_AREA', area: 'WORK' });
-    await flush();
-    expect(mockApi.createShare).toHaveBeenCalledTimes(2);
-    // 궁합 카드는 미리 받지 않는다
-    prefetchShare({ kind: 'SCORE', synastryId: 'x', myName: 'y' } as ShareRequest);
-    await flush();
     expect(mockApi.createShare).toHaveBeenCalledTimes(2);
   });
 

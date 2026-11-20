@@ -71,7 +71,7 @@ afterEach(() => {
 });
 
 describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 12-5 · 12-13 · 11-6 · 14-5)', () => {
-  it('화면에 들어오면(아이콘이 그려지면) 카드를 한 번 미리 받아 두고, 열면 카드 넷 각각의 미리보기를 보여 준다', async () => {
+  it('화면에 들어와도(아이콘이 그려져도) 공유를 만들지 않고, 열면 카드 넷 각각을 한 번 만들어 미리보기를 보여 준다(서버 결정 012 · 결정 053 의 3)', async () => {
     const targets: [ShareTarget, ShareRequest, string][] = [
       [{ kind: 'NICKNAME' }, { kind: 'NICKNAME' }, C.nickname.headline],
       [{ kind: 'ME_AREA', area: 'WORK' }, { kind: 'ME_AREA', area: 'WORK' }, C.meArea.title],
@@ -81,19 +81,16 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     for (const [target, request, text] of targets) {
       jest.clearAllMocks();
       const view = await render(<ShareEntry target={target} trigger="icon" />);
-      // 미리 받기: 화면에 들어오면 한 번(다시 그려져도 더 묻지 않는다)
-      await waitFor(() => expect(mockApi.createShare).toHaveBeenCalledTimes(1));
-      expect(mockApi.createShare).toHaveBeenCalledWith(request);
       await view.rerender(<ShareEntry target={target} trigger="icon" />);
       await act(async () => {});
-      expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+      expect(mockApi.createShare).not.toHaveBeenCalled();
       await open();
       const card = await screen.findByTestId('share-card');
       expect(within(card).getByText(text)).toBeTruthy();
       // 버튼을 눌러도 다시 만들지 않는다
-      const calls = mockApi.createShare.mock.calls.length;
       await fireEvent.press(button(S.actions.saveImage));
-      expect(mockApi.createShare).toHaveBeenCalledTimes(calls);
+      expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+      expect(mockApi.createShare).toHaveBeenCalledWith(request);
       await view.unmount();
     }
   });
@@ -256,7 +253,6 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
       [{ kind: 'DAY_SKY', date: '2026-11-21' }, S.nothing.DAY_SKY],
       [{ kind: 'NEXT_BIG' }, S.nothing.NEXT_BIG],
     ];
-    // 미리 받기와 열 때 모두 404
     mockApi.createShare.mockResolvedValue(notFound);
     for (const [target, text] of cases) {
       const view = await render(<ShareEntry target={target} />);
@@ -269,7 +265,7 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
   });
 
   it('만들지 못하면 안내와 "다시 시도" 를 보여 주고, 버튼은 없다', async () => {
-    // 미리 받기(조용히 실패)와 열 때 모두 끊김 — 받아 둔 카드가 없으니 안내
+    // 받아 둔 카드가 없으니 안내
     mockApi.createShare.mockResolvedValue({ ok: false, error: 'NETWORK' });
     await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
@@ -278,7 +274,7 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     mockApi.createShare.mockResolvedValue(made(C.nickname));
     await fireEvent.press(screen.getByText(S.retry));
     expect(await screen.findByTestId('share-card')).toBeTruthy();
-    expect(mockApi.createShare).toHaveBeenCalledTimes(3);
+    expect(mockApi.createShare).toHaveBeenCalledTimes(2);
   });
 });
 

@@ -73,13 +73,14 @@ beforeEach(async () => {
 });
 
 describe('공유로 들어가는 곳', () => {
-  it('내 별명(/reading): 화면에 들어오면 내 별명 카드(NICKNAME)를 한 번 미리 받아 두고, 공유 아이콘을 누르면 그 카드를 보여 준다', async () => {
+  it('내 별명(/reading): 공유 아이콘을 누르면 내 별명 카드(NICKNAME)를 만든다(화면을 여는 것만으로는 만들지 않는다 — 서버 결정 012)', async () => {
     await render(<ReadingScreen />);
     const entry = await shareButton();
-    await waitFor(() => expect(mockApi.createShare).toHaveBeenCalledTimes(1));
-    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NICKNAME' });
+    expect(mockApi.createShare).not.toHaveBeenCalled();
     await fireEvent.press(entry);
     expect(await screen.findByTestId('share-card')).toBeTruthy();
+    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NICKNAME' });
   });
 
   it('나 탭 받기 전: 머리의 공유 아이콘은 내 별명 카드(NICKNAME)다(결정 053 의 2)', async () => {

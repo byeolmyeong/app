@@ -60,7 +60,8 @@ export function StateScreen({ title, body, primary, later, nav, tabs }: StateScr
       </View>
       <View testID="state-actions" style={[styles.actions, { paddingBottom: tabs ? StateLayout.aboveTabs : StateLayout.bottom }]}>
         {later ? <TextLink label={later.label} onPress={later.onPress} /> : null}
-        {primary ? <Button label={primary.label} onPress={primary.onPress} /> : null}
+        {/* 버튼이 없어도(점검) 그 자리를 비워 두어 그림 · 글이 버튼이 있는 화면과 같은 높이에 온다(보드 18 · 17-1) */}
+        {primary ? <Button label={primary.label} onPress={primary.onPress} /> : <View testID="state-primary-space" style={styles.primarySpace} />}
       </View>
     </Screen>
   );
@@ -118,4 +119,5 @@ const styles = StyleSheet.create({
   title: { marginTop: StateLayout.titleTop, textAlign: 'center' },
   text: { marginTop: StateLayout.bodyTop, textAlign: 'center' },
   actions: { paddingHorizontal: ScreenPaddingX, gap: StateLayout.laterGap },
+  primarySpace: { height: Sizes.buttonHeight },
 });

@@ -39,6 +39,13 @@ describe('StateScreen', () => {
     expect(screen.getByText('아래 탭')).toBeTruthy();
     expect(StyleSheet.flatten(screen.getByTestId('state-actions').props.style).paddingBottom).toBe(16);
   });
+
+  it('버튼이 없어도(점검) 그림 · 글 자리는 버튼이 있을 때와 같다 — 맨 아래 주 버튼 자리(높이 56)를 비워 둔다(보드 18 · 17-1)', async () => {
+    const view = await render(<StateScreen title="t" body="b" />);
+    expect(StyleSheet.flatten(screen.getByTestId('state-primary-space').props.style).height).toBe(56);
+    await view.rerender(<StateScreen title="t" body="b" primary={{ label: '업데이트', onPress: jest.fn() }} />);
+    expect(screen.queryByTestId('state-primary-space')).toBeNull();
+  });
 });
 
 // 연결 끊김 띠(결정 061 의 4, 보드 20): 받아 둔 것은 그대로 두고 머리 아래에 한 줄

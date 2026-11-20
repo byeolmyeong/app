@@ -690,7 +690,10 @@ export const InquiryLayout = {
   answer: { fill: 'rgba(71,82,255,0.10)', border: 'rgba(154,163,255,0.28)', label: '#C9CEFF' },
   /** 비었을 때: 머리 아래 높이 560 칸의 가운데(보드 16-8 비었을 때) */
   empty: { height: 560, icon: 72, glyph: 32, titleTop: 20, bodyTop: 8 },
-  /** 처음 불러올 때 뼈대 줄 수 · 줄 높이(보드 24 의 카드 줄) */
-  skeleton: { rows: 3, line: 16, meta: 12 },
+  /**
+   * 처음 불러올 때 뼈대(다 그려진 화면과 같은 카드 · 같은 줄, 결정 065): 내역 줄 수 · 첫 줄 막대 높이 · 날짜 · 머리 막대 높이 · 상태 칩 너비 ·
+   * 날짜 너비 · 답변 보기의 본문 줄 수
+   */
+  skeleton: { rows: 3, line: 16, meta: 12, chip: 56, date: 64, bodyLines: 3 },
   sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
 } as const;

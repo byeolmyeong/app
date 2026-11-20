@@ -72,7 +72,7 @@ export default function InquiryDetailScreen() {
     );
   if (state.status === 'loading')
     return (
-      <Screen nav={nav}>
+      <Screen scroll={false} nav={nav}>
         {/* 다 그려진 화면과 같은 자리: 내 문의 카드(머리 — 종류 · 날짜 / 글 줄) + 아래 안내 한 줄(답이 왔는지는 모른다), 결정 065 */}
         {phase === 'skeleton' ? (
           <View accessible accessibilityLabel={strings.states.loading} style={styles.content}>
@@ -85,13 +85,16 @@ export default function InquiryDetailScreen() {
                   <Skeleton width={L.skeleton.date} height={L.skeleton.meta} />
                 </View>
               </View>
-              {Array.from({ length: L.skeleton.bodyLines }, (_, i) => (
-                <View key={i} testID="skeleton-body-line" style={styles.bodyBox}>
-                  <Skeleton width={i === L.skeleton.bodyLines - 1 ? '60%' : '100%'} height={L.skeleton.line} />
-                </View>
-              ))}
+              {/* 실제 글은 Txt 하나라 줄 사이는 줄 높이뿐이다 — 카드 간격이 끼지 않게 한 칸에 묶는다 */}
+              <View testID="skeleton-body">
+                {Array.from({ length: L.skeleton.bodyLines }, (_, i) => (
+                  <View key={i} testID="skeleton-body-line" style={styles.bodyBox}>
+                    <Skeleton width={i === L.skeleton.bodyLines - 1 ? '60%' : '100%'} height={L.skeleton.line} />
+                  </View>
+                ))}
+              </View>
             </View>
-            <View testID="skeleton-note" style={[styles.note, styles.captionBox]}>
+            <View testID="skeleton-note" style={[styles.note, styles.noteBox]}>
               <Skeleton width="70%" height={L.skeleton.meta} />
             </View>
           </View>
@@ -140,5 +143,6 @@ const styles = StyleSheet.create({
   note: { paddingHorizontal: Spacing.xxs },
   captionBox: { flex: 1, height: Typography.caption.lineHeight, justifyContent: 'center' },
   dateBox: { height: Typography.caption.lineHeight, justifyContent: 'center' },
+  noteBox: { height: Typography.caption.lineHeight, justifyContent: 'center' },
   bodyBox: { height: Typography.body.lineHeight, justifyContent: 'center' },
 });

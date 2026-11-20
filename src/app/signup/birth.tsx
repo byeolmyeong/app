@@ -30,7 +30,16 @@ const H = strings.home;
 /** 다 끝나 떠날 곳. clear 면 스택을 비우고 간다(가입을 마침) */
 type Leave = { href: Href; clear: boolean };
 
+/**
+ * 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 가입(초안)을 되돌리기 전에 화면이 먼저 뜬다(결정 068) —
+ * 확인 중에는 그리지 않고(가드 가림막 · 스플래시가 가린다) 되돌린 초안으로 처음 그린다.
+ */
 export default function BirthStep() {
+  const { status } = useAuth();
+  return status === 'checking' ? null : <BirthStepScreen />;
+}
+
+function BirthStepScreen() {
   const { status, completeSignup } = useAuth();
   const [draft] = useState(getDraft);
   const fields = useBirthFields();

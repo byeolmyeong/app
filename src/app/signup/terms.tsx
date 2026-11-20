@@ -35,7 +35,16 @@ const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '
 
 const NONE: Agreements = { terms: false, privacy: false, push: false, marketing: false };
 
+/**
+ * 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 가입(초안)을 되돌리기 전에 화면이 먼저 뜬다(결정 068) —
+ * 확인 중에는 그리지 않고(가드 가림막 · 스플래시가 가린다) 되돌린 초안으로 처음 그린다.
+ */
 export default function TermsStep() {
+  const { status } = useAuth();
+  return status === 'checking' ? null : <TermsStepScreen />;
+}
+
+function TermsStepScreen() {
   const { status, cancelSignup } = useAuth();
   // 초안이 있으면(닉네임 단계 · 약관 보기에서 돌아옴) 그 동의로, 없으면 모두 꺼짐
   const [agreed, setAgreed] = useState<Agreements>(draftAgreements);

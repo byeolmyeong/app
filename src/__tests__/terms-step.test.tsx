@@ -9,6 +9,9 @@ import { clearDraft, getDraft, rejectTerms, setDraft } from '@/features/auth/sig
 import { useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({
+  // 가입 단계는 웹에서 오른쪽에서 밀려 들어온다 — 이 시험들은 앱(움직이지 않음)
+  useCanGoBack: () => false,
+  useIsFocused: () => true,
   router: { push: jest.fn(), replace: jest.fn() },
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   Redirect: ({ href }: { href: string }) => {

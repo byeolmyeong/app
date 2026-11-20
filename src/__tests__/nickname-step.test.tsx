@@ -9,6 +9,9 @@ import { clearDraft, getDraft, rejectNickname, setDraft } from '@/features/auth/
 import { useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({
+  // 가입 단계는 웹에서 오른쪽에서 밀려 들어온다 — 이 시험들은 앱(움직이지 않음)
+  useCanGoBack: () => false,
+  useIsFocused: () => true,
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
   // 화면에 들어올 때 한 번(이 테스트에서는 그리는 때)
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
@@ -225,5 +228,20 @@ describe('닉네임 단계: 멈추면 확인', () => {
     await settle();
     expect(checkNickname).toHaveBeenCalledTimes(1);
     expect(nextDisabled()).toBe(true);
+  });
+});
+
+// 결정 068 의 1: 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 초안을 되돌리기 전에 화면이 먼저 뜬다 —
+// 확인 중에는 약관 단계로 돌려보내지 않고 기다렸다가, 되돌린 초안으로 그린다
+describe('닉네임 단계: 새로 고침 직후(세션 확인 중)', () => {
+  it('확인 중에는 돌려보내지 않고, 가입 중이 되면 되돌린 초안의 닉네임으로 그린다', async () => {
+    clearDraft();
+    (useAuth as jest.Mock).mockReturnValue({ status: 'checking', checkNickname });
+    const view = await render(<NicknameStep />);
+    expect(screen.queryByText(/^redirect:/)).toBeNull();
+    setDraft({ ...terms, nickname: '새벽별', avatar: 2 });
+    (useAuth as jest.Mock).mockReturnValue({ status: 'signingUp', checkNickname });
+    await view.rerender(<NicknameStep />);
+    expect(screen.getByDisplayValue('새벽별')).toBeTruthy();
   });
 });

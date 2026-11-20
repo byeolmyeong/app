@@ -38,7 +38,16 @@ const CHECK_AFTER_MS = 500;
 
 const randomAvatar = (): AvatarId => AVATAR_IDS[Math.min(AVATAR_IDS.length - 1, Math.floor(Math.random() * AVATAR_IDS.length))];
 
+/**
+ * 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 가입(초안)을 되돌리기 전에 화면이 먼저 뜬다(결정 068) —
+ * 확인 중에는 그리지 않고(가드 가림막 · 스플래시가 가린다) 되돌린 초안으로 처음 그린다.
+ */
 export default function NicknameStep() {
+  const { status } = useAuth();
+  return status === 'checking' ? null : <NicknameStepScreen />;
+}
+
+function NicknameStepScreen() {
   const { status, checkNickname: askServer } = useAuth();
   /** 서버에 묻는 중(두 번 누르기 · 엔터가 겹쳐도 한 번만 묻는다) */
   const asking = useRef(false);

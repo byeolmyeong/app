@@ -12,6 +12,9 @@ import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
+  // 가입 단계는 웹에서 오른쪽에서 밀려 들어온다 — 이 시험들은 앱(움직이지 않음)
+  useCanGoBack: () => false,
+  useIsFocused: () => true,
   usePreventRemove: jest.fn(),
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => true) },
@@ -156,5 +159,15 @@ describe('출생 정보 단계', () => {
     await render(<BirthStep />);
     await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
     expect(router.back).toHaveBeenCalled();
+  });
+});
+
+// 결정 068 의 1: 새로 고침 직후(세션 확인 중)에는 닉네임 단계로 돌려보내지 않는다
+describe('출생 정보 단계: 새로 고침 직후(세션 확인 중)', () => {
+  it('확인 중에는 돌려보내지 않는다', async () => {
+    clearDraft();
+    (useAuth as jest.Mock).mockReturnValue({ status: 'checking', completeSignup: jest.fn() });
+    await render(<BirthStep />);
+    expect(screen.queryByText(/^redirect:/)).toBeNull();
   });
 });

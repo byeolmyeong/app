@@ -3,8 +3,9 @@
  * 높이 48 · 모서리 12, 로고 칸 20×20 은 바깥 왼쪽 16 에 고정, 문구는 버튼 전체 폭의 가운데 16px · 500.
  * 애플만 HIG 의 "제목 = 높이의 43%" 에서 벗어난다(소유자가 16px 통일을 골랐다). 심사에서 지적받으면 애플 글자만 되돌린다.
  * 이 기기에서 마지막에 쓴 공급자면 오른쪽 위에 "최근 로그인" 배지를 얹는다(결정 044, 보드 5-2).
+ * 누른 뒤 서버를 기다리는 동안(loading)은 문구 자리에 공급자 글자색의 작은 돌기를 두고 누를 수 없다(결정 067 의 2).
  */
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
@@ -18,7 +19,10 @@ export type SocialButtonProps = {
   /** 버튼 문구(strings.login, 결정 044) */
   label: string;
   onPress: () => void;
+  /** 누를 수 없다 — 흐리게(다른 버튼이 기다리는 중) */
   disabled?: boolean;
+  /** 이 버튼으로 로그인하고 서버를 기다리는 중 — 문구 대신 돌기(결정 067 의 2) */
+  loading?: boolean;
   /** 이 기기에서 마지막에 쓴 공급자(결정 044) */
   recent?: boolean;
 };
@@ -75,21 +79,25 @@ export function RecentBadge() {
 const socialLabel = (label: string, recent: boolean) =>
   recent ? `${label}${strings.login.recentSeparator}${strings.login.recent}` : label;
 
-export function SocialButton({ provider, label, onPress, disabled = false, recent = false }: SocialButtonProps) {
+export function SocialButton({ provider, label, onPress, disabled = false, loading = false, recent = false }: SocialButtonProps) {
   const Logo = LOGOS[provider];
   return (
     <Pressable
       testID={`social-button-${provider}`}
       accessibilityRole="button"
       accessibilityLabel={socialLabel(label, recent)}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      disabled={disabled || loading}
       onPress={onPress}
-      style={[styles.base, styles[provider], disabled && styles.disabled]}>
+      style={[styles.base, styles[provider], disabled && !loading && styles.disabled]}>
       <View testID={`social-logo-${provider}`} style={[styles.logo, provider === 'GOOGLE' && styles.logoInBorder]}>
         <Logo />
       </View>
-      <Text style={[styles.text, text[provider]]}>{label}</Text>
+      {loading ? (
+        <ActivityIndicator testID={`social-spinner-${provider}`} size="small" color={text[provider].color} />
+      ) : (
+        <Text style={[styles.text, text[provider]]}>{label}</Text>
+      )}
       {recent ? <RecentBadge /> : null}
     </Pressable>
   );

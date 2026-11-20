@@ -84,3 +84,27 @@ describe('최근 로그인 배지', () => {
     expect(screen.getByRole('button').props.accessibilityLabel).toBe('Google로 로그인');
   });
 });
+
+// 로그인을 기다리는 동안(결정 067 의 2): 누른 버튼은 문구 자리에 작은 돌기, 나머지는 흐리게 · 누를 수 없게
+describe('공급자 버튼: 기다리는 중', () => {
+  it('loading 이면 문구 대신 공급자 글자색의 돌기를 두고, 흐리지 않되 누를 수 없다', async () => {
+    const onPress = jest.fn();
+    await render(<SocialButton provider="GOOGLE" label="Google로 로그인" onPress={onPress} loading />);
+    const spinner = screen.getByTestId('social-spinner-GOOGLE');
+    expect(spinner.props.color).toBe('#E3E3E3');
+    expect(screen.queryByText('Google로 로그인')).toBeNull();
+    expect(flat('social-button-GOOGLE').opacity).toBeUndefined();
+    const button = screen.getByRole('button');
+    expect(button.props.accessibilityLabel).toBe('Google로 로그인');
+    expect(button.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
+    await fireEvent.press(button);
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it('막혀 있으면(다른 버튼이 기다리는 중) 흐리고 돌기는 없다', async () => {
+    await render(<SocialButton provider="KAKAO" label="Kakao로 로그인" onPress={jest.fn()} disabled />);
+    expect(flat('social-button-KAKAO').opacity).toBe(0.4);
+    expect(screen.queryByTestId('social-spinner-KAKAO')).toBeNull();
+    expect(screen.getByText('Kakao로 로그인')).toBeTruthy();
+  });
+});

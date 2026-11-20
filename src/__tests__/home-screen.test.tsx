@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import NetInfo from '@react-native-community/netinfo';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
@@ -173,6 +174,24 @@ describe('홈', () => {
     const style = (label: string) => StyleSheet.flatten(within(screen.getByLabelText(label)).getByText(label).props.style);
     expect(style('홈')).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '600', color: Colors.ink });
     expect(style('나')).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '500', color: Colors.hint });
+  });
+
+  it('끊기면 별명 카드 위에 띠가 뜨고, 돌아오면 사라진다(결정 061 의 4, 보드 20)', async () => {
+    let listener: ((s: { isConnected: boolean; isInternetReachable: boolean }) => void) | null = null;
+    (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
+      listener = cb;
+      return () => {};
+    });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    expect(screen.queryByTestId('offline-banner')).toBeNull();
+    await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
+    const column = within(screen.getByTestId('home-column'));
+    expect(column.getByTestId('offline-banner')).toBeTruthy();
+    expect(column.getByTestId('nickname-card')).toBeTruthy();
+    await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
+    expect(screen.queryByTestId('offline-banner')).toBeNull();
   });
 
   it('출생 정보를 넣기 전(입력 화면)에는 탭이 없다', async () => {

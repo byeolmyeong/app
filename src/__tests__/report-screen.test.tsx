@@ -209,10 +209,11 @@ describe('심층 리포트 화면', () => {
     expect(mockApi.requestReport).toHaveBeenCalledTimes(1);
   });
 
-  it('인터넷이 끊겼을 때와 요청이 많을 때는 그에 맞는 안내를 보여 준다', async () => {
+  it('끊겨서 못 받으면 보드 20-1("인터넷에 연결되어 있지 않아요"), 요청이 많으면 그 안내(결정 061 의 4)', async () => {
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     const first = await render(<ReportScreen />);
-    expect(await screen.findByText(R.failed.NETWORK)).toBeTruthy();
+    expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
+    expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
     await first.unmount();
     mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
     await render(<ReportScreen />);

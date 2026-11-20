@@ -60,10 +60,10 @@ export function StateScreen({ title, body, primary, later, nav, tabs }: StateScr
         </Txt>
       </View>
       <View testID="state-actions" style={[styles.actions, { paddingBottom: tabs ? StateLayout.aboveTabs : StateLayout.bottom }]}>
+        {/* 가운데 회색 글자 단추(보드 11-9 — 높이 48, 주 버튼 위 8) */}
         {later ? (
-          // 주 버튼 위 가운데 회색 글자 버튼(보드 22 "로그아웃")
-          <Pressable accessibilityRole="button" onPress={later.onPress} style={styles.later}>
-            <Txt variant="item" color="gray" style={styles.laterText}>
+          <Pressable accessibilityRole="button" accessibilityLabel={later.label} onPress={later.onPress} style={styles.later}>
+            <Txt variant="kicker" color="gray" style={styles.laterText}>
               {later.label}
             </Txt>
           </Pressable>
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   title: { marginTop: StateLayout.titleTop, textAlign: 'center' },
   text: { marginTop: StateLayout.bodyTop, textAlign: 'center' },
   actions: { paddingHorizontal: ScreenPaddingX, gap: StateLayout.laterGap },
-  later: { height: StateLayout.laterHeight, alignItems: 'center', justifyContent: 'center' },
-  laterText: { fontWeight: FontWeight.medium },
   primarySpace: { height: Sizes.buttonHeight },
+  later: { height: StateLayout.later, alignItems: 'center', justifyContent: 'center' },
+  laterText: { fontWeight: FontWeight.medium },
 });

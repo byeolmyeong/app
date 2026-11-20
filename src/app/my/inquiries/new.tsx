@@ -12,7 +12,7 @@ import { Colors, InquiryLayout as L, LineWidth, MyLayout, Radius, ScreenPaddingX
 import { strings } from '@/content/strings';
 import { useSuspended } from '@/features/auth/suspension';
 import { CategoryChips } from '@/features/support/category-chips';
-import { checkInquiry, INQUIRY_BODY_MAX, inquiryLength } from '@/features/support/inquiry';
+import { checkInquiry, INQUIRY_BODY_MAX, INQUIRY_BODY_MIN, inquiryLength } from '@/features/support/inquiry';
 import { useInquiry } from '@/features/support/use-inquiry';
 import { useUpdateBusy } from '@/features/update/update-gate';
 import type { InquiryCategory } from '@/lib/api';
@@ -109,6 +109,12 @@ export default function NewInquiryScreen() {
                 {`${length}${F.countSeparator}${INQUIRY_BODY_MAX}`}
               </Txt>
             </View>
+            {/* 적기 시작했는데 10자가 안 되면 왜 보낼 수 없는지 알린다(소유자 2026-11-20) */}
+            {body.trim() !== '' && length < INQUIRY_BODY_MIN ? (
+              <Txt variant="caption" color="danger">
+                {F.tooShort}
+              </Txt>
+            ) : null}
             <Txt variant="caption" color="hint" keepAll>
               {F.hint}
             </Txt>

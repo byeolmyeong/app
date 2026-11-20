@@ -99,14 +99,68 @@ export type SignupExtra = {
 /** `POST /auth/nickname-check` 의 응답. 영문 대소문자는 같은 이름으로 본다(결정 042) */
 export type NicknameAvailability = { available: boolean };
 
+/**
+ * "이렇게 풀이한 이유" 의 근거 하나(서버 결정 031, 앱 결정 054). 글자는 `Chart` 의 body · sign · type 과 같고, 상승점 · 중천은 "ASC" · "MC" 다.
+ * 시각을 모르면 house 키 · CLUSTER · ASC · MC 가 오지 않는다. 값이 없는 키는 오지 않는다.
+ */
+export type KnownBasisItem =
+  | { kind: 'PLACEMENT'; body: string; sign: string; house?: number }
+  | { kind: 'CLUSTER'; house: number; bodies: string[] }
+  | { kind: 'ASPECT'; a: string; b: string; type: string }
+  | { kind: 'RULER'; body: string; ruler: string }
+  | { kind: 'TRANSIT'; mover: string; target?: string; type?: string; house?: number };
+
+/** 모르는 kind 는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
+export type BasisItem = KnownBasisItem | { kind: string };
+
+/** 근거의 때: 태어날 때 · 지금 지나는 시기 · 그날. 모르는 때는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
+export const REASON_WHENS = ['BIRTH', 'NOW', 'DAY'] as const;
+export type ReasonWhen = (typeof REASON_WHENS)[number];
+export type Reason = { when: ReasonWhen | (string & {}); items: BasisItem[] };
+
+/** "이 풀이에 쓰인 별" 하나: 놓인 자리는 body + sign, 하우스 모임은 house + count, 각도 · 다스리는 별은 body 하나 */
+export type Star = { body?: string; sign?: string; house?: number; count?: number };
+
 export type Reading = {
   headline: string;
-  sections: { title: string; body: string; basis: string[] }[];
+  /** reason 은 요약 해석 v2 의 근거 구조. basis 는 옛 근거 낱말로 서버 S⑦ 까지만 함께 온다(앱은 읽지 않는다) */
+  sections: { title: string; body: string; reason: Reason; basis?: string[] }[];
   strengths: string[];
+  /** 보완점 2(요약 해석 v2) */
   cautions: string[];
   /** 요약 해석 v2 의 만든 때(UTC ISO-8601, 서버 결정 030 · 031). 옛 응답에는 없다 — 홈의 "별명을 받은 지 N일"(결정 047) */
   createdAt?: string;
 };
+
+/** 나 탭 풀이의 영역(결정 048). 서버는 이 순서로 다섯 영역을 모두 준다 */
+export const ME_AREAS = ['PERSONALITY', 'LOVE', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
+export type MeArea = (typeof ME_AREAS)[number];
+
+/**
+ * 나 탭 풀이의 한 영역. 공통 칸 + 영역마다의 칸 하나(그 영역이 아니면 키가 없다): 성격 glance · 연애 practices + reason ·
+ * 관계 closer · 일 workStyle(서버가 차트로 셈한 10~90, 0 쪽 혼자서 · 계획대로 · 꼼꼼하게) · 감정 shaken. 연애는 문단이 없다.
+ */
+export type MeAreaReport = {
+  area: MeArea;
+  title: string;
+  keywords: [string, string, string];
+  stars: Star[];
+  paragraphs: { title: string; body: string; reason: Reason }[];
+  glance?: { shining: [string, string]; tiring: [string, string] };
+  practices?: { title: string; body: string }[];
+  reason?: Reason;
+  closer?: { first: string; close: string; longtime: string };
+  workStyle?: { together: number; flexible: number; fast: number };
+  shaken?: { when: string; comfort: string };
+};
+
+export type MeReport = { areas: MeAreaReport[] };
+
+/** `GET /me-report`. 풀이는 DONE 일 때만 온다(지금 프로필의 차트 기준 — 출생 정보를 고치면 NONE) */
+export type MeReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: MeReport };
+
+/** `POST /me-report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
+export type MeReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
 /** `GET /account` 에서 앱이 쓰는 값: 닉네임 · 프로필 그림(계약은 1~8). 옛 계정은 둘 다 null(서버 결정 025 · 028) */
 export type Account = { nickname: string | null; avatar: number | null };
@@ -424,20 +478,136 @@ export function isPlaceList(v: unknown): v is Place[] {
 
 const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((item) => typeof item === 'string');
 
-/** 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다 */
+const isHouseNumber = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 12;
+const isOptionalHouse = (v: unknown) => v === undefined || isHouseNumber(v);
+const isNonEmptyText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+
+/** 아는 kind 는 제 필드가 계약의 모양이어야 한다. 모르는 kind 는 받는다(그 이유 줄만 숨긴다 — 결정 054 의 7) */
+function isBasisItem(v: unknown): v is BasisItem {
+  if (!isObject(v) || typeof v.kind !== 'string') return false;
+  switch (v.kind) {
+    case 'PLACEMENT':
+      return isNonEmptyText(v.body) && isNonEmptyText(v.sign) && isOptionalHouse(v.house);
+    case 'CLUSTER':
+      return isHouseNumber(v.house) && Array.isArray(v.bodies) && v.bodies.length > 0 && v.bodies.every(isNonEmptyText);
+    case 'ASPECT':
+      return isNonEmptyText(v.a) && isNonEmptyText(v.b) && isNonEmptyText(v.type);
+    case 'RULER':
+      return isNonEmptyText(v.body) && isNonEmptyText(v.ruler);
+    case 'TRANSIT':
+      // 지나가는 별 × 내 별의 각도(target + type), 또는 지나가는 별 × 내 하우스(house)
+      return (
+        isNonEmptyText(v.mover) &&
+        (v.target === undefined || isNonEmptyText(v.target)) &&
+        (v.type === undefined || isNonEmptyText(v.type)) &&
+        isOptionalHouse(v.house) &&
+        ((v.target !== undefined && v.type !== undefined) || v.house !== undefined)
+      );
+    default:
+      return true;
+  }
+}
+
+/** 근거는 1~2개. 때(when)는 비지 않은 글자면 받는다 — 모르는 때는 그 이유 줄만 숨긴다(리뷰 #49) */
+export function isReason(v: unknown): v is Reason {
+  return (
+    isObject(v) &&
+    isNonEmptyText(v.when) &&
+    Array.isArray(v.items) &&
+    v.items.length >= 1 &&
+    v.items.length <= 2 &&
+    v.items.every(isBasisItem)
+  );
+}
+
+/** 요약 해석 v2 의 보완점 수(서버 결정 030) */
+const READING_CAUTIONS = 2;
+
+/**
+ * 요약 해석 v2: 문단마다 근거 구조(reason)가 있어야 받는다 — 옛 모양(근거 낱말만 · 보완점 3)으로 기기에 보관된 글은 여기서 걸러져
+ * 다시 받는다(결정 048 의 8). 옛 근거 낱말(basis)은 서버 S⑦ 까지 함께 오고 그 뒤에 빠진다 — 있으면 낱말 목록이어야 한다.
+ * 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다.
+ */
 export function isReading(v: unknown): v is Reading {
   return (
     isObject(v) &&
     typeof v.headline === 'string' &&
     Array.isArray(v.sections) &&
     v.sections.every(
-      (s) => isObject(s) && typeof s.title === 'string' && typeof s.body === 'string' && isStringList(s.basis),
+      (s) =>
+        isObject(s) &&
+        typeof s.title === 'string' &&
+        typeof s.body === 'string' &&
+        isReason(s.reason) &&
+        (s.basis === undefined || isStringList(s.basis)),
     ) &&
     isStringList(v.strengths) &&
     isStringList(v.cautions) &&
+    v.cautions.length === READING_CAUTIONS &&
     (v.createdAt === undefined || typeof v.createdAt === 'string')
   );
 }
+
+const isStar = (v: unknown): v is Star =>
+  isObject(v) &&
+  (v.body === undefined || isNonEmptyText(v.body)) &&
+  (v.sign === undefined || isNonEmptyText(v.sign)) &&
+  isOptionalHouse(v.house) &&
+  (v.count === undefined || Number.isInteger(v.count));
+
+const isTextList = (v: unknown, length: number) => Array.isArray(v) && v.length === length && v.every(isNonEmptyText);
+
+/** 일 방식 막대의 값: 정수, 막대 위에 놓일 자리(0~100). 범위 10~90 은 서버의 몫이라 판정하지 않는다 */
+const isBarValue = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 100;
+
+/** 영역마다의 칸(키 이름)과 그 모양. 그 영역이 아니면 그 키가 없어야 한다 */
+const ME_AREA_FIELDS: Record<MeArea, Record<string, (v: unknown) => boolean>> = {
+  PERSONALITY: { glance: (v) => isObject(v) && isTextList(v.shining, 2) && isTextList(v.tiring, 2) },
+  LOVE: {
+    practices: (v) =>
+      Array.isArray(v) && v.length === 3 && v.every((p) => isObject(p) && isNonEmptyText(p.title) && isNonEmptyText(p.body)),
+    reason: isReason,
+  },
+  RELATIONSHIP: { closer: (v) => isObject(v) && isNonEmptyText(v.first) && isNonEmptyText(v.close) && isNonEmptyText(v.longtime) },
+  WORK: { workStyle: (v) => isObject(v) && isBarValue(v.together) && isBarValue(v.flexible) && isBarValue(v.fast) },
+  EMOTION: { shaken: (v) => isObject(v) && isNonEmptyText(v.when) && isNonEmptyText(v.comfort) },
+};
+const ME_EXTRA_KEYS = Object.values(ME_AREA_FIELDS).flatMap((fields) => Object.keys(fields));
+/** 연애 말고 문단은 정확히 넷, 연애는 없다 */
+const ME_PARAGRAPHS = 4;
+
+function isMeAreaReport(v: unknown, area: MeArea): v is MeAreaReport {
+  if (!isObject(v) || v.area !== area || !isNonEmptyText(v.title) || !isTextList(v.keywords, 3)) return false;
+  if (!Array.isArray(v.stars) || v.stars.length < 1 || v.stars.length > 3 || !v.stars.every(isStar)) return false;
+  const paragraphs = area === 'LOVE' ? 0 : ME_PARAGRAPHS;
+  if (
+    !Array.isArray(v.paragraphs) ||
+    v.paragraphs.length !== paragraphs ||
+    !v.paragraphs.every((p) => isObject(p) && isNonEmptyText(p.title) && isNonEmptyText(p.body) && isReason(p.reason))
+  )
+    return false;
+  const own = ME_AREA_FIELDS[area];
+  return ME_EXTRA_KEYS.every((key) => (key in own ? own[key](v[key]) : v[key] === undefined));
+}
+
+/** 다섯 영역이 계약의 순서대로 모두 있고, 영역마다 제 칸만 있어야 한다 */
+export function isMeReport(v: unknown): v is MeReport {
+  return (
+    isObject(v) &&
+    Array.isArray(v.areas) &&
+    v.areas.length === ME_AREAS.length &&
+    v.areas.every((a, i) => isMeAreaReport(a, ME_AREAS[i]))
+  );
+}
+
+export function isMeReportState(v: unknown): v is MeReportState {
+  if (!isObject(v)) return false;
+  if (v.status === 'DONE') return isMeReport(v.report);
+  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+const isMeReportRequest = (v: unknown): v is MeReportRequest =>
+  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
 
 export function isAccount(v: unknown): v is Account {
   return (
@@ -1097,17 +1267,6 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)의 이성 · 미래 주제. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
-     * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
-     * 미래는 "지금의 시기" 가 달라진 날부터 같은 요청이 새 글을 준다. 그래서 볼 때마다 부른다(결정 026).
-     */
-    async createDirection(topic: 'LOVE' | 'FUTURE'): Promise<ApiResult<Direction>> {
-      if (config.useFixtures)
-        return { ok: true, data: topic === 'FUTURE' ? fixtures.directionFuture : fixtures.direction };
-      return request('POST', '/directions', { body: { topic }, validate: isDirectionOf(topic) });
-    },
-
-    /**
      * `POST /directions` 의 궁합 주제: 직접 입력 궁합 한 건(`synastryId`)에 대한 글. birth 는 상대의 출생 정보이고
      * 그 궁합의 글을 처음 만들 때만 필요하다(서버에 없어 다시 보낸다). 글이 없는데 보내지 않으면 400 `BIRTH_REQUIRED`,
      * 그 궁합의 상대가 아니면 400 `BIRTH_MISMATCH`, 내 출생 정보가 바뀌었으면 409 `PROFILE_CHANGED` 가 code 로 온다.
@@ -1133,6 +1292,18 @@ export function createApi(config: ApiConfig) {
     async getReport(): Promise<ApiResult<ReportState>> {
       if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.report } };
       return request('GET', '/reports/me', { validate: isReportState });
+    },
+
+    /** `POST /me-report` 나 탭 풀이를 쓰기 시작한다(결정 048). 202 로 바로 답하고 글은 뒤에서 쓴다. 402 `PURCHASE_REQUIRED` 는 1.1.0 예약 */
+    async requestMeReport(): Promise<ApiResult<MeReportRequest>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
+      return request('POST', '/me-report', { validate: isMeReportRequest });
+    },
+
+    /** `GET /me-report` 나 탭 풀이의 상태와(DONE 이면) 글 */
+    async getMeReport(): Promise<ApiResult<MeReportState>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.meReport } };
+      return request('GET', '/me-report', { validate: isMeReportState });
     },
 
     /** `GET /account` 내 닉네임 · 프로필 그림(홈 별명 카드, 결정 047). 응답의 다른 칸(이메일 · 동의 …)은 앱이 쓰지 않아 버린다 */

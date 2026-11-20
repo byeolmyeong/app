@@ -16,7 +16,7 @@ import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
 import { BackdropShape, BrandColors, RevealLayout as L, ScreenPaddingX, Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { usePulse } from '@/features/reading/making-view';
+import { usePulse } from '@/components/making-view';
 
 const R = strings.reveal;
 const useNativeDriver = Platform.OS !== 'web';

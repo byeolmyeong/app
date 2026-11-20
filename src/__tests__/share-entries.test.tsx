@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { useLocalSearchParams } from 'expo-router';
 
 import ReadingScreen from '@/app/reading';
-import ReportScreen from '@/app/report';
+import TimingScreen from '@/app/timing';
 import SynastryResultScreen from '@/app/synastry/[id]/index';
 import SynastryRankingScreen from '@/app/synastry/ranking';
 import { strings } from '@/content/strings';
@@ -23,7 +23,6 @@ jest.mock('@/lib/api', () => ({
   api: {
     createShare: jest.fn(),
     createReading: jest.fn(),
-    createDirection: jest.fn(),
     getReport: jest.fn(),
     requestReport: jest.fn(),
     saveProfile: jest.fn(),
@@ -63,7 +62,6 @@ beforeEach(async () => {
   }));
   mockApi.createReading.mockResolvedValue({ ok: true, data: fixtures.reading });
   mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
-  mockApi.createDirection.mockResolvedValue({ ok: true, data: fixtures.directionFuture });
   mockApi.getSynastry.mockResolvedValue({ ok: true, data: fixtures.synastryList[0] });
   mockApi.getSynastryRanking.mockImplementation(async (relation) => ({
     ok: true,
@@ -112,27 +110,19 @@ describe('공유로 들어가는 곳', () => {
     expect(screen.queryByRole('button', { name: S.open })).toBeNull();
   });
 
-  it('리포트 시기 탭: 다음 변곡점이 있으면 "다음 변곡점 공유하기" 가 있고 그 카드를 만든다', async () => {
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
+  it('시기 탭(임시 화면 /timing): 다음 변곡점이 있으면 "다음 변곡점 공유하기" 가 있고 그 카드를 만든다', async () => {
+    await render(<TimingScreen />);
     await screen.findByTestId('timing-view');
     await fireEvent.press(await shareButton(S.openNextTurn));
     expect(await screen.findByTestId('share-card')).toBeTruthy();
     expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NEXT_TURN' });
   });
 
-  it('리포트: 시기가 아닌 탭에는 변곡점 공유 버튼이 없다', async () => {
-    await render(<ReportScreen />);
-    await screen.findAllByRole('tab');
-    expect(screen.queryByRole('button', { name: S.openNextTurn })).toBeNull();
-  });
-
-  it('리포트 시기 탭: 다음 변곡점이 없으면(네 번을 모두 지났다) 공유 버튼이 없다', async () => {
+  it('시기 탭: 다음 변곡점이 없으면(네 번을 모두 지났다) 공유 버튼이 없다', async () => {
     const { nextMilestone: _gone, ...current } = fixtures.report.timing.current;
     const report: Report = { ...fixtures.report, timing: { ...fixtures.report.timing, current } };
     mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    await render(<ReportScreen />);
+    await render(<TimingScreen />);
     await screen.findByTestId('timing-view');
     expect(screen.getByText(strings.report.timing.milestonesDone)).toBeTruthy();
     await act(async () => {});

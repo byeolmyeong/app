@@ -394,6 +394,20 @@ describe('업데이트 권유 판정(결정 059)', () => {
     expect(store.getSuggestion()).toBeNull();
   });
 
+  it('권하기로 정해진 뒤에 바쁜 화면에 들어가면 권유를 거두고 알린다, 나오면 다시 권한다(리뷰 PR #44)', async () => {
+    const { store } = setupSuggest(ios, null, newer);
+    await store.check();
+    await settle();
+    expect(store.getSuggestion()).toBe('1.1.0');
+    const listener = jest.fn();
+    store.subscribe(listener);
+    const leave = store.enterBusy();
+    expect(store.getSuggestion()).toBeNull();
+    expect(listener).toHaveBeenCalled();
+    leave();
+    expect(store.getSuggestion()).toBe('1.1.0');
+  });
+
   it('바쁜 화면이 있으면 미루고, 모두 나오면 권한다', async () => {
     const { store } = setupSuggest(ios, null, newer);
     const leave = store.enterBusy();

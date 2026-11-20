@@ -160,6 +160,8 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
     /** 하던 일이 있는 화면이 떠 있는 동안 부른다. 돌려준 함수를 화면에서 나올 때 부른다 */
     enterBusy(): () => void {
       busy += 1;
+      // 권유는 바쁘면 내지 않는다 — 들어갈 때도 알려 권유를 거둔다(리뷰 PR #44)
+      emit();
       let left = false;
       return () => {
         if (left) return;

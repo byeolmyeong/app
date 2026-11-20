@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import * as Linking from 'expo-linking';
+import * as SplashScreen from 'expo-splash-screen';
 import { useSegments } from 'expo-router';
 import { useState } from 'react';
 import { AppState, Pressable, Text, type AppStateStatus } from 'react-native';
@@ -295,6 +296,20 @@ describe('강제 업데이트(결정 027)', () => {
   it('바쁨 등록은 UpdateGate 밖(화면만 따로 그릴 때)에서도 아무 일 없이 지나간다', async () => {
     await render(<BusyScreen />);
     expect(screen.getByText('글을 짓는 중')).toBeTruthy();
+  });
+
+  // 리뷰 PR #46 의 4: 문이 막으면 스택이 빠져 가드가 보내지 못해(덮은 채) 네이티브 스플래시가 영원히 남을 수 있었다
+  it('루트 레이아웃: 문이 막는 화면을 띄우면 가드가 덮은 채여도 네이티브 스플래시를 걷는다', async () => {
+    mockApi.getAppConfig.mockResolvedValue(required);
+    await render(<RootLayout />);
+    expect(screen.getByText(U.title)).toBeTruthy();
+    expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('루트 레이아웃: 막지 않고 가드가 보내는 중이면 네이티브 스플래시를 그대로 둔다', async () => {
+    await render(<RootLayout />);
+    expect(screen.getByText('앱의 화면들')).toBeTruthy();
+    expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
   });
 
   it('루트 레이아웃: 막지 않으면 스택을, 막으면 세션이 없어도 스택 대신 막는 화면을 보여 준다', async () => {

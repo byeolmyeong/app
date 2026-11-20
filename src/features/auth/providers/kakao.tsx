@@ -14,7 +14,7 @@ import type { LoginButtonProps } from '@/features/auth/providers/types';
 /** 라이브러리는 모든 실패를 같은 코드로 준다. 사용자가 닫은 것은 메시지로만 가린다 */
 const isCancel = (e: unknown) => e instanceof Error && /cancel/i.test(e.message);
 
-export function KakaoLoginButton({ onCredential, onError, disabled, recent }: LoginButtonProps) {
+export function KakaoLoginButton({ onCredential, onError, disabled, loading, recent }: LoginButtonProps) {
   const nativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY?.trim();
   const [busy, setBusy] = useState(false);
   if (!nativeAppKey) return null;
@@ -32,5 +32,5 @@ export function KakaoLoginButton({ onCredential, onError, disabled, recent }: Lo
     }
   }
 
-  return <SocialButton provider="KAKAO" label={strings.login.kakao} onPress={() => void press()} disabled={disabled || busy} recent={recent} />;
+  return <SocialButton provider="KAKAO" label={strings.login.kakao} onPress={() => void press()} disabled={disabled || busy} loading={loading} recent={recent} />;
 }

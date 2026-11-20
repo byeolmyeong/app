@@ -175,6 +175,8 @@ export const AvatarColors = {
  * 소개는 장마다 가운데 높이가 다르다(둘째 장 — 시기 — 은 그림이 위로 올라간다).
  */
 export const BackdropShape = {
+  /** 스플래시(보드 1, 결정 067 의 3) */
+  splash: { extent: 0.58, centerY: 0.44 },
   intro: { extent: 0.62, centerY: [0.5, 0.44] },
   login: { extent: 0.6, centerY: 0.46 },
   making: { extent: 0.56, centerY: 0.42 },
@@ -481,6 +483,8 @@ export const Sizes = {
   avatarRing: 3,
   /** 로그인 위쪽의 로고 그림(결정 042 시안 보드 5) */
   loginLogo: 260,
+  /** 스플래시의 별이 · 로고 그림(보드 1 — 네이티브 스플래시 app.json imageWidth 와 같다, 결정 067 의 3) */
+  splashArt: 300,
   /** 별명 짓는 중(결정 042 시안): 그림 칸 · 뒤 빛 · 안쪽 궤도가 칸에서 들어간 거리 · 궤도의 점 · 반짝임 · 안내 줄 높이 */
   makingArt: 260,
   makingGlowInset: 40,

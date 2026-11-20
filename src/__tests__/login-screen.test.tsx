@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert, StyleSheet } from 'react-native';
 
 import LoginScreen from '@/app/login';
@@ -15,11 +15,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn(), getSession: jest.fn(() => ({ lastError: null })) }));
+type FakeProps = { onCredential: (c: unknown) => void; onError: () => void; recent?: boolean; loading?: boolean; disabled?: boolean };
 // 공급자 버튼은 누르면 자격 증명을 넘기는 가짜로 바꾼다(진짜는 providers 테스트가 본다). 최근 로그인(recent)을 받으면 "recent:이름" 을 함께 그린다.
 jest.mock('@/features/auth/providers/google', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
   return {
-    GoogleLoginButton: ({ onCredential, onError, recent }: { onCredential: (c: unknown) => void; onError: () => void; recent?: boolean }) => (
+    GoogleLoginButton: ({ onCredential, onError, recent, loading, disabled }: FakeProps) => (
       <>
         <Pressable onPress={() => onCredential({ provider: 'GOOGLE', idToken: 'g' })}>
           <Text>google</Text>
@@ -28,6 +29,7 @@ jest.mock('@/features/auth/providers/google', () => {
           <Text>google-error</Text>
         </Pressable>
         {recent ? <Text>recent:google</Text> : null}
+        <Text>{`state:google:${loading ? 'loading' : disabled ? 'disabled' : 'ready'}`}</Text>
       </>
     ),
   };
@@ -37,21 +39,23 @@ jest.mock('@/features/auth/providers/apple', () => ({ AppleLoginButton: jest.fn(
 jest.mock('@/features/auth/providers/kakao', () => {
   const { Text } = jest.requireActual('react-native');
   return {
-    KakaoLoginButton: ({ recent }: { recent?: boolean }) => (
+    KakaoLoginButton: ({ recent, loading, disabled }: { recent?: boolean; loading?: boolean; disabled?: boolean }) => (
       <>
         <Text>kakao</Text>
         {recent ? <Text>recent:kakao</Text> : null}
+        <Text>{`state:kakao:${loading ? 'loading' : disabled ? 'disabled' : 'ready'}`}</Text>
       </>
     ),
   };
 });
 
-function FakeApple({ recent }: { recent?: boolean }) {
+function FakeApple({ recent, loading, disabled }: { recent?: boolean; loading?: boolean; disabled?: boolean }) {
   const { Text } = jest.requireActual('react-native');
   return (
     <>
       <Text>apple</Text>
       {recent ? <Text>recent:apple</Text> : null}
+      <Text>{`state:apple:${loading ? 'loading' : disabled ? 'disabled' : 'ready'}`}</Text>
     </>
   );
 }
@@ -193,5 +197,37 @@ describe('로그인 화면: 최근 로그인', () => {
     await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalled());
     expect(order(['kakao', 'apple', 'google'])).toEqual(['kakao', 'google']);
     expect(recents()).toEqual([]);
+  });
+});
+
+// 로그인을 기다리는 동안(결정 067 의 2): 따로 화면 없이 로그인 화면에 머물고, 누른 버튼은 돌기 · 나머지는 흐리게 막는다
+describe('로그인 화면: 기다리는 동안', () => {
+  const states = () => screen.queryAllByText(/^state:/).map((node) => node.props.children);
+
+  it('누른 버튼만 돌기, 나머지 공급자 · 개발용 버튼은 막히고, "로그인하는 중이에요" 화면은 없다', async () => {
+    let finish: (outcome: string) => void = () => {};
+    signIn.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    auth({ devSessionEnabled: true });
+    await render(<LoginScreen />);
+    expect(states()).toEqual(['state:kakao:ready', 'state:apple:ready', 'state:google:ready']);
+
+    await fireEvent.press(screen.getByText('google'));
+    expect(states()).toEqual(['state:kakao:disabled', 'state:apple:disabled', 'state:google:loading']);
+    expect(screen.getByRole('button', { name: S.dev }).props.accessibilityState).toMatchObject({ disabled: true });
+    expect(screen.queryByText('로그인하는 중이에요')).toBeNull();
+    expect(screen.getByText(S.tagline)).toBeTruthy();
+
+    // 실패하면 버튼이 돌아오고 지금의 안내
+    await act(async () => finish('failed'));
+    expect(states()).toEqual(['state:kakao:ready', 'state:apple:ready', 'state:google:ready']);
+    expect(screen.getByText(S.failed)).toBeTruthy();
+  });
+
+  it('로그인되면 화면을 떠날 때까지 돌기를 그대로 둔다(가드가 다음 화면으로 보낸다)', async () => {
+    signIn.mockResolvedValue('signingUp');
+    await render(<LoginScreen />);
+    await fireEvent.press(screen.getByText('google'));
+    await waitFor(() => expect(signIn).toHaveBeenCalled());
+    expect(states()).toContain('state:google:loading');
   });
 });

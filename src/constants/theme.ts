@@ -502,3 +502,37 @@ export const Sizes = {
   introDot: 6,
   introDotActive: 20,
 } as const;
+
+/**
+ * 마이(결정 056 · 065, 보드 16 ~ 16-10). 별명 카드: 안 여백(위 · 나머지) · 모서리 · 빛 자리 · 프로필 그림 · 그림과 이름 사이 · 이름 줄 사이 ·
+ * 한 줄 별명(위 · 줄 높이) · 출생 정보 위 · 버튼 둘(위 · 사이 · 높이 · 모서리 · 옅은 흰 바탕). 목록 카드: 모서리 · 한 줄(최소 높이 · 안 여백) ·
+ * 화살표 · 스위치(폭 · 높이 · 손잡이 · 손잡이 여백). 화면: 머리 아래 · 카드끼리 · 별명 카드와 첫 목록 사이에 더 띄움.
+ * 계정(16-1): 프로필 그림 위 · 아래 · 계정 삭제 글자 줄 높이 · 공급자 표시(동그라미 · 로고 · 이메일과 사이). 계정 삭제(16-10): 제목 위 · 묶음 사이 · 확인 칸 안 여백 · 점 · 점 위.
+ * 지웠어요: 그림 칸 · 아이콘 · 제목 위 · 설명 위 · 가운데 덩이를 위로 올림.
+ */
+export const MyLayout = {
+  top: 8,
+  gap: 12,
+  listTop: 8,
+  card: {
+    paddingTop: 22,
+    padding: 20,
+    radius: 24,
+    glow: { x: 0.85, y: 0.12, extent: 0.6 },
+    avatar: 64,
+    rowGap: 14,
+    namesGap: 2,
+    headlineTop: 16,
+    headlineLine: 25,
+    birthTop: 12,
+    buttonsTop: 16,
+    buttonGap: 8,
+    button: 40,
+    buttonRadius: 10,
+    buttonFill: 'rgba(255,255,255,0.08)',
+  },
+  list: { radius: 16, row: 52, paddingV: 12, paddingH: 16, gap: 12, chevron: 18, switch: { width: 48, height: 28, knob: 22, inset: 3 } },
+  account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 18, badgeGlyph: 11, badgeGap: 6 },
+  delete: { headingTop: 8, gap: 22, notePadding: 18, noteGap: 12, dot: 4, dotTop: 10, dotGap: 10, checkGap: 10, checkPadV: 4, checkPadH: 2 },
+  done: { icon: 72, iconGlyph: 32, titleTop: 24, bodyTop: 10, lift: 40 },
+} as const;

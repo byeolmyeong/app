@@ -6,7 +6,6 @@ import { StyleSheet } from 'react-native';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
-import MyScreen from '@/app/my';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -216,24 +215,6 @@ describe('홈', () => {
     await render(<HomeScreen />);
     await screen.findByPlaceholderText(strings.home.datePlaceholder);
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
-  });
-});
-
-describe('마이(/my)', () => {
-  it('넣어 둔 출생 정보를 보여 주고, "바꾸기" 는 입력 화면(/birth)으로 간다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<MyScreen />);
-    expect(await screen.findByText('2000. 6. 15. 오후 9:00 · 서울특별시 마포구')).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
-    await fireEvent.press(screen.getByText(strings.my.editBirth));
-    expect(router.push).toHaveBeenCalledWith('/birth');
-  });
-
-  it('시각 "모름" 이라 곳이 없는 출생 정보는 날짜와 "태어난 시각 모름" 만 보여 준다(결정 020)', async () => {
-    await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
-    await render(<MyScreen />);
-    expect(await screen.findByText('2000. 6. 15. · 태어난 시각 모름')).toBeTruthy();
-    expect(screen.getByText(strings.my.editBirth)).toBeTruthy();
   });
 });
 

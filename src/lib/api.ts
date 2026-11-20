@@ -111,6 +111,15 @@ export type Reading = {
 /** `GET /account` 에서 앱이 쓰는 값: 닉네임 · 프로필 그림(계약은 1~8). 옛 계정은 둘 다 null(서버 결정 025 · 028) */
 export type Account = { nickname: string | null; avatar: number | null };
 
+/**
+ * 마이 · 계정 화면이 쓰는 `GET /account` · `PATCH /account` 의 값(결정 056): 홈의 둘에 더해 이메일(옛 계정 null) · 공급자 ·
+ * 마케팅 수신 동의. 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
+ */
+export type MyAccount = Account & { email: string | null; provider: string; marketingConsent: boolean };
+
+/** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028) */
+export type AccountPatch = { nickname?: string; avatar?: number; marketingConsent?: boolean };
+
 /** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
 export const DIRECTION_TOPICS = ['LOVE', 'FUTURE', 'SYNASTRY'] as const;
 export type DirectionTopic = (typeof DIRECTION_TOPICS)[number];
@@ -420,6 +429,24 @@ export function isAccount(v: unknown): v is Account {
     (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar)))
   );
 }
+
+export function isMyAccount(v: unknown): v is MyAccount {
+  return (
+    isObject(v) &&
+    (v.email === null || typeof v.email === 'string') &&
+    typeof v.provider === 'string' &&
+    typeof v.marketingConsent === 'boolean' &&
+    isAccount(v)
+  );
+}
+
+const myAccountOf = (v: MyAccount): MyAccount => ({
+  nickname: v.nickname,
+  avatar: v.avatar,
+  email: v.email,
+  provider: v.provider,
+  marketingConsent: v.marketingConsent,
+});
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
@@ -797,6 +824,9 @@ const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
 /** 가짜 서버가 주는 세션 토큰 */
 const FIXTURE_TOKEN = 'fixture-session';
 
+/** 모의 서버(`useFixtures`)의 내 계정 */
+const FIXTURE_MY_ACCOUNT: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+
 export function createApi(config: ApiConfig) {
   /**
    * 실패한 호출을 스스로 다시 하지 않는다. 다시 시도는 화면에서 사용자가 누를 때만 한다.
@@ -805,7 +835,7 @@ export function createApi(config: ApiConfig) {
   const cookie = config.cookieSession === true;
 
   async function request<T>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,
     options: RequestOptions<T>,
     retried = false,
@@ -1050,6 +1080,23 @@ export function createApi(config: ApiConfig) {
       if (config.useFixtures) return { ok: true, data: { nickname: '새벽별', avatar: 3 } };
       const res = await request('GET', '/account', { validate: isAccount });
       return res.ok ? { ok: true, data: { nickname: res.data.nickname, avatar: res.data.avatar } } : res;
+    },
+
+    /** `GET /account` 마이 · 계정 화면의 내 계정(결정 056). 동의 일시 · 푸시 동의는 앱이 쓰지 않아 버린다 */
+    async getMyAccount(): Promise<ApiResult<MyAccount>> {
+      if (config.useFixtures) return { ok: true, data: FIXTURE_MY_ACCOUNT };
+      const res = await request('GET', '/account', { validate: isMyAccount });
+      return res.ok ? { ok: true, data: myAccountOf(res.data) } : res;
+    },
+
+    /**
+     * `PATCH /account` 닉네임 · 프로필 · 마케팅 수신 동의를 바꾼다(보낸 칸만). 400 `INVALID_NICKNAME` · `INVALID_AVATAR`,
+     * 409 `NICKNAME_TAKEN` 은 code 로 온다 — 그때는 같이 보낸 칸도 바뀌지 않는다.
+     */
+    async updateAccount(patch: AccountPatch): Promise<ApiResult<MyAccount>> {
+      if (config.useFixtures) return { ok: true, data: { ...FIXTURE_MY_ACCOUNT, ...patch } };
+      const res = await request('PATCH', '/account', { body: patch, validate: isMyAccount });
+      return res.ok ? { ok: true, data: myAccountOf(res.data) } : res;
     },
 
     /** `DELETE /account` 계정과 그 사람의 모든 것(세션 · 출생 정보 · 글)을 서버에서 지운다. 성공은 204 이고 본문이 없다 */

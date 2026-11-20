@@ -22,7 +22,8 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(async () => {}),
 }));
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '9.8.7' } } }));
-jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn() }));
+// 마이는 로그인한 뒤의 계정을 묻는다 — 여기서는 로그인 전이라 묻지 않는다
+jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn(), useSession: jest.fn(() => ({ status: 'signedOut' })) }));
 
 const back = () => fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
 
@@ -46,8 +47,8 @@ beforeEach(async () => {
 
 describe('약관 글에서 뒤로 가기', () => {
   it.each([
-    [strings.settings.terms, '/settings/terms', terms],
-    [strings.settings.privacy, '/settings/privacy', privacy],
+    [strings.my.rows.terms, '/settings/terms', terms],
+    [strings.my.rows.privacy, '/settings/privacy', privacy],
   ])('마이의 "%s" 줄로 연 글에서 뒤로 가면 마이로 돌아간다', async (label, path, doc) => {
     await renderRouter(routes, { initialUrl: '/my' });
     await fireEvent.press(await screen.findByText(label));
@@ -119,7 +120,7 @@ describe('약관 글의 동의하기', () => {
 
   it('마이에서 연 글에는 동의하기가 없다', async () => {
     await renderRouter(routes, { initialUrl: '/my' });
-    await fireEvent.press(await screen.findByText(strings.settings.terms));
+    await fireEvent.press(await screen.findByText(strings.my.rows.terms));
     expect(screen).toHavePathname('/settings/terms');
     expect(screen.queryByRole('button', { name: L.agree })).toBeNull();
   });

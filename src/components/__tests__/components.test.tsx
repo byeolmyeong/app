@@ -107,7 +107,7 @@ describe('Button', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('주·보조·빨강 세 가지 바탕을 테마 색으로 그리고, 누를 수 없으면 회색이다', async () => {
+  it('주·보조·위험 세 가지 바탕을 테마 색으로 그리고, 누를 수 없으면 회색이다', async () => {
     const bg = async (variant: 'primary' | 'line' | 'danger', disabled = false) => {
       const view = await render(<Button label="버튼" variant={variant} disabled={disabled} onPress={() => {}} />);
       const style = StyleSheet.flatten(screen.getByRole('button').props.style);
@@ -116,12 +116,13 @@ describe('Button', () => {
     };
     expect((await bg('primary')).backgroundColor).toBe(Colors.primary);
     expect((await bg('line')).backgroundColor).toBe(Colors.fill);
-    expect((await bg('danger')).backgroundColor).toBe(Colors.danger);
+    // 위험 버튼은 붉은 바탕을 쓰지 않는다 — 검은 바탕 + 붉은 글자(결정 065 의 6)
+    expect((await bg('danger')).backgroundColor).toBe(Colors.fill);
     expect((await bg('primary', true)).backgroundColor).toBe(Colors.fill);
     expect((await bg('primary')).borderRadius).toBe(12);
   });
 
-  it('주·빨강 버튼의 글씨는 밝은 본문색이다(어두운 바탕, 결정 033)', async () => {
+  it('주 버튼의 글씨는 밝은 본문색, 위험 버튼은 붉은 글자다(결정 033 · 065 의 6)', async () => {
     const color = async (variant: 'primary' | 'danger') => {
       const view = await render(<Button label="버튼" variant={variant} onPress={() => {}} />);
       const value = StyleSheet.flatten(screen.getByText('버튼').props.style).color;
@@ -129,7 +130,7 @@ describe('Button', () => {
       return value;
     };
     expect(await color('primary')).toBe(Colors.ink);
-    expect(await color('danger')).toBe(Colors.ink);
+    expect(await color('danger')).toBe(Colors.dangerSoft);
   });
 
   it('disabled 이면 눌러도 onPress 를 부르지 않는다', async () => {

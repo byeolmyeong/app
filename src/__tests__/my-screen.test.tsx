@@ -1,222 +1,154 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 
 import MyScreen from '@/app/my';
 import { strings } from '@/content/strings';
-import { DEVICE_STORAGE_PREFIX } from '@/features/auth/delete-account';
-import { BIRTH_STORAGE_KEY, saveBirth } from '@/features/chart/use-birth-profile';
+import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
-import { REPORT_STORAGE_KEY } from '@/features/report/use-report';
-import { api } from '@/lib/api';
+import { api, type MyAccount } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-jest.mock('expo-secure-store', () => ({
-  getItemAsync: jest.fn(async () => null),
-  setItemAsync: jest.fn(async () => {}),
-  deleteItemAsync: jest.fn(async () => {}),
-}));
 // 테스트에는 expo 설정이 실리지 않는다. 화면이 설정의 버전을 그대로 적는지만 본다.
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '9.8.7' } } }));
 jest.mock('expo-router', () => ({
-  router: {
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-    canGoBack: jest.fn(() => true),
-    canDismiss: jest.fn(() => true),
-    dismissAll: jest.fn(),
-  },
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
+  // 화면이 보일 때 = 그릴 때 한 번
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
+}));
+jest.mock('@/features/auth/use-session', () => ({
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 't', ready: true, lastError: null })),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { deleteAccount: jest.fn(), logout: jest.fn(async () => ({ ok: true, data: null })) },
+  api: { getMyAccount: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
-const S = strings.settings;
 const M = strings.my;
-const D = S.deleteSheet;
-const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
-const STORED_KEYS = [BIRTH_STORAGE_KEY, READING_STORAGE_KEY, REPORT_STORAGE_KEY];
+const R = M.rows;
+const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+const profile = { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } };
+type Profile = { date: string; time: string | null; place: { id: number; name: string } | null };
+/** 그 출생 정보로 받아 둔 풀이를 기기에 넣는다(use-reading 의 열쇠: 날짜 · 시각 · 곳) */
+const storeReading = (reading: object, p: Profile = profile) =>
+  AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: JSON.stringify([p.date, p.time, p.place?.id ?? null]), reading }));
 
+let nowSpy: jest.SpyInstance | null = null;
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  await saveBirth({ profile, chart: fixtures.chart });
-  await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: 'k', reading: fixtures.reading }));
-  await AsyncStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify({ key: 'k', report: fixtures.report }));
+  mockApi.getMyAccount.mockResolvedValue({ ok: true, data: account });
+});
+afterEach(() => {
+  nowSpy?.mockRestore();
+  nowSpy = null;
 });
 
-describe('마이(/my) — 설정을 합쳤다(결정 038)', () => {
-  it('출생 정보 카드 · 도움(자주 묻는 질문 · 문의하기) · 약관 · 정보(처리방침 · 약관 · 앱 버전) · 로그아웃 · 계정 삭제를 이 순서로 보여 준다', async () => {
+describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보드 16)', () => {
+  it('카드에 프로필 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄 · 버튼 둘을 보인다', async () => {
+    // 한국 날짜로 2026-11-20, 받은 날 2026-11-09 → 12일째
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading({ ...fixtures.reading, createdAt: '2026-11-09T01:00:00Z' });
     await render(<MyScreen />);
-    expect(await screen.findByText(S.faq)).toBeTruthy();
-    expect([M.help, M.info]).toEqual(['도움', '약관 · 정보']);
-    const labels = [M.birthLabel, M.help, S.faq, S.inquiry, M.info, S.privacy, S.terms, S.version, S.logout, S.deleteAccount];
-    for (const label of labels) expect(screen.getByText(label)).toBeTruthy();
+    const card = within(await screen.findByTestId('my-card'));
+    expect(await card.findByText('새벽별')).toBeTruthy();
+    // 홈 카드와 달리 "님" 을 붙이지 않는다(보드 16)
+    expect(card.queryByText(/님/)).toBeNull();
+    expect(await card.findByText('쌍둥이자리 · 별명을 받은 지 12일')).toBeTruthy();
+    expect(card.getByText(fixtures.reading.headline)).toBeTruthy();
+    expect(card.getByText('1999년 3월 8일 · 오후 2:10 · 서울 강남구')).toBeTruthy();
+    expect(card.getByText(M.card.account)).toBeTruthy();
+    expect(card.getByText(M.card.birth)).toBeTruthy();
+    expect(card.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
+  });
+
+  it('시각 "모름" 이면 "시각 모름", 만든 때(createdAt)가 없는 옛 풀이면 받은 날 없이 해 별자리만 적는다', async () => {
+    const unknown = { date: '1999-03-08', time: null, place: null };
+    await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });
+    await storeReading(fixtures.reading, unknown);
+    await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    expect(await card.findByText('1999년 3월 8일 · 시각 모름')).toBeTruthy();
+    expect(await card.findByText('쌍둥이자리')).toBeTruthy();
+    expect(card.queryByText(/별명을 받은 지/)).toBeNull();
+  });
+
+  it('출생 정보 · 풀이가 기기에 없으면 카드는 닉네임과 버튼만, 줄들과 아래 탭은 그대로 보인다', async () => {
+    await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    expect(await card.findByText('새벽별')).toBeTruthy();
+    expect(card.getByText(M.card.birth)).toBeTruthy();
+    expect(card.queryByText(/년 .*월/)).toBeNull();
+    for (const label of [R.faq, R.inquiry, R.terms, R.privacy, R.version]) expect(screen.getByText(label)).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
+  });
+
+  it('계정을 받지 못하면(끊김) 카드는 닉네임 · 프로필 없이 그린다', async () => {
+    mockApi.getMyAccount.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    expect(await card.findByText('1999년 3월 8일 · 오후 2:10 · 서울 강남구')).toBeTruthy();
+    await waitFor(() => expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1));
+    expect(card.queryByText('새벽별')).toBeNull();
+    expect(card.queryByLabelText(strings.nickname.avatars[2])).toBeNull();
+  });
+
+  it('줄은 카드 아래 자주 묻는 질문 · 문의하기 / 이용약관 · 개인정보 처리방침 · 앱 버전(숫자만) 순서다. 로그아웃 · 계정 삭제는 없다', async () => {
+    await render(<MyScreen />);
+    await screen.findByText('새벽별');
+    const labels = [M.card.account, R.faq, R.inquiry, R.terms, R.privacy, R.version];
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
+    expect(places.every((p) => p >= 0)).toBe(true);
     expect(places).toEqual([...places].sort((a, b) => a - b));
-    // 앱 버전은 expo 설정에서 온다
     expect(Constants.expoConfig?.version).toBe('9.8.7');
     expect(screen.getByText('9.8.7')).toBeTruthy();
-    // 알림은 아직 없다(푸시 뒤). "설정" 으로 가는 줄도 없다
-    expect(screen.queryByText(/알림/)).toBeNull();
-    expect(M).not.toHaveProperty('settings');
+    // 056 의 2 · 3: 로그아웃 · 계정 삭제는 계정 화면에. 묶음 제목(도움 · 정보)도 없다
+    expect(screen.queryByText(strings.my.account.logout)).toBeNull();
+    expect(screen.queryByText(strings.my.account.delete)).toBeNull();
+    expect(screen.queryByText('도움')).toBeNull();
+    // 개인정보 수집 · 이용 동의 줄은 두지 않는다(056 의 2 — 카드 둘째 줄은 셋뿐)
+    expect(screen.queryByText(/수집 · 이용 동의/)).toBeNull();
   });
 
-  it('출생 정보가 없어도 도움 · 약관 · 로그아웃 · 계정 삭제 줄과 아래 탭은 보이고, 카드 자리에서 출생 정보를 넣으러 간다', async () => {
-    await AsyncStorage.clear();
+  it.each([
+    [M.card.account, '/my/account'],
+    // 새 출생 정보 바꾸기(/my/birth)는 서버 S⑨ 뒤 — 그 전에는 지금 화면
+    [M.card.birth, '/birth'],
+    [R.faq, '/settings/faq'],
+    // 앱 안 문의(/my/inquiries)는 계획 A7-4 — 그 전에는 지금 화면
+    [R.inquiry, '/settings/inquiry'],
+    [R.terms, '/settings/terms'],
+    [R.privacy, '/settings/privacy'],
+  ])('"%s" 는 %s 로 간다', async (label, path) => {
     await render(<MyScreen />);
-    expect(await screen.findByText(strings.chart.empty)).toBeTruthy();
-    expect(screen.getByTestId('byeoli-face-empty', { includeHiddenElements: true })).toBeTruthy();
-    for (const label of [S.faq, S.inquiry, S.privacy, S.terms, S.version, S.logout, S.deleteAccount]) expect(screen.getByText(label)).toBeTruthy();
-    expect(screen.getByText(strings.tabs.home)).toBeTruthy();
-    expect(screen.queryByText(M.birthLabel)).toBeNull();
-    await fireEvent.press(screen.getByText(strings.chart.goHome));
-    expect(router.replace).toHaveBeenCalledWith('/');
+    await screen.findByText('새벽별');
+    await fireEvent.press(screen.getByText(label));
+    expect(router.push).toHaveBeenLastCalledWith(path);
   });
 
-  it('처리방침 · 수집 · 이용 동의 · 약관 줄은 그 글 화면으로 간다(결정 045)', async () => {
+  it('문의 메일 주소를 어디에도 적지 않는다(결정 024)', async () => {
     await render(<MyScreen />);
-    await screen.findByText(S.faq);
-    await fireEvent.press(screen.getByText(S.privacy));
-    expect(router.push).toHaveBeenLastCalledWith('/settings/privacy');
-    await fireEvent.press(screen.getByText(S.privacyConsent));
-    expect(router.push).toHaveBeenLastCalledWith('/settings/privacy-consent');
-    await fireEvent.press(screen.getByText(S.terms));
-    expect(router.push).toHaveBeenLastCalledWith('/settings/terms');
-  });
-
-  it('자주 묻는 질문 · 문의하기 줄은 그 화면으로 간다', async () => {
-    await render(<MyScreen />);
-    await screen.findByText(S.faq);
-    await fireEvent.press(screen.getByText(S.faq));
-    expect(router.push).toHaveBeenLastCalledWith('/settings/faq');
-    await fireEvent.press(screen.getByText(S.inquiry));
-    expect(router.push).toHaveBeenLastCalledWith('/settings/inquiry');
-  });
-
-  it('문의 메일 주소를 어디에도 적지 않는다(결정 024): 화면에도, 문구 전체에도 메일 주소가 없다', async () => {
-    await render(<MyScreen />);
-    await screen.findByText(S.faq);
-    expect(screen.queryByText(/@/)).toBeNull();
+    await screen.findByText('새벽별');
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/@|mailto/);
     expect(JSON.stringify(strings)).not.toMatch(/@|mailto/);
-    expect(S).not.toHaveProperty('contact');
-    expect(S).not.toHaveProperty('contactEmail');
   });
-});
 
-describe('마이를 불러오는 동안', () => {
   it('기기 저장소를 읽는 동안에도 아래 탭이 보인다', async () => {
-    // 읽기가 끝나지 않은 채로 둔다
     const pending = jest.spyOn(AsyncStorage, 'getItem').mockReturnValue(new Promise(() => {}));
     try {
       await render(<MyScreen />);
-      expect(screen.queryByText(S.faq)).toBeNull();
+      expect(screen.queryByText(R.faq)).toBeNull();
       expect(screen.getByText(strings.tabs.home)).toBeTruthy();
     } finally {
       pending.mockRestore();
     }
-  });
-});
-
-describe('계정 삭제', () => {
-  it('줄을 누르면 먼저 확인 시트로 묻는다. 취소하면 서버를 부르지 않고 기기의 것도 그대로다', async () => {
-    await render(<MyScreen />);
-    await screen.findByText(S.faq);
-    expect(screen.queryByText(D.title)).toBeNull();
-    await fireEvent.press(screen.getByText(S.deleteAccount));
-    expect(await screen.findByText(D.title)).toBeTruthy();
-    expect(screen.getByText(D.body)).toBeTruthy();
-    expect(mockApi.deleteAccount).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByText(D.cancel));
-    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
-    expect(mockApi.deleteAccount).not.toHaveBeenCalled();
-    expect(await AsyncStorage.getAllKeys()).toEqual(expect.arrayContaining(STORED_KEYS));
-    expect(router.replace).not.toHaveBeenCalled();
-  });
-
-  it('확인하면 서버에 한 번 요청하고, 기기에 둔 것과 세션 토큰을 비운 뒤 로그인 화면으로 간다', async () => {
-    mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
-    await render(<MyScreen />);
-    await screen.findByText(S.faq);
-    await fireEvent.press(screen.getByText(S.deleteAccount));
-    await fireEvent.press(await screen.findByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
-    expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
-    expect(await AsyncStorage.getAllKeys()).toEqual([]);
-    expect(SecureStore.deleteItemAsync).toHaveBeenCalledTimes(1);
-    // 마이 아래에 쌓인 화면이 있으면 걷어 내고 로그인 화면만 남긴다
-    expect(router.dismissAll).toHaveBeenCalledTimes(1);
-  });
-
-  it('마이가 탭으로 열려 걷어 낼 화면이 없으면 걷지 않고 로그인 화면으로 바꾼다(뒤로 가기로 마이에 돌아갈 수 없다)', async () => {
-    (router.canDismiss as jest.Mock).mockReturnValue(false);
-    mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
-    await render(<MyScreen />);
-    await fireEvent.press(await screen.findByText(S.deleteAccount));
-    await fireEvent.press(await screen.findByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
-    expect(router.dismissAll).not.toHaveBeenCalled();
-    (router.canDismiss as jest.Mock).mockReturnValue(true);
-  });
-
-  it('삭제하는 동안에는 다시 누를 수 없다', async () => {
-    let finish: (r: { ok: true; data: null }) => void = () => {};
-    mockApi.deleteAccount.mockReturnValue(new Promise((resolve) => (finish = resolve)));
-    await render(<MyScreen />);
-    await screen.findByText(S.faq);
-    await fireEvent.press(screen.getByText(S.deleteAccount));
-    await fireEvent.press(await screen.findByText(D.confirm));
-    await fireEvent.press(await screen.findByText(D.deleting));
-    expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
-    finish({ ok: true, data: null });
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
-  });
-
-  it.each([
-    ['NETWORK', D.failed.NETWORK],
-    ['SERVER', D.failed.OTHER],
-    ['LOGIN_REQUIRED', D.failed.OTHER],
-  ] as const)('서버가 지우지 못하면(%s) 이유를 보여 주고 기기의 것은 그대로 둔다', async (error, message) => {
-    mockApi.deleteAccount.mockResolvedValue({ ok: false, error });
-    await render(<MyScreen />);
-    await screen.findByText(S.faq);
-    await fireEvent.press(screen.getByText(S.deleteAccount));
-    await fireEvent.press(await screen.findByText(D.confirm));
-    expect(await screen.findByText(message)).toBeTruthy();
-    expect(await AsyncStorage.getAllKeys()).toEqual(expect.arrayContaining(STORED_KEYS));
-    expect(SecureStore.deleteItemAsync).not.toHaveBeenCalled();
-    expect(router.replace).not.toHaveBeenCalled();
-    expect(router.dismissAll).not.toHaveBeenCalled();
-    // 시트는 열려 있고, 다시 누르면 다시 요청한다
-    mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
-    await fireEvent.press(screen.getByText(D.confirm));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
-    expect(mockApi.deleteAccount).toHaveBeenCalledTimes(2);
-  });
-
-  it('기능들이 기기에 두는 키는 모두 삭제 때 지우는 머리(byeolmyeong.)로 시작한다', () => {
-    for (const key of STORED_KEYS) expect(key.startsWith(DEVICE_STORAGE_PREFIX)).toBe(true);
-  });
-});
-
-describe('로그아웃(결정 034)', () => {
-  it('서버 세션을 지우고 이 기기에 둔 것을 비운 뒤 로그인 화면으로 간다', async () => {
-    await saveBirth({ profile: { date: '1995-05-05', time: null, place: null }, chart: fixtures.chartTimeUnknown });
-    await render(<MyScreen />);
-    await fireEvent.press(await screen.findByText(S.logout));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
-    expect(mockApi.logout).toHaveBeenCalledTimes(1);
-    const keys = await AsyncStorage.getAllKeys();
-    expect(keys.filter((k) => k.startsWith(DEVICE_STORAGE_PREFIX))).toEqual([]);
   });
 });

@@ -527,13 +527,13 @@ export const TodayCardLayout = { titleTop: 10, rowTop: 14, rowGap: 14, textGap: 
 
 /**
  * 알림함(결정 052, 보드 11-3 · 11-3-1): 묶음 이름(위 · 아래) · 한 줄(안 여백 · 사이 · 아래 · 모서리 — 안 읽은 줄만 떠 있는 면) · 둥근 아이콘 칸 ·
- * 글 줄 사이 · 때 위 · 본문 · 때의 줄 높이(보드 11-3 의 14/20 · 12/16) · 안 읽음 점(자리 · 글이 점을 비켜 가는 폭) · 비었을 때(머리 아래 높이 640 칸의 가운데) · 처음 불러올 때 뼈대의 줄 수.
+ * 글 줄 사이 · 때 위 · 안 읽음 점(자리 · 글이 점을 비켜 가는 폭) · 비었을 때(머리 아래 높이 640 칸의 가운데) · 처음 불러올 때 뼈대의 줄 수.
  * 홈 머리의 종(보드 11): 누르는 칸 · 아이콘 · 점(바탕색 테두리) · 머리 오른쪽 끝에서 더 나간 거리.
  */
 export const NotificationLayout = {
   groupTop: 24,
   groupBottom: 4,
-  row: { padV: 14, padX: 12, gap: 12, bottom: 8, radius: 14, textGap: 2, timeTop: 2, unreadRight: 14, bodyLine: 20, timeLine: 16 },
+  row: { padV: 14, padX: 12, gap: 12, bottom: 8, radius: 14, textGap: 2, timeTop: 2, unreadRight: 14 },
   icon: 40,
   glyph: 20,
   dot: { size: 8, top: 18, right: 12 },
@@ -696,6 +696,8 @@ export const Typography = {
   item: type(15, 22, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
+  /** 알림 줄의 본문(보드 11-3) */
+  notice: type(14, 20, FontWeight.regular),
   /** 입력칸 아래 도움말 · 오류, "보기"(결정 042 시안) */
   caption: type(13, 18, FontWeight.regular),
   /** 로그인 버튼의 "최근 로그인" 배지(결정 044 시안) */
@@ -708,6 +710,8 @@ export const Typography = {
   label: type(12, 17, FontWeight.medium),
   /** 소개 둘째 장(시기)의 시기 줄 글자(결정 042 시안) */
   micro: type(12, 16, FontWeight.medium),
+  /** 알림 줄의 때(보드 11-3) */
+  meta: type(12, 16, FontWeight.regular),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
   mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
   /** 점수, 순위 */

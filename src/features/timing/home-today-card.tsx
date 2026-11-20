@@ -3,6 +3,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import { useReduceMotion } from '@/components/byeoli';
 import { CardFail } from '@/components/card-fail';
+import { SkeletonGroup, SkeletonText } from '@/components/skeleton';
 import { GlowOrb } from '@/components/glow';
 import { usePulse } from '@/components/making-view';
 import { Txt } from '@/components/txt';
@@ -10,7 +11,7 @@ import { BrandColors, Colors, LineWidth, TimingLayout as L, TodayCardLayout as M
 import { strings } from '@/content/strings';
 import { reasonBrief } from '@/features/reason/reason-sentence';
 import { formatMonthDay, koreaToday } from '@/features/timing/dates';
-import { ChevronRight, SkBlock, SkLine } from '@/features/timing/timing-parts';
+import { ChevronRight } from '@/features/timing/timing-parts';
 import type { TodaySkyState } from '@/features/timing/use-today-sky';
 
 const T = strings.today;
@@ -58,13 +59,14 @@ function MakingArt() {
 /** 홈 오늘의 하늘 카드의 뼈대(결정 071): 다 그려진 카드(이름표 · 두 줄 제목 · 짧은 이유)와 같은 자리 · 높이 */
 export function HomeTodaySkeleton() {
   return (
-    <SkBlock of="home-today-card" style={styles.card}>
-      <SkLine width="44%" variant="captionStrong" />
-      {/* 제목은 시안 11 처럼 두 줄 */}
-      <SkLine width="92%" variant="emphasis" style={styles.title} />
-      <SkLine width="24%" variant="emphasis" />
-      <SkLine width="60%" variant="desc" style={styles.sub} />
-    </SkBlock>
+    <SkeletonGroup testID="sk-home-today-card">
+      <View style={styles.card}>
+        <SkeletonText variant="captionStrong" widths={['44%']} />
+        {/* 제목은 시안 11 처럼 두 줄 */}
+        <SkeletonText variant="emphasis" widths={['92%', '24%']} style={styles.title} />
+        <SkeletonText variant="desc" widths={['60%']} style={styles.sub} />
+      </View>
+    </SkeletonGroup>
   );
 }
 

@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, View, type DimensionValue } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { Skeleton } from '@/components/skeleton';
+import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, NotificationLayout as L, Typography } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, NotificationLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { groupNotifications, notificationText, timeLabel } from '@/features/notifications/notification-rows';
 import type { NotificationItem } from '@/lib/api';
@@ -49,10 +49,10 @@ function Row({ item, nickname, now, onOpen }: { item: NotificationItem; nickname
         <Txt variant="item" keepAll style={styles.title}>
           {text.title}
         </Txt>
-        <Txt variant="desc" color="gray" keepAll style={styles.body}>
+        <Txt variant="notice" color="gray" keepAll>
           {text.body}
         </Txt>
-        <Txt variant="statLabel" color="hint" style={[styles.time, styles.timeText]}>
+        <Txt variant="meta" color="hint" style={styles.time}>
           {time}
         </Txt>
       </View>
@@ -112,38 +112,24 @@ export function NotificationsEmpty() {
   );
 }
 
-/** 글 한 줄의 뼈대: 그 글의 줄 높이 칸 가운데에 글자 크기만 한 막대 */
-function SkLine({ width, variant, line }: { width: DimensionValue; variant: 'item' | 'desc' | 'statLabel' | 'captionStrong'; line?: number }) {
-  const { lineHeight, fontSize } = Typography[variant];
-  return (
-    <View style={[styles.skLine, { height: line ?? lineHeight }]}>
-      <Skeleton width={width} height={fontSize} />
-    </View>
-  );
-}
-
 /**
  * 처음 불러올 때 뼈대(결정 065 의 2 · 071 — 다 그려진 알림함의 배치를 본뜬다): 묶음 이름 하나와 안 읽은 줄 셋(떠 있는 면 · 아이콘 칸 · 제목 · 본문 · 때).
  */
 export function NotificationsSkeleton() {
   return (
-    <View accessible accessibilityLabel={strings.states.loading} testID="notifications-skeleton">
-      <View style={styles.group}>
-        <SkLine width={36} variant="captionStrong" />
-      </View>
+    <SkeletonGroup testID="notifications-skeleton">
+      <SkeletonText variant="captionStrong" widths={[36]} style={styles.group} />
       {Array.from({ length: L.skeleton.rows }, (_, i) => (
         <View key={i} testID="notification-skeleton-row" style={[styles.row, styles.unreadRow]}>
           <Skeleton width={L.icon} height={L.icon} pill />
           <View style={[styles.text, styles.unreadText]}>
-            <SkLine width={i === 1 ? '50%' : '58%'} variant="item" />
-            <SkLine width={i === 2 ? '72%' : '90%'} variant="desc" line={L.row.bodyLine} />
-            <View style={styles.time}>
-              <SkLine width={44} variant="statLabel" line={L.row.timeLine} />
-            </View>
+            <SkeletonText variant="item" widths={[i === 1 ? '50%' : '58%']} />
+            <SkeletonText variant="notice" widths={[i === 2 ? '72%' : '90%']} />
+            <SkeletonText variant="meta" widths={[44]} style={styles.time} />
           </View>
         </View>
       ))}
-    </View>
+    </SkeletonGroup>
   );
 }
 
@@ -164,8 +150,6 @@ const styles = StyleSheet.create({
   unreadText: { paddingRight: L.row.unreadRight },
   title: { fontWeight: FontWeight.semibold },
   time: { marginTop: L.row.timeTop },
-  body: { lineHeight: L.row.bodyLine },
-  timeText: { lineHeight: L.row.timeLine },
   dot: {
     position: 'absolute',
     top: L.dot.top,
@@ -188,5 +172,4 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { marginTop: L.empty.titleTop, textAlign: 'center' },
   emptyBody: { marginTop: L.empty.bodyTop, textAlign: 'center' },
-  skLine: { justifyContent: 'center' },
 });

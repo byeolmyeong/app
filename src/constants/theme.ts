@@ -44,6 +44,12 @@ export const Colors = {
   accentText: '#9AA3FF',
   /** 고른 칩의 옅은 푸른 보라 바탕 */
   primarySoft: '#1D2050',
+  /** 주색보다 한 단 밝은 푸른 보라: 풀이 문단 번호 · 가까워지는 모습의 가운데 점 · 일 방식 막대의 끝(보드 12-8~12-11) */
+  primaryBright: '#6E78FF',
+  /** 나 탭 영역 카드의 키워드 칩(보드 12-8): 옅은 푸른 보라 바탕 · 테두리 · 글씨 */
+  keyword: 'rgba(154,163,255,0.12)',
+  keywordLine: 'rgba(154,163,255,0.28)',
+  keywordText: '#C9CEFF',
   /** 오류 · 삭제. 대비 4.9, 그 위 ink 3.5 */
   danger: '#E5484D',
   /** 연결 끊김 아이콘의 빗금(보드 20) · 짧은 알림의 실패 아이콘(보드 23-1) */
@@ -93,6 +99,9 @@ export const BrandColors = {
   /** 홈 별명 카드 오른쪽 위의 빛 · 뒤에 깔린 별자리 선(결정 047, 보드 11) */
   cardGlow: '#232A8A',
   constellation: '#5A5D6B',
+  /** 나 탭 영역 그림의 옅은 보라 반짝임 · 일 그림의 계단 면(보드 12 · 12-8~12-12) */
+  sparkle: '#C9CEFF',
+  stepFill: '#2A2F8F',
 } as const;
 
 /**
@@ -279,6 +288,64 @@ export const SkyMapLayout = {
  * 이름 옆의 작은 물음표와 그 위에 뜨는 말풍선(시안 13-2, 내 하늘 지도 · 나 탭): 물음표의 지름 · 테두리 · 이름과의 틈,
  * 말풍선의 최대 폭 · 안쪽 여백(가로 · 세로) · 줄 사이 · 꼬리 · 물음표와 말풍선 사이
  */
+/**
+ * 나 탭(보드 12 받기 전 · 12-8~12-12 · 24-1): 받은 뒤 맨 위 별명 카드 · 칩 다섯 · 영역 카드(빛 · 그림 · 키워드 · 쓰인 별) ·
+ * 영역마다의 칸(한눈에 보기 · 작은 실천 · 가까워지는 모습 · 일 방식 막대 · 마음이 흔들릴 때) · 번호 붙은 문단, 받기 전의 "자세한 풀이" 카드.
+ */
+export const MeLayout = {
+  cardTop: 4,
+  cardBottom: 14,
+  card: { padV: 12, padH: 14, radius: 16, avatar: 44, gap: 12, textGap: 2, chevron: 18 },
+  chips: { top: 4, bottom: 8, gap: 6, height: 36 },
+  contentTop: 20,
+  sectionGap: 36,
+  hero: {
+    radius: 24,
+    padTop: 22,
+    padX: 20,
+    padBottom: 20,
+    art: 92,
+    artInset: 14,
+    titleTop: 10,
+    titleRight: 100,
+    keywordsTop: 16,
+    keywordGap: 6,
+    keyword: 30,
+    keywordPadX: 12,
+    starsTop: 18,
+    starsPadTop: 14,
+    starsGap: 6,
+    starGapX: 14,
+    starIcon: 11,
+    glow: { x: 0.85, y: 0.14, extent: 0.58 },
+  },
+  block: { top: 12, radius: 16, pad: 14, gap: 10, innerGap: 8 },
+  practice: { pad: 16, gap: 12, badge: 24, textGap: 4, listGap: 10 },
+  closer: { padV: 18, padH: 8, dotBox: 24, dots: [14, 18, 22], line: 2, gap: 6, glow: [0, 8, 16] },
+  work: { padV: 18, padH: 14, gap: 16, label: 56, rowGap: 10, bar: 6, dot: 14 },
+  shaken: { gap: 8, arrow: 18, innerGap: 6 },
+  paragraph: { titleTop: 4, bodyTop: 10, numberTracking: 0.48 },
+  detail: {
+    top: 48,
+    radius: 24,
+    padTop: 22,
+    padX: 18,
+    padBottom: 18,
+    titleTop: 6,
+    bodyTop: 6,
+    iconsTop: 18,
+    icon: 44,
+    iconGap: 4,
+    buttonTop: 18,
+    glow: { x: 0.85, y: 0.1, extent: 0.58 },
+  },
+  /** 처음 불러올 때 뼈대(보드 24-1): 막대의 높이 · 칩의 폭 */
+  skeleton: { gap: 14, avatar: 56, rowGap: 12, namesGap: 8, lineTop: 8, chipsGap: 8, chip: 36, chips: [58, 58, 58, 48, 58], name: 18, sub: 12, title: 16, line: 14 },
+} as const;
+
+/** 카드 하나만 못 불러왔을 때 그 카드 자리(보드 19-1, 결정 061 의 3): 카드 · 이름표 아래 제목 · 설명 · 작은 "다시 보기" 단추 */
+export const CardFailLayout = { padding: 20, radius: 20, titleTop: 10, bodyTop: 4, buttonTop: 14, button: 40, buttonPadX: 16, buttonRadius: 10 } as const;
+
 /**
  * 내 별명(보드 12): 머리 아래 한 줄 별명 · 별자리 카드 · 문단들 · 강점과 보완점의 간격.
  * 별자리 카드는 내 별자리 그림 · 이름 · 셋(나의 중심 · 나의 마음 · 나의 첫인상) · "내 하늘 지도 보기" 줄.

@@ -51,7 +51,7 @@ export default function ReadingScreen() {
   // 글이 보일 때만 머리 오른쪽에 공유하기(지금의 요약 해석 카드 — 공유 v2 는 계획 A⑤)
   const readNav = <NavBar title={S.title} onBack={goBackOrHome} chevron right={<ShareEntry target={{ kind: 'READING' }} trigger="icon" />} />;
   // 나 탭 안에서 들어온 화면이라 아래 탭은 나(결정 046 의 2 — 시안 12 에 탭이 있다)
-  const tabs = <MainTabs active="me" />;
+  const tabs = <MainTabs active="me" nested />;
   // 연결 끊김(결정 061 의 4): 받아 둔 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 다시 부른다
   const online = useOnline();
   useOnReconnect(online, () => {

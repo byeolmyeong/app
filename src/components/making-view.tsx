@@ -74,13 +74,13 @@ function useTurn(run: boolean, ms: number) {
 }
 
 /** 안내 문구의 차례. 동작 줄이기면 첫 문구에 머문다 */
-function useLine(run: boolean) {
+function useLine(run: boolean, count: number) {
   const [index, setIndex] = useState(0);
   const [shown] = useState(() => new Animated.Value(1));
   useEffect(() => {
     if (!run) return;
     const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % M.lines.length);
+      setIndex((i) => (i + 1) % count);
       shown.setValue(0);
       Animated.timing(shown, { toValue: 1, duration: LINE_FADE_MS, easing: ease, useNativeDriver }).start();
     }, LINE_MS);
@@ -88,7 +88,7 @@ function useLine(run: boolean) {
       clearInterval(timer);
       shown.setValue(1);
     };
-  }, [run, shown]);
+  }, [run, shown, count]);
   // 동작 줄이기가 켜지면 첫 문구로 돌아가 머문다
   return { index: run ? index : 0, shown };
 }
@@ -96,9 +96,12 @@ function useLine(run: boolean) {
 export type MakingViewProps = {
   /** 화면 머리(뒤로 가기). 가입 직후에는 없다(보드 9), 홈에서 들어왔을 때는 있다 */
   nav?: ReactNode;
+  /** 제목과 차례로 바뀌는 안내 문구. 없으면 별명 짓는 중의 것(나 탭 자세한 풀이 쓰는 중은 보드 11-8 의 것) */
+  title?: string;
+  lines?: readonly string[];
 };
 
-export function MakingView({ nav }: MakingViewProps) {
+export function MakingView({ nav, title = M.title, lines = M.lines }: MakingViewProps) {
   // 몇십 초 기다리는 화면이라 기다릴 때 음악(결정 062 의 1). 결과 · 실패로 넘어가면 배경으로 돌아간다
   useSoundtrack('waiting');
   const reduce = useReduceMotion();
@@ -108,7 +111,7 @@ export function MakingView({ nav }: MakingViewProps) {
   const orbit = useTurn(run, ORBIT_MS);
   const inner = useTurn(run, INNER_ORBIT_MS);
   const twinkles = [usePulse(run, TWINKLE_MS, 0), usePulse(run, TWINKLE_MS, 1100), usePulse(run, TWINKLE_MS, 1800)];
-  const line = useLine(run);
+  const line = useLine(run, lines.length);
 
   const spin = (v: Animated.Value, reverse = false) =>
     v.interpolate({ inputRange: [0, 1], outputRange: reverse ? ['360deg', '0deg'] : ['0deg', '360deg'] });
@@ -155,7 +158,7 @@ export function MakingView({ nav }: MakingViewProps) {
           </Animated.View>
         </View>
         <Txt variant="headline" accessibilityRole="header" style={styles.title}>
-          {M.title}
+          {title}
         </Txt>
         {/* 바뀌는 안내 문구는 화면 읽기에서 숨긴다 — 제목만 읽힌다(2.5초마다 알리면 시끄럽다) */}
         <View testID="making-lines" style={styles.lines} aria-hidden importantForAccessibility="no-hide-descendants">
@@ -165,7 +168,7 @@ export function MakingView({ nav }: MakingViewProps) {
               transform: [{ translateY: line.shown.interpolate({ inputRange: [0, 1], outputRange: [LINE_RISE, 0] }) }],
             }}>
             <Txt color="gray" style={styles.center}>
-              {M.lines[line.index]}
+              {lines[line.index]}
             </Txt>
           </Animated.View>
         </View>

@@ -8,10 +8,10 @@ import { strings } from '@/content/strings';
 export type MainTab = 'home' | 'me' | 'timing' | 'my';
 
 /**
- * 탭마다 가는 곳(결정 055 의 2). 나 · 시기는 새 화면이 생기기 전까지 지금 화면으로 간다(결정 046 의 4) —
- * 계획 묶음 A② 가 나를 `/me`, A③ 이 시기를 `/timing` 으로 바꾼다.
+ * 탭마다 가는 곳(결정 055 의 2). 나는 나 탭(`/me`, 결정 048 의 1). 시기는 새 화면이 생기기 전까지 지금 화면으로 간다(결정 046 의 4) —
+ * 계획 묶음 A③ 이 시기를 `/timing` 으로 바꾼다.
  */
-const PATHS = { home: '/', me: '/reading', timing: '/report?area=TIMING', my: '/my' } as const;
+const PATHS = { home: '/', me: '/me', timing: '/report?area=TIMING', my: '/my' } as const;
 
 const icon = (draw: (stroke: object) => React.ReactNode) =>
   function TabIcon(color: string) {
@@ -50,17 +50,16 @@ const TABS: BottomTab<MainTab>[] = [
   },
 ];
 
-/** 앱의 아래 탭: 홈 · 나 · 시기 · 마이(결정 055 의 2, 아이콘은 시안 11). 다른 탭을 누르면 그 화면으로 바꾼다(뒤로 가기에 쌓지 않는다, 결정 046 의 2). */
-export function MainTabs({ active }: { active: MainTab }) {
-  return (
-    <BottomTabs
-      tabs={TABS}
-      value={active}
-      onChange={(key) => {
-        // push 로 들어온 화면(홈 카드 → 글 등)에서 눌러도 밑의 화면이 남지 않게 먼저 치운다(리뷰 PR #41)
-        if (router.canDismiss()) router.dismissAll();
-        router.replace(PATHS[key]);
-      }}
-    />
-  );
+/** 그 탭의 첫 화면으로 바꾼다. push 로 들어온 화면(홈 카드 → 글 등)에서 눌러도 밑의 화면이 남지 않게 먼저 치운다(리뷰 PR #41) */
+function go(key: MainTab) {
+  if (router.canDismiss()) router.dismissAll();
+  router.replace(PATHS[key]);
+}
+
+/**
+ * 앱의 아래 탭: 홈 · 나 · 시기 · 마이(결정 055 의 2, 아이콘은 시안 11). 다른 탭을 누르면 그 화면으로 바꾼다(뒤로 가기에 쌓지 않는다, 결정 046 의 2).
+ * nested 는 탭 안에서 들어간 화면(나 → 내 별명): 지금 탭을 다시 누르면 그 탭의 첫 화면으로 간다.
+ */
+export function MainTabs({ active, nested = false }: { active: MainTab; nested?: boolean }) {
+  return <BottomTabs tabs={TABS} value={active} onChange={go} onReselect={nested ? go : undefined} />;
 }

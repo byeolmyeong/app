@@ -28,6 +28,19 @@ describe('MakingView', () => {
     expect(screen.queryByText(/1분/)).toBeNull();
   });
 
+  it('제목 · 문구를 넘기면 그것을 쓴다(나 탭 자세한 풀이 쓰는 중, 보드 11-8 — "알림으로 알려 드릴게요" 는 없다)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const W = strings.me.making;
+    await render(<MakingView title={W.title} lines={W.lines} />);
+    await act(async () => {});
+    expect(screen.getByText(W.title)).toBeTruthy();
+    expect(screen.getByText(W.lines[0], { includeHiddenElements: true })).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(2500)));
+    expect(screen.getByText(W.lines[1], { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByText(M.title)).toBeNull();
+    expect(screen.queryByText(/알림으로/)).toBeNull();
+  });
+
   it('동작 줄이기가 꺼져 있으면 문구 셋이 2.5초마다 순서대로 바뀌고 처음으로 돌아온다', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     await render(<MakingView />);

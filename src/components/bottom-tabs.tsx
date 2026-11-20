@@ -17,10 +17,12 @@ export type BottomTabsProps<K extends string> = {
   value: K;
   /** 지금 있는 탭이 아닌 것을 눌렀을 때 */
   onChange: (key: K) => void;
+  /** 지금 있는 탭을 다시 눌렀을 때(탭 안에서 들어간 화면이면 그 탭의 첫 화면으로). 없으면 아무 일도 없다 */
+  onReselect?: (key: K) => void;
 };
 
 /** 화면 아래의 탭 줄. 아이콘과 이름이 한 벌이고 화면 폭을 탭 수로 똑같이 나눈다. */
-export function BottomTabs<K extends string>({ tabs, value, onChange }: BottomTabsProps<K>) {
+export function BottomTabs<K extends string>({ tabs, value, onChange, onReselect }: BottomTabsProps<K>) {
   return (
     <View testID="bottom-tabs" style={styles.bar} accessibilityRole="tablist" accessibilityLabel={strings.common.bottomTabsLabel}>
       {tabs.map((tab) => {
@@ -33,6 +35,7 @@ export function BottomTabs<K extends string>({ tabs, value, onChange }: BottomTa
             accessibilityState={{ selected: on }}
             onPress={() => {
               if (!on) onChange(tab.key);
+              else onReselect?.(tab.key);
             }}
             style={styles.tab}
           >

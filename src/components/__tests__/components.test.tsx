@@ -38,6 +38,11 @@ describe('테마', () => {
       primary: '#4752FF',
       accentText: '#9AA3FF',
       primarySoft: '#1D2050',
+      // 나 탭: 문단 번호 · 막대 끝의 밝은 주색, 키워드 칩의 옅은 바탕 · 테두리 · 글씨(보드 12-8~12-12)
+      primaryBright: '#6E78FF',
+      keyword: 'rgba(154,163,255,0.12)',
+      keywordLine: 'rgba(154,163,255,0.28)',
+      keywordText: '#C9CEFF',
       danger: '#E5484D',
       dangerSoft: '#FF8A8A',
       // 짧은 알림의 성공 체크(보드 23) · 처음 불러올 때 뼈대의 바탕과 빛(보드 24)

@@ -138,7 +138,7 @@ describe('홈', () => {
     expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
   });
 
-  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /reading, 시기는 /report?area=TIMING(결정 046 의 4)', async () => {
+  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /report?area=TIMING(결정 046 의 4)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findByTestId('nickname-card');
@@ -146,7 +146,7 @@ describe('홈', () => {
     expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
     expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
     await fireEvent.press(tabs[1]);
-    expect(router.replace).toHaveBeenLastCalledWith('/reading');
+    expect(router.replace).toHaveBeenLastCalledWith('/me');
     await fireEvent.press(tabs[2]);
     expect(router.replace).toHaveBeenLastCalledWith('/report?area=TIMING');
     await fireEvent.press(tabs[3]);

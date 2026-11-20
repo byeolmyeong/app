@@ -8,6 +8,7 @@ import { StateScreen } from '@/components/state-screen';
 import { useOnReconnect, useOnline } from '@/components/use-online';
 import { strings } from '@/content/strings';
 import { clearSignedUp, signedUpNickname } from '@/features/auth/signup-draft';
+import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
@@ -47,6 +48,8 @@ export default function ReadingScreen() {
   // 짓는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027). 받아 둔 글을 다시 연 것은 아니다.
   const generating = profile !== null && stored.checked && !stored.reading && state.status === 'loading';
   useGenerationBusy(generating, !stored.reading && state.status === 'done');
+  // 짓는 동안(별명 짓는 중 화면)만 기다릴 때 음악(결정 062 의 1). 글이 오거나 못 지으면 배경으로
+  useSoundtrack('waiting', generating);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
   // 글이 보일 때만 머리 오른쪽에 공유하기(지금의 요약 해석 카드 — 공유 v2 는 계획 A⑤)
   const readNav = <NavBar title={S.title} onBack={goBackOrHome} chevron right={<ShareEntry target={{ kind: 'READING' }} trigger="icon" />} />;

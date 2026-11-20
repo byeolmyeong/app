@@ -12,6 +12,7 @@ import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
 import { MeLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty } from '@/features/chart/chart-empty';
@@ -64,6 +65,8 @@ export default function MeScreen() {
   // 처음 불러올 때: 내 별명이 아직 없거나 나 탭 풀이의 상태를 처음 묻는 중(기기에 받아 둔 것이 없다)
   const loading = loaded && profile !== null && ((!reading && readingState.status !== 'failed') || me.state.status === 'checking');
   const phase = useLoadingPhase(loading);
+  // 쓰는 중 화면(자세한 풀이 · 서버가 내 별명을 짓는 중)이 떠 있는 동안만 기다릴 때 음악(결정 062 의 1)
+  useSoundtrack('waiting', me.state.status === 'writing' || (!reading && readingState.status === 'loading' && phase === 'timeout'));
 
   const tabs = <MainTabs active="me" />;
   const banner = online ? null : <OfflineBanner />;

@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import ReadingScreen from '@/app/reading';
 import { strings } from '@/content/strings';
 import { clearDraft, finishDraft, setDraft, signedUpNickname } from '@/features/auth/signup-draft';
+import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { useSession } from '@/features/auth/use-session';
 import { keyThree } from '@/features/chart/chart-rows';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -26,6 +27,7 @@ jest.mock('@/lib/api', () => ({
   // 공유는 시트를 열 때 만든다 — 이 화면의 시험에서는 끝나지 않는 요청으로 둔다
   api: { createReading: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn(() => new Promise(() => {})) },
 }));
+jest.mock('@/features/audio/use-soundtrack', () => ({ useSoundtrack: jest.fn() }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
@@ -73,6 +75,17 @@ describe('요약 해석 화면', () => {
     (useLocalSearchParams as jest.Mock).mockReturnValue({});
     await act(async () => resolve({ ok: true, data: reading }));
     expect(await screen.findByText(reading.headline)).toBeTruthy();
+  });
+
+  it('짓는 동안만 기다릴 때 음악을 청한다(결정 062 의 1) — 글이 오면 내려놓는다', async () => {
+    let resolve: (r: ApiResult<Reading>) => void = () => {};
+    mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', true);
+    await act(async () => resolve({ ok: true, data: reading }));
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', false);
   });
 
   it('생성 중에는 진행 상태를 보여 주고, 받으면 서버가 준 글을 그대로 보여 준다', async () => {

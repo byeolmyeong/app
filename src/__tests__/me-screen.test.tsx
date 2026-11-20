@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import MeScreen from '@/app/me';
 import { strings } from '@/content/strings';
+import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { ME_REPORT_POLL_MS, ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -29,6 +30,7 @@ jest.mock('@/lib/api', () => ({
     createShare: jest.fn(() => new Promise(() => {})),
   },
 }));
+jest.mock('@/features/audio/use-soundtrack', () => ({ useSoundtrack: jest.fn() }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
@@ -96,6 +98,8 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     expect(screen.getByText(M.making.lines[0], { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByText(/알림으로/)).toBeNull();
     expect(tabs()).toHaveLength(0);
+    // 쓰는 중에만 기다릴 때 음악(결정 062 의 1)
+    expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', true);
   });
 
   it('다 쓰면 나 탭의 성격 칩으로 간다(5초마다 확인)', async () => {

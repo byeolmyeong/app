@@ -13,7 +13,6 @@ import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
 import { BackdropShape, BrandColors, Colors, LineWidth, MakingTwinkles, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { useSoundtrack } from '@/features/audio/use-soundtrack';
 
 const M = strings.making;
 const useNativeDriver = Platform.OS !== 'web';
@@ -93,6 +92,10 @@ function useLine(run: boolean, count: number) {
   return { index: run ? index : 0, shown };
 }
 
+/**
+ * 기다릴 때 음악(결정 062 의 1)은 이 화면을 띄우는 화면이 청한다(`useSoundtrack('waiting', 쓰는 중)`) —
+ * 공용 부품은 기능(features/audio)을 import 하지 않는다(eslint 경계).
+ */
 export type MakingViewProps = {
   /** 화면 머리(뒤로 가기). 가입 직후에는 없다(보드 9), 홈에서 들어왔을 때는 있다 */
   nav?: ReactNode;
@@ -102,8 +105,6 @@ export type MakingViewProps = {
 };
 
 export function MakingView({ nav, title = M.title, lines = M.lines }: MakingViewProps) {
-  // 몇십 초 기다리는 화면이라 기다릴 때 음악(결정 062 의 1). 결과 · 실패로 넘어가면 배경으로 돌아간다
-  useSoundtrack('waiting');
   const reduce = useReduceMotion();
   const run = !reduce;
   const float = usePulse(run, FLOAT_MS);

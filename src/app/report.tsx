@@ -13,6 +13,7 @@ import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { FutureDirection } from '@/features/direction/future-direction';
+import { MainTabs } from '@/features/home/main-tabs';
 import { ReportView, TIMING_TAB, type ReportTab } from '@/features/report/report-view';
 import { useReport } from '@/features/report/use-report';
 import { ShareEntry } from '@/features/share/share-entry';
@@ -94,8 +95,9 @@ export default function ReportScreen() {
       </Screen>
     );
 
+  // 시기 탭이 새 화면(/timing)이 되기 전까지 리포트의 시기가 시기 탭의 자리다(결정 046 의 4)
   return (
-    <Screen nav={nav}>
+    <Screen nav={nav} footer={<MainTabs active={area === 'TIMING' ? 'timing' : 'me'} />}>
       <ReportView
         report={state.report}
         initialArea={TABS.find((a) => a === area)}

@@ -12,7 +12,7 @@ export type TabsProps<K extends string> = {
 /** 글자 탭. 화면 폭을 탭 수로 똑같이 나눠 쓴다. 고른 탭은 굵은 글씨와 밑줄, 나머지는 회색. */
 export function Tabs<K extends string>({ tabs, value, onChange }: TabsProps<K>) {
   return (
-    <View style={styles.row} accessibilityRole="tablist">
+    <View testID="tabs" style={styles.row} accessibilityRole="tablist">
       {tabs.map((tab) => {
         const on = tab.key === value;
         return (

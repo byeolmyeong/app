@@ -18,6 +18,7 @@ import { keyThree } from '@/features/chart/chart-rows';
 import { ChartPicture } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
+import { MainTabs } from '@/features/home/main-tabs';
 import { MakingView } from '@/features/reading/making-view';
 import { ReadingView } from '@/features/reading/reading-view';
 import { RevealView } from '@/features/reading/reveal-view';
@@ -94,8 +95,9 @@ export default function ReadingScreen() {
       </Screen>
     );
 
+  // 나 탭이 새 화면(/me)이 되기 전까지 글 화면이 나 탭의 자리다(결정 046 의 4)
   return (
-    <Screen nav={nav}>
+    <Screen nav={nav} footer={<MainTabs active="me" />}>
       <ReadingBody reading={state.reading} chart={chart} />
     </Screen>
   );

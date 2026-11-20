@@ -45,7 +45,9 @@ const report = fixtures.report;
 const [personality, relationship, work, emotion] = report.sections;
 const got = (status: 'NONE' | 'WRITING' | 'FAILED'): ApiResult<ReportState> => ({ ok: true, data: { status } });
 const done: ApiResult<ReportState> = { ok: true, data: { status: 'DONE', report } };
-const selectedTabs = () => screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected);
+/** 영역 탭 다섯(`Tabs`). 화면 아래에는 앱의 아래 탭 넷(`BottomTabs`)이 따로 있다(결정 046 의 4 · 055) */
+const areas = () => within(screen.getByTestId('tabs'));
+const selectedTabs = () => areas().getAllByRole('tab').map((t) => t.props.accessibilityState.selected);
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -98,7 +100,7 @@ describe('심층 리포트 화면', () => {
   it('다 쓰였으면 영역 탭 다섯(성격 · 관계 · 일 · 감정 · 시기)과 첫 영역의 제목 · 문단을 서버가 준 그대로 보여 준다', async () => {
     await render(<ReportScreen />);
     expect(await screen.findByText(personality.title)).toBeTruthy();
-    const tabs = screen.getAllByRole('tab');
+    const tabs = areas().getAllByRole('tab');
     expect(tabs).toHaveLength(5);
     ['성격', '관계', '일', '감정', '시기'].forEach((label, i) => expect(within(tabs[i]).getByText(label)).toBeTruthy());
     // 탭 다섯이 폭을 똑같이 나눠 쓴다
@@ -147,10 +149,23 @@ describe('심층 리포트 화면', () => {
     expect(selectedTabs()).toEqual([true, false, false, false, false]);
   });
 
+  it('글 아래에 앱의 아래 탭 넷이 있고, area=TIMING 이면 시기 · 아니면 나가 골라져 있다(결정 046 의 4 · 055 의 2)', async () => {
+    const bottom = () => within(screen.getByTestId('bottom-tabs')).getAllByRole('tab');
+    const view = await render(<ReportScreen />);
+    await screen.findByText(personality.title);
+    expect(bottom().map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
+    expect(bottom().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    await view.unmount();
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    await render(<ReportScreen />);
+    await screen.findByTestId('timing-view');
+    expect(bottom().map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false]);
+  });
+
   it('글 영역에서 누를 수 있는 것은 뒤로 가기와 탭 다섯뿐이다(공유·다시 생성 없음)', async () => {
     await render(<ReportScreen />);
     await screen.findByText(personality.title);
-    expect(screen.getAllByRole('tab')).toHaveLength(5);
+    expect(areas().getAllByRole('tab')).toHaveLength(5);
     expect(screen.queryAllByRole('button')).toHaveLength(1);
     expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
     expect(screen.queryAllByRole('link')).toHaveLength(0);
@@ -266,10 +281,10 @@ describe('심층 리포트 화면: 시기 탭', () => {
     await openTiming();
     expect(selectedTabs()).toEqual([false, false, false, false, true]);
     expect(screen.queryByText(personality.title)).toBeNull();
-    await fireEvent.press(screen.getByText('성격'));
+    await fireEvent.press(areas().getByText('성격'));
     expect(screen.getByText(personality.title)).toBeTruthy();
     expect(screen.queryByTestId('timing-view')).toBeNull();
-    await fireEvent.press(screen.getByText('시기'));
+    await fireEvent.press(areas().getByText('시기'));
     expect(screen.getByTestId('timing-view')).toBeTruthy();
   });
 
@@ -785,12 +800,12 @@ describe('심층 리포트 화면: 시기 탭 "지금" 아래의 방향성 제�
   it('다른 탭을 보는 동안에는 부르지 않고, 시기 탭을 열 때 미래 주제로 부른다', async () => {
     await render(<ReportScreen />);
     expect(await screen.findByText(personality.title)).toBeTruthy();
-    await fireEvent.press(screen.getByText('관계'));
+    await fireEvent.press(areas().getByText('관계'));
     await act(async () => {});
     expect(mockApi.createDirection).not.toHaveBeenCalled();
     expect(screen.queryByText(F.heading)).toBeNull();
 
-    await fireEvent.press(screen.getByText('시기'));
+    await fireEvent.press(areas().getByText('시기'));
     expect(await screen.findByText(future.title)).toBeTruthy();
     expect(mockApi.createDirection).toHaveBeenCalledTimes(1);
     expect(mockApi.createDirection).toHaveBeenCalledWith('FUTURE');

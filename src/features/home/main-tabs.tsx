@@ -5,9 +5,13 @@ import { BottomTabs, type BottomTab } from '@/components/bottom-tabs';
 import { Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
-export type MainTab = 'home' | 'my';
+export type MainTab = 'home' | 'me' | 'timing' | 'my';
 
-const PATHS = { home: '/', my: '/my' } as const;
+/**
+ * 탭마다 가는 곳(결정 055 의 2). 나 · 시기는 새 화면이 생기기 전까지 지금 화면으로 간다(결정 046 의 4) —
+ * 계획 묶음 A② 가 나를 `/me`, A③ 이 시기를 `/timing` 으로 바꾼다.
+ */
+const PATHS = { home: '/', me: '/reading', timing: '/report?area=TIMING', my: '/my' } as const;
 
 const icon = (draw: (stroke: object) => React.ReactNode) =>
   function TabIcon(color: string) {
@@ -25,6 +29,16 @@ const TABS: BottomTab<MainTab>[] = [
     icon: icon((s) => <Path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z" {...s} />),
   },
   {
+    key: 'me',
+    label: strings.tabs.me,
+    icon: icon((s) => <Path d="M12 3.5Q13.4 10.6 20.5 12Q13.4 13.4 12 20.5Q10.6 13.4 3.5 12Q10.6 10.6 12 3.5Z" {...s} />),
+  },
+  {
+    key: 'timing',
+    label: strings.tabs.timing,
+    icon: icon((s) => <Path d="M15.5 4.2A8.5 8.5 0 1 0 19.8 15.5A7 7 0 0 1 15.5 4.2Z" {...s} />),
+  },
+  {
     key: 'my',
     label: strings.tabs.my,
     icon: icon((s) => (
@@ -36,7 +50,7 @@ const TABS: BottomTab<MainTab>[] = [
   },
 ];
 
-/** 앱의 아래 탭: 홈 · 마이(결정 019). 다른 탭을 누르면 그 화면으로 바꾼다(뒤로 가기에 쌓지 않는다). */
+/** 앱의 아래 탭: 홈 · 나 · 시기 · 마이(결정 055 의 2, 아이콘은 시안 11). 다른 탭을 누르면 그 화면으로 바꾼다(뒤로 가기에 쌓지 않는다, 결정 046 의 2). */
 export function MainTabs({ active }: { active: MainTab }) {
   return <BottomTabs tabs={TABS} value={active} onChange={(key) => router.replace(PATHS[key])} />;
 }

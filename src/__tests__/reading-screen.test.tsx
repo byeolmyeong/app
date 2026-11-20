@@ -99,6 +99,14 @@ describe('요약 해석 화면', () => {
     expect(screen.queryByText(new RegExp(`^${R.basisLabel}`))).toBeNull();
   });
 
+  it('글이 보이면 아래 탭 넷이 있고 나가 골라져 있다(결정 046 의 4 · 055 의 2)', async () => {
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
+    expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+  });
+
   it('"내 차트 보기" 는 /chart 로 간다', async () => {
     await render(<ReadingScreen />);
     await fireEvent.press(await screen.findByText(R.seeChart));

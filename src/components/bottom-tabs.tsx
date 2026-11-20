@@ -21,7 +21,7 @@ export type BottomTabsProps<K extends string> = {
 /** 화면 아래의 탭 줄. 아이콘과 이름이 한 벌이고 화면 폭을 탭 수로 똑같이 나눈다. */
 export function BottomTabs<K extends string>({ tabs, value, onChange }: BottomTabsProps<K>) {
   return (
-    <View style={styles.bar} accessibilityRole="tablist">
+    <View testID="bottom-tabs" style={styles.bar} accessibilityRole="tablist">
       {tabs.map((tab) => {
         const on = tab.key === value;
         return (

@@ -170,15 +170,19 @@ describe('홈', () => {
     ]);
   });
 
-  it('아래에 탭 두 개가 있다: 홈 · 마이. 누르면 그 화면으로 바꾼다', async () => {
+  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /reading, 시기는 /report?area=TIMING(결정 046 의 4)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findAllByTestId('home-category');
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '마이']);
-    expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false]);
+    expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
+    expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
     await fireEvent.press(tabs[1]);
-    expect(router.replace).toHaveBeenCalledWith('/my');
+    expect(router.replace).toHaveBeenLastCalledWith('/reading');
+    await fireEvent.press(tabs[2]);
+    expect(router.replace).toHaveBeenLastCalledWith('/report?area=TIMING');
+    await fireEvent.press(tabs[3]);
+    expect(router.replace).toHaveBeenLastCalledWith('/my');
     // 지금 있는 탭을 눌러도 아무 데도 가지 않는다
     (router.replace as jest.Mock).mockClear();
     await fireEvent.press(tabs[0]);
@@ -250,7 +254,7 @@ describe('마이(/my)', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<MyScreen />);
     expect(await screen.findByText('2000. 6. 15. 오후 9:00 · 서울특별시 마포구')).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true]);
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
     await fireEvent.press(screen.getByText(strings.my.editBirth));
     expect(router.push).toHaveBeenCalledWith('/birth');
   });

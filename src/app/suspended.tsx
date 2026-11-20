@@ -20,11 +20,15 @@ export default function SuspendedScreen() {
   async function logout() {
     if (leaving.current) return;
     leaving.current = true;
-    // 서버 세션 지우기가 실패해도 기기에서는 로그아웃한다(결정 034)
-    await signOut();
-    clearSuspended();
-    if (router.canDismiss()) router.dismissAll();
-    router.replace('/login');
+    try {
+      // 서버 세션 지우기가 실패해도 기기에서는 로그아웃한다(결정 034)
+      await signOut();
+      clearSuspended();
+      if (router.canDismiss()) router.dismissAll();
+      router.replace('/login');
+    } finally {
+      leaving.current = false;
+    }
   }
 
   return (

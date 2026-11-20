@@ -45,6 +45,15 @@ describe('공유 카드 미리 받기(POST /shares/preview, 서버 결정 051)',
     expect(mockApi.previewShare).toHaveBeenCalledTimes(3);
   });
 
+  it('기기 기억이 지워지면(로그아웃 · 계정 삭제 · 출생 정보 바꾸기 — 세대가 바뀐다) 같은 카드를 다시 받는다(결정 073)', async () => {
+    mockApi.previewShare.mockResolvedValue({ ok: true, data: C.nickname });
+    await prefetchShare({ kind: 'NICKNAME' });
+    await AsyncStorage.clear();
+    await prefetchShare({ kind: 'NICKNAME' });
+    expect(mockApi.previewShare).toHaveBeenCalledTimes(2);
+    expect(await readCachedShare('NICKNAME')).toEqual(C.nickname);
+  });
+
   it('궁합 카드(기억하지 않는 종류)는 미리 받지 않는다', async () => {
     await prefetchShare({ kind: 'RANKING', relation: 'FRIEND' });
     expect(mockApi.previewShare).not.toHaveBeenCalled();

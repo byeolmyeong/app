@@ -85,21 +85,25 @@ export async function readCachedShare(key: string): Promise<ShareCard | null> {
 
 /**
  * 공유 카드를 미리 받아 기억에 둔다(`POST /shares/preview`, 저장 없음). 기억하는 종류(내 별명 · 나 탭 영역 · 그날의 하늘 · 다음 큰 변화)만.
- * 성공했을 때만 쓴다(시작할 때의 세대가 그대로일 때만). 같은 키를 이 실행에서 이미 받았으면 다시 부르지 않는다.
+ * 성공했을 때만 쓴다(시작할 때의 세대가 그대로일 때만). 같은 카드는 기억의 세대마다 한 번만 부른다 — 로그아웃 · 계정 삭제 · 출생 정보 바꾸기로
+ * 기억이 지워지면(세대가 바뀐다) 다시 받는다(결정 073).
  */
 const prefetched = new Set<string>();
 export async function prefetchShare(request: ShareRequest): Promise<void> {
   const key = shareKeyOf(request);
-  if (!key || prefetched.has(key)) return;
-  prefetched.add(key);
+  if (!key) return;
+  let mark: string | null = null;
   try {
     const gen = await generation();
+    mark = `${gen}|${key}`;
+    if (prefetched.has(mark)) return;
+    prefetched.add(mark);
     const result = await api.previewShare(request);
     if (result.ok) await remember(key, gen, result.data);
-    // 끊김 등은 다음에 들어올 때 다시, 미리보기 길이 없는 옛 서버(404)는 이 실행에서 다시 부르지 않는다
-    else if (result.status !== 404) prefetched.delete(key);
+    // 끊김 등은 다음에 들어올 때 다시, 미리보기 길이 없는 옛 서버(404)는 이 세대에서 다시 부르지 않는다
+    else if (result.status !== 404) prefetched.delete(mark);
   } catch {
-    prefetched.delete(key);
+    if (mark) prefetched.delete(mark);
   }
 }
 

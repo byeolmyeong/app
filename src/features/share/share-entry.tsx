@@ -13,6 +13,7 @@ import { Colors, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveImage, shareStory, type CardRef } from '@/features/share/share-actions';
 import { ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
+import { useSession } from '@/features/auth/use-session';
 import { prefetchShare } from '@/features/share/share-cache';
 import { storyAppId } from '@/features/share/story';
 import { useShareCard } from '@/features/share/use-share-card';
@@ -52,9 +53,11 @@ export function ShareEntry({ target, label = S.open, trigger = 'button' }: { tar
   const [opened, setOpened] = useState(0);
   // 미리 받기는 기억하는 종류만(궁합 카드는 내 이름 · 이름 표시에 따라 달라 받지 않는다)
   const prefetchKey = target.kind === 'NICKNAME' || target.kind === 'NEXT_BIG' || target.kind === 'ME_AREA' || target.kind === 'DAY_SKY' ? JSON.stringify(target) : null;
+  // 로그인이 확인된 뒤에만(확인 전에 부르면 토큰 없이 401 — 다른 화면과 같게, 결정 073)
+  const signedIn = useSession().status === 'signedIn';
   useEffect(() => {
-    if (prefetchKey) void prefetchShare(JSON.parse(prefetchKey) as ShareRequest);
-  }, [prefetchKey]);
+    if (prefetchKey && signedIn) void prefetchShare(JSON.parse(prefetchKey) as ShareRequest);
+  }, [prefetchKey, signedIn]);
   const open = () => {
     setOpened((n) => n + 1);
     setVisible(true);

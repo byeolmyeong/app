@@ -17,6 +17,9 @@ jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   api: { createShare: jest.fn(), previewShare: jest.fn(async () => ({ ok: false, error: 'NETWORK' })) },
 }));
+// 로그인 상태는 시험이 정한다(기본: 로그인) — 미리 받기는 로그인이 확인된 뒤에만(결정 073)
+const mockSession = { status: 'signedIn' as string };
+jest.mock('@/features/auth/use-session', () => ({ useSession: () => ({ status: mockSession.status }) }));
 jest.mock('@/features/share/share-actions', () => ({
   saveImage: jest.fn(async () => 'SAVED'),
   shareStory: jest.fn(async () => 'OPENED'),
@@ -320,7 +323,17 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
 });
 
 describe('공유 카드 미리 받기(소유자 2026-11-21, 서버 결정 051)', () => {
-  beforeEach(() => resetPrefetchedForTest());
+  beforeEach(() => {
+    resetPrefetchedForTest();
+    mockSession.status = 'signedIn';
+  });
+
+  it('로그인이 확인되기 전에는 부르지 않는다(토큰 없이 401 이 가지 않게)', async () => {
+    mockSession.status = 'checking';
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+    await act(async () => {});
+    expect(mockApi.previewShare).not.toHaveBeenCalled();
+  });
 
   it('공유 아이콘이 있는 화면에 들어오면 저장 없는 미리보기로 카드를 받아 둔다(POST /shares 는 부르지 않는다)', async () => {
     await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);

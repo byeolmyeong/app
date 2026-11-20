@@ -10,6 +10,7 @@ import { SignArt } from '@/features/chart/ChartWheel';
 import { AreaArt } from '@/features/me/area-art';
 import { SkyArt } from '@/features/share/share-art';
 import type { ShareCard } from '@/lib/api';
+import { koreanToday } from '@/lib/korea-date';
 
 const S = strings.share;
 const C = S.card;
@@ -116,9 +117,6 @@ export function ShareCardSkeleton({ kind, bars, width = Sizes.shareCardWidth }: 
   );
 }
 
-/** 한국 날짜(UTC+9)의 오늘, YYYY-MM-DD — 그날의 하늘 카드가 오늘인지 가른다 */
-const KOREA_OFFSET_MS = 9 * 60 * 60 * 1000;
-const koreanToday = () => new Date(Date.now() + KOREA_OFFSET_MS).toISOString().slice(0, 10);
 /** 서버가 준 YYYY-MM-DD 를 "11월 19일" 로 옮겨 적는다 */
 const dateText = (date: string) => `${Number(date.slice(5, 7))}${V.date.month}${Number(date.slice(8, 10))}${V.date.day}`;
 

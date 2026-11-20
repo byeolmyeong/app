@@ -221,7 +221,7 @@ export const IntroArtLayout = {
 } as const;
 
 /** 공통 상태 화면(결정 061, 보드 19 · 20-1 · 17-1 · 점검): 그림 아래 제목 · 그 아래 설명 · 가운데 덩이를 위로 올림 · 주 버튼 아래(탭 없음 · 탭 위) */
-export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, aboveTabs: 16, laterGap: 12 } as const;
+export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, aboveTabs: 16, laterGap: 8, later: 48 } as const;
 
 /** 가운데 창(결정 061 의 6, 보드 17): 화면 양옆에서 · 안 여백(위 · 나머지) · 모서리 · 제목과 설명 사이 · 설명과 버튼 사이 · 버튼 사이 · 버튼 높이 */
 export const DialogLayout = { inset: 28, paddingTop: 26, padding: 20, radius: 20, bodyTop: 8, actionsTop: 22, actionGap: 8, button: 50 } as const;

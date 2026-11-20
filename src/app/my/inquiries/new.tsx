@@ -10,6 +10,7 @@ import { Toast, useToast } from '@/components/toast';
 import { Txt } from '@/components/txt';
 import { Colors, InquiryLayout as L, LineWidth, MyLayout, Radius, ScreenPaddingX, Sizes, Spacing, StateLayout, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { useSuspended } from '@/features/auth/suspension';
 import { CategoryChips } from '@/features/support/category-chips';
 import { checkInquiry, INQUIRY_BODY_MAX, INQUIRY_BODY_MIN, inquiryLength } from '@/features/support/inquiry';
 import { useInquiry } from '@/features/support/use-inquiry';
@@ -32,6 +33,8 @@ export default function NewInquiryScreen() {
   const [focused, setFocused] = useState(false);
   const { state, send } = useInquiry();
   const { toast, show, hide } = useToast();
+  // 이용 정지 화면에서 왔으면 보낸 뒤 정지 화면으로 돌아간다(결정 065 의 5)
+  const suspended = useSuspended();
   const sent = state.status === 'sent';
   // 적어 둔 글이 있으면(아직 보내지 않았다) 강제 업데이트를 미룬다(결정 027)
   useUpdateBusy(!sent && body !== '');
@@ -53,7 +56,11 @@ export default function NewInquiryScreen() {
           </Txt>
         </View>
         <View style={styles.footer}>
-          <Button label={I.sent.toList} onPress={() => router.dismissTo('/my/inquiries')} />
+          {suspended ? (
+            <Button label={I.sent.back} onPress={() => router.dismissTo('/suspended')} />
+          ) : (
+            <Button label={I.sent.toList} onPress={() => router.dismissTo('/my/inquiries')} />
+          )}
         </View>
       </Screen>
     );

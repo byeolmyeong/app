@@ -135,6 +135,15 @@ describe('시작할 때 세션 확인(소셜 로그인)', () => {
     await gone.store.start();
     expect(gone.store.getSnapshot()).toMatchObject({ status: 'signedOut' });
   });
+
+  it('웹: 이용 정지된 계정(403 ACCOUNT_SUSPENDED)도 쿠키 세션은 살아 있으니 로그인 상태다 — 정지 화면은 정지 문이 보낸다(결정 065 의 5)', async () => {
+    const suspended = setup({
+      cookieSession: true,
+      getSession: jest.fn(async () => ({ ok: false as const, error: 'SERVER' as const, status: 403, code: 'ACCOUNT_SUSPENDED' })),
+    });
+    await suspended.store.start();
+    expect(suspended.store.getSnapshot()).toMatchObject({ status: 'signedIn', token: null });
+  });
 });
 
 describe('로그인 · 가입 · 로그아웃', () => {

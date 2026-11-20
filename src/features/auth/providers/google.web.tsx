@@ -134,7 +134,11 @@ export function GoogleLoginButton({ onCredential, onError, disabled = false, loa
         recent={recent}
         focused={focused}
       />
-      <View ref={overlay} testID="google-gis-overlay" pointerEvents={blocked || !ready ? 'none' : 'auto'} style={styles.overlay}>
+      <View
+        ref={overlay}
+        testID="google-gis-overlay"
+        pointerEvents={blocked || !ready ? 'none' : 'auto'}
+        style={[styles.overlay, blocked || !ready ? styles.idle : styles.pointer]}>
         <View ref={container} testID="google-gis" style={[styles.gis, cover]} />
       </View>
     </View>
@@ -145,4 +149,7 @@ const styles = StyleSheet.create({
   /** 우리 버튼과 같은 칸. 보이지 않지만 누름은 받는다 */
   overlay: { ...StyleSheet.absoluteFill, opacity: 0, overflow: 'hidden', borderRadius: SocialButtonStyle.radius },
   gis: { position: 'absolute' },
+  /** 웹 커서: 누를 수 있을 때만 손가락(GIS iframe 안은 구글이 정한다) */
+  pointer: { cursor: 'pointer' },
+  idle: { cursor: 'default' },
 });

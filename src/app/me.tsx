@@ -74,6 +74,8 @@ export default function MeScreen() {
   const tabs = <MainTabs active="me" />;
   const banner = online ? null : <OfflineBanner />;
   const afterNav = <NavBar title={S.title} chevron />;
+  // 받은 뒤 머리의 공유 아이콘은 지금 고른 칩의 영역 카드(결정 053 의 2, 보드 12-13)
+  const doneNav = <NavBar title={S.title} chevron right={<ShareEntry target={{ kind: 'ME_AREA', area: selected }} trigger="icon" />} />;
 
   if (loaded && !profile)
     return (
@@ -85,7 +87,7 @@ export default function MeScreen() {
   const s = me.state;
   if (s.status === 'done')
     return (
-      <Screen nav={afterNav} footer={tabs}>
+      <Screen nav={doneNav} footer={tabs}>
         {banner}
         {/* 한 덩어리로 둔다 — 화면의 칸 사이 간격(16)이 끼지 않게 시안 12-8 의 간격 그대로 */}
         <View>
@@ -199,7 +201,7 @@ export default function MeScreen() {
   }
 
   // 받기 전(보드 12 받기 전): 내 별명 내용 + 맨 아래 "자세한 풀이" 카드(상태를 못 물었으면 그 자리에 19-1, 끊겼으면 띠)
-  const beforeNav = <NavBar title={strings.reading.title} chevron right={<ShareEntry target={{ kind: 'READING' }} trigger="icon" />} />;
+  const beforeNav = <NavBar title={strings.reading.title} chevron right={<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />} />;
   return (
     <Screen nav={beforeNav} footer={tabs}>
       {banner}

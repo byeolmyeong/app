@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
 import { strings } from '@/content/strings';
-import { SHARE_IMAGE, ShareCardView } from '@/features/share/share-card';
+import { SHARE_IMAGE, ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
 import type { ShareCard } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -79,5 +79,127 @@ describe('공유 카드', () => {
       expect(screen.getByLabelText(strings.appName)).toBeTruthy();
       await view.unmount();
     }
+  });
+});
+
+describe('공유 카드 v2(결정 053 의 2 — 보드 12-7 · 12-14 · 11-7 · 14-6)', () => {
+  const V = S.cards;
+  const hidden = (id: string) => screen.queryByTestId(id, { includeHiddenElements: true });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('내 별명: 해 별자리 그림 · 별자리 이름 칩 · "새벽별 님의 별명" · 한 줄 별명 · "태어난 순간의 하늘로 읽는 나"', async () => {
+    await render(<ShareCardView card={C.nickname} />);
+    expect(texts()).toEqual(['물병자리', '새벽별 님의 별명', C.nickname.headline, V.taglines.me]);
+    expect(hidden('share-art-sign-AQUARIUS')).toBeTruthy();
+    expect(screen.getByLabelText(strings.appName)).toBeTruthy();
+  });
+
+  it('나 탭 영역: 영역 그림 · 영역 이름 칩 · "새벽별 님의 연애" · 서버가 준 제목', async () => {
+    await render(<ShareCardView card={C.meArea} />);
+    expect(texts()).toEqual(['연애', '새벽별 님의 연애', C.meArea.title, V.taglines.me]);
+    expect(hidden('share-art-area-LOVE')).toBeTruthy();
+  });
+
+  it('오늘의 하늘: 달 그림 · "11월 19일 · 오늘의 하늘" · "새벽별 님의 오늘" · 제목 · "하늘의 움직임으로 읽는 오늘"', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-19T12:00:00+09:00') });
+    await render(<ShareCardView card={C.daySky} />);
+    expect(texts()).toEqual(['11월 19일 · 오늘의 하늘', '새벽별 님의 오늘', C.daySky.title, V.taglines.today]);
+    expect(hidden('share-art-moon')).toBeTruthy();
+  });
+
+  it('그날의 하늘(오늘이 아닌 날, 한국 날짜로): "11월 21일 · 그날의 하늘" · "새벽별 님의 11월 21일"', async () => {
+    // 한국은 이미 11월 20일 새벽이고 UTC 로는 아직 19일 — 오늘은 한국 날짜로 센다
+    jest.useFakeTimers({ now: new Date('2026-11-20T01:00:00+09:00') });
+    await render(<ShareCardView card={{ ...C.daySky, date: '2026-11-21' }} />);
+    expect(texts()).toEqual(['11월 21일 · 그날의 하늘', '새벽별 님의 11월 21일', C.daySky.title, V.taglines.day]);
+    await screen.unmount();
+    await render(<ShareCardView card={{ ...C.daySky, date: '2026-11-20' }} />);
+    expect(texts()[0]).toBe('11월 20일 · 오늘의 하늘');
+  });
+
+  it('다음 큰 변화: 계단 위 별 · "2028년 · 만 29세 무렵" · "새벽별 님의 다음 큰 변화" · 제목 · "하늘의 움직임으로 읽는 나의 시기"', async () => {
+    await render(<ShareCardView card={C.nextBig} />);
+    expect(texts()).toEqual(['2028년 · 만 29세 무렵', '새벽별 님의 다음 큰 변화', C.nextBig.title, V.taglines.timing]);
+    expect(hidden('share-art-steps')).toBeTruthy();
+  });
+
+  it('닉네임이 없는 옛 계정이면 "나의 …" 로 적는다', async () => {
+    const cases: [ShareCard, string][] = [
+      [{ kind: 'NICKNAME', sunSign: 'GEMINI', headline: '한 줄' }, '나의 별명'],
+      [{ kind: 'ME_AREA', area: 'WORK', title: '제목' }, '나의 일'],
+      [{ kind: 'NEXT_BIG', year: 2030, age: 31, title: '제목' }, '나의 다음 큰 변화'],
+    ];
+    for (const [card, label] of cases) {
+      const view = await render(<ShareCardView card={card} />);
+      expect(texts()[1]).toBe(label);
+      await view.unmount();
+    }
+  });
+
+  it('영역 다섯 · 별자리 열둘 모두 그림이 있다(카드 값으로 그림을 고른다)', async () => {
+    for (const area of ['PERSONALITY', 'LOVE', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const) {
+      const view = await render(<ShareCardView card={{ ...C.meArea, area }} />);
+      expect(hidden(`share-art-area-${area}`)).toBeTruthy();
+      expect(texts()[0]).toBe(strings.me.areas[area]);
+      await view.unmount();
+    }
+    const signs = ['ARIES', 'TAURUS', 'GEMINI', 'CANCER', 'LEO', 'VIRGO', 'LIBRA', 'SCORPIO', 'SAGITTARIUS', 'CAPRICORN', 'AQUARIUS', 'PISCES'] as const;
+    for (const sunSign of signs) {
+      const view = await render(<ShareCardView card={{ ...C.nickname, sunSign }} />);
+      expect(hidden(`share-art-sign-${sunSign}`)).toBeTruthy();
+      expect(texts()[0]).toBe(`${strings.signs[sunSign]}${strings.chart.signSuffix}`);
+      await view.unmount();
+    }
+  });
+
+  it('출생 정보 · 근거 · 본문 · 하우스가 섞여 와도 그리지 않는다(결정 053 의 4)', async () => {
+    const extra = { ...C.nickname, birth: '1999-03-08', time: '14:10', place: '서울 강남구', house: 5, body: '본문', basis: ['해'] } as ShareCard;
+    await render(<ShareCardView card={extra} />);
+    expect(texts()).toEqual(['물병자리', '새벽별 님의 별명', C.nickname.headline, V.taglines.me]);
+  });
+
+  it('9:16 이고 별이는 없다(시안의 그림 · 로고 · 한 줄 소개)', async () => {
+    await render(<ShareCardView card={C.nextBig} width={209} />);
+    const { width, height } = StyleSheet.flatten(screen.getByTestId('share-card-frame').props.style);
+    expect([width, height]).toEqual([209, 372]);
+    for (const id of ['share-byeoli-default', 'share-byeoli-happy', 'share-byeoli-think']) expect(hidden(id)).toBeNull();
+  });
+});
+
+describe('공유 카드 v2 글자 굵기(시안 12-7: 칩 500 · 이름표 500 · 제목 600 · 한 줄 소개 400)', () => {
+  it('글마다 ShareCardLayout 의 굵기로 그린다', async () => {
+    await render(<ShareCardView card={C.nickname} />);
+    const weight = (text: string) => StyleSheet.flatten(screen.getByText(text).props.style).fontWeight;
+    expect(weight('물병자리')).toBe('500');
+    expect(weight('새벽별 님의 별명')).toBe('500');
+    expect(weight(C.nickname.headline)).toBe('600');
+    expect(weight(S.cards.taglines.me)).toBe('400');
+  });
+});
+
+describe('카드를 기다리는 동안의 뼈대(결정 071 — 다 그려진 카드와 같은 크기 · 같은 그림 칸)', () => {
+  const size = (id: string) => {
+    const { width, height } = StyleSheet.flatten(screen.getByTestId(id, { includeHiddenElements: true }).props.style);
+    return [width, height];
+  };
+  const cases: [ShareCard, string][] = [
+    [C.nickname, 'share-art-sign-AQUARIUS'],
+    [C.meArea, 'share-art-area-LOVE'],
+    [C.daySky, 'share-art-moon'],
+    [C.nextBig, 'share-art-steps'],
+  ];
+  it.each(cases)('%j 의 뼈대는 카드와 틀 크기 · 그림 칸 크기가 같다', async (card, artId) => {
+    const view = await render(<ShareCardView card={card} width={209} />);
+    const frame = size('share-card-frame');
+    const art = size(artId);
+    await view.unmount();
+    await render(<ShareCardSkeleton kind={card.kind} bars width={209} />);
+    expect(size('share-card-skeleton')).toEqual(frame);
+    expect(size('share-card-skeleton-art')).toEqual(art);
+    // 칩 · 이름표 · 제목 두 줄 · 아래 줄(로고 · 한 줄 소개)
+    expect(screen.getAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(7);
   });
 });

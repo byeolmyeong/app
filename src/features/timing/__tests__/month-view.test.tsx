@@ -1,0 +1,141 @@
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+
+import { strings } from '@/content/strings';
+import { MonthView } from '@/features/timing/month-view';
+import { useMonth } from '@/features/timing/use-month';
+import { api, type ApiResult, type MonthSky } from '@/lib/api';
+import { fixtures } from '@/lib/fixtures';
+
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual('@/lib/api'),
+  api: { getMonth: jest.fn(), saveProfile: jest.fn() },
+}));
+
+const mockApi = api as jest.Mocked<typeof api>;
+const T = strings.timing;
+const input = { date: '2000-06-15', time: '21:00', placeId: 1841277 };
+const nov = fixtures.monthSky;
+const quiet = (month: string): MonthSky => ({ ...nov, month, days: [] });
+
+/** 시기 탭과 같은 짝: 이번 달 훅 + 이번 달 화면 */
+function Harness({ onDay }: { onDay: (date: string) => void }) {
+  const month = useMonth(input);
+  if (!month.base || !month.shown) return null;
+  return (
+    <MonthView
+      base={month.base}
+      shown={month.shown}
+      state={month.state}
+      canPrev={month.canPrev}
+      canNext={month.canNext}
+      onMove={month.go}
+      onRetry={month.retry}
+      today="2026-11-19"
+      onDay={onDay}
+    />
+  );
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockApi.getMonth.mockImplementation(async (month?: string): Promise<ApiResult<MonthSky>> => ({ ok: true, data: month ? quiet(month) : nov }));
+});
+
+describe('이번 달(결정 049 의 2, 캔버스 14-1)', () => {
+  it('달 머리 · 달력(1일의 요일부터 그달의 날) · 눈여겨볼 날에 점 · 이번 달 내내 줄 · 눈여겨볼 날 목록(날짜 · 요일 · 칩 · 문구)', async () => {
+    await render(<Harness onDay={jest.fn()} />);
+    expect(await screen.findByText('2026년 11월')).toBeTruthy();
+    for (const w of T.weekdays) expect(screen.getAllByText(w).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('day-2026-11-01')).toBeTruthy();
+    expect(screen.getByTestId('day-2026-11-30')).toBeTruthy();
+    expect(screen.queryByTestId('day-2026-11-31')).toBeNull();
+    for (const d of nov.days) expect(screen.getByTestId(`dot-${d.date}`)).toBeTruthy();
+    expect(screen.queryByTestId('dot-2026-11-20')).toBeNull();
+    expect(screen.getAllByTestId('month-theme')).toHaveLength(2);
+    expect(screen.getByText(`이번 달 내내 · ${nov.themes[0].title}`)).toBeTruthy();
+    expect(screen.getByText('이번 달 눈여겨볼 날')).toBeTruthy();
+    expect(screen.getAllByTestId('month-day')).toHaveLength(3);
+    expect(screen.getByText(nov.days[0].text)).toBeTruthy();
+    expect(screen.getAllByText(T.categories.PEOPLE).length).toBeGreaterThan(0);
+    // 오늘은 읽기 이름에 "오늘", 점이 있는 날은 "눈여겨볼 날"
+    expect(screen.getByLabelText(`11월 19일${T.month.today}`)).toBeTruthy();
+    expect(screen.getByLabelText(`11월 21일${T.month.notable}`)).toBeTruthy();
+  });
+
+  it('날짜나 눈여겨볼 날을 누르면 그날로(그날의 하늘)', async () => {
+    const onDay = jest.fn();
+    await render(<Harness onDay={onDay} />);
+    await fireEvent.press(await screen.findByTestId('day-2026-11-05'));
+    expect(onDay).toHaveBeenLastCalledWith('2026-11-05');
+    await fireEvent.press(screen.getAllByTestId('month-day')[1]);
+    expect(onDay).toHaveBeenLastCalledWith('2026-11-25');
+  });
+
+  it('‹ › 는 처음 받은 달의 지난달 · 다음 달 끝에서 막힌다', async () => {
+    await render(<Harness onDay={jest.fn()} />);
+    await screen.findByText('2026년 11월');
+    await fireEvent.press(screen.getByTestId('month-next'));
+    expect(await screen.findByText('2026년 12월')).toBeTruthy();
+    expect(screen.getByTestId('month-next').props.accessibilityState).toMatchObject({ disabled: true });
+    await fireEvent.press(screen.getByTestId('month-next'));
+    expect(screen.getByText('2026년 12월')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('month-prev'));
+    await fireEvent.press(screen.getByTestId('month-prev'));
+    expect(await screen.findByText('2026년 10월')).toBeTruthy();
+    expect(screen.getByTestId('month-prev').props.accessibilityState).toMatchObject({ disabled: true });
+    await fireEvent.press(screen.getByTestId('month-prev'));
+    expect(screen.getByText('2026년 10월')).toBeTruthy();
+    expect(mockApi.getMonth.mock.calls.map((c) => c[0])).toEqual([undefined, '2026-12', '2026-10']);
+  });
+
+  it('눈여겨볼 날이 없는 달은 점 없이 안내 한 장(결정 065 의 3)', async () => {
+    await render(<Harness onDay={jest.fn()} />);
+    await screen.findByText('2026년 11월');
+    await fireEvent.press(screen.getByTestId('month-next'));
+    expect(await screen.findByTestId('month-quiet')).toBeTruthy();
+    // 다른 달을 볼 때는 그 달의 이름으로, 없는 알림을 약속하지 않는다(리뷰 #63)
+    expect(screen.getByText('12월은 큰 움직임 없이 흘러가요')).toBeTruthy();
+    expect(screen.getByText('12월 눈여겨볼 날')).toBeTruthy();
+    expect(screen.getByText('12월 내내 · 일의 방식을 새로 다지는 시기')).toBeTruthy();
+    expect(screen.queryByText(/다음 달 1일/)).toBeNull();
+    expect(screen.queryAllByTestId('month-day')).toHaveLength(0);
+    expect(screen.queryByTestId(/^dot-/)).toBeNull();
+  });
+
+  it('범위(처음 받은 달의 지난달 1일 ~ 다음 달 말일) 밖의 날짜는 누를 수 없다', async () => {
+    const onDay = jest.fn();
+    const jan: MonthSky = { ...nov, month: '2027-01', days: [{ ...nov.days[0], date: '2027-01-05' }] };
+    await render(
+      <MonthView base="2026-11" shown="2027-01" state={{ status: 'done', sky: jan }} canPrev canNext={false} onMove={jest.fn()} onRetry={jest.fn()} today="2026-11-19" onDay={onDay} />,
+    );
+    await fireEvent.press(screen.getByTestId('day-2027-01-05'));
+    await fireEvent.press(screen.getByTestId('month-day'));
+    expect(onDay).not.toHaveBeenCalled();
+    expect(screen.getByTestId('day-2027-01-05').props.accessibilityRole).toBeUndefined();
+  });
+
+  it('모르는 칩의 날 · 모르는 영역의 줄은 숨긴다(전체를 버리지 않는다)', async () => {
+    const odd: MonthSky = {
+      ...nov,
+      themes: [{ ...nov.themes[0], area: 'HEALTH' }, nov.themes[1]],
+      days: [{ ...nov.days[0], category: 'LUCK' }, nov.days[1]],
+    };
+    await render(<MonthView base="2026-11" shown="2026-11" state={{ status: 'done', sky: odd }} canPrev canNext onMove={jest.fn()} onRetry={jest.fn()} today="2026-11-19" onDay={jest.fn()} />);
+    expect(screen.getAllByTestId('month-day')).toHaveLength(1);
+    expect(screen.queryByText(nov.days[0].text)).toBeNull();
+    expect(screen.queryByTestId('dot-2026-11-21')).toBeNull();
+    expect(screen.getAllByTestId('month-theme')).toHaveLength(1);
+  });
+
+  it('그달만 못 받으면 그 자리에 안내(19-1), 다시 보기로 다시 부른다', async () => {
+    await render(<Harness onDay={jest.fn()} />);
+    await screen.findByText('2026년 11월');
+    mockApi.getMonth.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await fireEvent.press(screen.getByTestId('month-next'));
+    expect(await screen.findByTestId('card-fail')).toBeTruthy();
+    expect(screen.getByText(T.month.loadFail.title)).toBeTruthy();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: strings.states.loadFail.retry })));
+    await waitFor(() => expect(screen.queryByTestId('card-fail')).toBeNull());
+    expect(screen.getByTestId('month-quiet')).toBeTruthy();
+  });
+});

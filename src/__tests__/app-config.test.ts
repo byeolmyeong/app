@@ -60,3 +60,34 @@ describe('app.config APP_VARIANT', () => {
     expect(() => configWith(variant)).toThrow(`"${variant}"`);
   });
 });
+
+// 결정 053: 인스타그램 스토리의 앱 조회 목록(react-native-share 플러그인)은 Meta 앱 ID 가 있는 빌드에만 넣는다(#61 리뷰 제안 8)
+describe('app.config EXPO_PUBLIC_META_APP_ID', () => {
+  const withMetaId = (id: string | undefined) => {
+    const saved = process.env.EXPO_PUBLIC_META_APP_ID;
+    if (id === undefined) delete process.env.EXPO_PUBLIC_META_APP_ID;
+    else process.env.EXPO_PUBLIC_META_APP_ID = id;
+    try {
+      return configWith(undefined);
+    } finally {
+      if (saved === undefined) delete process.env.EXPO_PUBLIC_META_APP_ID;
+      else process.env.EXPO_PUBLIC_META_APP_ID = saved;
+    }
+  };
+  const sharePlugin = (c: ExpoConfig) => (c.plugins ?? []).find((p) => (Array.isArray(p) ? p[0] : p) === 'react-native-share');
+
+  it('있으면 instagram-stories(iOS) · com.instagram.android(안드로이드) 조회 목록을 넣는다', () => {
+    expect(sharePlugin(withMetaId('1162644856216782'))).toEqual(['react-native-share', { ios: ['instagram-stories'], android: ['com.instagram.android'] }]);
+  });
+
+  it.each([undefined, '', '   '])('없거나 비었으면(%p) 넣지 않는다 — 그 빌드는 스토리 버튼이 없다', (id) => {
+    expect(sharePlugin(withMetaId(id))).toBeUndefined();
+  });
+
+  it('사진 저장(expo-media-library)은 늘 있고 안드로이드 읽기 권한(READ_MEDIA_*)을 싣지 않는다', () => {
+    const c = withMetaId(undefined);
+    const media = (c.plugins ?? []).find((p) => Array.isArray(p) && p[0] === 'expo-media-library') as [string, { granularPermissions: string[] }];
+    expect(media[1].granularPermissions).toEqual([]);
+    expect(c.android?.blockedPermissions).toEqual(['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED']);
+  });
+});

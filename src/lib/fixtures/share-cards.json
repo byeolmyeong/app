@@ -31,5 +31,30 @@
     "year": 2029,
     "season": "SUMMER",
     "theme": "내 것으로 남길 것을 고르는 때"
+  },
+  "nickname": {
+    "kind": "NICKNAME",
+    "nickname": "새벽별",
+    "sunSign": "AQUARIUS",
+    "headline": "자유로운 상상력과 단단한 책임감을 함께 지닌, 따뜻하고 독창적인 사람"
+  },
+  "meArea": {
+    "kind": "ME_AREA",
+    "nickname": "새벽별",
+    "area": "LOVE",
+    "title": "함께 처음 해 보는 일이 마음을 가깝게 해요"
+  },
+  "daySky": {
+    "kind": "DAY_SKY",
+    "nickname": "새벽별",
+    "date": "2026-11-19",
+    "title": "마음이 가는 사람에게 먼저 안부를 건네 보기 좋은 날"
+  },
+  "nextBig": {
+    "kind": "NEXT_BIG",
+    "nickname": "새벽별",
+    "year": 2028,
+    "age": 29,
+    "title": "나만의 기준을 세우는 시기"
   }
 }

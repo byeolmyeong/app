@@ -224,7 +224,7 @@ describe('요약 해석 화면', () => {
     expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
     expect(screen.getByRole('button', { name: R.seeSkyMap })).toBeTruthy();
     expect(screen.queryAllByRole('link')).toHaveLength(0);
-    // 머리의 공유하기는 지금의 공유 시트(요약 해석 카드)를 연다
+    // 머리의 공유하기는 내 별명 카드의 공유 시트를 연다(결정 053)
     await fireEvent.press(screen.getByRole('button', { name: strings.share.open }));
     expect(await screen.findByTestId('sheet-dim')).toBeTruthy();
   });

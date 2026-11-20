@@ -1,9 +1,14 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { Platform } from 'react-native';
+import { Linking, Platform, StyleSheet } from 'react-native';
+
+import { Colors, Sizes } from '@/constants/theme';
 
 import { strings } from '@/content/strings';
-import { sendImage, sendLink } from '@/features/share/share-actions';
-import { ShareEntry } from '@/features/share/share-entry';
+import { saveImage, shareStory } from '@/features/share/share-actions';
+import { ShareEntry, type ShareTarget } from '@/features/share/share-entry';
+import * as story from '@/features/share/story';
+import * as webStory from '@/features/share/story.web';
 import { api, type ShareCard, type ShareRequest } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -12,100 +17,301 @@ jest.mock('@/lib/api', () => ({
   api: { createShare: jest.fn() },
 }));
 jest.mock('@/features/share/share-actions', () => ({
-  sendImage: jest.fn(async () => true),
-  sendLink: jest.fn(async () => true),
+  saveImage: jest.fn(async () => 'SAVED'),
+  shareStory: jest.fn(async () => 'OPENED'),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
-const mockSendImage = sendImage as jest.MockedFunction<typeof sendImage>;
-const mockSendLink = sendLink as jest.MockedFunction<typeof sendLink>;
+const mockSave = saveImage as jest.MockedFunction<typeof saveImage>;
+const mockStory = shareStory as jest.MockedFunction<typeof shareStory>;
 const S = strings.share;
 const C = fixtures.shareCards;
+const APP_ID = '1162644856216782';
 const made = (card: ShareCard, shareId = 'share-1') => ({ ok: true as const, data: { shareId, card } });
 const notFound = { ok: false as const, error: 'SERVER' as const, status: 404, code: 'NOT_FOUND' };
 const button = (label: string) => screen.getByRole('button', { name: label });
 const open = async () => {
   await fireEvent.press(button(S.open));
 };
+/** 시트 아래 버튼의 이름(위 → 아래) */
+const actionLabels = () =>
+  screen.queryAllByText(new RegExp(`^(${S.actions.saveImage}|${S.actions.story})$`)).map((node) => String(node.props.children));
+/** 버튼의 바탕색(주 버튼은 주색, 보조는 채운 면) */
+const fillOf = (label: string) => StyleSheet.flatten(button(label).props.style).backgroundColor;
 
-beforeEach(() => {
+beforeEach(async () => {
+  await AsyncStorage.clear();
   jest.clearAllMocks();
-  process.env.EXPO_PUBLIC_WEB_URL = 'https://app.example.test';
-  mockApi.createShare.mockImplementation(async (request: ShareRequest) =>
-    request.kind === 'READING'
-      ? made(C.reading)
-      : request.kind === 'SCORE'
-        ? made({ ...C.score, names: [request.myName, '지우'] })
-        : request.kind === 'RANKING'
-          ? made(request.showNames ? C.rankingNames : C.ranking, request.showNames ? 'share-names' : 'share-initials')
-          : made(C.nextTurn),
-  );
+  process.env.EXPO_PUBLIC_META_APP_ID = APP_ID;
+  mockApi.createShare.mockImplementation(async (request: ShareRequest) => {
+    switch (request.kind) {
+      case 'NICKNAME':
+        return made(C.nickname);
+      case 'ME_AREA':
+        return made({ ...C.meArea, area: request.area });
+      case 'DAY_SKY':
+        return made({ ...C.daySky, date: request.date });
+      case 'NEXT_BIG':
+        return made(C.nextBig);
+      case 'SCORE':
+        return made({ ...C.score, names: [request.myName, '지우'] });
+      case 'RANKING':
+        return made(request.showNames ? C.rankingNames : C.ranking, request.showNames ? 'share-names' : 'share-initials');
+      default:
+        return made(C.reading);
+    }
+  });
 });
 
 afterEach(() => {
-  delete process.env.EXPO_PUBLIC_WEB_URL;
+  delete process.env.EXPO_PUBLIC_META_APP_ID;
   jest.restoreAllMocks();
 });
 
-describe('공유 시트', () => {
-  it('열기 전에는 공유를 만들지 않고, 열면 카드를 만들어 미리보기와 공유 버튼을 보여 준다', async () => {
-    await render(<ShareEntry target={{ kind: 'READING' }} />);
-    await act(async () => {});
-    expect(mockApi.createShare).not.toHaveBeenCalled();
-    await open();
-    expect(await screen.findByTestId('share-card')).toBeTruthy();
-    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
-    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'READING' });
-    expect(within(screen.getByTestId('share-card')).getByText(C.reading.headline)).toBeTruthy();
-    // 앱에서는 시스템 공유 시트로 이미지와 링크를 보낸다
-    await fireEvent.press(button(S.actions.shareImage));
-    expect(mockSendImage).toHaveBeenCalledTimes(1);
-    await fireEvent.press(button(S.actions.shareLink));
-    expect(mockSendLink).toHaveBeenCalledWith('https://app.example.test/s/share-1');
-    expect(screen.queryByText(S.actions.saveImage)).toBeNull();
+describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 12-5 · 12-13 · 11-6 · 14-5)', () => {
+  it('화면에 들어와도(아이콘이 그려져도) 공유를 만들지 않고, 열면 카드 넷 각각을 한 번 만들어 미리보기를 보여 준다(서버 결정 012 · 결정 053 의 3)', async () => {
+    const targets: [ShareTarget, ShareRequest, string][] = [
+      [{ kind: 'NICKNAME' }, { kind: 'NICKNAME' }, C.nickname.headline],
+      [{ kind: 'ME_AREA', area: 'WORK' }, { kind: 'ME_AREA', area: 'WORK' }, C.meArea.title],
+      [{ kind: 'DAY_SKY', date: '2026-11-21' }, { kind: 'DAY_SKY', date: '2026-11-21' }, C.daySky.title],
+      [{ kind: 'NEXT_BIG' }, { kind: 'NEXT_BIG' }, C.nextBig.title],
+    ];
+    for (const [target, request, text] of targets) {
+      jest.clearAllMocks();
+      const view = await render(<ShareEntry target={target} trigger="icon" />);
+      await view.rerender(<ShareEntry target={target} trigger="icon" />);
+      await act(async () => {});
+      expect(mockApi.createShare).not.toHaveBeenCalled();
+      await open();
+      const card = await screen.findByTestId('share-card');
+      expect(within(card).getByText(text)).toBeTruthy();
+      // 버튼을 눌러도 다시 만들지 않는다
+      await fireEvent.press(button(S.actions.saveImage));
+      expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+      expect(mockApi.createShare).toHaveBeenCalledWith(request);
+      await view.unmount();
+    }
   });
 
-  it('웹에서는 "이미지 저장" 과 "링크 복사" 이고, 끝나면 알려 준다', async () => {
+  it('시트에는 제목이 없다(결정 061 의 6 · 계획 A7-5)', async () => {
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+    await open();
+    await screen.findByTestId('share-card');
+    expect(screen.queryByText(S.open)).toBeNull();
+  });
+
+  it('앱: 보조 "이미지 저장" 이 위, 주 "인스타그램 스토리 공유" 가 맨 아래다(링크 버튼 없음)', async () => {
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
+    await open();
+    await screen.findByTestId('share-card');
+    expect(actionLabels()).toEqual([S.actions.saveImage, S.actions.story]);
+    expect(fillOf(S.actions.saveImage)).toBe(Colors.fill);
+    expect(fillOf(S.actions.story)).toBe(Colors.primary);
+    // 누를 수 있는 것은 여는 아이콘과 두 버튼뿐이다(링크 복사 · 기기 공유 창 버튼 없음)
+    expect(screen.getAllByRole('button')).toHaveLength(3);
+  });
+
+  it('Meta 앱 ID 가 없는 빌드에서는 스토리 버튼이 없고 "이미지 저장" 하나다', async () => {
+    delete process.env.EXPO_PUBLIC_META_APP_ID;
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
+    await open();
+    await screen.findByTestId('share-card');
+    expect(actionLabels()).toEqual([S.actions.saveImage]);
+    expect(fillOf(S.actions.saveImage)).toBe(Colors.primary);
+  });
+
+  it('웹(휴대폰 · 컴퓨터)은 앱 ID 가 있어도 "이미지 저장" 하나다', async () => {
     jest.replaceProperty(Platform, 'OS', 'web');
-    await render(<ShareEntry target={{ kind: 'READING' }} />);
+    // 웹 번들은 story.web.ts 를 읽는다(jest 는 앱 쪽 파일을 읽으므로 그 답을 끼운다)
+    jest.spyOn(story, 'storyAppId').mockImplementation(webStory.storyAppId);
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
     await screen.findByTestId('share-card');
-    expect(screen.queryByText(S.actions.shareImage)).toBeNull();
+    expect(actionLabels()).toEqual([S.actions.saveImage]);
+    expect(fillOf(S.actions.saveImage)).toBe(Colors.primary);
+  });
+
+  it('이미지 저장 → 짧은 알림 "이미지를 저장했어요"(성공 2초) — 시트 안에 결과 글을 붙이지 않는다', async () => {
+    jest.useFakeTimers();
+    try {
+      await render(<ShareEntry target={{ kind: 'ME_AREA', area: 'LOVE' }} />);
+      await open();
+      await screen.findByTestId('share-card');
+      await fireEvent.press(button(S.actions.saveImage));
+      expect(mockSave).toHaveBeenCalledTimes(1);
+      const toast = await screen.findByTestId('toast');
+      expect(within(toast).getByText(S.notices.saved)).toBeTruthy();
+      expect(screen.getByTestId('toast-icon-success')).toBeTruthy();
+      // 그 글은 알림 안에만 있다(버튼 아래에 붙은 글이 없다)
+      expect(screen.getAllByText(S.notices.saved)).toHaveLength(1);
+      await act(async () => {
+        jest.advanceTimersByTime(2000);
+      });
+      expect(screen.queryByTestId('toast')).toBeNull();
+      expect(screen.queryByText(S.notices.saved)).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('저장하지 못하면 실패 알림, 사진 접근을 막았으면 설정을 여는 알림(누르면 설정)', async () => {
+    const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
+    await open();
+    await screen.findByTestId('share-card');
+
+    mockSave.mockResolvedValueOnce('FAILED');
     await fireEvent.press(button(S.actions.saveImage));
-    expect(await screen.findByText(S.notices.saved)).toBeTruthy();
-    await fireEvent.press(button(S.actions.copyLink));
-    expect(await screen.findByText(S.notices.copied)).toBeTruthy();
-    expect(mockSendLink).toHaveBeenCalledWith('https://app.example.test/s/share-1');
+    expect(within(await screen.findByTestId('toast')).getByText(S.notices.saveFailed)).toBeTruthy();
+    expect(screen.getByTestId('toast-icon-error')).toBeTruthy();
+
+    mockSave.mockResolvedValueOnce('DENIED');
+    await fireEvent.press(button(S.actions.saveImage));
+    const denied = await screen.findByTestId('toast');
+    expect(within(denied).getByText(S.notices.photosDenied)).toBeTruthy();
+    await fireEvent.press(denied);
+    expect(openSettings).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('toast')).toBeNull();
   });
 
-  it('이미지나 링크를 보내지 못하면 안내한다', async () => {
-    mockSendImage.mockResolvedValueOnce(false);
-    mockSendLink.mockResolvedValueOnce(false);
-    await render(<ShareEntry target={{ kind: 'READING' }} />);
+  it('저장 · 스토리를 빠르게 두 번 눌러도 한 번만 한다(같은 그림이 두 장 저장되지 않게)', async () => {
+    let finish: (v: 'SAVED') => void = () => {};
+    mockSave.mockImplementation(() => new Promise((r) => (finish = r)));
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
     await screen.findByTestId('share-card');
-    await fireEvent.press(button(S.actions.shareImage));
-    expect(await screen.findByText(S.notices.imageFailed)).toBeTruthy();
-    await fireEvent.press(button(S.actions.shareLink));
-    expect(await screen.findByText(S.notices.linkFailed)).toBeTruthy();
+    const save = button(S.actions.saveImage);
+    await act(async () => {
+      fireEvent.press(save);
+      fireEvent.press(save);
+      fireEvent.press(button(S.actions.story));
+    });
+    expect(mockSave).toHaveBeenCalledTimes(1);
+    expect(mockStory).not.toHaveBeenCalled();
+    await act(async () => finish('SAVED'));
+    // 끝난 뒤에는 다시 누를 수 있다
+    mockSave.mockResolvedValue('SAVED');
+    await fireEvent.press(button(S.actions.saveImage));
+    expect(mockSave).toHaveBeenCalledTimes(2);
   });
 
-  it('웹 주소를 알 수 없으면(앱에 변수가 없다) 링크 버튼을 누를 수 없다', async () => {
-    delete process.env.EXPO_PUBLIC_WEB_URL;
-    await render(<ShareEntry target={{ kind: 'READING' }} />);
+  it('스토리: 카드와 앱 ID 로 열고, 열렸거나 공유 창으로 넘겼으면 알림이 없다 · 실패하면 실패 알림', async () => {
+    await render(<ShareEntry target={{ kind: 'NEXT_BIG' }} />);
     await open();
     await screen.findByTestId('share-card');
-    expect(button(S.actions.shareLink).props.accessibilityState.disabled).toBe(true);
-    await fireEvent.press(button(S.actions.shareLink));
-    expect(mockSendLink).not.toHaveBeenCalled();
+    await fireEvent.press(button(S.actions.story));
+    expect(mockStory).toHaveBeenCalledTimes(1);
+    expect(mockStory.mock.calls[0][1]).toBe(APP_ID);
+    mockStory.mockResolvedValueOnce('SHARED');
+    await fireEvent.press(button(S.actions.story));
+    expect(screen.queryByTestId('toast')).toBeNull();
+    mockStory.mockResolvedValueOnce('FAILED');
+    await fireEvent.press(button(S.actions.story));
+    expect(within(await screen.findByTestId('toast')).getByText(S.notices.storyFailed)).toBeTruthy();
   });
 
-  it('만들지 못하면 안내와 "다시 시도" 를 보여 주고, 공유 버튼은 없다', async () => {
-    mockApi.createShare.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
-    await render(<ShareEntry target={{ kind: 'READING' }} />);
+  it('받아 둔 카드가 있으면 다시 열 때 서버를 기다리지 않고 바로 보여 주고, 뒤에서 확인해 바뀌었으면 바꾼다', async () => {
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+    await open();
+    expect(within(await screen.findByTestId('share-card')).getByText(C.nickname.headline)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
+
+    // 다시 열 때 서버는 끝나지 않는다 — 그래도 카드가 바로 보이고 뼈대가 없다
+    let resolve: (v: { ok: true; data: { shareId: string; card: ShareCard } }) => void = () => {};
+    mockApi.createShare.mockImplementation(() => new Promise((r) => (resolve = r)));
+    await open();
+    const card = await screen.findByTestId('share-card');
+    expect(within(card).getByText(C.nickname.headline)).toBeTruthy();
+    expect(screen.queryByTestId('share-card-skeleton')).toBeNull();
+    // 뒤에서 받은 카드가 달라졌으면 바꾼다
+    await act(async () => resolve(made({ ...C.nickname, headline: '새로 지은 한 줄 별명' }, 'share-2')));
+    expect(await within(screen.getByTestId('share-card')).findByText('새로 지은 한 줄 별명')).toBeTruthy();
+  });
+
+  it('받아 둔 카드가 있는데 뒤에서 확인하다 연결이 끊기면 받아 둔 카드를 그대로 둔다', async () => {
+    await render(<ShareEntry target={{ kind: 'NEXT_BIG' }} trigger="icon" />);
+    await open();
+    await screen.findByTestId('share-card');
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
+    mockApi.createShare.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await open();
+    await act(async () => {});
+    expect(within(screen.getByTestId('share-card')).getByText(C.nextBig.title)).toBeTruthy();
+    expect(screen.queryByText(S.failed.NETWORK)).toBeNull();
+  });
+
+  it('카드를 기다리는 동안(0.3초가 넘으면) 미리보기 자리에 같은 크기 · 같은 줄 배치의 9:16 카드 뼈대(결정 065 의 2 · 071)', async () => {
+    jest.useFakeTimers();
+    try {
+      mockApi.createShare.mockImplementation(() => new Promise(() => {}));
+      await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+      await open();
+      // 0.3초 전에는 빈 자리(같은 크기)만 — 빨리 오면 뼈대가 번쩍이지 않게
+      const frame = screen.getByTestId('share-card-skeleton');
+      expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
+      await act(async () => {
+        jest.advanceTimersByTime(300);
+      });
+      const { width, height, borderRadius } = StyleSheet.flatten(screen.getByTestId('share-card-skeleton').props.style);
+      expect([width, height]).toEqual([Sizes.shareCardWidth, 372]);
+      expect(borderRadius).toBe(16);
+      expect(frame).toBeTruthy();
+      // 그림 · 칩 · 이름표 · 제목 두 줄 · 아래 줄(로고 · 한 줄 소개)
+      expect(screen.getAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(7);
+      expect(screen.getByLabelText(strings.states.loading)).toBeTruthy();
+      expect(actionLabels()).toEqual([]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('10초가 넘도록 카드가 오지 않으면 뼈대 대신 실패 안내와 "다시 시도"(결정 065 의 2), 다시 시도하면 처음부터 기다린다', async () => {
+    jest.useFakeTimers();
+    try {
+      mockApi.createShare.mockImplementation(() => new Promise(() => {}));
+      await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+      await open();
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(screen.getByText(S.failed.OTHER)).toBeTruthy();
+      expect(screen.queryByTestId('share-card-skeleton')).toBeNull();
+      expect(actionLabels()).toEqual([]);
+      await fireEvent.press(screen.getByText(S.retry));
+      expect(mockApi.createShare).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('share-card-skeleton')).toBeTruthy();
+      expect(screen.queryByText(S.failed.OTHER)).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('공유할 것이 없으면(404) 그 말만 보이고 버튼이 없다', async () => {
+    const cases: [ShareTarget, string][] = [
+      [{ kind: 'NICKNAME' }, S.nothing.NICKNAME],
+      [{ kind: 'ME_AREA', area: 'LOVE' }, S.nothing.ME_AREA],
+      [{ kind: 'DAY_SKY', date: '2026-11-21' }, S.nothing.DAY_SKY],
+      [{ kind: 'NEXT_BIG' }, S.nothing.NEXT_BIG],
+    ];
+    mockApi.createShare.mockResolvedValue(notFound);
+    for (const [target, text] of cases) {
+      const view = await render(<ShareEntry target={target} />);
+      await open();
+      expect(await screen.findByText(text)).toBeTruthy();
+      expect(screen.queryByText(S.retry)).toBeNull();
+      expect(actionLabels()).toEqual([]);
+      await view.unmount();
+    }
+  });
+
+  it('만들지 못하면 안내와 "다시 시도" 를 보여 주고, 버튼은 없다', async () => {
+    // 받아 둔 카드가 없으니 안내
+    mockApi.createShare.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
     expect(await screen.findByText(S.failed.NETWORK)).toBeTruthy();
-    expect(screen.queryByText(S.actions.shareImage)).toBeNull();
+    expect(actionLabels()).toEqual([]);
+    mockApi.createShare.mockResolvedValue(made(C.nickname));
     await fireEvent.press(screen.getByText(S.retry));
     expect(await screen.findByTestId('share-card')).toBeTruthy();
     expect(mockApi.createShare).toHaveBeenCalledTimes(2);
@@ -129,9 +335,6 @@ describe('랭킹 카드 공유', () => {
     expect(mockApi.createShare).toHaveBeenCalledTimes(2);
     expect(mockApi.createShare).toHaveBeenLastCalledWith({ kind: 'RANKING', relation: 'FRIEND', showNames: true });
     expect(screen.getByRole('checkbox', { name: S.showNames }).props.accessibilityState.checked).toBe(true);
-    // 링크는 지금 보이는 카드의 것이다
-    await fireEvent.press(button(S.actions.shareLink));
-    expect(mockSendLink).toHaveBeenCalledWith('https://app.example.test/s/share-names');
   });
 
   it('닫았다가 다시 열면 이름 표시는 다시 꺼져 있다', async () => {
@@ -147,7 +350,7 @@ describe('랭킹 카드 공유', () => {
   });
 
   it('다른 종류의 카드에는 이름 표시 스위치가 없다', async () => {
-    await render(<ShareEntry target={{ kind: 'READING' }} />);
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
     await screen.findByTestId('share-card');
     expect(screen.queryByRole('checkbox')).toBeNull();
@@ -200,24 +403,5 @@ describe('궁합 점수 카드 공유', () => {
     // 다시 열면 이름부터 다시 묻되, 마지막에 적은 이름이 들어 있다
     expect((await screen.findByPlaceholderText(S.myName.placeholder)).props.value).toBe('동환');
     expect(mockApi.createShare).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('다음 변곡점 카드 공유', () => {
-  it('공유할 변곡점이 없으면(404) 그 말만 보여 준다', async () => {
-    mockApi.createShare.mockResolvedValueOnce(notFound);
-    await render(<ShareEntry target={{ kind: 'NEXT_TURN' }} label={S.openNextTurn} />);
-    await fireEvent.press(screen.getByText(S.openNextTurn));
-    expect(await screen.findByText(S.nothing.NEXT_TURN)).toBeTruthy();
-    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NEXT_TURN' });
-    expect(screen.queryByText(S.retry)).toBeNull();
-    expect(screen.queryByText(S.actions.shareImage)).toBeNull();
-    expect(screen.queryByTestId('share-card')).toBeNull();
-  });
-
-  it('있으면 해와 계절이 적힌 카드를 보여 준다', async () => {
-    await render(<ShareEntry target={{ kind: 'NEXT_TURN' }} />);
-    await open();
-    expect(await within(await screen.findByTestId('share-card')).findByText('2029년 여름')).toBeTruthy();
   });
 });

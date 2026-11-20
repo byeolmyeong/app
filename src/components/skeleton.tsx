@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '@/components/byeoli';
@@ -16,6 +16,17 @@ export type SkeletonProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+/** 안의 막대가 멈춰 있어야 하는가(SkeletonStill) */
+const StillContext = createContext(false);
+
+/**
+ * 안의 뼈대 막대를 멈춘다(빛이 오가지 않는 회색) — 불러오는 중이 아닌 자리에 뼈대 모양만 빌릴 때(시기 탭 잠긴 칩의 흐린 미리보기, 리뷰 #63).
+ * 반짝이면 "불러오는 중" 으로 읽힌다.
+ */
+export function SkeletonStill({ children }: { children: ReactNode }) {
+  return <StillContext.Provider value>{children}</StillContext.Provider>;
+}
+
 /**
  * 뼈대 막대 하나(보드 24 · 24-1): 회색 바탕 위로 옅은 빛이 1.4초에 한 번 오간다(동작 줄이기면 멈춘다).
  * 모서리는 8(높이가 낮으면 높이의 반). 화면 읽기에는 숨긴다 — 화면의 뼈대를 묶은 SkeletonGroup 이 "불러오는 중이에요" 를 한 번 읽는다.
@@ -23,9 +34,10 @@ export type SkeletonProps = {
  */
 export function Skeleton({ width, height, pill = false, style }: SkeletonProps) {
   const reduce = useReduceMotion();
+  const still = useContext(StillContext) || reduce;
   const [shine] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    if (reduce) return;
+    if (still) return;
     const half = L.shimmerMs / 2;
     const ease = Easing.inOut(Easing.ease);
     const loop = Animated.loop(
@@ -39,7 +51,7 @@ export function Skeleton({ width, height, pill = false, style }: SkeletonProps) 
       loop.stop();
       shine.setValue(0);
     };
-  }, [reduce, shine]);
+  }, [still, shine]);
   const borderRadius = pill ? height / 2 : Math.min(L.radius, height / 2);
   return (
     <View
@@ -81,10 +93,10 @@ export function SkeletonText({ variant, widths, center = false, style }: Skeleto
   );
 }
 
-/** 화면 하나의 뼈대를 묶는다(결정 071): 화면 읽기에는 "불러오는 중이에요" 를 한 번 읽고 막대는 숨긴다 */
-export function SkeletonGroup({ testID, children }: { testID: string; children: ReactNode }) {
+/** 화면 하나의 뼈대를 묶는다(결정 071): 화면 읽기에는 "불러오는 중이에요" 를 한 번 읽고 막대는 숨긴다. style 은 묶음의 자리(공유 카드 뼈대처럼 틀을 채울 때) */
+export function SkeletonGroup({ testID, style, children }: { testID: string; style?: StyleProp<ViewStyle>; children: ReactNode }) {
   return (
-    <View testID={testID} accessible accessibilityLabel={strings.states.loading}>
+    <View testID={testID} accessible accessibilityLabel={strings.states.loading} style={style}>
       {children}
     </View>
   );

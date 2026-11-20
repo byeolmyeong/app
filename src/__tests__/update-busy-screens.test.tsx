@@ -40,8 +40,9 @@ jest.mock('@/lib/api', () => ({
     getMeReport: jest.fn(),
     getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
     createSynastryDirection: jest.fn(),
-    getReport: jest.fn(),
-    requestReport: jest.fn(),
+    getTimingReport: jest.fn(),
+    requestTimingReport: jest.fn(),
+    getMonth: jest.fn(),
     createDirectSynastry: jest.fn(),
     getSynastry: jest.fn(),
     listSynastries: jest.fn(),
@@ -81,6 +82,7 @@ const home = gate(<Text>홈</Text>);
 const blocked = () => screen.queryByText(U.title) !== null;
 
 beforeEach(async () => {
+  mockApi.getMonth.mockResolvedValue({ ok: true, data: fixtures.monthSky });
   await AsyncStorage.clear();
   jest.clearAllMocks();
   forgetFresh();
@@ -165,10 +167,10 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('시기 탭(임시 화면의 심층 리포트): 쓰는 중에는 미루고, 화면에서 나오면 막는다', async () => {
-    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
+  it('시기 탭: 시기 풀이를 쓰는 중에는 미루고, 화면에서 나오면 막는다', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
     const view = await render(gate(<TimingScreen />));
-    expect(await screen.findByText(strings.report.writing)).toBeTruthy();
+    expect(await screen.findByText(strings.timing.making.title)).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
 
@@ -176,10 +178,10 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('시기 탭: 이미 다 쓰인 글을 연 것은 미루지 않는다', async () => {
-    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
+  it('시기 탭: 이미 다 쓰인 시기 풀이를 연 것은 미루지 않는다', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.timingReport } });
     await render(gate(<TimingScreen />));
-    expect(await screen.findByTestId('timing-view')).toBeTruthy();
+    expect(await screen.findByTestId('timing-now-card')).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(true);
   });

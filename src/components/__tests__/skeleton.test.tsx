@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react-native';
-import { StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet, Text } from 'react-native';
 
-import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
+import { Skeleton, SkeletonGroup, SkeletonStill, SkeletonText } from '@/components/skeleton';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { Colors, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -72,6 +72,22 @@ describe('뼈대 조각', () => {
     expect(StyleSheet.flatten(short.props.style)).toMatchObject({ width: 70, height: 14, borderRadius: 7 });
     expect(StyleSheet.flatten(circle.props.style)).toMatchObject({ width: 44, height: 44, borderRadius: 22 });
     expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+  });
+});
+
+describe('멈춘 막대 SkeletonStill', () => {
+  it('불러오는 중이 아닌 자리(잠긴 칩의 흐린 미리보기)에서는 빛을 돌리지 않는다 — 감싸지 않은 막대만 빛이 오간다(리뷰 #63)', async () => {
+    const loop = jest.spyOn(Animated, 'loop');
+    await render(
+      <SkeletonStill>
+        <Skeleton width={40} height={12} />
+        <SkeletonText variant="body" widths={['50%', '30%']} />
+      </SkeletonStill>,
+    );
+    expect(loop).not.toHaveBeenCalled();
+    await render(<Skeleton width={40} height={12} />);
+    expect(loop).toHaveBeenCalledTimes(1);
+    loop.mockRestore();
   });
 });
 

@@ -22,7 +22,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": ["android.permission.READ_EXTERNAL_STORAGE", "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"]
     },
     "web": {
       "output": "static",
@@ -49,6 +50,14 @@
       ],
       "expo-secure-store",
       "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "별명은 사진을 읽지 않아요. 공유 카드를 사진 앱에 저장할 때만 써요.",
+          "savePhotosPermission": "공유 카드를 사진 앱에 저장하려고 해요.",
+          "granularPermissions": []
+        }
+      ],
       "expo-apple-authentication",
       [
         "expo-audio",

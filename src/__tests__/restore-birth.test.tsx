@@ -337,6 +337,7 @@ describe('홈: 서버에 닿지 못하고 시작함', () => {
     await render(<HomeScreen />);
     expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
     expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
+    expect(getHomeReady()).toBe(true);
     await fireEvent.press(screen.getByRole('button', { name: strings.states.offlineEmpty.retry }));
     expect(recheckSession).toHaveBeenCalledTimes(1);
   });

@@ -470,3 +470,34 @@ describe('웹: 시작할 때 서버에 닿지 못함', () => {
     expect(deps.getSession).toHaveBeenCalledTimes(1);
   });
 });
+
+// 리뷰 PR #57 수정 4: 살아 있는 세션(앱 토큰 · 웹 쿠키)이 있으면 이어 하기보다 먼저 — 남은 가입권은 지운다
+describe('켤 때: 살아 있는 세션이 이어 하기보다 먼저', () => {
+  const ticket = jest.fn(async () => ({ signupToken: 'stale-ticket', provider: 'KAKAO' as const }));
+
+  it('앱: 보관 토큰이 살아 있으면 로그인 상태로 시작하고 남은 가입권을 지운다(토큰은 그대로)', async () => {
+    const { deps, store, kept } = setup({ stored: 'kept-token', loadSignup: ticket });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signedIn');
+    expect(deps.clearSignup).toHaveBeenCalled();
+    expect(kept()).toBe('kept-token');
+  });
+
+  it('웹: 쿠키 세션이 살아 있으면 로그인 상태, 401 이면 이어 하기', async () => {
+    const alive = setup({ cookieSession: true, loadSignup: ticket });
+    await alive.store.start();
+    expect(alive.store.getSnapshot().status).toBe('signedIn');
+    expect(alive.deps.clearSignup).toHaveBeenCalled();
+
+    const gone = setup({ cookieSession: true, loadSignup: ticket, getSession: jest.fn(async () => fail('LOGIN_REQUIRED', 401)) });
+    await gone.store.start();
+    expect(gone.store.getSnapshot().status).toBe('signingUp');
+  });
+
+  it('앱: 보관 토큰이 없을 때만 이어 하기(서버에 묻지 않는다)', async () => {
+    const { deps, store } = setup({ loadSignup: ticket });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signingUp');
+    expect(deps.getSession).not.toHaveBeenCalled();
+  });
+});

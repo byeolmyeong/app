@@ -135,32 +135,38 @@ export function createSessionStore(deps: SessionStoreDeps) {
      */
     start(): Promise<void> {
       starting ??= (async () => {
-        // 가입 중간에 나갔다 돌아왔다(결정 068): 가입권이 살아 있으면 서버에 묻지 않고 가입 중으로 잇는다
-        const ticket = deps.devSession ? null : await deps.loadSignup();
-        if (ticket) {
-          signupToken = ticket.signupToken;
-          signupProvider = ticket.provider;
-          return set('signingUp', null);
-        }
         if (deps.devSession) {
           const kept = deps.cookieSession ? null : await deps.loadToken();
           if (kept) set('signedIn', kept);
           else await fetchDevSession();
           return;
         }
+        // 가입 중간에 나갔다 돌아왔다(결정 068): 살아 있는 세션이 없을 때만 보관한 가입권으로 가입 중을 잇는다.
+        // 살아 있는 세션(앱 토큰 · 웹 쿠키)이 먼저다 — 남은 가입권은 지운다(가입 뒤 지우지 못했거나 재설치 30분 안이어도 세션을 잃지 않게)
+        const resume = async (otherwise: () => void | Promise<void>) => {
+          const ticket = await deps.loadSignup();
+          if (!ticket) return otherwise();
+          signupToken = ticket.signupToken;
+          signupProvider = ticket.provider;
+          set('signingUp', null);
+        };
+        const alive = async (token: string | null) => {
+          await deps.clearSignup();
+          set('signedIn', token);
+        };
         if (deps.cookieSession) {
           // 판정 순서: 살아 있음 → 로그인 · 403 ACCOUNT_SUSPENDED → 로그인(쿠키 세션은 살아 있고 정지 화면은 문이 보낸다, 서버 결정 044) ·
-          // 401 → 로그인 전 · 그 밖(닿지 못함 · 5xx) → 확인하지 못함(결정 068 의 4 — 로그인 전으로 정하지 않는다)
+          // 401 → 로그인 전 · 그 밖(닿지 못함 · 5xx) → 확인하지 못함(결정 068 의 4 — 로그인 전으로 정하지 않는다). 세션이 없으면 이어 하기가 먼저
           const r = await deps.getSession();
-          if (r.ok || r.code === 'ACCOUNT_SUSPENDED') return set('signedIn', null);
-          return set(r.error === 'LOGIN_REQUIRED' ? 'signedOut' : 'offline', null);
+          if (r.ok || r.code === 'ACCOUNT_SUSPENDED') return alive(null);
+          return resume(() => set(r.error === 'LOGIN_REQUIRED' ? 'signedOut' : 'offline', null));
         }
         const kept = await deps.loadToken();
-        if (!kept) return set('signedOut', null);
+        if (!kept) return resume(() => set('signedOut', null));
         deps.setApiToken(kept);
         const r = await deps.getSession();
         if (!r.ok && r.error === 'LOGIN_REQUIRED') return signedOut();
-        set('signedIn', kept);
+        await alive(kept);
       })();
       return starting;
     },

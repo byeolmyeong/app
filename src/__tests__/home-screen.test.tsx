@@ -113,6 +113,15 @@ describe('홈', () => {
     }
   });
 
+  it('모르는 프로필 번호면 그림만 빼고 이름은 그린다(리뷰 PR #41)', async () => {
+    mockApi.getAccount.mockResolvedValueOnce({ ok: true, data: { nickname: '새벽별', avatar: 9 } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
+    await render(<HomeScreen />);
+    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(screen.queryByRole('image')).toBeNull();
+  });
+
   it('받아 둔 풀이가 없으면 "아직 별명을 짓지 않았어요" 와 "내 별명 읽기" — 누르면 /reading(풀이를 부르지 않는다)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);

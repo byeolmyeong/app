@@ -108,7 +108,7 @@ export type Reading = {
   createdAt?: string;
 };
 
-/** `GET /account` 에서 앱이 쓰는 값: 닉네임 · 프로필 그림(1~8). 옛 계정은 둘 다 null(서버 결정 025 · 028) */
+/** `GET /account` 에서 앱이 쓰는 값: 닉네임 · 프로필 그림(계약은 1~8). 옛 계정은 둘 다 null(서버 결정 025 · 028) */
 export type Account = { nickname: string | null; avatar: number | null };
 
 /** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
@@ -414,7 +414,8 @@ export function isAccount(v: unknown): v is Account {
   return (
     isObject(v) &&
     (v.nickname === null || typeof v.nickname === 'string') &&
-    (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar) && v.avatar >= 1 && v.avatar <= 8))
+    // 계약은 1~8 이지만 모르는 번호여도 닉네임은 받는다 — 모르는 그림은 그리는 쪽이 숨긴다(isAvatarId)
+    (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar)))
   );
 }
 

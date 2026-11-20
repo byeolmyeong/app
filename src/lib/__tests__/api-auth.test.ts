@@ -210,8 +210,13 @@ describe('api: 내 계정', () => {
     expect(res).toEqual({ ok: true, data: { nickname: null, avatar: null } });
   });
 
-  it('프로필이 1~8 밖이거나 닉네임이 글자가 아니면 계약과 다른 응답이다', async () => {
-    for (const bad of [{ ...account, avatar: 9 }, { ...account, nickname: 3 }, { ...account, avatar: undefined }]) {
+  it('모르는 프로필 번호여도 닉네임은 받는다 — 모르는 그림은 그리는 쪽이 숨긴다(리뷰 PR #41)', async () => {
+    const res = await app(fakeFetch(200, { ...account, avatar: 9 })).getAccount();
+    expect(res).toEqual({ ok: true, data: { nickname: '새벽별', avatar: 9 } });
+  });
+
+  it('프로필이 정수가 아니거나 닉네임이 글자가 아니면 계약과 다른 응답이다', async () => {
+    for (const bad of [{ ...account, avatar: 1.5 }, { ...account, avatar: '3' }, { ...account, nickname: 3 }, { ...account, avatar: undefined }]) {
       const res = await app(fakeFetch(200, bad)).getAccount();
       expect(res).toMatchObject({ ok: false, error: 'INVALID' });
     }

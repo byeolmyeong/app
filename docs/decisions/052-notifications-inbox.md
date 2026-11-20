@@ -3,7 +3,7 @@ type: decision
 tags: [알림, 알림함, 홈 종, 안 읽은 알림, 자세한 풀이 완성, 궁합 리포트 완성, 별명]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 055-synastry-to-1.1.0-four-tabs.md (1.0.0 에서 SYNASTRY_REPORT_DONE 안 씀) · 058-in-app-inquiry-answers.md (종류에 INQUIRY_ANSWERED 더함) · 057-push-in-1.0.0.md (제안 — 휴대폰 푸시)
 ---
 # 052. 알림함은 앱 안의 목록이고 종류는 넷(별명 지음 · 나 탭 풀이 완성 · 시기 풀이 완성 · 궁합 리포트 완성), 30일 보관, 누르면 읽음 처리하고 그 화면으로 간다
 

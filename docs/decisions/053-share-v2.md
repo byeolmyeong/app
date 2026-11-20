@@ -3,7 +3,7 @@ type: decision
 tags: [공유, 공유 카드, 인스타그램 스토리, 이미지 저장, 내 별명, 나 탭, 오늘의 하늘, 다음 큰 변화]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 055-synastry-to-1.1.0-four-tabs.md (궁합 카드는 1.0.0 에 없음)
 ---
 # 053. 공유는 앱에서 인스타그램 스토리 · 이미지 저장, 웹에서 이미지 저장만이고, 카드는 내 별명 · 나 탭 칩 다섯 · 오늘의/그날의 하늘 · 다음 큰 변화다
 

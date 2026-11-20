@@ -3,7 +3,7 @@ type: decision
 tags: [점검, 점검 안내, app-config, 503, 강제 업데이트, 루트 레이아웃]
 status: active
 last_reviewed: 2026-11-12
-superseded_by:
+superseded_by: 060-maintenance-no-button.md (다시 확인 버튼 · 확인하는 때 — 버튼 없이 1분마다. 503 · 업데이트보다 먼저 · 웹 · 바쁨은 유효)
 ---
 # 030. 점검 중이면 "점검 중이에요" 화면으로 막고, 끝나면 스스로 풀린다(웹 포함)
 

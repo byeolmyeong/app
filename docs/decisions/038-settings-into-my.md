@@ -3,7 +3,7 @@ type: decision
 tags: [마이, 설정, 화면 구조, 정보 구조, F9]
 status: active
 last_reviewed: 2026-11-18
-superseded_by:
+superseded_by: 056-my-v2.md (마이 한 화면 — 계정 · 알림 · 음악은 한 단계 들어감. 설정 화면을 따로 두지 않는 것은 유효)
 ---
 # 038. 설정 화면을 없애고 마이 한 화면에 합친다
 

@@ -3,7 +3,7 @@ type: decision
 tags: [아래 탭, 화면 구성, 홈, 나, 시기, 궁합, 마이]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 055-synastry-to-1.1.0-four-tabs.md (다섯 칸 → 홈 · 나 · 시기 · 마이 넷. 화면마다 footer 방식은 유효)
 ---
 # 046. 아래 탭은 홈 · 나 · 시기 · 궁합 · 마이 다섯 칸이다
 

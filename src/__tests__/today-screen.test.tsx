@@ -93,6 +93,14 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     expect(screen.getByText(sky.title)).toBeTruthy();
   });
 
+  it('기기에 출생 정보가 없으면 홈으로(되살리기 · 입력은 홈이 맡는다, 리뷰 #66)', async () => {
+    await AsyncStorage.clear();
+    await render(<TodayScreen />);
+    await act(async () => {});
+    expect(router.replace).toHaveBeenCalledWith('/');
+    expect(mockApi.postDaySky).not.toHaveBeenCalled();
+  });
+
   it('기기에 둔 오늘 것을 바로 그리고 서버를 부르지 않는다', async () => {
     await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key: KEY, sky }));
     await render(<TodayScreen />);

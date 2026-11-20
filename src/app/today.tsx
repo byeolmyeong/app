@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { MakingView } from '@/components/making-view';
 import { NavBar } from '@/components/nav-bar';
@@ -31,9 +31,14 @@ const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
  */
 export default function TodayScreen() {
   const { ready } = useSession();
-  const { profile, chart } = useBirthProfile();
+  const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
   const { state, retry } = useTodaySky(birth);
+  // 기기에 출생 정보가 없으면(알림으로 처음 켰을 때 등) 되살리기 · 입력은 홈이 맡는다 — 쓰는 중에 멈춰 있지 않게(리뷰 #66)
+  const noProfile = loaded && !profile;
+  useEffect(() => {
+    if (noProfile) router.replace('/');
+  }, [noProfile]);
   const online = useOnline();
   const loading = state.status === 'loading';
   const phase = useLoadingPhase(loading);

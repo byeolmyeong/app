@@ -46,15 +46,15 @@ const translateY = () => {
 
 /** Animated.timing 을 가짜로 바꿔 끝나는 때를 시험이 정한다 */
 function fakeTiming() {
-  const runs: { toValue: number; duration: number; finish: () => void }[] = [];
+  const runs: { toValue: number; duration: number; finish: (finished?: boolean) => void }[] = [];
   jest.spyOn(Animated, 'timing').mockImplementation((value, config) => {
-    const run = { toValue: config.toValue as number, duration: config.duration ?? 0, finish: () => {} };
+    const run = { toValue: config.toValue as number, duration: config.duration ?? 0, finish: (_finished?: boolean) => {} };
     runs.push(run);
     return {
       start: (done?: (result: { finished: boolean }) => void) => {
-        run.finish = () => {
-          (value as Animated.Value).setValue(config.toValue as number);
-          done?.({ finished: true });
+        run.finish = (finished = true) => {
+          if (finished) (value as Animated.Value).setValue(config.toValue as number);
+          done?.({ finished });
         };
       },
       stop: () => {},
@@ -100,6 +100,16 @@ describe('아래에서 올라오는 창: 웹', () => {
     expect(onClosed).not.toHaveBeenCalled();
     await act(async () => runs[1].finish());
     expect(onClosed).toHaveBeenCalledTimes(1);
+  });
+
+  it('내려가는 중에 화면이 사라져 움직임이 끊기면(브라우저 뒤로 등) 돌아가기를 한 번 더 하지 않는다', async () => {
+    const runs = fakeTiming();
+    const onClosed = jest.fn();
+    await render(<Probe onClosed={onClosed} />);
+    await act(async () => runs[0].finish());
+    await fireEvent.press(screen.getByText('닫기'));
+    await act(async () => runs[1].finish(false));
+    expect(onClosed).not.toHaveBeenCalled();
   });
 
   it('주소로 바로 열어 돌아갈 앞 화면이 없으면 움직이지 않는다', async () => {

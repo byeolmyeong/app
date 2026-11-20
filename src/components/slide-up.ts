@@ -53,7 +53,10 @@ export function useSlideUp(): { style: Animated.WithAnimatedValue<ViewStyle>; cl
     if (!moves) return after();
     if (closing.current) return;
     closing.current = true;
-    Animated.timing(progress, { toValue: 0, duration: CLOSE_MS, easing: Easing.in(Easing.ease), useNativeDriver: false }).start(() => after());
+    Animated.timing(progress, { toValue: 0, duration: CLOSE_MS, easing: Easing.in(Easing.ease), useNativeDriver: false }).start(({ finished }) => {
+      // 내려가는 중에 화면이 사라지면(브라우저 뒤로 등) 이미 돌아갔으니 다시 하지 않는다
+      if (finished) after();
+    });
   }
 
   const style = moves

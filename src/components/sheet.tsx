@@ -35,8 +35,12 @@ const CLOSE_MS = 220;
 const HIDDEN_OFFSET = 720;
 /** 이만큼 넘게 끌어내리고 놓으면 닫는다. 덜 끌면 제자리로 돌아간다 */
 const DRAG_CLOSE_DISTANCE = 90;
-/** 위쪽에서 끌 수 있는 영역의 높이. 손잡이 줄부터 제목 줄까지 덮는다(그 아래는 드럼롤처럼 굴리는 것이 있어 넓히지 않는다) */
+/**
+ * 위쪽에서 끌 수 있는 영역의 높이. 끄는 영역은 내용 위에 그려져 누르기를 다 가져가므로 내용을 덮지 않는다:
+ * 제목이 있으면 손잡이 줄부터 제목 줄까지(위 여백 36 + 제목 28 + 간격 16), 없으면 내용이 시작하는 위 여백까지.
+ */
 const DRAG_AREA_HEIGHT = 80;
+const DRAG_AREA_HEIGHT_UNTITLED = Spacing.xl;
 const useNativeDriver = Platform.OS !== 'web';
 const noCaret = (Platform.OS === 'web' ? { caretColor: 'transparent', outlineWidth: 0 } : {}) as ViewStyle;
 
@@ -118,7 +122,7 @@ export function Sheet({ visible, onClose, title, gap, height, flush = false, chi
               </View>
             ) : null}
             {children}
-            <View testID="sheet-drag" style={styles.dragArea} {...pan.panHandlers}>
+            <View testID="sheet-drag" style={[styles.dragArea, !title && styles.dragAreaUntitled]} {...pan.panHandlers}>
               <View testID="sheet-handle" style={styles.handle} />
             </View>
           </Animated.View>
@@ -156,6 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     cursor: 'grab',
   },
+  dragAreaUntitled: { height: DRAG_AREA_HEIGHT_UNTITLED },
   handle: {
     marginTop: 10,
     width: Sizes.handleWidth,

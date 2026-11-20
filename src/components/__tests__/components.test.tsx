@@ -213,6 +213,24 @@ describe('Sheet', () => {
     expect(screen.queryByText('시트 내용')).toBeNull();
   });
 
+  it('끄는 영역은 내용을 덮지 않는다 — 제목이 있으면 제목 줄까지, 없으면 내용이 시작하는 위 여백까지(리뷰 2026-11-20)', async () => {
+    const top = () => StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).paddingTop;
+    const drag = () => StyleSheet.flatten(screen.getByTestId('sheet-drag').props.style).height;
+    const view = await render(
+      <Sheet visible onClose={() => {}}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    expect(drag()).toBeLessThanOrEqual(top());
+    await view.rerender(
+      <Sheet visible onClose={() => {}} title="제목">
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    // 위 여백 36 + 제목 줄 28 + 간격 16 = 내용이 시작하는 80
+    expect(drag()).toBeLessThanOrEqual(top() + 28 + 16);
+  });
+
   it('바깥 어두운 곳을 누르면 onClose 를 부른다', async () => {
     const onClose = jest.fn();
     await render(

@@ -78,7 +78,7 @@ describe('출생 정보 단계', () => {
     expect(screen.getByText('redirect:/signup/nickname')).toBeTruthy();
   });
 
-  it('태어난 시각 시트에는 제목이 없다 — 손잡이 · 드럼 · 확인만, 손잡이 위 끝에서 드럼까지 58(결정 056 의 9 · 061 의 6, 보드 8-1)', async () => {
+  it('태어난 시각 시트에는 제목이 없다 — 손잡이 · 드럼 · 확인만, 시트 위 끝에서 드럼까지 58 · 끄는 영역은 드럼을 덮지 않는다(결정 056 의 9 · 061 의 6, 보드 8-1)', async () => {
     await render(<BirthStep />);
     await fireEvent.press(screen.getByTestId('time-field'));
     const panel = await screen.findByTestId('sheet-panel');
@@ -87,6 +87,7 @@ describe('출생 정보 단계', () => {
     expect(within(panel).getByText(H.timeConfirm)).toBeTruthy();
     const top = StyleSheet.flatten(panel.props.style).paddingTop + StyleSheet.flatten(within(panel).getByTestId('time-body').props.style).marginTop;
     expect(top).toBe(58);
+    expect(StyleSheet.flatten(within(panel).getByTestId('sheet-drag').props.style).height).toBeLessThanOrEqual(top);
   });
 
   it('시 · 도 → 시 · 군 · 구 를 고르면 칸에 "서울 강남구"', async () => {

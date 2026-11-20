@@ -5,11 +5,11 @@ import { useSession } from '@/features/auth/use-session';
 import { useAccount } from '@/features/home/use-account';
 import { api } from '@/lib/api';
 
-jest.mock('@/lib/api', () => ({ ...jest.requireActual('@/lib/api'), api: { getAccount: jest.fn() } }));
+jest.mock('@/lib/api', () => ({ ...jest.requireActual('@/lib/api'), api: { getMyAccount: jest.fn() } }));
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn() }));
 
 const mockSession = useSession as jest.Mock;
-const mockGetAccount = api.getAccount as jest.Mock;
+const mockGetAccount = api.getMyAccount as jest.Mock;
 
 function Probe() {
   const account = useAccount();
@@ -18,7 +18,7 @@ function Probe() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockGetAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
+  mockGetAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
 });
 
 // 리뷰(PR #41): 세션을 확인하기 전에 부르면 앱은 토큰 없이 나가 401 을 받고, 세션 다시 받기가 보관 토큰을 지운다

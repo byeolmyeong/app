@@ -7,6 +7,8 @@ import { Platform } from 'react-native';
 
 import { setLastProvider } from '@/features/auth/last-provider';
 import { createSessionStore, type Session } from '@/features/auth/session-store';
+import { restoreDraft } from '@/features/auth/signup-draft';
+import { clearResume, loadResume, startResume } from '@/features/auth/signup-resume';
 import { deleteToken, loadToken, saveToken } from '@/features/auth/token-storage';
 import { api, setSessionRefresher, setSessionToken } from '@/lib/api';
 
@@ -24,6 +26,15 @@ const store = createSessionStore({
   deleteToken,
   setApiToken: setSessionToken,
   saveLastProvider: setLastProvider,
+  // 가입 이어 하기(결정 068): 되돌릴 때 적던 초안도 메모리로
+  loadSignup: async () => {
+    const resume = await loadResume();
+    if (!resume) return null;
+    restoreDraft(resume.draft);
+    return resume;
+  },
+  saveSignup: (signupToken, provider, expiresAt) => startResume(signupToken, provider, Date.now(), expiresAt),
+  clearSignup: clearResume,
 });
 
 // 서버가 401 을 주면 api 가 이 방법을 부른다. 개발용이면 세션을 한 번 다시 받고, 아니면 로그인 전이 된다.
@@ -34,6 +45,9 @@ export const getSession = (): Session => store.getSnapshot();
 
 /** 세션을 비운다(계정을 지웠을 때). 보관된 토큰도 지운다 */
 export const clearSession = (): Promise<void> => store.clear();
+
+/** 웹이 시작할 때 서버에 닿지 못한 세션을 다시 확인한다(연결이 돌아옴 · 다시 시도, 결정 068 의 4) */
+export const recheckSession = (): Promise<void> => store.recheck();
 
 /** 로그아웃(서버 세션 · 보관된 토큰). 기기에 둔 출생 정보 · 글은 `sign-out.ts` 가 함께 비운다 */
 export const signOutSession = (): Promise<void> => store.signOut();

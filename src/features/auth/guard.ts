@@ -5,8 +5,9 @@
  * 소개(`/intro`)는 로그인 전에 아직 안 본 기기에서만 보낸다. 로그인한 사람은 소개로 가지 않는다.
  */
 import type { SessionStatus } from '@/features/auth/session-store';
+import type { SignupStepName } from '@/features/auth/signup-resume';
 
-export type GuardTarget = '/login' | '/signup/terms' | '/intro' | '/';
+export type GuardTarget = '/login' | '/signup/terms' | '/signup/nickname' | '/signup/birth' | '/intro' | '/';
 
 /**
  * 가입 중에도 열리는 화면: 약관 단계의 "보기" 가 여는 이용약관 · 개인정보 수집 · 이용 동의 · 마케팅 수신 동의 약관(결정 042 · 043 · 045)과,
@@ -26,15 +27,19 @@ export function guardRedirect(
   first: string | undefined,
   introSeen: boolean | null = true,
   second?: string,
+  /** 이어 하는 가입의 하던 단계(결정 068). 없으면 약관 단계 */
+  signupStep: SignupStepName | null = null,
 ): GuardTarget | null {
   if (first !== undefined && ALWAYS_OPEN.has(first)) return null;
   switch (status) {
     case 'checking':
+    case 'offline':
+      // 확인 중이면 가리고 기다리고, 확인하지 못했으면(결정 068 의 4) 화면이 받아 둔 것 · 끊김 화면을 보인다
       return null;
     case 'signingUp':
       if (first === 'signup') return null;
       if (first === 'settings' && second !== undefined && SIGNUP_READABLE.has(second)) return null;
-      return '/signup/terms';
+      return `/signup/${signupStep ?? 'terms'}`;
     case 'signedOut':
       if (first === 'intro' || introSeen === null) return null;
       if (!introSeen) return '/intro';

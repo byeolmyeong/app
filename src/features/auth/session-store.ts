@@ -14,8 +14,11 @@ import type {
   SignupResult,
 } from '@/lib/api';
 
-/** checking 시작할 때 확인 중 · signedOut 로그인 전 · signingUp 처음 온 사람이 가입 단계(약관 · 닉네임 · 출생 정보)를 밟는 중 · signedIn 로그인 상태 */
-export type SessionStatus = 'checking' | 'signedOut' | 'signingUp' | 'signedIn';
+/**
+ * checking 시작할 때 확인 중 · signedOut 로그인 전 · signingUp 처음 온 사람이 가입 단계(약관 · 닉네임 · 출생 정보)를 밟는 중 · signedIn 로그인 상태 ·
+ * offline 웹이 시작할 때 서버에 닿지 못해 확인하지 못함(결정 068 의 4 — 로그인했다고도 안 했다고도 정하지 않는다. 다시 확인이 정한다)
+ */
+export type SessionStatus = 'checking' | 'signedOut' | 'signingUp' | 'signedIn' | 'offline';
 
 export type Session = {
   status: SessionStatus;
@@ -45,6 +48,10 @@ export type SessionStoreDeps = {
   setApiToken: (token: string | null) => void;
   /** 로그인에 성공한(처음 온 사람은 가입을 마친) 공급자를 기기에 적는다 — 로그인 화면의 "최근 로그인"(결정 044) */
   saveLastProvider: (provider: ProviderCredential['provider']) => Promise<void>;
+  /** 가입 이어 하기(결정 068 의 1): 기기에 둔 가입권(수명 안의 것만, 가입 초안도 되돌린다) · 두기 · 지우기 */
+  loadSignup: () => Promise<{ signupToken: string; provider: ProviderCredential['provider'] } | null>;
+  saveSignup: (signupToken: string, provider: ProviderCredential['provider'], expiresAt?: number) => Promise<void>;
+  clearSignup: () => Promise<void>;
 };
 
 /** 로그인 한 번의 결과 */
@@ -82,10 +89,11 @@ export function createSessionStore(deps: SessionStoreDeps) {
     return { ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' };
   }
 
-  /** 서버가 준 세션으로 로그인 상태가 된다. 앱은 토큰을 보관한다(웹은 토큰이 없다) */
+  /** 서버가 준 세션으로 로그인 상태가 된다. 앱은 토큰을 보관한다(웹은 토큰이 없다). 이어 하던 가입은 지운다 */
   async function signedIn(token: string | null) {
     signupToken = null;
     signupProvider = null;
+    await deps.clearSignup();
     if (token && !deps.cookieSession) await deps.saveToken(token);
     set('signedIn', deps.cookieSession ? null : token);
   }
@@ -93,6 +101,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
   async function signedOut(lastError: string | null = null) {
     signupToken = null;
     signupProvider = null;
+    await deps.clearSignup();
     if (!deps.cookieSession) await deps.deleteToken();
     set('signedOut', null, lastError);
   }
@@ -132,19 +141,43 @@ export function createSessionStore(deps: SessionStoreDeps) {
           else await fetchDevSession();
           return;
         }
+        // 가입 중간에 나갔다 돌아왔다(결정 068): 살아 있는 세션이 없을 때만 보관한 가입권으로 가입 중을 잇는다.
+        // 살아 있는 세션(앱 토큰 · 웹 쿠키)이 먼저다 — 남은 가입권은 지운다(가입 뒤 지우지 못했거나 재설치 30분 안이어도 세션을 잃지 않게)
+        const resume = async (otherwise: () => void | Promise<void>) => {
+          const ticket = await deps.loadSignup();
+          if (!ticket) return otherwise();
+          signupToken = ticket.signupToken;
+          signupProvider = ticket.provider;
+          set('signingUp', null);
+        };
+        const alive = async (token: string | null) => {
+          await deps.clearSignup();
+          set('signedIn', token);
+        };
         if (deps.cookieSession) {
+          // 판정 순서: 살아 있음 → 로그인 · 403 ACCOUNT_SUSPENDED → 로그인(쿠키 세션은 살아 있고 정지 화면은 문이 보낸다, 서버 결정 044) ·
+          // 401 → 로그인 전 · 그 밖(닿지 못함 · 5xx) → 확인하지 못함(결정 068 의 4 — 로그인 전으로 정하지 않는다). 세션이 없으면 이어 하기가 먼저
           const r = await deps.getSession();
-          // 이용 정지된 계정(403 ACCOUNT_SUSPENDED)도 세션은 살아 있다 — 로그인 상태로 두고 정지 문이 정지 화면으로 보낸다(결정 065 의 5)
-          return r.ok || r.code === 'ACCOUNT_SUSPENDED' ? set('signedIn', null) : set('signedOut', null);
+          if (r.ok || r.code === 'ACCOUNT_SUSPENDED') return alive(null);
+          return resume(() => set(r.error === 'LOGIN_REQUIRED' ? 'signedOut' : 'offline', null));
         }
         const kept = await deps.loadToken();
-        if (!kept) return set('signedOut', null);
+        if (!kept) return resume(() => set('signedOut', null));
         deps.setApiToken(kept);
         const r = await deps.getSession();
         if (!r.ok && r.error === 'LOGIN_REQUIRED') return signedOut();
-        set('signedIn', kept);
+        await alive(kept);
       })();
       return starting;
+    },
+
+    /** 확인하지 못한(offline) 세션을 다시 확인한다(연결이 돌아옴 · 다시 시도). 살아 있으면 로그인 상태, 401 이면 로그인 전, 또 닿지 못하면 그대로 */
+    async recheck(): Promise<void> {
+      if (state.status !== 'offline') return;
+      const r = await deps.getSession();
+      if (state.status !== 'offline') return;
+      if (r.ok || r.code === 'ACCOUNT_SUSPENDED') set('signedIn', null);
+      else if (r.error === 'LOGIN_REQUIRED') await signedOut();
     },
 
     /** 공급자 자격 증명으로 로그인한다. 처음 온 사람은 가입권을 메모리에 두고 가입 중이 된다 */
@@ -157,6 +190,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       if (r.data.status === 'SIGNUP_REQUIRED') {
         signupToken = r.data.signupToken;
         signupProvider = credential.provider;
+        await deps.saveSignup(r.data.signupToken, credential.provider, r.data.expiresAt);
         set('signingUp', null);
         return 'signingUp';
       }
@@ -186,6 +220,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
         if (r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
         else if (r.code === 'UNDER_AGE') {
           signupToken = null;
+          await deps.clearSignup();
           set('signingUp', null, 'UNDER_AGE');
         } else set('signingUp', null, reasonOf(r));
         return r;
@@ -232,6 +267,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
     /** 서버가 401 을 주었을 때. 개발용이면 새로 받고(새 세션이 생겼으면 true), 아니면 로그인 전이 된다(false) */
     async refresh(): Promise<boolean> {
       if (deps.devSession) return fetchDevSession();
+      // 켤 때의 확인 중(401 은 그 확인의 답)이면 start 가 판정한다 — 여기서 로그인 전으로 바꾸면 이어 할 가입권까지 지운다(결정 068)
+      if (state.status === 'checking') return false;
       await signedOut();
       return false;
     },

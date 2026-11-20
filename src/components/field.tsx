@@ -13,12 +13,14 @@ export type FieldProps = {
   hint?: string;
   /** 있으면 도움말 대신 오류색(danger)으로 보여 준다 */
   error?: string;
+  /** 있으면(오류가 없을 때) 도움말 대신 됐다는 색(success)으로 보여 준다 — 닉네임 "사용할 수 있는 닉네임이에요"(결정 068 의 6) */
+  success?: string;
   /** 입력칸. `FieldInput`(치는 칸)이나 `FieldSelect`(눌러서 고르는 칸)를 넣는다 */
   children: ReactNode;
 };
 
 /** 라벨(위, 오른쪽에 덧붙일 것) · 입력칸 · 도움말 또는 오류(아래). 결정 042 시안의 모양이다. */
-export function Field({ label, labelRight, hint, error, children }: FieldProps) {
+export function Field({ label, labelRight, hint, error, success, children }: FieldProps) {
   return (
     <View style={styles.field}>
       <View style={styles.labelRow}>
@@ -39,6 +41,10 @@ export function Field({ label, labelRight, hint, error, children }: FieldProps) 
       {error ? (
         <Txt variant="caption" color="danger">
           {error}
+        </Txt>
+      ) : success ? (
+        <Txt variant="caption" color="success">
+          {success}
         </Txt>
       ) : hint ? (
         <Txt variant="caption" color="hint">

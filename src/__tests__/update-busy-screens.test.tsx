@@ -38,7 +38,7 @@ jest.mock('@/lib/api', () => ({
     createReading: jest.fn(),
     requestMeReport: jest.fn(),
     getMeReport: jest.fn(),
-    getAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
     createSynastryDirection: jest.fn(),
     getReport: jest.fn(),
     requestReport: jest.fn(),

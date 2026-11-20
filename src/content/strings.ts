@@ -91,7 +91,9 @@ export const strings = {
     placeholder: '예: 새벽별',
     rule: '한글 · 영문으로 2~10자',
     invalidChar: '한글 · 영문만 쓸 수 있어요.',
-    taken: '이미 있는 닉네임이에요.',
+    /** 중복 안내(결정 068 의 6): 치기를 멈추면 서버에 물어 안내 줄에 쓴다 */
+    taken: '이미 쓰고 있는 닉네임이에요',
+    available: '사용할 수 있는 닉네임이에요',
     /** 닉네임 확인을 서버에 묻지 못했다(인터넷은 home.requestErrors.NETWORK) */
     checkFailed: '닉네임을 확인하지 못했어요. 잠시 뒤 다시 눌러 주세요.',
     next: '다음',
@@ -122,7 +124,7 @@ export const strings = {
     writeFail: { title: { report: '리포트를 쓰지 못했어요' }, body: '잠깐 문제가 생겼어요.\n다시 쓰기를 누르면 처음부터 다시 써요.', retry: '다시 쓰기' },
     /** 화면 전체를 못 불러왔을 때(보드 19) — 제목은 화면마다 */
     loadFail: {
-      title: { reading: '내 별명을 불러오지 못했어요', report: '리포트를 불러오지 못했어요' },
+      title: { reading: '내 별명을 불러오지 못했어요', report: '리포트를 불러오지 못했어요', home: '홈을 불러오지 못했어요' },
       body: '잠깐 문제가 생겼어요.\n다시 보기를 누르면 다시 불러와요.',
       retry: '다시 보기',
     },

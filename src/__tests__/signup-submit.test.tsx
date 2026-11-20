@@ -11,6 +11,9 @@ import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
+  // 가입 단계는 웹에서 오른쪽에서 밀려 들어온다 — 이 시험들은 앱(움직이지 않음)
+  useCanGoBack: () => false,
+  useIsFocused: () => true,
   usePreventRemove: jest.fn(),
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => true) },

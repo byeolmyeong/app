@@ -30,7 +30,7 @@ jest.mock('@/lib/api', () => ({
     listPlaces: jest.fn(),
     createChart: jest.fn(),
     saveProfile: jest.fn(),
-    getAccount: jest.fn(),
+    getMyAccount: jest.fn(),
     // 홈은 풀이를 부르지 않는다(POST /readings 는 옛 요약 해석만 있는 계정이면 새로 짓는다 — 서버 결정 030)
     createReading: jest.fn(),
     // 기기가 비어 있으면 서버의 출생 정보로 되살려 본다(결정 029) — 이 테스트들에서는 저장된 것이 없다
@@ -50,7 +50,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
-  mockApi.getAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
+  mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
 });
 
 /** 기기 시계를 고정한 테스트가 쓴다(별명을 받은 지 N일) */
@@ -104,8 +104,8 @@ describe('홈', () => {
   it('계정을 받지 못했거나 옛 계정(닉네임 · 프로필 null)이면 이름 줄 없이 그린다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
-    for (const result of [{ ok: false, error: 'NETWORK' } as const, { ok: true, data: { nickname: null, avatar: null } } as const]) {
-      mockApi.getAccount.mockResolvedValueOnce(result);
+    for (const result of [{ ok: false, error: 'NETWORK' } as const, { ok: true, data: { nickname: null, avatar: null, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } } as const]) {
+      mockApi.getMyAccount.mockResolvedValueOnce(result);
       const view = await render(<HomeScreen />);
       expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
       expect(screen.queryByText(/ 님$/)).toBeNull();
@@ -116,7 +116,7 @@ describe('홈', () => {
   });
 
   it('모르는 프로필 번호면 그림만 빼고 이름은 그린다(리뷰 PR #41)', async () => {
-    mockApi.getAccount.mockResolvedValueOnce({ ok: true, data: { nickname: '새벽별', avatar: 9 } });
+    mockApi.getMyAccount.mockResolvedValueOnce({ ok: true, data: { nickname: '새벽별', avatar: 9, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
     await render(<HomeScreen />);
@@ -227,7 +227,7 @@ describe('홈', () => {
       listener = cb;
       return () => {};
     });
-    mockApi.getAccount.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    mockApi.getMyAccount.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
     await render(<HomeScreen />);
@@ -236,7 +236,7 @@ describe('홈', () => {
     await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
     await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
     expect(await screen.findByText('새벽별 님')).toBeTruthy();
-    expect(mockApi.getAccount).toHaveBeenCalledTimes(2);
+    expect(mockApi.getMyAccount).toHaveBeenCalledTimes(2);
   });
 
   it('출생 정보를 넣기 전(입력 화면)에는 탭이 없다', async () => {

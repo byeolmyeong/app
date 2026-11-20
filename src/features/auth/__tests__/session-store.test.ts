@@ -27,6 +27,9 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
     }),
     setApiToken: jest.fn(),
     saveLastProvider: jest.fn(async () => {}),
+    loadSignup: jest.fn(async (): Promise<{ signupToken: string; provider: 'KAKAO' | 'APPLE' | 'GOOGLE' } | null> => null),
+    saveSignup: jest.fn(async () => {}),
+    clearSignup: jest.fn(async () => {}),
     ...overrides,
   } satisfies SessionStoreDeps;
   return { deps, store: createSessionStore(deps), kept: () => kept };
@@ -366,5 +369,157 @@ describe('마지막에 쓴 공급자 적기', () => {
     await dev.store.start();
     await dev.store.devSignIn();
     expect(dev.deps.saveLastProvider).not.toHaveBeenCalled();
+  });
+});
+
+// 가입 이어 하기(결정 068 의 1): 가입권은 보관 · 이어 하기 · 지우기를 deps 에 맡긴다
+describe('가입 이어 하기', () => {
+  const signupRequired = async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket-1', expiresAt: 5_000 });
+
+  it('처음 온 사람이면 가입권 · 공급자 · 서버의 만료 시각을 보관한다', async () => {
+    const { deps, store } = setup({ login: jest.fn(signupRequired) });
+    await store.start();
+    await store.signIn(google);
+    expect(deps.saveSignup).toHaveBeenCalledWith('ticket-1', 'GOOGLE', 5_000);
+  });
+
+  it('켤 때 보관한 가입권이 있으면 서버에 묻지 않고 가입 중으로 시작하고, 그 가입권으로 가입을 마친다', async () => {
+    const { deps, store } = setup({ loadSignup: jest.fn(async () => ({ signupToken: 'kept-ticket', provider: 'KAKAO' as const })) });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signingUp');
+    expect(deps.getSession).not.toHaveBeenCalled();
+    await store.completeSignup(signupInput);
+    expect(deps.signup).toHaveBeenCalledWith('kept-ticket', birth, values);
+    expect(deps.saveLastProvider).toHaveBeenCalledWith('KAKAO');
+    expect(deps.clearSignup).toHaveBeenCalled();
+  });
+
+  it('로그인 · 로그아웃 · 가입 그만둠 · 가입 시간 지남 · 만 14세 미만이면 보관한 것을 지운다', async () => {
+    const signIn = setup();
+    await signIn.store.start();
+    await signIn.store.signIn(google);
+    expect(signIn.deps.clearSignup).toHaveBeenCalled();
+
+    const out = setup({ stored: 'kept' });
+    await out.store.start();
+    (out.deps.clearSignup as jest.Mock).mockClear();
+    await out.store.signOut();
+    expect(out.deps.clearSignup).toHaveBeenCalled();
+
+    const cancel = setup({ login: jest.fn(signupRequired) });
+    await cancel.store.start();
+    await cancel.store.signIn(google);
+    (cancel.deps.clearSignup as jest.Mock).mockClear();
+    await cancel.store.cancelSignup();
+    expect(cancel.deps.clearSignup).toHaveBeenCalled();
+
+    const expired = setup({ login: jest.fn(signupRequired), checkNickname: jest.fn(async () => fail('LOGIN_REQUIRED', 401, 'SIGNUP_EXPIRED')) });
+    await expired.store.start();
+    await expired.store.signIn(google);
+    (expired.deps.clearSignup as jest.Mock).mockClear();
+    await expired.store.checkNickname('새벽별');
+    expect(expired.deps.clearSignup).toHaveBeenCalled();
+
+    const young = setup({ login: jest.fn(signupRequired), signup: jest.fn(async () => fail('SERVER', 403, 'UNDER_AGE')) });
+    await young.store.start();
+    await young.store.signIn(google);
+    (young.deps.clearSignup as jest.Mock).mockClear();
+    await young.store.completeSignup(signupInput);
+    expect(young.deps.clearSignup).toHaveBeenCalled();
+  });
+});
+
+// 결정 068 의 4: 웹이 시작할 때 서버에 닿지 못하면(401 이 아니면) 로그인 전으로 정하지 않는다 — 확인하지 못함(offline)
+describe('웹: 시작할 때 서버에 닿지 못함', () => {
+  it('닿지 못하거나 서버 오류면 offline(가드는 보내지 않는다), 401 이면 지금처럼 로그인 전', async () => {
+    for (const r of [fail('NETWORK'), fail('SERVER', 503)]) {
+      const { store } = setup({ cookieSession: true, getSession: jest.fn(async () => r) });
+      await store.start();
+      expect(store.getSnapshot()).toMatchObject({ status: 'offline', ready: true, token: null });
+    }
+  });
+
+  it('다시 확인: 살아 있으면 로그인 상태, 401 이면 로그인 전, 또 닿지 못하면 그대로', async () => {
+    const getSession = jest.fn(async (): Promise<ApiResult<null>> => fail('NETWORK'));
+    const { store } = setup({ cookieSession: true, getSession });
+    await store.start();
+    await store.recheck();
+    expect(store.getSnapshot().status).toBe('offline');
+    getSession.mockResolvedValueOnce(ok(null));
+    await store.recheck();
+    expect(store.getSnapshot().status).toBe('signedIn');
+
+    const gone = setup({ cookieSession: true, getSession: jest.fn(async (): Promise<ApiResult<null>> => fail('NETWORK')) });
+    await gone.store.start();
+    (gone.deps.getSession as jest.Mock).mockResolvedValueOnce(fail('LOGIN_REQUIRED', 401));
+    await gone.store.recheck();
+    expect(gone.store.getSnapshot().status).toBe('signedOut');
+  });
+
+  // 판정 순서(이용 정지 PR #52 와 맞춤): ok → 로그인 · 403 ACCOUNT_SUSPENDED → 로그인(쿠키 세션은 살아 있고 정지 화면은 문이 보낸다) · 401 → 로그인 전 · 그 밖 → offline
+  it('정지된 계정(403 ACCOUNT_SUSPENDED)은 로그인 상태로 시작한다 — offline 도 로그인 전도 아니다', async () => {
+    const { store } = setup({ cookieSession: true, getSession: jest.fn(async () => fail('SERVER', 403, 'ACCOUNT_SUSPENDED')) });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signedIn');
+  });
+
+  it('offline 이 아니면 다시 확인하지 않는다', async () => {
+    const { deps, store } = setup({ cookieSession: true });
+    await store.start();
+    await store.recheck();
+    expect(deps.getSession).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 리뷰 PR #57 수정 4: 살아 있는 세션(앱 토큰 · 웹 쿠키)이 있으면 이어 하기보다 먼저 — 남은 가입권은 지운다
+describe('켤 때: 살아 있는 세션이 이어 하기보다 먼저', () => {
+  const ticket = jest.fn(async () => ({ signupToken: 'stale-ticket', provider: 'KAKAO' as const }));
+
+  it('앱: 보관 토큰이 살아 있으면 로그인 상태로 시작하고 남은 가입권을 지운다(토큰은 그대로)', async () => {
+    const { deps, store, kept } = setup({ stored: 'kept-token', loadSignup: ticket });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signedIn');
+    expect(deps.clearSignup).toHaveBeenCalled();
+    expect(kept()).toBe('kept-token');
+  });
+
+  it('웹: 쿠키 세션이 살아 있으면 로그인 상태, 401 이면 이어 하기', async () => {
+    const alive = setup({ cookieSession: true, loadSignup: ticket });
+    await alive.store.start();
+    expect(alive.store.getSnapshot().status).toBe('signedIn');
+    expect(alive.deps.clearSignup).toHaveBeenCalled();
+
+    const gone = setup({ cookieSession: true, loadSignup: ticket, getSession: jest.fn(async () => fail('LOGIN_REQUIRED', 401)) });
+    await gone.store.start();
+    expect(gone.store.getSnapshot().status).toBe('signingUp');
+  });
+
+  it('앱: 보관 토큰이 없을 때만 이어 하기(서버에 묻지 않는다)', async () => {
+    const { deps, store } = setup({ loadSignup: ticket });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signingUp');
+    expect(deps.getSession).not.toHaveBeenCalled();
+  });
+});
+
+// 켤 때의 세션 확인이 401 이면 api 가 세션 다시 받기(refresh)를 부른다 — 확인 중에는 그 refresh 가 로그인 전으로 바꾸며
+// 이어 할 가입권까지 지우지 않게 start 가 판정한다(웹 새로 고침 뒤 이어 하기가 로그인으로 가던 것)
+describe('켤 때: 세션 확인의 401 과 세션 다시 받기', () => {
+  it('확인 중에 refresh 가 불려도 가입권을 지우지 않고 이어 한다', async () => {
+    const s = setup({ cookieSession: true, loadSignup: jest.fn(async () => ({ signupToken: 'kept-ticket', provider: 'KAKAO' as const })) });
+    (s.deps.getSession as jest.Mock).mockImplementation(async () => {
+      expect(await s.store.refresh()).toBe(false);
+      return fail('LOGIN_REQUIRED', 401);
+    });
+    await s.store.start();
+    expect(s.store.getSnapshot().status).toBe('signingUp');
+    expect(s.deps.clearSignup).not.toHaveBeenCalled();
+  });
+
+  it('확인이 끝난 뒤의 refresh 는 지금처럼 로그인 전으로', async () => {
+    const s = setup({ cookieSession: true });
+    await s.store.start();
+    await s.store.refresh();
+    expect(s.store.getSnapshot().status).toBe('signedOut');
   });
 });

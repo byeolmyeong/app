@@ -6,10 +6,13 @@ import NicknameStep from '@/app/signup/nickname';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { clearDraft, getDraft, rejectNickname, setDraft } from '@/features/auth/signup-draft';
-import { useAuth } from '@/features/auth/use-session';
+import { recheckSession, useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
+  // 가입 단계는 웹에서 오른쪽에서 밀려 들어온다 — 이 시험들은 앱(움직이지 않음)
+  useCanGoBack: () => false,
+  useIsFocused: () => true,
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
   // 화면에 들어올 때 한 번(이 테스트에서는 그리는 때)
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   Redirect: ({ href }: { href: string }) => {
@@ -17,7 +20,7 @@ jest.mock('expo-router', () => ({
     return <Text>{`redirect:${href}`}</Text>;
   },
 }));
-jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn() }));
+jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn(), recheckSession: jest.fn(async () => {}) }));
 
 const N = strings.nickname;
 const checkNickname = jest.fn();
@@ -123,7 +126,8 @@ describe('닉네임 단계', () => {
     await fireEvent.press(next());
     expect(await screen.findByText(N.taken)).toBeTruthy();
     expect(router.push).not.toHaveBeenCalled();
-    expect(getDraft()?.nickname).toBeUndefined();
+    // 적던 닉네임은 이어 하기에 남는다(결정 068) — 다음 단계로는 가지 않는다
+    expect(getDraft()?.nickname).toBe('새벽별');
   });
 
   it('쓸 수 있으면 앞뒤 공백을 뗀 닉네임을 초안에 두고 출생 정보 단계로', async () => {
@@ -178,4 +182,117 @@ describe('닉네임 단계', () => {
     expect(getDraft()?.avatar).toBe(3);
     expect(nextDisabled()).toBe(false);
   });
+});
+
+// 닉네임 중복 안내(결정 068 의 6): 치기를 멈추고 0.5초 뒤 서버에 한 번 묻고 안내 줄에 쓴다. 확인 중엔 다음이 흐리다
+describe('닉네임 단계: 멈추면 확인', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+  const settle = () => act(async () => jest.advanceTimersByTime(500));
+
+  it('규칙에 맞는 닉네임을 치고 멈추면 한 번 묻고, 쓸 수 있으면 초록 "사용할 수 있는 닉네임이에요"', async () => {
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽');
+    await act(async () => jest.advanceTimersByTime(300));
+    await fireEvent.changeText(input(), '새벽별');
+    await act(async () => jest.advanceTimersByTime(499));
+    expect(checkNickname).not.toHaveBeenCalled();
+    await settle();
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+    expect(checkNickname).toHaveBeenCalledWith('새벽별');
+    const ok = screen.getByText(N.available);
+    expect(StyleSheet.flatten(ok.props.style).color).toBe(Colors.success);
+    expect(nextDisabled()).toBe(false);
+    // 쓸 수 있다고 확인한 이름이면 다음에서 다시 묻지 않는다
+    await fireEvent.press(next());
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith('/signup/birth');
+  });
+
+  it('겹치면 빨강 "이미 쓰고 있는 닉네임이에요" 와 다음 꺼짐', async () => {
+    checkNickname.mockResolvedValue({ ok: true, data: { available: false } });
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await settle();
+    expect(N.taken).toBe('이미 쓰고 있는 닉네임이에요');
+    expect(StyleSheet.flatten(screen.getByText(N.taken).props.style).color).toBe(Colors.danger);
+    expect(nextDisabled()).toBe(true);
+  });
+
+  it('확인하는 동안은 다음이 흐리다. 규칙에 어긋나면 묻지 않는다', async () => {
+    checkNickname.mockImplementation(() => new Promise(() => {}));
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '별!');
+    await settle();
+    expect(checkNickname).not.toHaveBeenCalled();
+    await fireEvent.changeText(input(), '새벽별');
+    await settle();
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+    expect(nextDisabled()).toBe(true);
+  });
+});
+
+// 결정 068 의 1: 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 초안을 되돌리기 전에 화면이 먼저 뜬다 —
+// 확인 중에는 약관 단계로 돌려보내지 않고 기다렸다가, 되돌린 초안으로 그린다
+describe('닉네임 단계: 새로 고침 직후(세션 확인 중)', () => {
+  it('확인 중에는 돌려보내지 않고, 가입 중이 되면 되돌린 초안의 닉네임으로 그린다', async () => {
+    clearDraft();
+    (useAuth as jest.Mock).mockReturnValue({ status: 'checking', checkNickname });
+    const view = await render(<NicknameStep />);
+    expect(screen.queryByText(/^redirect:/)).toBeNull();
+    setDraft({ ...terms, nickname: '새벽별', avatar: 2 });
+    (useAuth as jest.Mock).mockReturnValue({ status: 'signingUp', checkNickname });
+    await view.rerender(<NicknameStep />);
+    expect(screen.getByDisplayValue('새벽별')).toBeTruthy();
+  });
+});
+
+// 결정 068 의 1: 적던 닉네임도 이어 하기에 남는다 — 치는 대로 초안에 쓴다(다음을 누르기 전에 나가도)
+it('치는 닉네임을 초안에 따라 쓴다', async () => {
+  await render(<NicknameStep />);
+  await fireEvent.changeText(input(), '새벽');
+  expect(getDraft()?.nickname).toBe('새벽');
+});
+
+// 리뷰 PR #57 수정 2: 첫 확인이 늦는 동안 바꾸고 멈추면 둘째 확인이 버려져 새 이름에 안내가 끝내 안 떴다
+describe('닉네임 단계: 늦은 확인', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('첫 확인이 0.5초보다 늦어도 바꾸고 멈추면 새 이름으로 다시 묻고, 늦게 온 옛 답은 버린다', async () => {
+    const pending: ((v: unknown) => void)[] = [];
+    checkNickname.mockImplementation(() => new Promise((r) => pending.push(r)));
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await act(async () => jest.advanceTimersByTime(500));
+    await fireEvent.changeText(input(), '새벽달');
+    await act(async () => jest.advanceTimersByTime(500));
+    expect(checkNickname).toHaveBeenCalledTimes(2);
+    expect(checkNickname).toHaveBeenLastCalledWith('새벽달');
+    await act(async () => pending[0]({ ok: true, data: { available: false } }));
+    expect(screen.queryByText(N.taken)).toBeNull();
+    await act(async () => pending[1]({ ok: true, data: { available: true } }));
+    expect(screen.getByText(N.available)).toBeTruthy();
+    expect(nextDisabled()).toBe(false);
+  });
+
+  it('뒤에 공백만 더해(다듬은 값이 같으면) 초록 · 빨강을 지우지 않는다', async () => {
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await act(async () => jest.advanceTimersByTime(500));
+    expect(screen.getByText(N.available)).toBeTruthy();
+    await fireEvent.changeText(input(), '새벽별 ');
+    await act(async () => jest.advanceTimersByTime(500));
+    expect(screen.getByText(N.available)).toBeTruthy();
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 리뷰 PR #57 제안 12: 서버에 닿지 못해 세션을 확인하지 못했는데(offline) 가입 주소로 열리면 "다음" 이 말없이 무시됐다 — 20-1
+it('세션을 확인하지 못했으면(offline) 가입 단계 대신 볼 게 없는 화면(20-1), 다시 시도는 세션을 다시 확인한다', async () => {
+  (useAuth as jest.Mock).mockReturnValue({ status: 'offline', checkNickname });
+  await render(<NicknameStep />);
+  expect(screen.getByText(strings.states.offlineEmpty.title)).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: strings.states.offlineEmpty.retry }));
+  expect(recheckSession).toHaveBeenCalledTimes(1);
 });

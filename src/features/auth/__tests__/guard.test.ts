@@ -78,3 +78,23 @@ describe('guardRedirect', () => {
     }
   });
 });
+
+// 가입 이어 하기(결정 068 의 1): 가입 중인데 가입 화면 밖이면 하던 단계로 보낸다
+describe('guardRedirect: 하던 가입 단계', () => {
+  it('하던 단계가 있으면 그 단계로, 없으면 약관 단계로', () => {
+    expect(guardRedirect('signingUp', undefined, true, undefined, 'nickname')).toBe('/signup/nickname');
+    expect(guardRedirect('signingUp', 'reading', true, undefined, 'birth')).toBe('/signup/birth');
+    expect(guardRedirect('signingUp', undefined, true, undefined, null)).toBe('/signup/terms');
+    expect(guardRedirect('signingUp', 'signup', true, 'nickname', 'birth')).toBeNull();
+  });
+});
+
+// 결정 068 의 4: 확인하지 못함(offline)이면 보내지도 가리지도 않는다 — 화면이 받아 둔 것 · 끊김 화면을 보인다
+describe('guard: offline', () => {
+  it('어디서든 그대로 두고 가리지 않는다', () => {
+    for (const first of [undefined, 'reading', 'login']) {
+      expect(guardRedirect('offline', first)).toBeNull();
+      expect(guardCovers('offline', first)).toBe(false);
+    }
+  });
+});

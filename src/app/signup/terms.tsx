@@ -17,7 +17,8 @@ import { Colors, LineWidth, Radius, Sizes, Spacing, StepLayout } from '@/constan
 import { strings } from '@/content/strings';
 import { FROM_SIGNUP } from '@/features/auth/signup-agree';
 import { clearDraft, draftAgreements, takeTermsRejection, writeAgreements, type Agreements } from '@/features/auth/signup-draft';
-import { SignupStep } from '@/features/auth/signup-step';
+import { SignupOffline, SignupStep } from '@/features/auth/signup-step';
+import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 
 const T = strings.terms;
@@ -34,7 +35,19 @@ const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '
 
 const NONE: Agreements = { terms: false, privacy: false, push: false, marketing: false };
 
+/**
+ * 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 가입(초안)을 되돌리기 전에 화면이 먼저 뜬다(결정 068) —
+ * 확인 중에는 그리지 않고(가드 가림막 · 스플래시가 가린다) 되돌린 초안으로 처음 그린다.
+ */
 export default function TermsStep() {
+  const { status } = useAuth();
+  if (status === 'checking') return null;
+  // 세션을 확인하지 못했으면(offline) 가입은 나아갈 수 없다 — 20-1(결정 068 의 4)
+  if (status === 'offline') return <SignupOffline />;
+  return <TermsStepScreen />;
+}
+
+function TermsStepScreen() {
   const { status, cancelSignup } = useAuth();
   // 초안이 있으면(닉네임 단계 · 약관 보기에서 돌아옴) 그 동의로, 없으면 모두 꺼짐
   const [agreed, setAgreed] = useState<Agreements>(draftAgreements);
@@ -51,6 +64,13 @@ export default function TermsStep() {
         // 약관 보기의 동의하기가 켠 항목을 다시 읽는다(체크를 바꿀 때마다 초안에 쓰므로 그 밖에는 같은 값이다)
       } else setAgreed(draftAgreements());
     }, []),
+  );
+
+  // 이어 하기(결정 068): 이 단계에 있다고 적는다(닉네임 단계에서 뒤로 돌아와도)
+  useFocusEffect(
+    useCallback(() => {
+      if (status === 'signingUp') markSignupStep('terms');
+    }, [status]),
   );
 
   // 가입을 마친 사람이 뒤로 가기로 돌아오면 홈으로(여기서 누른 뒤로가 로그아웃시키지 않게)

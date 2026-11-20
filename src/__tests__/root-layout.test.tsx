@@ -1,11 +1,23 @@
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, waitFor } from '@testing-library/react-native';
 import { router, useSegments } from 'expo-router';
+import type { ReactNode } from 'react';
 
 import RootLayout from '@/app/_layout';
 import { useSession } from '@/features/auth/use-session';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 
-jest.mock('expo-router', () => ({ Stack: () => null, useSegments: jest.fn(() => []), router: { replace: jest.fn() } }));
+// Stack.Screen 은 받은 화면 옵션을 mockScreen 에 남긴다(약관 글이 아래에서 올라오는지 본다)
+const mockScreen = jest.fn();
+jest.mock('expo-router', () => ({
+  Stack: Object.assign(({ children }: { children?: ReactNode }) => children ?? null, {
+    Screen: (props: unknown) => {
+      mockScreen(props);
+      return null;
+    },
+  }),
+  useSegments: jest.fn(() => []),
+  router: { replace: jest.fn() },
+}));
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() }));
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null })) }));
@@ -75,5 +87,23 @@ describe('로그인 전 가드(결정 034)', () => {
     await render(<RootLayout />);
     expect(screen.queryByTestId('guard-cover')).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+});
+
+// 약관 글 네 화면은 아래에서 올라오는 창(결정 067 의 1). 가입 중 "보기" 와 마이가 같은 화면을 연다
+describe('약관 글 화면의 열림', () => {
+  beforeEach(() => {
+    mockSegments.mockReturnValue([]);
+    mockUseSession.mockReturnValue(session('signedIn'));
+  });
+
+  it('이용약관 · 처리방침 · 개인정보 수집 · 이용 동의 · 마케팅 수신 동의 약관을 아래에서 올라오게 연다', async () => {
+    await render(<RootLayout />);
+    await waitFor(() => {
+      const options = Object.fromEntries(mockScreen.mock.calls.map(([p]) => [p.name, p.options]));
+      for (const name of ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing']) {
+        expect(options[name]).toMatchObject({ animation: 'slide_from_bottom', contentStyle: { backgroundColor: '#0D0E12' } });
+      }
+    });
   });
 });

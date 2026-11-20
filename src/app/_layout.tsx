@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useSlideUpScreenOptions } from '@/components/slide-up';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { useSession } from '@/features/auth/use-session';
@@ -11,6 +12,9 @@ import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { UpdateGate } from '@/features/update/update-gate';
 
 SplashScreen.preventAutoHideAsync();
+
+/** 아래에서 올라오는 창으로 여는 약관 글(결정 067 의 1). 가입 약관 단계의 "보기" 와 마이가 같은 화면을 연다 */
+const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];
 
 export default function RootLayout() {
   // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
@@ -23,6 +27,7 @@ export default function RootLayout() {
   // 로그인 전 가드(결정 034): 로그인 · 가입 · 공유 페이지 말고는 로그인해야 들어온다. 보내는 동안과 확인 중에는 화면을 가린다.
   const target = guardRedirect(session.status, first, introSeen, second);
   const covered = guardCovers(session.status, first, introSeen, second);
+  const slideUp = useSlideUpScreenOptions();
   useEffect(() => {
     if (target) router.replace(target);
   }, [target]);
@@ -52,7 +57,11 @@ export default function RootLayout() {
   // 최신 버전보다 낮으면 로그인한 홈에서만 한 번 권한다 — 로그인 전 · 가입 중에는 묻지 않는다(결정 059).
   return (
     <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
+        {SLIDE_UP_ROUTES.map((name) => (
+          <Stack.Screen key={name} name={name} options={slideUp} />
+        ))}
+      </Stack>
       {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
     </UpdateGate>
   );

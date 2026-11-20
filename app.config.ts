@@ -33,7 +33,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // 카카오 안드로이드 SDK 는 카카오의 Maven 저장소에 있다(라이브러리 문서의 Expo 설정).
     plugins.push(['expo-build-properties', { android: { extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'] } }]);
   }
-  const app: ExpoConfig = { ...config, name: config.name ?? '별명', slug: config.slug ?? 'byeolmyeong', plugins };
+  // 안드로이드 푸시는 FCM 설정 파일이 있어야 토큰을 받는다(결정 057). 파일은 저장소에 두지 않고 EAS 파일 환경 변수 GOOGLE_SERVICES_JSON 이
+  // 빌드 때 경로를 준다(운영 · 테스트 두 패키지가 들어 있는 파일). 없으면 안드로이드 빌드는 푸시 없이 만들어진다.
+  const googleServicesFile = process.env.GOOGLE_SERVICES_JSON?.trim();
+  const android = googleServicesFile ? { ...config.android, googleServicesFile } : config.android;
+  const app: ExpoConfig = { ...config, name: config.name ?? '별명', slug: config.slug ?? 'byeolmyeong', plugins, android };
   if (!testVariant) return app;
   return {
     ...app,

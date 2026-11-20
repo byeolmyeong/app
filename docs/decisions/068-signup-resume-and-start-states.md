@@ -3,7 +3,7 @@ type: decision
 tags: [가입, 이어 하기, 가입권, 스플래시, 홈 첫 데이터, 공유 페이지, 연결 끊김, 웹 세션]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 072-web-server-down-load-fail.md (4 의 띠 · 20-1 부분 — 인터넷은 되는데 서버만 닿지 않으면 19)
 ---
 # 068. 가입 중간에 나간 사람은 가입권 수명 동안 하던 단계부터 잇고, 스플래시는 홈의 첫 데이터까지 · 공유 페이지에는 없고, 웹이 서버에 닿지 못하면 로그인으로 보내지 않는다
 

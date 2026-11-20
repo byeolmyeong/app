@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { AccessibilityInfo, Animated } from 'react-native';
 
+import { Motion } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ReasonLine } from '@/features/reason/reason-line';
 import type { Reason } from '@/lib/api';
@@ -42,6 +44,30 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     expect(screen.getByText(R.seeOnMap)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: `${R.label}, ${TEXT}` }));
     expect(screen.queryByTestId('reason-wheel')).toBeNull();
+  });
+
+  it('펼치고 접을 때 높이 · 흐림 · 꺾쇠가 함께 움직인다(열기 300 · 닫기 220) — 접는 움직임이 끝나면 내용을 치운다', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const timing = jest.spyOn(Animated, 'timing');
+    await render(<ReasonLine reason={sun} chart={fixtures.chart} />);
+    await act(async () => {});
+    await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
+    expect(timing).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ toValue: 1, duration: Motion.openMs }));
+    expect(screen.getByTestId('reason-body')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
+    expect(timing).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ toValue: 0, duration: Motion.closeMs }));
+    expect(screen.queryByTestId('reason-body')).toBeNull();
+    timing.mockRestore();
+  });
+
+  it('기기의 동작 줄이기가 켜져 있으면 바로 바뀐다(움직이지 않는다)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    const timing = jest.spyOn(Animated, 'timing');
+    await render(<ReasonLine reason={sun} chart={fixtures.chart} />);
+    await act(async () => {});
+    await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
+    expect(timing).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ duration: 0 }));
+    timing.mockRestore();
   });
 
   it('물음표는 말풍선이고 한 번에 하나만 열린다(12-2 해 · 12-3 하우스 — 하늘 지도의 팁과 같은 글)', async () => {

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import TimingScreen from '@/app/timing';
 import { strings } from '@/content/strings';
@@ -40,6 +41,8 @@ const storeReport = (r = report) => AsyncStorage.setItem(TIMING_REPORT_STORAGE_K
 const tick = (ms = TIMING_REPORT_POLL_MS) => act(async () => void (await jest.advanceTimersByTimeAsync(ms)));
 const bottomTabs = () => screen.queryAllByRole('tab').filter((t) => !t.props.testID?.startsWith('timing-chip-'));
 const chip = (c: string) => screen.getByTestId(`timing-chip-${c}`);
+/** 칩 줄의 자리: 칩 줄 칸의 위 여백(칩 줄 위에는 맨 위 카드 · 시각 모름 줄뿐이고 둘은 칩마다 같다) */
+const chipsTop = () => StyleSheet.flatten(screen.getByTestId('timing-chips-slot').props.style)?.marginTop;
 type NetListener = (state: { isConnected: boolean; isInternetReachable: boolean }) => void;
 let netListener: NetListener | null = null;
 const goOffline = () => act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
@@ -81,16 +84,61 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
   });
 
-  it('잠긴 칩을 누르면 그 자리에 흐린 미리보기와 자물쇠 카드(14 잠긴 칩), 그 카드에서 받기를 누를 수 있다', async () => {
+  it('잠긴 칩을 누르면 그 자리에 자물쇠 카드만(뒤에 비치는 뼈대 없이 — 소유자 지적 2), 그 카드에서 받기를 누를 수 있다', async () => {
     await render(<TimingScreen />);
     await fireEvent.press(await screen.findByTestId('timing-chip-year'));
     expect(screen.getByTestId('timing-locked')).toBeTruthy();
+    expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
     expect(screen.getByText(T.locked.year.title)).toBeTruthy();
     expect(chip('year').props.accessibilityState).toMatchObject({ selected: true });
     await fireEvent.press(chip('life'));
     expect(screen.getByText(T.locked.life.title)).toBeTruthy();
     await fireEvent.press(within(screen.getByTestId('timing-locked')).getByRole('button', { name: T.detail.request }));
     expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('칩 줄은 이번 달 · 올해 · 인생에서 같은 자리 — 잠긴 칩을 골라도 내려가지 않는다(이번 달 기준, 소유자 지적 1)', async () => {
+    await render(<TimingScreen />);
+    await screen.findByTestId('timing-detail-card');
+    const top = chipsTop();
+    expect(top).toBeDefined();
+    await fireEvent.press(chip('year'));
+    expect(chipsTop()).toBe(top);
+    await fireEvent.press(chip('life'));
+    expect(chipsTop()).toBe(top);
+  });
+
+  it('받기 전인 것을 기기가 기억하면 뼈대 없이 곧바로 받기 화면 — 이번 달이 늦으면 달력 자리만 0.3초 뒤 뼈대(소유자 지적 3)', async () => {
+    jest.useFakeTimers();
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'NONE' }));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    mockApi.getMonth.mockReturnValue(new Promise(() => {}));
+    await render(<TimingScreen />);
+    await tick(0);
+    expect(screen.getByTestId('timing-detail-card')).toBeTruthy();
+    expect(screen.getByTestId('timing-chips')).toBeTruthy();
+    expect(screen.queryByTestId('timing-skeleton')).toBeNull();
+    // 0.3초 전에는 달력 자리만 비워 둔다(달이 와도 아래 카드가 밀리지 않게)
+    expect(screen.queryByTestId('timing-month-skeleton')).toBeNull();
+    expect(screen.getByTestId('timing-month-pending', { includeHiddenElements: true })).toBeTruthy();
+    await tick(400);
+    expect(screen.queryByTestId('timing-skeleton')).toBeNull();
+    expect(screen.getByTestId('timing-month-skeleton')).toBeTruthy();
+    expect(screen.getByTestId('timing-detail-card')).toBeTruthy();
+    // 받기는 곧바로 누를 수 있다(뒤의 확인을 기다리지 않는다)
+    await fireEvent.press(screen.getByRole('button', { name: T.detail.request }));
+    expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('쓰는 중인 것을 기기가 기억하면 곧바로 쓰는 중(머리 · 아래 탭이 있는 틀 안)', async () => {
+    jest.useFakeTimers();
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'WRITING' }));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    await render(<TimingScreen />);
+    await tick(0);
+    expect(screen.getByText(T.making.title)).toBeTruthy();
+    expect(bottomTabs()).toHaveLength(4);
+    expect(screen.queryByTestId('timing-skeleton')).toBeNull();
   });
 
   it('받기 → 쓰는 중(14-7: 머리 · 아래 탭 없이 별명 짓는 중과 같은 그림 · 시기 문구) → 5초마다 확인 → 다 쓰면 올해 칩', async () => {
@@ -209,6 +257,18 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
 });
 
 describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)', () => {
+  it('받은 뒤에도 칩 줄은 세 칩에서 같은 자리(소유자 지적 1)', async () => {
+    await storeReport();
+    await render(<TimingScreen />);
+    await screen.findByTestId('timing-now-card');
+    const top = chipsTop();
+    expect(top).toBeDefined();
+    await fireEvent.press(chip('month'));
+    expect(chipsTop()).toBe(top);
+    await fireEvent.press(chip('life'));
+    expect(chipsTop()).toBe(top);
+  });
+
   it('맨 위 "지금 나의 시기"(대표 구간 이름 · 영역 · 기간 · 한 줄) · 처음 고른 칩은 올해 · 누르면 시기 자세히', async () => {
     await storeReport();
     mockApi.getTimingReport.mockResolvedValue(done);

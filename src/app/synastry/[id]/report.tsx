@@ -37,7 +37,7 @@ export default function SynastryReportScreen() {
   const remembered = synastryId ? (freshOf(synastryId)?.birth ?? null) : null;
   // 쓰는 중이거나 방금 다 쓰인 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
   useGenerationBusy(state.status === 'writing', state.status === 'done');
-  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
 
   const reenter = (
     <PartnerBirthForm

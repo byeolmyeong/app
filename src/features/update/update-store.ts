@@ -62,6 +62,18 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
   /** lifts: 이 확인의 답으로 503 표시를 풀어도 되는가(503 알림이 스스로 부른 확인은 풀지 않는다) */
   let checking: { promise: Promise<void>; lifts: boolean } | null = null;
   const listeners = new Set<() => void>();
+  /**
+   * 첫 확인으로 권할지가 정해졌는가(받지 못했어도 정해진 것으로 본다). 홈의 다른 권유(알림 받기, 결정 066)가 업데이트 권유와 같이 뜨지 않게
+   * 이것을 기다린다. 기기에 적어 둔 "권한 최신 버전" 을 읽어야 하면 그것까지
+   */
+  let settled = false;
+  /** 정해짐은 따로 알린다(화면 판정의 구독자에게 한 번 더 알리지 않게) */
+  const settledListeners = new Set<() => void>();
+  function settle() {
+    if (settled) return;
+    settled = true;
+    settledListeners.forEach((listener) => listener());
+  }
 
   /** 한 번 막으면 바쁨이 새로 등록돼도 풀지 않는다(막는 화면이 떠 있으면 다른 화면은 없다) */
   function emit() {
@@ -97,8 +109,9 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
       (value) => {
         asked = value;
         emit();
+        settle();
       },
-      () => {},
+      () => settle(),
     );
   }
 
@@ -128,6 +141,8 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
       emit();
     })().finally(() => {
       checking = null;
+      // 읽을 "권한 최신 버전" 이 없으면(권할 일이 없거나 받지 못함) 여기서 정해진다
+      if (!askedLoading) settle();
     });
     checking = { promise, lifts };
     return promise;
@@ -138,6 +153,15 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
 
     /** 권할 최신 버전(결정 059). 권하지 않으면 null. 같은 subscribe 로 바뀜을 알린다 */
     getSuggestion: () => suggestion,
+
+    /** 첫 확인으로 권할지가 정해졌는가(subscribeSettled 로 바뀜을 알린다) */
+    getSettled: () => settled,
+    subscribeSettled(listener: () => void) {
+      settledListeners.add(listener);
+      return () => {
+        settledListeners.delete(listener);
+      };
+    },
 
     /** 권유 창을 닫았다("나중에" · "업데이트"). 이 최신 버전은 다시 권하지 않고, 기기에 적는다(적지 못해도 이번 실행에서는 권하지 않는다) */
     dismissSuggestion() {

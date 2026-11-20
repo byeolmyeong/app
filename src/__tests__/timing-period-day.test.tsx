@@ -8,6 +8,7 @@ import TimingPeriodScreen from '@/app/timing/period';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { koreaToday } from '@/features/timing/dates';
+import { DAY_SKY_MAX_WAIT_MS } from '@/features/timing/use-day-sky';
 import { TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { api, type ApiResult, type DaySky } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -109,7 +110,7 @@ describe('시기 자세히 /timing/period(결정 049 의 5, 캔버스 14-3)', ()
 });
 
 describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 14-4)', () => {
-  it('0.3초가 넘으면 다 그려질 배치의 뼈대(아래 탭과 함께), 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리 · 뒤로만, 아래 탭 없음) → 글(날짜 · 요일 · 제목 · 흐름 셋 · 이유 · 실천 셋)과 아래 탭', async () => {
+  it('0.3초가 넘으면 다 그려질 배치의 뼈대(아래 탭과 함께), 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리 · 아래 탭 없이 — 별명 짓는 중처럼, 소유자 지적 5) → 글(날짜 · 요일 · 제목 · 흐름 셋 · 이유 · 실천 셋)과 아래 탭', async () => {
     jest.useFakeTimers();
     // 그날(11월 21일)이 기기의 오늘이 아니게 — 오늘이면 이유가 "오늘" 로 시작한다(아래 시험)
     jest.setSystemTime(new Date('2026-11-19T12:00:00+09:00'));
@@ -124,8 +125,9 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     expect(tabs()).toHaveLength(4);
     await tick(3000);
     expect(screen.getByText(T.day.making.title)).toBeTruthy();
-    expect(screen.getByText('11월 21일의 하늘')).toBeTruthy();
-    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    // 만드는 중에는 위 머리(제목 · 뒤로 가기)가 없다 — 뒤로는 기기의 뒤로 · 밀어서 돌아가기로
+    expect(screen.queryByText('11월 21일의 하늘')).toBeNull();
+    expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
     expect(tabs()).toHaveLength(0);
     expect(mockApi.postDaySky).toHaveBeenCalledWith('2026-11-21');
     await act(async () => resolve({ ok: true, data: day }));
@@ -140,6 +142,25 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     // 머리 오른쪽의 공유 아이콘(그날의 하늘 카드, 결정 053 — 보드 14-4) — 여는 것만으로는 공유를 만들지 않는다
     expect(screen.getByRole('button', { name: strings.share.open })).toBeTruthy();
     expect(mockApi.createShare).not.toHaveBeenCalled();
+  });
+
+  it('만드는 중이 3분을 넘으면 기다리지 않고 못 썼을 때(머리 · 뒤로가 돌아온다) — 다시 쓰기는 다시 부른다(갇히지 않게)', async () => {
+    jest.useFakeTimers();
+    expect(DAY_SKY_MAX_WAIT_MS).toBe(180_000);
+    mockParams.mockReturnValue({ date: '2026-11-21' });
+    mockApi.postDaySky.mockReturnValueOnce(new Promise(() => {}));
+    await render(<TimingDayScreen />);
+    await tick(3000);
+    expect(screen.getByText(T.day.making.title)).toBeTruthy();
+    await tick(DAY_SKY_MAX_WAIT_MS - 3000 - 1);
+    expect(screen.getByText(T.day.making.title)).toBeTruthy();
+    await tick(1);
+    expect(screen.getByText(T.day.fail)).toBeTruthy();
+    expect(screen.getByText('11월 21일의 하늘')).toBeTruthy();
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: true, data: day });
+    await fireEvent.press(screen.getByRole('button', { name: strings.states.writeFail.retry }));
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
   });
 
   it('공유 아이콘을 누르면 그날의 하늘 카드 시트(제목 없음) — 열 때 그 날짜로 한 번 만든다(결정 053 · A7-5)', async () => {

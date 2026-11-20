@@ -351,6 +351,22 @@ describe('api: 푸시 기기 등록 · 해제', () => {
   });
 });
 
+// 마이 › 닉네임 바꾸기의 확인(서버 결정 051)
+describe('api: 내 닉네임 확인', () => {
+  it('GET /account/nickname-check 에 닉네임을 URL 인코딩해 묻고 { available } 를 받는다', async () => {
+    const fetchFn = fakeFetch(200, { available: false });
+    const res = await createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }).checkMyNickname('별 빛');
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/account/nickname-check?nickname=%EB%B3%84%20%EB%B9%9B`);
+    expect(initOf(fetchFn).method).toBe('GET');
+    expect(res).toEqual({ ok: true, data: { available: false } });
+  });
+
+  it('400 INVALID_NICKNAME 을 code 로 돌려준다', async () => {
+    const res = await createApi({ baseUrl: BASE, fetchFn: fakeFetch(400, { error: 'INVALID_NICKNAME' }), getToken: () => 't' }).checkMyNickname('x');
+    expect(res).toEqual({ ok: false, error: 'SERVER', status: 400, code: 'INVALID_NICKNAME' });
+  });
+});
+
 // 공유 카드 미리 받기(서버 결정 051)
 describe('api: 공유 카드 미리 받기', () => {
   it('POST /shares/preview 에 POST /shares 와 같은 몸통을 보내고 card 만 받는다', async () => {

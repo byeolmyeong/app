@@ -7,7 +7,7 @@ import { Colors, FontWeight, LineWidth, Spacing } from '@/constants/theme';
 export type DataTableColumn = {
   key: string;
   title?: string;
-  align?: 'left' | 'right';
+  align?: 'left' | 'center' | 'right';
   /** 칸 너비 비율. 기본 1 */
   flex?: number;
   /** 이 칸의 글씨를 굵게 */
@@ -45,7 +45,7 @@ export function DataTable({ columns, rows, header = true }: DataTableProps) {
                 {cell}
               </Txt>
             ) : (
-              <View key={c.key} style={{ flex: c.flex ?? 1 }}>
+              <View key={c.key} style={{ flex: c.flex ?? 1, alignItems: c.align === 'center' ? 'center' : undefined }}>
                 {cell}
               </View>
             );

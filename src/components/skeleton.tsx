@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '@/components/byeoli';
@@ -16,25 +16,13 @@ export type SkeletonProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** 안의 막대가 멈춰 있어야 하는가(SkeletonStill) */
-const StillContext = createContext(false);
-
-/**
- * 안의 뼈대 막대를 멈춘다(빛이 오가지 않는 회색) — 불러오는 중이 아닌 자리에 뼈대 모양만 빌릴 때(시기 탭 잠긴 칩의 흐린 미리보기, 리뷰 #63).
- * 반짝이면 "불러오는 중" 으로 읽힌다.
- */
-export function SkeletonStill({ children }: { children: ReactNode }) {
-  return <StillContext.Provider value>{children}</StillContext.Provider>;
-}
-
 /**
  * 뼈대 막대 하나(보드 24 · 24-1): 회색 바탕 위로 옅은 빛이 1.4초에 한 번 오간다(동작 줄이기면 멈춘다).
  * 모서리는 8(높이가 낮으면 높이의 반). 화면 읽기에는 숨긴다 — 화면의 뼈대를 묶은 SkeletonGroup 이 "불러오는 중이에요" 를 한 번 읽는다.
  * 언제 그릴지는 useLoadingPhase 가 정한다(0.3초가 넘었을 때만).
  */
 export function Skeleton({ width, height, pill = false, style }: SkeletonProps) {
-  const reduce = useReduceMotion();
-  const still = useContext(StillContext) || reduce;
+  const still = useReduceMotion();
   const [shine] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (still) return;

@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, useWindowDimensions, type TextStyle } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { BackChevron } from '@/components/back-chevron';
 import { Sheet } from '@/components/sheet';
 import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
@@ -100,9 +101,7 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
             accessibilityLabel={strings.common.backLabel}
             onPress={() => setRegion(null)}
             style={styles.back}>
-            <Svg width={Sizes.sheetBackIcon} height={Sizes.sheetBackIcon} viewBox="0 0 24 24" fill="none">
-              <Path d="M15 5l-7 7 7 7" stroke={Colors.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
+            <BackChevron size={Sizes.sheetBackIcon} />
           </Pressable>
         ) : null}
         <Txt variant="sheetTitle" accessibilityRole="header" style={styles.title}>

@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
+import { BackChevron } from '@/components/back-chevron';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, ScreenPaddingX, Sizes, Spacing, StepLayout } from '@/constants/theme';
+import { FontWeight, ScreenPaddingX, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 export type NavBarProps = {
@@ -30,9 +30,7 @@ export function NavBar({ title, onBack, left, chevron = false }: NavBarProps) {
             style={[noOutline, chevron && styles.chevron]}
           >
             {chevron ? (
-              <Svg width={StepLayout.backIcon} height={StepLayout.backIcon} viewBox="0 0 24 24" fill="none">
-                <Path d="M15 5l-7 7 7 7" stroke={Colors.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
+              <BackChevron size={StepLayout.backIcon} />
             ) : (
               <Txt variant="body" color="gray">
                 {strings.common.back}

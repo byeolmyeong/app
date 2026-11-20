@@ -6,8 +6,8 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
+import { BackChevron } from '@/components/back-chevron';
 import { reduceMotionNow } from '@/components/byeoli';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
@@ -96,9 +96,7 @@ export function SignupStep({ step, onBack, title, guide, footer, children }: Sig
             accessibilityLabel={strings.common.backLabel}
             onPress={onBack}
             style={styles.back}>
-            <Svg width={L.backIcon} height={L.backIcon} viewBox="0 0 24 24" fill="none">
-              <Path d="M15 5l-7 7 7 7" stroke={Colors.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
+            <BackChevron size={L.backIcon} />
           </Pressable>
         </View>
         <View accessible accessibilityLabel={`${step}${strings.steps.separator}${SIGNUP_STEPS}`} style={styles.progress}>

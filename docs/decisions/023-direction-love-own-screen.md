@@ -1,9 +1,9 @@
 ---
 type: decision
 tags: [방향성 제시, direction, 이성, 화면 구성, 요약 해석, 홈]
-status: active
+status: superseded
 last_reviewed: 2026-11-12
-superseded_by:
+superseded_by: 048-me-tab-and-me-report.md
 ---
 # 023. 방향성 "이성" 은 따로 화면(`/direction`)으로 두고, 요약 해석 아래에는 들어가는 줄만 둔다
 

@@ -1,9 +1,9 @@
 ---
 type: decision
 tags: [시기, 변곡점, 심층 리포트, 타임라인, 지금, 올해, 내년, 지나온 시기]
-status: active
+status: superseded
 last_reviewed: 2026-11-13
-superseded_by:
+superseded_by: 049-timing-tab-v2.md
 ---
 # 031. 시기 탭을 지금 · 올해 · 내년 · 앞으로 · 지나온 시기의 네 부분으로 나눈다
 

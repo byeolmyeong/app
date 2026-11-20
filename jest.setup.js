@@ -23,3 +23,10 @@ jest.mock('@react-native-community/netinfo', () => require('@react-native-commun
 // 기기 저장소(AsyncStorage)도 네이티브 모듈이라 없으면 읽어 들이는 순간 던진다. 루트의 문(UpdateGate)이 업데이트를 권한 버전을 적어 두므로
 // (결정 059) 라이브러리가 준 가짜(메모리)를 모든 시험에 깐다. 파일마다 jest.mock 으로 같은 가짜를 다시 깔아도 된다.
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+
+// 소리(expo-audio)도 네이티브 모듈이라 jest 에서는 읽어 들이는 순간 던진다. 쓰는 중 화면이 기다릴 때 음악을 청하므로(결정 062)
+// 소리를 내지 않는 가짜를 모든 시험에 깐다. 음악 줄 자체의 시험(features/audio)은 그 파일에서 다시 깔아 틀고 멈춤을 본다.
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: jest.fn(() => ({ volume: 1, loop: false, play: jest.fn(), pause: jest.fn(), seekTo: jest.fn(async () => {}) })),
+  setAudioModeAsync: jest.fn(async () => {}),
+}));

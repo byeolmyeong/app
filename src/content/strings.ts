@@ -160,6 +160,7 @@ export const strings = {
     /** 카드의 출생 정보 한 줄: "1999년 3월 8일 · 오후 2:10 · 서울 강남구", 시각을 모르면 "1999년 3월 8일 · 시각 모름" */
     birthLine: { year: '년 ', month: '월 ', day: '일', timeUnknown: '시각 모름' },
     rows: {
+      music: '음악',
       faq: '자주 묻는 질문',
       inquiry: '문의하기',
       terms: '이용약관',
@@ -181,6 +182,8 @@ export const strings = {
       avatarSaved: '프로필을 바꿨어요',
       saveFailed: '바꾸지 못했어요. 잠시 뒤 다시 해 주세요',
     },
+    /** 음악(결정 062 의 3, 보드 16-11): 스위치 셋, 처음엔 모두 켬. 기기에만 둔다 */
+    music: { title: '음악', background: '배경 음악', opening: '앱 열 때 음악', waiting: '기다릴 때 음악' },
     /** 로그아웃 가운데 창(보드 16-9) */
     logout: { title: '로그아웃할까요?', body: '다시 로그인하면 별명과 풀이를\n그대로 볼 수 있어요.', cancel: '취소', confirm: '로그아웃' },
     /** 닉네임 바꾸기(보드 16-5): 칸 위 이름표는 없다(화면 제목과 겹친다). 규칙 · 오류 문구는 가입 단계(strings.nickname)와 같다 */

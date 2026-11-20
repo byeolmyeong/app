@@ -89,6 +89,49 @@ export function useStoredReading(input: BirthInput | null): { checked: boolean; 
   return stored && stored.key === key ? { checked: true, reading: stored.reading } : { checked: false, reading: null };
 }
 
+/** 홈 별명 카드에 쓰는 받아 둔 풀이의 한 줄 별명과 만든 때 */
+export type StoredHeadline = { headline: string; createdAt: string | null };
+
+/**
+ * 이 출생 정보로 받아 둔 풀이의 한 줄 별명(홈 별명 카드 — 결정 047). 서버를 부르지 않는다.
+ * 옛 모양(근거 구조가 없는 요약 해석 — 결정 048 의 8 로 글 화면은 다시 받는다)이어도 한 줄 별명은 그대로 보인다:
+ * 서버에는 다시 짓지 않고 돌려줄 길(GET)이 없고 `POST /readings` 는 옛 글만 있는 계정이면 새로 지으므로, 홈은 부르지 않고
+ * 기기에 있는 별명을 쓴다(업데이트 직후 "아직 별명을 짓지 않았어요" 가 틀리게 보이지 않게 — PR #49 리뷰). 나 · 내 별명을 열면 새 모양으로 바뀐다.
+ */
+async function loadHeadline(key: string): Promise<StoredHeadline | null> {
+  try {
+    const raw = await AsyncStorage.getItem(READING_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const stored = parsed as Record<string, unknown>;
+    const reading = stored.reading;
+    if (stored.key !== key || typeof reading !== 'object' || reading === null) return null;
+    const { headline, createdAt } = reading as Record<string, unknown>;
+    if (typeof headline !== 'string' || headline.length === 0) return null;
+    return { headline, createdAt: typeof createdAt === 'string' ? createdAt : null };
+  } catch {
+    return null;
+  }
+}
+
+/** `useStoredReading` 과 같은 꼴 — `checked` 는 기기를 다 찾아봤는가, `stored` 는 찾은 별명(없으면 null) */
+export function useStoredHeadline(input: BirthInput | null): { checked: boolean; stored: StoredHeadline | null } {
+  const key = input ? keyOf(input) : null;
+  const [found, setFound] = useState<{ key: string; stored: StoredHeadline | null } | null>(null);
+  useEffect(() => {
+    if (key === null) return;
+    let alive = true;
+    loadHeadline(key).then((stored) => {
+      if (alive) setFound({ key, stored });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+  return found && found.key === key ? { checked: true, stored: found.stored } : { checked: false, stored: null };
+}
+
 /**
  * 요약 해석. input 이 null 이면(출생 정보·세션을 아직 읽는 중) 요청하지 않고 생성 중으로 둔다.
  * retry 는 실패했을 때 사용자가 누르는 "다시 시도" 다.

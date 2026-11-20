@@ -134,7 +134,11 @@ export function GoogleLoginButton({ onCredential, onError, disabled = false, loa
         recent={recent}
         focused={focused}
       />
-      <View ref={overlay} testID="google-gis-overlay" pointerEvents={blocked || !ready ? 'none' : 'auto'} style={styles.overlay}>
+      <View
+        ref={overlay}
+        testID="google-gis-overlay"
+        pointerEvents={blocked || !ready ? 'none' : 'auto'}
+        style={[styles.overlay, blocked || !ready ? styles.idle : styles.pointer]}>
         <View ref={container} testID="google-gis" style={[styles.gis, cover]} />
       </View>
       {/* 우리 모양(배지 포함)은 화면 읽기에서 숨기므로 "최근 로그인" 은 화면 읽기만 읽는 글로 따로 알린다(결정 068 의 5) */}
@@ -149,4 +153,7 @@ const styles = StyleSheet.create({
   gis: { position: 'absolute' },
   /** 화면에는 보이지 않고 화면 읽기만 읽는다 */
   readerOnly: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
+  /** 웹 커서: 누를 수 있을 때만 손가락(GIS iframe 안은 구글이 정한다) */
+  pointer: { cursor: 'pointer' },
+  idle: { cursor: 'default' },
 });

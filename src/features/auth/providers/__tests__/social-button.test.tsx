@@ -108,3 +108,17 @@ describe('공급자 버튼: 기다리는 중', () => {
     expect(screen.getByText('Kakao로 로그인')).toBeTruthy();
   });
 });
+
+// 웹 커서(소유자: 버튼 위 손가락, 글자 위 I 커서 없음): 버튼 전체가 누름 대상이고 글자는 고를 수 없다
+describe('공급자 버튼: 커서 · 글자 선택', () => {
+  it('버튼은 손가락 커서 · 글자 선택 없음, 글자는 선택 없음 · 누름을 버튼에 넘긴다', async () => {
+    await render(<SocialButton provider="KAKAO" label="Kakao로 로그인" onPress={jest.fn()} />);
+    expect(flat('social-button-KAKAO')).toMatchObject({ cursor: 'pointer', userSelect: 'none' });
+    expect(StyleSheet.flatten(screen.getByText('Kakao로 로그인').props.style)).toMatchObject({ userSelect: 'none', pointerEvents: 'none' });
+  });
+
+  it('누를 수 없으면(흐림 · 기다리는 중) 손가락이 아니다', async () => {
+    await render(<SocialButton provider="APPLE" label="Apple로 로그인" onPress={jest.fn()} disabled />);
+    expect(flat('social-button-APPLE').cursor).toBe('default');
+  });
+});

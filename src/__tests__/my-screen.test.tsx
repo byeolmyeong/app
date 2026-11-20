@@ -31,7 +31,7 @@ jest.mock('@/lib/api', () => ({
 const mockApi = api as jest.Mocked<typeof api>;
 const M = strings.my;
 const R = M.rows;
-const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 const profile = { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } };
 type Profile = { date: string; time: string | null; place: { id: number; name: string } | null };
 /** 그 출생 정보로 받아 둔 풀이를 기기에 넣는다(use-reading 의 열쇠: 날짜 · 시각 · 곳) */
@@ -79,6 +79,16 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.queryByText(/별명을 받은 지/)).toBeNull();
   });
 
+  it('업데이트 직후: 기기에 옛 모양(근거 구조 없음 · 보완점 3)으로 받아 둔 풀이도 한 줄 별명은 그대로 보인다(리뷰 #49)', async () => {
+    const unknown = { date: '1999-03-08', time: null, place: null };
+    await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });
+    const old = { headline: '옛 요약 해석의 한 줄 별명', sections: [{ title: 't', body: 'b', basis: ['태양'] }], strengths: ['a', 'b', 'c'], cautions: ['a', 'b', 'c'] };
+    await storeReading(old, unknown);
+    await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    expect(await card.findByText(old.headline)).toBeTruthy();
+  });
+
   it('출생 정보 · 풀이가 기기에 없으면 카드는 닉네임과 버튼만, 줄들과 아래 탭은 그대로 보인다', async () => {
     await render(<MyScreen />);
     const card = within(await screen.findByTestId('my-card'));
@@ -120,11 +130,9 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
 
   it.each([
     [M.card.account, '/my/account'],
-    // 새 출생 정보 바꾸기(/my/birth)는 서버 S⑨ 뒤 — 그 전에는 지금 화면
-    [M.card.birth, '/birth'],
+    [M.card.birth, '/my/birth'],
     [R.faq, '/settings/faq'],
-    // 앱 안 문의(/my/inquiries)는 계획 A7-4 — 그 전에는 지금 화면
-    [R.inquiry, '/settings/inquiry'],
+    [R.inquiry, '/my/inquiries'],
     [R.terms, '/settings/terms'],
     [R.privacy, '/settings/privacy'],
   ])('"%s" 는 %s 로 간다', async (label, path) => {

@@ -5,7 +5,9 @@
  * - places.json: 서버의 국내 시·군·구 229곳 전체(서버 저장소 src/main/resources/places/kr-sigungu.csv 를 옮김).
  * - chart.json: 서버(계획 태스크 15)가 2000-06-15 21:00 · 서울특별시 마포구로 준 실제 응답이다(2026-11-11).
  * - chart-time-unknown.json: 같은 날짜·장소에 시각 null 로 받은 실제 응답. 하우스·상승점·중천·행운점·버텍스가 없다.
- * - reading.json: 글은 시안의 예시 문장이다.
+ * - reading.json: 글은 시안의 예시 문장이다. 요약 해석 v2 의 모양(문단마다 근거 구조 `reason` + 옮기는 동안 함께 오는 옛 낱말 `basis`, 보완점 2).
+ * - me-report.json: `GET /me-report` 의 다 쓴 나 탭 풀이(다섯 영역). 글은 시안 12-8~12-12 의 예시 문장이고, 근거 · 쓰인 별 · 일 방식 값은
+ *   chart.json(쌍둥이자리 해 · 6하우스에 별 셋)에 맞춰 쓴 예시다(서버가 계산한 값이 아니다).
  * - report.json: 심층 리포트의 네 영역(성격 · 관계 · 일 · 감정)과 시기(`timing`: 변곡점 넷, 구간 23개, 오늘은 2026-11-11).
  *   글과 날짜는 계약의 모양에 맞춰 쓴 예시다(서버가 계산한 값이 아니다).
  * - report-timing-time-unknown.json: 시각 모름일 때의 시기 예시. 운명적 만남 구간과 돈 영역이 없다. `reportTimeUnknown` 이 쓴다.
@@ -16,12 +18,15 @@
  * - faqs.json: `GET /faqs` 의 예시(결정 028). 지어낸 두 줄이다. 실제 질문과 답은 관리 화면이 주인이라 여기에 옮겨 두지 않는다.
  * - share-cards.json: 공유 카드 네 종류의 예시(`ShareCard`, 서버 결정 012). 랭킹은 이니셜(`ranking`)과 이름 그대로(`rankingNames`) 두 가지.
  * - direction-future.json · direction-synastry.json: `POST /directions` 의 미래 · 궁합 주제 응답 예시. 조언형이고 숫자가 없다.
+ * - inquiries.json: 내 문의 둘(앱이 읽은 모양 `InquiryItem`, 답 없는 것 · 답 있는 것). 글은 시안 16-8 의 예시 문장이다.
  * - 초대 응답은 계약에 모양이 다 적혀 있지 않아 아직 예시를 두지 않는다.
  */
 import type {
   Chart,
   Direction,
   Faq,
+  InquiryItem,
+  MeReport,
   Place,
   Reading,
   Report,
@@ -37,6 +42,8 @@ import directionFuture from './direction-future.json';
 import directionSynastry from './direction-synastry.json';
 import direction from './direction.json';
 import faqs from './faqs.json';
+import inquiries from './inquiries.json';
+import meReport from './me-report.json';
 import places from './places.json';
 import reading from './reading.json';
 import reportTimingTimeUnknown from './report-timing-time-unknown.json';
@@ -51,10 +58,12 @@ export const fixtures = {
   chart: chart as Chart,
   chartTimeUnknown: chartTimeUnknown as Chart,
   reading: reading as Reading,
+  meReport: meReport as MeReport,
   report: report as Report,
   reportTimeUnknown: { sections: report.sections, timing: reportTimingTimeUnknown as ReportTiming } as Report,
   direction: direction as Direction,
   faqs: faqs as Faq[],
+  inquiries: inquiries as InquiryItem[],
   directionFuture: directionFuture as Direction,
   directionSynastry: directionSynastry as Direction,
   synastry: synastry as Synastry,

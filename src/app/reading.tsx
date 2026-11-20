@@ -1,48 +1,46 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
 
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { OfflineBanner } from '@/components/offline-banner';
 import { StateScreen } from '@/components/state-screen';
-import { TextLink } from '@/components/text-link';
 import { useOnReconnect, useOnline } from '@/components/use-online';
-import { Txt } from '@/components/txt';
-import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { clearSignedUp, signedUpNickname } from '@/features/auth/signup-draft';
+import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { keyThree } from '@/features/chart/chart-rows';
-import { ChartPicture } from '@/features/chart/ChartWheel';
-import { KeyThree } from '@/features/chart/key-three';
+import { SignCard } from '@/features/chart/sign-card';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
-import { MakingView } from '@/features/reading/making-view';
+import { MakingView } from '@/components/making-view';
 import { ReadingView } from '@/features/reading/reading-view';
+import { clearPendingReveal, pendingReveal } from '@/features/reading/reveal-once';
 import { RevealView } from '@/features/reading/reveal-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
 import { ShareEntry } from '@/features/share/share-entry';
 import { useGenerationBusy } from '@/features/update/update-gate';
-import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
 const ST = strings.states;
 const MF = strings.making.fail;
 
 /**
- * 요약 해석: 서버가 쓴 글(총평 · 문단 · 강점 · 보완점)을 보여 준다. 차트는 여기서 "내 차트 보기" 로 연다.
- * 다시 생성은 없다(같은 차트 = 같은 글). 실패했을 때만 "다시 시도" 가 보인다.
- * 가입을 마치고 바로 와서(from=signup) 글이 다 지어지면 별명 공개(보드 10)를 한 번 보이고, "풀이 읽기" 로 글을 보인다(결정 044).
+ * 내 별명(결정 048 의 2, 보드 12 받은 뒤 · 12-1~12-3): 요약 해석의 전체 페이지 — 한 줄 별명 · 별자리 카드(셋 · 내 하늘 지도 보기) ·
+ * 문단마다 접힌 "이렇게 풀이한 이유" · 강점 · 보완점. 머리는 꺾쇠 뒤로 가기(나 탭 · 홈에서 들어온다)와 오른쪽 공유하기, 아래 탭은 나.
+ * 다시 생성은 없다(같은 차트 = 같은 글). 실패했을 때만 "다시 시도" 가 보인다. 면책 문구는 두지 않는다(결정 064).
+ * 가입을 마치고 바로 와서(from=signup) 글이 다 지어지면 별명 공개(보드 10)를 한 번 보이고, "풀이 읽기" 로 이 글을 보인다(결정 044 · 048).
  */
 export default function ReadingScreen() {
   const { ready } = useSession();
   // 가입을 마치고 바로 온 것인가(별명 짓는 중을 머리 없이, 보드 9). 홈 · 출생 정보 바꾸기에서 오면 뒤로 가기가 있다
   const { from } = useLocalSearchParams<{ from?: string }>();
-  // 별명 공개에 쓸 닉네임: 가입 직후에만 메모리에 있다(가입이 받은 값, 결정 044). 앱을 다시 켜거나 웹을 새로 고치면 없다
-  const [revealFor, setRevealFor] = useState(() => (from === 'signup' ? signedUpNickname() : null));
+  // 별명 공개에 쓸 닉네임: 가입 직후(가입이 받은 값, 결정 044)와 출생 정보를 바꾼 직후(소유자 2026-11-20)에만 메모리에 있다.
+  // 앱을 다시 켜거나 웹을 새로 고치면 없다
+  const [revealFor, setRevealFor] = useState(() => (from === 'signup' ? signedUpNickname() : from === 'birth' ? pendingReveal() : null));
   const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 먼저 기기에 받아 둔 글을 찾는다. 있으면 세션을 기다리지 않고 바로 보여 준다.
@@ -52,9 +50,13 @@ export default function ReadingScreen() {
   // 짓는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027). 받아 둔 글을 다시 연 것은 아니다.
   const generating = profile !== null && stored.checked && !stored.reading && state.status === 'loading';
   useGenerationBusy(generating, !stored.reading && state.status === 'done');
-  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
-  // 나 탭이 새 화면(/me)이 되기 전까지 글 화면이 나 탭의 자리다 — 받아 둔 글이든 방금 받은 글이든(결정 046 의 4)
-  const tabs = <MainTabs active="me" />;
+  // 짓는 동안(별명 짓는 중 화면)만 기다릴 때 음악(결정 062 의 1). 글이 오거나 못 지으면 배경으로
+  useSoundtrack('waiting', generating);
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
+  // 글이 보일 때만 머리 오른쪽에 공유하기(지금의 요약 해석 카드 — 공유 v2 는 계획 A⑤)
+  const readNav = <NavBar title={S.title} onBack={goBackOrHome} chevron right={<ShareEntry target={{ kind: 'READING' }} trigger="icon" />} />;
+  // 나 탭 안에서 들어온 화면이라 아래 탭은 나(결정 046 의 2 — 시안 12 에 탭이 있다)
+  const tabs = <MainTabs active="me" nested />;
   // 연결 끊김(결정 061 의 4): 받아 둔 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 다시 부른다
   const online = useOnline();
   useOnReconnect(online, () => {
@@ -79,6 +81,7 @@ export default function ReadingScreen() {
         signs={chart ? keyThree(chart).map((k) => ({ label: k.label, value: k.value + strings.chart.signSuffix })) : []}
         onRead={() => {
           clearSignedUp();
+          clearPendingReveal();
           setRevealFor(null);
         }}
       />
@@ -86,9 +89,9 @@ export default function ReadingScreen() {
 
   if (stored.reading)
     return (
-      <Screen nav={nav} footer={tabs}>
+      <Screen nav={readNav} footer={tabs}>
         {banner}
-        <ReadingBody reading={stored.reading} chart={chart} />
+        <ReadingView reading={stored.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
       </Screen>
     );
 
@@ -127,47 +130,9 @@ export default function ReadingScreen() {
     );
 
   return (
-    <Screen nav={nav} footer={tabs}>
+    <Screen nav={readNav} footer={tabs}>
       {banner}
-      <ReadingBody reading={state.reading} chart={chart} />
+      <ReadingView reading={state.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
     </Screen>
   );
 }
-
-/** 그 사람의 하늘 그림, 글, 그 아래의 "연애에서 해 볼 만한 것 보기" · "내 차트 보기" · 안내 문구. */
-function ReadingBody({ reading, chart }: { reading: Reading; chart: Chart | null }) {
-  return (
-    <>
-      {chart ? (
-        <Pressable accessibilityRole="button" onPress={() => router.push('/chart')} style={styles.picture}>
-          <ChartPicture chart={chart} size={Sizes.readingPicture} />
-          {/* 그림만으로는 무슨 자리인지 알 수 없으니 글로 함께 적는다 */}
-          <KeyThree chart={chart} bare />
-        </Pressable>
-      ) : null}
-      <ReadingView reading={reading} />
-      <View style={styles.footer}>
-        {/* 공유는 누를 때 만든다. 카드에는 한 줄 총평과 키워드만 들어간다(결정 025) */}
-        <ShareEntry target={{ kind: 'READING' }} />
-        {/* 방향성 "이성" 은 들어가는 줄만 둔다. 글은 그 화면을 열 때 받는다(결정 023) */}
-        <TextLink label={S.seeDirection} onPress={() => router.push('/direction')} />
-        <TextLink label={S.seeChart} onPress={() => router.push('/chart')} />
-        <Txt variant="label" color="gray">
-          {S.disclaimer}
-        </Txt>
-      </View>
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
-  picture: {
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.lg,
-    marginTop: Spacing.xs,
-    backgroundColor: Colors.fill,
-    borderRadius: CardRadius,
-  },
-  footer: { gap: Spacing.lg, paddingTop: Spacing.lg },
-});

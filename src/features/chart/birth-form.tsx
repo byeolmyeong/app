@@ -8,14 +8,11 @@ import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { getSession } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
-import type { BirthProfile } from '@/features/chart/birth-input';
+import { sameBirth } from '@/features/chart/birth-input';
 import type { StoredBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
 
 const S = strings.home;
-
-const sameInput = (a: BirthProfile, b: BirthProfile) =>
-  a.date === b.date && a.time === b.time && a.place?.id === b.place?.id;
 
 export type BirthFormProps = {
   /** 기기에 보관된 값. 있으면 입력 칸을 이 값으로 채운다 */
@@ -38,7 +35,7 @@ export function BirthForm({ stored, save }: BirthFormProps) {
     if (!v) return;
     setRequestError(null);
     // 같은 입력의 차트를 이미 갖고 있으면 다시 요청하지 않는다.
-    if (stored && sameInput(stored.profile, v.profile)) {
+    if (stored && sameBirth(stored.profile, v.profile)) {
       router.push('/reading');
       return;
     }

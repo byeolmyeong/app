@@ -38,6 +38,11 @@ describe('테마', () => {
       primary: '#4752FF',
       accentText: '#9AA3FF',
       primarySoft: '#1D2050',
+      // 나 탭: 문단 번호 · 막대 끝의 밝은 주색, 키워드 칩의 옅은 바탕 · 테두리 · 글씨(보드 12-8~12-12)
+      primaryBright: '#6E78FF',
+      keyword: 'rgba(154,163,255,0.12)',
+      keywordLine: 'rgba(154,163,255,0.28)',
+      keywordText: '#C9CEFF',
       danger: '#E5484D',
       dangerSoft: '#FF8A8A',
       // 짧은 알림의 성공 체크(보드 23) · 처음 불러올 때 뼈대의 바탕과 빛(보드 24)
@@ -65,7 +70,7 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'kicker', 'stat', 'statLabel', 'headline', 'sheetTitle', 'heading', 'cardTitle', 'button', 'input', 'body', 'lead', 'desc', 'emphasis', 'clause', 'legal', 'item', 'table', 'caption', 'badge', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
+      'display', 'hero', 'title', 'kicker', 'stat', 'statLabel', 'headline', 'sheetTitle', 'heading', 'cardTitle', 'button', 'input', 'body', 'lead', 'desc', 'reason', 'paragraphTitle', 'paragraph', 'term', 'emphasis', 'clause', 'legal', 'item', 'table', 'caption', 'badge', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
     ]);
     // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 042 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });

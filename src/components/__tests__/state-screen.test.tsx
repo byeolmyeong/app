@@ -25,7 +25,10 @@ describe('StateScreen', () => {
     const labels = within(actions).getAllByText(/다시 쓰기|나중에 하기/).map((t) => t.props.children);
     expect(labels).toEqual(['나중에 하기', '다시 쓰기']);
     await fireEvent.press(screen.getByText('다시 쓰기'));
-    await fireEvent.press(screen.getByText('나중에 하기'));
+    // 보드 11-9: 가운데 회색 글자 단추(높이 48 — 밑줄 링크가 아니다), 그 아래 8 띄우고 주 버튼
+    const laterButton = screen.getByRole('button', { name: '나중에 하기' });
+    expect(StyleSheet.flatten(laterButton.props.style)).toMatchObject({ height: 48, alignItems: 'center' });
+    await fireEvent.press(laterButton);
     expect(primary).toHaveBeenCalledTimes(1);
     expect(later).toHaveBeenCalledTimes(1);
   });

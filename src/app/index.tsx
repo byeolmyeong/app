@@ -23,7 +23,7 @@ import { markHomeReady } from '@/features/home/home-ready';
 import { MainTabs } from '@/features/home/main-tabs';
 import { NicknameCard } from '@/features/home/nickname-card';
 import { useAccount } from '@/features/home/use-account';
-import { useStoredReading } from '@/features/reading/use-reading';
+import { useStoredHeadline } from '@/features/reading/use-reading';
 
 /**
  * 홈 v2(결정 047 · 055, 보드 11 · 11-1). 출생 정보가 있으면 머리(로고) · 별명 카드 · 아래 탭 넷을 보여 주고
@@ -46,7 +46,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
   const restoreSettled = useBirthRestore(canRestore, save);
   // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
-  const { reading } = useStoredReading(input);
+  // 옛 모양으로 받아 둔 풀이도 한 줄 별명은 그대로(업데이트 직후 — 홈은 풀이를 부르지 않는다)
+  const { stored: reading } = useStoredHeadline(input);
   // "별명을 받은 지 N일" 의 오늘 — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
   const [now] = useState(Date.now);
   // 연결 끊김(결정 061 의 4): 받아 둔 것은 그대로 보이고 머리 아래에 띠(보드 20)

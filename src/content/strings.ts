@@ -186,6 +186,13 @@ export const strings = {
     },
     /** 음악(결정 062 의 3, 보드 16-11): 스위치 셋, 처음엔 모두 켬. 기기에만 둔다 */
     music: { title: '음악', background: '배경 음악', opening: '앱 열 때 음악', waiting: '기다릴 때 음악' },
+    /** 출생 정보 바꾸기(결정 056 의 6, 보드 16-4): 안내 · 세 칸 · 바꾸기 → 가운데 창 → 별명 짓는 중부터 */
+    birth: {
+      title: '출생 정보 바꾸기',
+      notice: '바꾸면 별명과 자세한 풀이 · 시기 풀이가 모두 새로 만들어져요. 지금 것은 되돌릴 수 없어요.',
+      submit: '바꾸기',
+      confirm: { title: '출생 정보를 바꿀까요?', body: '별명과 풀이를 새로 만들어요.\n지금 것은 되돌릴 수 없어요.', cancel: '취소', ok: '바꾸기' },
+    },
     /** 로그아웃 가운데 창(보드 16-9) */
     logout: { title: '로그아웃할까요?', body: '다시 로그인하면 별명과 풀이를\n그대로 볼 수 있어요.', cancel: '취소', confirm: '로그아웃' },
     /** 닉네임 바꾸기(보드 16-5): 칸 위 이름표는 없다(화면 제목과 겹친다). 규칙 · 오류 문구는 가입 단계(strings.nickname)와 같다 */
@@ -253,43 +260,60 @@ export const strings = {
     title: '지금 별명을 손보고 있어요',
     body: '끝나면 저절로 이어서 볼 수 있어요.',
   },
-  /** 문의하기(결정 024). 종류의 키는 서버가 받는 식별자다. 적은 내용과 이메일은 기기에 남기지 않는다 */
+  /** 문의(결정 058, 보드 16-8): 내역 · 새 문의 · 보냈어요 · 답변 보기. 종류의 키는 서버가 받는 식별자다. 적은 내용은 기기에 남기지 않고, 문의 메일 주소는 적지 않는다(결정 024) */
   inquiry: {
     title: '문의하기',
-    intro: '궁금한 점이나 불편했던 점을 적어 보내 주세요.',
-    categoryLabel: '어떤 문의인가요',
-    categories: { ACCOUNT: '계정', READING: '풀이/리포트', SYNASTRY: '궁합', BUG: '오류 신고', OTHER: '기타' },
-    bodyLabel: '문의 내용',
-    bodyPlaceholder: '어느 화면에서 무슨 일이 있었는지 적어 주시면 도움이 돼요.',
-    bodyHint: '10자 이상 적어 주세요.',
-    /** 글자 수: "12 / 2000자" */
-    countSeparator: ' / ',
-    countUnit: '자',
-    emailLabel: '답장 받을 이메일',
-    emailPlaceholder: '선택 사항이에요',
-    emailHint: '답장이 필요할 때만 적어 주세요.',
-    submit: '보내기',
-    sending: '보내는 중',
-    errors: {
-      categoryRequired: '문의 종류를 골라 주세요',
-      bodyTooShort: '10자 이상 적어 주세요',
-      bodyTooLong: '2000자까지 적을 수 있어요',
-      emailFormat: '이메일 주소를 다시 확인해 주세요',
+    /** 종류 칩 넷(결정 058). 옛 문의의 다른 종류는 "기타" 로 보인다 */
+    categories: { BUG: '오류', IDEA: '제안', ACCOUNT: '계정', ETC: '기타' },
+    /** 내역 한 줄의 상태(보드 16-8) */
+    status: { open: '확인 중', answered: '답변 왔어요', emailed: '이메일로 보냈어요' },
+    /** 날짜: "11월 20일", 올해가 아니면 "2025년 12월 31일" */
+    date: { year: '년 ', month: '월 ', day: '일' },
+    newInquiry: '새 문의하기',
+    /** 내역이 비었을 때(결정 065 의 3) */
+    empty: { title: '아직 문의가 없어요', body: '궁금한 점이나 불편한 점을 남겨 주세요.\n답변은 여기와 알림으로 알려 드려요.' },
+    /** 내역 · 답변을 못 불러왔을 때(보드 19 틀) */
+    loadFail: { title: '문의 내역을 불러오지 못했어요' },
+    /** 새 문의(보드 16-8): 이메일 칸은 없다 */
+    form: {
+      title: '새 문의',
+      categoryLabel: '어떤 문의예요?',
+      bodyLabel: '내용',
+      placeholder: '어느 화면에서 무슨 일이 있었는지 적어 주시면 도움이 돼요.',
+      hint: '답변이 오면 알림으로 알려 드려요. 문의 내역에서 볼 수 있어요.',
+      /** 적기 시작했는데 10자가 안 될 때 내용 칸 아래(소유자 2026-11-20) */
+      tooShort: '10자 이상 적어 주세요.',
+      /** 글자 수: "21/1000" */
+      countSeparator: '/',
+      submit: '보내기',
     },
-    /** INVALID_BODY · INVALID_EMAIL 은 서버가 오류 본문에 적어 주는 이름이다 */
+    /** 보내지 못했을 때 — 이 화면에 머무르니 짧은 알림(결정 065 의 1). INVALID_BODY 는 서버가 오류 본문에 적는 이름 */
     failed: {
-      NETWORK: '인터넷 연결을 확인하고 다시 눌러 주세요.',
-      LIMIT: '문의를 여러 번 보내셨어요. 잠시 뒤 다시 보내 주세요.',
-      INVALID_BODY: '문의 내용을 다시 확인해 주세요. 10자부터 2000자까지 보낼 수 있어요.',
-      INVALID_EMAIL: '이메일 주소를 다시 확인해 주세요.',
-      OTHER: '문의를 보내지 못했어요. 잠시 뒤 다시 눌러 주세요.',
+      NETWORK: '인터넷 연결을 확인하고 다시 보내 주세요',
+      LIMIT: '문의를 여러 번 보내셨어요. 잠시 뒤 다시 보내 주세요',
+      INVALID_BODY: '내용은 10자부터 1000자까지 보낼 수 있어요',
+      OTHER: '문의를 보내지 못했어요. 잠시 뒤 다시 보내 주세요',
     },
-    done: {
-      title: '문의를 보냈어요',
-      body: '보내 주신 내용을 잘 받았어요.',
-      /** 온 곳(마이 · 자주 묻는 질문)으로 돌아간다. 돌아갈 곳이 없으면 마이 */
-      back: '돌아가기',
+    /** 보냈어요. 이용 정지 화면에서 왔으면 "문의 내역 보기" 대신 "확인" 으로 정지 화면에 돌아간다(결정 065 의 5) */
+    sent: { title: '문의를 보냈어요', body: '답변이 오면 알림으로 알려 드릴게요.\n문의 내역에서 볼 수 있어요.', toList: '문의 내역 보기', back: '확인' },
+    /** 답변 보기(보드 16-8): 내 문의 카드 + 별명 답변 카드 */
+    detail: {
+      title: '문의 내역',
+      mine: '내 문의',
+      separator: ' · ',
+      answer: '별명 답변',
+      waiting: '확인하고 답변을 드릴게요. 답변이 오면 알림으로 알려 드려요.',
+      /** 옛 앱이 이메일로 답을 받기로 한 문의(결정 058 의 결과) */
+      emailed: '이 문의의 답변은 이메일로 보냈어요.',
+      notFound: { title: '문의를 찾지 못했어요', body: '지워졌거나 다른 계정의 문의예요.\n문의 내역에서 다시 골라 주세요.' },
     },
+  },
+  /** 이용이 정지된 계정(결정 065 의 5, 보드 22). 정지 사유는 보이지 않는다 */
+  suspended: {
+    title: '이용이 정지된 계정이에요',
+    body: '운영 정책에 따라 이 계정의 이용이 정지됐어요.\n궁금한 점은 문의해 주세요.',
+    inquiry: '문의하기',
+    logout: '로그아웃',
   },
   /** 홈 별명 카드에서 받아 둔 풀이가 아직 없을 때(결정 047) */
   main: {
@@ -420,38 +444,100 @@ export const strings = {
     strengths: '강점',
     cautions: '보완점',
     bullet: '·',
-    /** 방향성 "이성" 화면(`/direction`)으로 들어가는 줄(결정 023) */
-    seeDirection: '연애에서 해 볼 만한 것 보기',
-    seeChart: '내 차트 보기',
+    /** 별자리 카드 아래 줄(보드 12) → 내 하늘 지도 */
+    seeSkyMap: '내 하늘 지도 보기',
     /** 앞날·건강·투자를 단정하지 않는다(golden-rules "프로젝트 규칙") */
     disclaimer: '오락과 자기 성찰을 위한 내용이에요. 앞날을 알려 주거나 전문가의 조언을 대신하지 않습니다.',
     failed: {
       LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
     },
   },
-  /** 방향성 제시(F10)의 이성 주제. 조언형으로만 쓴다. 앞일을 단정하지 않는다(결정 023) */
+  /**
+   * "이렇게 풀이한 이유"(결정 054): 서버가 준 근거 구조를 정해진 틀로 한 문장으로 만든다(features/reason). 용어는 glossary.
+   * 조사는 괄호 앞 말의 받침으로 고른다([받침 있음, 받침 없음]).
+   */
+  reason: {
+    label: '이렇게 풀이한 이유',
+    when: { BIRTH: '태어날 때', NOW: '지금', TODAY: '오늘', DAY: '그날' },
+    josa: { subject: ['이', '가'], with: ['과', '와'], object: ['을', '를'] },
+    /** 지나가는 별이 닿는 내 별 앞: "내 나의 중심(해)" */
+    mine: '내 ',
+    /** 하우스에 모임: "별 셋(행성 3개)" */
+    starsPrefix: '별 ',
+    planetsPrefix: '행성 ',
+    planetsSuffix: '개',
+    houseSuffix: '하우스',
+    at: '에',
+    /** 다스리는 별: "책임을 맡은 별(토성)이 다스리는 자리에" */
+    ruled: '다스리는 자리',
+    /** 지나가는 별의 합: "내 좋아하는 것(금성) 자리를 지나요" */
+    place: '자리',
+    /** 끝맺음과, 근거가 둘일 때 앞 문장을 잇는 말 */
+    was: { end: '있었어요', and: '있었고' },
+    gathered: { end: '모여 있었어요', and: '모여 있었고' },
+    passes: { end: '지나요', and: '지나고' },
+    join: ', ',
+    /** 펼침의 단추: 그 별을 고른 채로 내 하늘 지도(/chart)를 연다 */
+    seeOnMap: '하늘 지도에서 보기',
+    /** 작은 지도의 읽기 이름: "하늘 지도에서 빛나는 자리: 해 · 6하우스" */
+    wheelLabel: '하늘 지도에서 빛나는 자리: ',
+    separator: ' · ',
+    /** 물음표의 읽기 이름: "토성이 뭔가요?"(조사는 이름의 받침으로) */
+    question: ' 뭔가요?',
+    /** 하우스에 모임의 물음표 */
+    clusterTip: '하늘을 열두 칸으로 나눈 것 중 한 칸에 별이 셋 이상 모인 거예요.',
+  },
+  /**
+   * 나 탭(결정 048 · 050, 보드 12 받기 전 · 12-8~12-12 · 11-8 · 11-9). 받기 전은 내 별명 + "자세한 풀이" 카드, 받은 뒤는 별명 카드 + 칩 다섯.
+   * 면책 문구는 두지 않는다(결정 064).
+   */
+  me: {
+    title: '나',
+    detail: {
+      kicker: '자세한 풀이',
+      title: '나에 대해 좀 더 알아볼까요',
+      body: '성격 · 연애 · 관계 · 일 · 감정을 하나씩 자세히 써 드려요.',
+      request: '자세한 풀이 받기',
+      /** 서버가 받을 수 없다고 했을 때(402 PURCHASE_REQUIRED — 1.1.0 예약, 결정 050 의 4) */
+      blocked: '지금은 받을 수 없어요',
+    },
+    /** 받은 뒤 맨 위 카드(12-8): "새벽별 님의 별명" · 한 줄 별명 · 풀이 읽기 */
+    card: { suffix: ' 님의 별명', read: '풀이 읽기', fallback: '내 별명' },
+    /** 칩 줄을 화면 읽기가 부르는 이름(아래 탭과 구분) */
+    chipsLabel: '나의 영역',
+    areas: { PERSONALITY: '성격', LOVE: '연애', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정' },
+    /** 영역 카드 위 한 줄: "새벽별 님의 성격"(닉네임이 없으면 "나의 성격") */
+    areaOf: ' 님의 ',
+    areaOfMine: '나의 ',
+    stars: '이 풀이에 쓰인 별',
+    glance: { title: '한눈에 보기', shining: '빛나는 순간', tiring: '지치는 순간' },
+    practices: '연애의 작은 실천',
+    closer: { title: '가까워지는 모습', first: '처음 만날 때', close: '친해지면', longtime: '오래된 사이' },
+    /** 막대에는 숫자를 적지 않는다(결정 048 의 3). 왼쪽이 0 쪽, 오른쪽이 100 쪽 */
+    workStyle: {
+      title: '나의 일 방식',
+      together: ['혼자서', '함께'],
+      flexible: ['계획대로', '그때그때'],
+      fast: ['꼼꼼하게', '빠르게'],
+      /** 막대의 읽기 이름: "혼자서와 함께 사이" */
+      between: '와 ',
+      betweenSuffix: ' 사이',
+    },
+    shaken: { title: '마음이 흔들릴 때', when: '흔들릴 때', comfort: '다시 편해지는 곳' },
+    /** 쓰는 중(11-8): 별명 짓는 중과 같은 그림 · 움직이는 문장. "다 되면 알림으로" 안내는 두지 않는다(결정 061 의 2) */
+    making: {
+      title: '자세한 풀이를 쓰고 있어요',
+      lines: ['성격과 연애를 읽고 있어요', '관계와 일을 쓰고 있어요', '감정의 결을 살피고 있어요'],
+    },
+    /** 끝까지 못 썼을 때(11-9) — 설명 · 다시 쓰기는 states.writeFail */
+    writeFail: '자세한 풀이를 끝까지 쓰지 못했어요',
+    later: '나중에 하기',
+    /** 상태를 묻지 못했을 때: 카드 자리(19-1)와 화면 전체(19) */
+    loadFail: { title: '자세한 풀이를 불러오지 못했어요', body: '잠깐 문제가 생겼어요. 다른 곳은 그대로 볼 수 있어요.' },
+    limit: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
+  },
+  /** 방향성 제시(F10). 1.0.0 에 남은 것은 궁합 주제뿐이다(이성 · 미래 화면은 결정 048 · 049 로 없앴다 — 궁합은 1.1.0 에 다시 본다) */
   direction: {
-    title: '연애에서 해 볼 만한 것',
-    generating: '해 볼 만한 것을 고르는 중이에요',
-    generatingNote: '내 하늘에서 연애와 닿는 자리를 글로 옮기고 있어요. 20초쯤 걸려요.',
-    failed: {
-      NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
-      LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
-      OTHER: '글을 받아 오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
-    },
-    retry: '다시 시도',
-    /** 미래 주제: 심층 리포트 시기 탭의 끝(결정 026). 언제인지는 위의 "지금 나의 구간" 이 보여 준다 */
-    future: {
-      heading: '이 시기에 해 볼 만한 것',
-      generating: '해 볼 만한 것을 고르는 중이에요',
-      generatingNote: '지금 지나는 시기를 글로 옮기고 있어요. 처음에는 20초쯤 걸려요.',
-      failed: {
-        NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
-        LIMIT: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
-        OTHER: '글을 받아 오지 못했어요. 잠시 뒤 다시 시도해 주세요.',
-      },
-      retry: '다시 시도',
-    },
     /** 궁합 주제: 궁합 결과에서 들어가는 화면(결정 026). 상대의 출생 정보는 글을 처음 만들 때만 다시 받는다 */
     synastry: {
       title: '이 사이에서 해 볼 만한 것',
@@ -474,16 +560,12 @@ export const strings = {
     },
   },
   report: {
-    title: '심층 리포트',
-    /** 영역 탭 줄을 화면 읽기가 부르는 이름(아래 탭과 구분) */
-    areasLabel: '리포트 영역',
     checking: '리포트를 확인하고 있어요',
-    intro: '성격 · 관계 · 일 · 감정 · 시기, 다섯 가지로 나를 길게 풀어 드려요.',
+    /** 시기 탭의 임시 화면(/timing — 계획 A③ 이 새 시기 탭으로 바꾼다)에서 리포트를 받기 전 */
+    intro: '변곡점과 나에게 오는 시기를 길게 풀어 드려요.',
     request: '리포트 받기',
     writing: '리포트를 쓰는 중이에요',
     writingNote: '1~2분쯤 걸려요. 화면을 나갔다가 다시 들어와도 돼요.',
-    /** 영역 탭. 키는 서버가 주는 식별자다 */
-    areas: { PERSONALITY: '성격', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정', TIMING: '시기' },
     /**
      * 시기 탭(결정 021 · 031). 행성 · 각도 이름을 쓰지 않고, 무슨 일이 일어난다고 단정하지 않는다("~하기 쉬운 시기").
      * 종류 · 영역 · 크기 · 변곡점의 키는 서버가 주는 식별자다. 앱이 셈한 "몇 년 뒤" 같은 숫자를 적지 않는다.
@@ -911,38 +993,120 @@ export const strings = {
    * 용어 사전: 내 하늘 지도(시안 13 · 13-1)와 나 탭의 "이렇게 풀이한 이유"가 함께 쓴다. 키는 서버가 주는 식별자다.
    * 별명은 시안의 말을 따르고, 시안에 없는 것은 같은 말투로 채웠다(채운 목록: docs/plans/2026-11-20-sky-map.md 실행 기록).
    * name 이름 · nickname 별명 · topic 목록에 적는 짧은 주제 · meaning 한 줄 뜻. 사람을 단정하지 않는다(golden-rules).
+   * 이유 줄(결정 054 의 3)에만 쓰는 값: 천체 reasonName(이유 줄의 이름 — 달만 "마음") · transitName(지나가는 별의 이름) · tip(물음표의 말),
+   * 별자리 adjective(꾸밈말), 각도 reasonPhrase · transitPhrase, counts(별 수). 채운 목록: docs/plans/2026-11-20-home-me-timing.md 실행 기록.
    */
   glossary: {
     bodies: {
-      SUN: { name: '해', nickname: '나의 중심', topic: '나의 중심', meaning: '내가 힘을 내는 방식' },
-      MOON: { name: '달', nickname: '나의 마음', topic: '마음', meaning: '편안함을 느끼는 방식' },
-      MERCURY: { name: '수성', nickname: '말을 맡은 별', topic: '말과 생각', meaning: '생각하고 말을 건네는 방식' },
-      VENUS: { name: '금성', nickname: '좋아하는 것', topic: '좋아하는 것', meaning: '끌리고 좋아하는 것' },
-      MARS: { name: '화성', nickname: '밀어붙이는 힘', topic: '밀어붙이는 힘', meaning: '원하는 것을 향해 움직이는 방식' },
-      JUPITER: { name: '목성', nickname: '기회를 맡은 별', topic: '기회', meaning: '넓히고 키워 가는 힘' },
-      SATURN: { name: '토성', nickname: '책임을 맡은 별', topic: '책임', meaning: '버티며 차곡차곡 쌓아 가는 힘' },
-      URANUS: { name: '천왕성', nickname: '변화를 맡은 별', topic: '변화', meaning: '틀을 깨고 새롭게 바꾸는 힘' },
-      NEPTUNE: { name: '해왕성', nickname: '꿈을 맡은 별', topic: '꿈과 상상', meaning: '보이지 않는 것을 그려 보는 힘' },
-      PLUTO: { name: '명왕성', nickname: '깊은 변화를 맡은 별', topic: '깊은 변화', meaning: '끝까지 파고들어 새로 태어나는 힘' },
+      SUN: {
+        name: '해',
+        nickname: '나의 중심',
+        topic: '나의 중심',
+        meaning: '내가 힘을 내는 방식',
+        reasonName: '나의 중심',
+        transitName: '빛을 비추는 별',
+        tip: "흔히 말하는 '내 별자리'예요.",
+      },
+      MOON: {
+        name: '달',
+        nickname: '나의 마음',
+        topic: '마음',
+        meaning: '편안함을 느끼는 방식',
+        reasonName: '마음',
+        transitName: '마음을 비추는 별',
+        tip: '밤하늘의 그 달이에요. 마음과 기분을 읽을 때 봐요.',
+      },
+      MERCURY: {
+        name: '수성',
+        nickname: '말을 맡은 별',
+        topic: '말과 생각',
+        meaning: '생각하고 말을 건네는 방식',
+        reasonName: '말을 맡은 별',
+        transitName: '말을 맡은 별',
+        tip: '해에 가장 가까이 도는 별이에요. 생각과 말을 읽을 때 봐요.',
+      },
+      VENUS: {
+        name: '금성',
+        nickname: '좋아하는 것',
+        topic: '좋아하는 것',
+        meaning: '끌리고 좋아하는 것',
+        reasonName: '좋아하는 것',
+        transitName: '좋아하는 것',
+        tip: '새벽과 저녁에 밝게 보이는 별이에요. 끌리고 좋아하는 것을 읽을 때 봐요.',
+      },
+      MARS: {
+        name: '화성',
+        nickname: '밀어붙이는 힘',
+        topic: '밀어붙이는 힘',
+        meaning: '원하는 것을 향해 움직이는 방식',
+        reasonName: '밀어붙이는 힘',
+        transitName: '밀어붙이는 힘',
+        tip: '붉게 보이는 별이에요. 움직이는 힘을 읽을 때 봐요.',
+      },
+      JUPITER: {
+        name: '목성',
+        nickname: '기회를 맡은 별',
+        topic: '기회',
+        meaning: '넓히고 키워 가는 힘',
+        reasonName: '기회를 맡은 별',
+        transitName: '기회를 맡은 별',
+        tip: '행성 가운데 가장 큰 별이에요. 넓히고 키우는 힘을 읽을 때 봐요.',
+      },
+      SATURN: {
+        name: '토성',
+        nickname: '책임을 맡은 별',
+        topic: '책임',
+        meaning: '버티며 차곡차곡 쌓아 가는 힘',
+        reasonName: '책임을 맡은 별',
+        transitName: '책임을 맡은 별',
+        tip: '고리가 있는 별이에요. 책임과 끈기를 읽을 때 봐요.',
+      },
+      URANUS: {
+        name: '천왕성',
+        nickname: '변화를 맡은 별',
+        topic: '변화',
+        meaning: '틀을 깨고 새롭게 바꾸는 힘',
+        reasonName: '변화를 맡은 별',
+        transitName: '변화를 맡은 별',
+        tip: '옆으로 누운 채 도는 별이에요. 틀을 깨는 변화를 읽을 때 봐요.',
+      },
+      NEPTUNE: {
+        name: '해왕성',
+        nickname: '꿈을 맡은 별',
+        topic: '꿈과 상상',
+        meaning: '보이지 않는 것을 그려 보는 힘',
+        reasonName: '꿈을 맡은 별',
+        transitName: '꿈을 맡은 별',
+        tip: '멀리서 푸르게 도는 별이에요. 꿈과 상상을 읽을 때 봐요.',
+      },
+      PLUTO: {
+        name: '명왕성',
+        nickname: '깊은 변화를 맡은 별',
+        topic: '깊은 변화',
+        meaning: '끝까지 파고들어 새로 태어나는 힘',
+        reasonName: '깊은 변화를 맡은 별',
+        transitName: '깊은 변화를 맡은 별',
+        tip: '가장 멀리 도는 별이에요. 깊은 변화를 읽을 때 봐요.',
+      },
     },
     /** 상승점 · 중천. short 는 휠의 축 옆에 적는 짧은 이름이다 */
     angles: {
-      ASC: { name: '상승점', nickname: '첫인상의 자리', short: '첫인상', meaning: '처음 만난 사람에게 보이는 모습' },
-      MC: { name: '중천', nickname: '꿈의 자리', short: '꿈', meaning: '오래 바라고 이루고 싶은 모습' },
+      ASC: { name: '상승점', nickname: '첫인상의 자리', short: '첫인상', meaning: '처음 만난 사람에게 보이는 모습', tip: '태어난 순간 동쪽 지평선에 떠오르던 별자리예요.' },
+      MC: { name: '중천', nickname: '꿈의 자리', short: '꿈', meaning: '오래 바라고 이루고 싶은 모습', tip: '태어난 순간 하늘 가장 높은 곳에 있던 별자리예요.' },
     },
     signs: {
-      ARIES: { nickname: '용기', meaning: '먼저 나서고 바로 움직이는 성향' },
-      TAURUS: { nickname: '꾸준함', meaning: '천천히, 그러나 단단하게 쌓아 가는 성향' },
-      GEMINI: { nickname: '호기심', meaning: '궁금한 게 많고 생각과 말이 빠른 성향' },
-      CANCER: { nickname: '다정함', meaning: '가까운 사람을 품고 돌보는 성향' },
-      LEO: { nickname: '당당함', meaning: '나를 드러내고 빛나고 싶은 성향' },
-      VIRGO: { nickname: '꼼꼼함', meaning: '작은 것까지 살피고 다듬는 성향' },
-      LIBRA: { nickname: '균형', meaning: '균형을 찾고 함께 어울리는 성향' },
-      SCORPIO: { nickname: '깊이', meaning: '한번 마음먹으면 깊이 파고드는 성향' },
-      SAGITTARIUS: { nickname: '모험', meaning: '넓은 세상으로 나아가고 싶은 성향' },
-      CAPRICORN: { nickname: '성실함', meaning: '목표를 세우고 차근차근 쌓는 성향' },
-      AQUARIUS: { nickname: '자유로움', meaning: '자유롭고 독창적인 성향' },
-      PISCES: { nickname: '공감', meaning: '다른 마음에 깊이 스며드는 성향' },
+      ARIES: { nickname: '용기', meaning: '먼저 나서고 바로 움직이는 성향', adjective: '먼저 나서는' },
+      TAURUS: { nickname: '꾸준함', meaning: '천천히, 그러나 단단하게 쌓아 가는 성향', adjective: '꾸준한' },
+      GEMINI: { nickname: '호기심', meaning: '궁금한 게 많고 생각과 말이 빠른 성향', adjective: '호기심 많은' },
+      CANCER: { nickname: '다정함', meaning: '가까운 사람을 품고 돌보는 성향', adjective: '품어 주는' },
+      LEO: { nickname: '당당함', meaning: '나를 드러내고 빛나고 싶은 성향', adjective: '당당한' },
+      VIRGO: { nickname: '꼼꼼함', meaning: '작은 것까지 살피고 다듬는 성향', adjective: '꼼꼼한' },
+      LIBRA: { nickname: '균형', meaning: '균형을 찾고 함께 어울리는 성향', adjective: '균형을 아는' },
+      SCORPIO: { nickname: '깊이', meaning: '한번 마음먹으면 깊이 파고드는 성향', adjective: '깊이 파고드는' },
+      SAGITTARIUS: { nickname: '모험', meaning: '넓은 세상으로 나아가고 싶은 성향', adjective: '멀리 내다보는' },
+      CAPRICORN: { nickname: '성실함', meaning: '목표를 세우고 차근차근 쌓는 성향', adjective: '차근차근 쌓는' },
+      AQUARIUS: { nickname: '자유로움', meaning: '자유롭고 독창적인 성향', adjective: '자유로운' },
+      PISCES: { nickname: '공감', meaning: '다른 마음에 깊이 스며드는 성향', adjective: '공감이 깊은' },
     },
     houses: {
       1: { nickname: '나 자신의 자리', topic: '나 자신', meaning: '나를 드러내는 모습 · 시작하는 힘' },
@@ -958,13 +1122,18 @@ export const strings = {
       11: { nickname: '친구와 모임의 자리', topic: '친구와 모임', meaning: '친구 · 모임 · 바라는 내일' },
       12: { nickname: '혼자만의 자리', topic: '혼자만의 시간', meaning: '혼자만의 시간 · 숨은 마음 · 쉼' },
     },
-    /** 각도의 말(시안: 합 · 사분 · 육분. 삼분 · 충은 같은 말투의 기본값) */
+    /**
+     * 각도의 말(시안: 합 · 사분 · 육분. 삼분 · 충은 같은 말투의 기본값). reasonPhrase 는 이유 줄에서 태어날 때 두 별의 각도,
+     * transitPhrase 는 지나가는 별이 내 별과 이루는 각도(결정 054 의 2 · 3 — 합은 "내 ○○ 자리를 지나요" 꼴이라 따로 쓰지 않는다)
+     */
     aspects: {
-      CONJUNCTION: { phrase: '겹쳐요', meaning: '두 별이 같은 자리에서 만나요' },
-      SEXTILE: { phrase: '잘 어울려요', meaning: '두 별이 서로 돕기 좋은 각도예요' },
-      SQUARE: { phrase: '부딪혀요', meaning: '두 별이 다른 쪽으로 당겨 맞춰 가야 해요' },
-      TRINE: { phrase: '자연스럽게 통해요', meaning: '두 별의 힘이 막힘없이 흘러요' },
-      OPPOSITION: { phrase: '마주 봐요', meaning: '두 별이 하늘의 맞은편에서 서로를 비춰요' },
+      CONJUNCTION: { phrase: '겹쳐요', meaning: '두 별이 같은 자리에서 만나요', reasonPhrase: '겹치는 자리', transitPhrase: '겹치는 자리' },
+      SEXTILE: { phrase: '잘 어울려요', meaning: '두 별이 서로 돕기 좋은 각도예요', reasonPhrase: '잘 어울리는 자리', transitPhrase: '잘 어울리는 자리' },
+      SQUARE: { phrase: '부딪혀요', meaning: '두 별이 다른 쪽으로 당겨 맞춰 가야 해요', reasonPhrase: '부딪히는 각도', transitPhrase: '부딪히는 각도' },
+      TRINE: { phrase: '자연스럽게 통해요', meaning: '두 별의 힘이 막힘없이 흘러요', reasonPhrase: '잘 어울리는 자리', transitPhrase: '잘 어울리는 자리' },
+      OPPOSITION: { phrase: '마주 봐요', meaning: '두 별이 하늘의 맞은편에서 서로를 비춰요', reasonPhrase: '마주 보는 자리', transitPhrase: '마주 보는 자리' },
     },
+    /** 한 하우스에 모인 별의 수를 부르는 말: "별 셋"(보드 12). 서버는 셋 이상만 준다 */
+    counts: { 3: '셋', 4: '넷', 5: '다섯', 6: '여섯', 7: '일곱', 8: '여덟', 9: '아홉', 10: '열' } as Record<number, string>,
   },
 } as const;

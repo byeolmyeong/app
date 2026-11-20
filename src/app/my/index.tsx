@@ -15,7 +15,7 @@ import { daysSince } from '@/features/home/days-since';
 import { MainTabs } from '@/features/home/main-tabs';
 import { MyCard } from '@/features/my/my-card';
 import { useMyAccount } from '@/features/my/use-my-account';
-import { useStoredReading } from '@/features/reading/use-reading';
+import { useStoredHeadline } from '@/features/reading/use-reading';
 
 const M = strings.my;
 const R = M.rows;
@@ -29,7 +29,8 @@ const R = M.rows;
 export default function MyScreen() {
   const { loaded, profile, chart } = useBirthProfile();
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
-  const { reading } = useStoredReading(input);
+  // 옛 모양으로 받아 둔 풀이도 한 줄 별명은 그대로(업데이트 직후 — 마이는 풀이를 부르지 않는다, 리뷰 #49)
+  const { stored: reading } = useStoredHeadline(input);
   const { account } = useMyAccount();
   // "별명을 받은 지 N일" 의 오늘 — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
   const [now] = useState(Date.now);
@@ -50,15 +51,13 @@ export default function MyScreen() {
           headline={reading?.headline ?? null}
           birthLine={profile ? formatBirthLine(profile) : null}
           onAccount={() => router.push('/my/account')}
-          // 새 출생 정보 바꾸기(`/my/birth`, 결정 056 의 6)는 서버 S⑨ 뒤 계획 A7-3 — 그 전에는 지금의 출생 정보 화면으로 간다
-          onBirth={() => router.push('/birth')}
+          onBirth={() => router.push('/my/birth')}
         />
         <View style={styles.listTop} />
         <ListCard>
           {/* 음악 줄(/my/music)은 루트에 음악 줄을 거는 PR(길 A 의 스플래시 PR 뒤)에서 더한다 — 그 전에는 소리가 나지 않아 스위치가 아무 일도 하지 않는다 */}
           <ListCardRow label={R.faq} onPress={() => router.push('/settings/faq')} />
-          {/* 앱 안 문의(`/my/inquiries`, 결정 058)는 서버 S⑧ 뒤 계획 A7-4 */}
-          <ListCardRow label={R.inquiry} onPress={() => router.push('/settings/inquiry')} />
+          <ListCardRow label={R.inquiry} onPress={() => router.push('/my/inquiries')} />
         </ListCard>
         <ListCard>
           <ListCardRow label={R.terms} onPress={() => router.push('/settings/terms')} />

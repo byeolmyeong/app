@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import ChartDetailScreen from '@/app/chart/detail';
 import ChartScreen from '@/app/chart/index';
@@ -17,6 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
+  useLocalSearchParams: jest.fn(() => ({})),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -36,6 +37,7 @@ const H = strings.home;
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
+  (useLocalSearchParams as jest.Mock).mockReturnValue({});
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
   mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
@@ -374,6 +376,24 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     await fireEvent.press(screen.getByTestId('sheet-dim'));
     await sheetClosed();
     expect(screen.getByTestId('sky-row-SATURN').props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it('이유 줄의 "하늘 지도에서 보기" 로 오면(?selected=) 그 별을 고른 채로 보여 주고, 모르는 값이면 해를 고른다(결정 054 의 4)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ selected: 'MOON' });
+    const view = await render(<ChartScreen />);
+    expect(await screen.findByLabelText(`${S.wheelLabel}. ${S.selectedPrefix}${G.bodies.MOON.name}`)).toBeTruthy();
+    expect(screen.getByTestId('sky-row-MOON').props.accessibilityState).toMatchObject({ selected: true });
+    expect(screen.queryByTestId('sheet-dim')).toBeNull();
+    await view.unmount();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ selected: 'ASC' });
+    const asc = await render(<ChartScreen />);
+    expect(await screen.findByLabelText(`${S.wheelLabel}. ${S.selectedPrefix}${G.angles.ASC.nickname}`)).toBeTruthy();
+    await asc.unmount();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ selected: 'CHIRON' });
+    await render(<ChartScreen />);
+    expect(await screen.findByLabelText(`${S.wheelLabel}. ${S.selectedPrefix}${G.bodies.SUN.name}`)).toBeTruthy();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({});
   });
 
   it('시각 "모름" 이면 하우스 선 · 번호 · 축이 없고, 목록은 별 10줄에 하우스 글이 없으며 안내를 적는다', async () => {

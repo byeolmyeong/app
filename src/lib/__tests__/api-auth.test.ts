@@ -196,7 +196,7 @@ describe('api: 마이의 내 계정', () => {
     pushConsentAt: '2026-11-20T00:00:00Z',
     avatar: 3,
   };
-  const mine = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+  const mine = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 
   it('GET /account 에서 닉네임 · 프로필 · 이메일 · 공급자 · 마케팅 동의만 읽는다(동의 일시 · 푸시 동의는 버린다)', async () => {
     const fetchFn = fakeFetch(200, account);
@@ -249,5 +249,41 @@ describe('api: 마이의 내 계정', () => {
     [400, 'INVALID_AVATAR'],
   ])('PATCH /account 의 %i %s 를 code 로 돌려준다', async (status, code) => {
     expect(await app(fakeFetch(status, { error: code })).updateAccount({ nickname: 'x' })).toEqual({ ok: false, error: 'SERVER', status, code });
+  });
+});
+
+// 이용 정지(앱 결정 065 의 5, 서버 결정 044)
+describe('api: 이용 정지', () => {
+  const account = { nickname: '새벽별', email: null, provider: 'KAKAO', marketingConsent: false, marketingConsentAt: null, pushConsent: false, pushConsentAt: null, avatar: 3 };
+
+  it('어떤 요청이든 403 ACCOUNT_SUSPENDED 를 받으면 정지 알림을 부르고, 결과는 code 로 돌려준다', async () => {
+    const onSuspended = jest.fn();
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(403, { error: 'ACCOUNT_SUSPENDED' }), getToken: () => 't', onSuspended });
+    expect(await api.getReport()).toEqual({ ok: false, error: 'SERVER', status: 403, code: 'ACCOUNT_SUSPENDED' });
+    expect(onSuspended).toHaveBeenCalledTimes(1);
+  });
+
+  it('다른 403(FORBIDDEN_ORIGIN 등)은 정지가 아니다', async () => {
+    const onSuspended = jest.fn();
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(403, { error: 'FORBIDDEN_ORIGIN' }), getToken: () => 't', onSuspended });
+    await api.getReport();
+    expect(onSuspended).not.toHaveBeenCalled();
+  });
+
+  it('GET /account 가 suspended: true 면 정지 알림도 부른다(200 이라 403 으로는 알 수 없다)', async () => {
+    const onSuspended = jest.fn();
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ...account, suspended: true }), getToken: () => 't', onSuspended });
+    await api.getMyAccount();
+    expect(onSuspended).toHaveBeenCalledTimes(1);
+    const fine = jest.fn();
+    await createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ...account, suspended: false }), getToken: () => 't', onSuspended: fine }).getMyAccount();
+    expect(fine).not.toHaveBeenCalled();
+  });
+
+  it('GET /account 의 suspended 를 읽는다 — 없는 옛 서버는 정지가 아닌 것으로, 참거짓이 아니면 INVALID', async () => {
+    const app = (body: unknown) => createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => 't' });
+    expect(await app({ ...account, suspended: true }).getMyAccount()).toMatchObject({ ok: true, data: { suspended: true } });
+    expect(await app(account).getMyAccount()).toMatchObject({ ok: true, data: { suspended: false } });
+    expect(await app({ ...account, suspended: 'yes' }).getMyAccount()).toMatchObject({ ok: false, error: 'INVALID' });
   });
 });

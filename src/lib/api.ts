@@ -99,21 +99,83 @@ export type SignupExtra = {
 /** `POST /auth/nickname-check` 의 응답. 영문 대소문자는 같은 이름으로 본다(결정 042) */
 export type NicknameAvailability = { available: boolean };
 
+/**
+ * "이렇게 풀이한 이유" 의 근거 하나(서버 결정 031, 앱 결정 054). 글자는 `Chart` 의 body · sign · type 과 같고, 상승점 · 중천은 "ASC" · "MC" 다.
+ * 시각을 모르면 house 키 · CLUSTER · ASC · MC 가 오지 않는다. 값이 없는 키는 오지 않는다.
+ */
+export type KnownBasisItem =
+  | { kind: 'PLACEMENT'; body: string; sign: string; house?: number }
+  | { kind: 'CLUSTER'; house: number; bodies: string[] }
+  | { kind: 'ASPECT'; a: string; b: string; type: string }
+  | { kind: 'RULER'; body: string; ruler: string }
+  | { kind: 'TRANSIT'; mover: string; target?: string; type?: string; house?: number };
+
+/** 모르는 kind 는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
+export type BasisItem = KnownBasisItem | { kind: string };
+
+/** 근거의 때: 태어날 때 · 지금 지나는 시기 · 그날. 모르는 때는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
+export const REASON_WHENS = ['BIRTH', 'NOW', 'DAY'] as const;
+export type ReasonWhen = (typeof REASON_WHENS)[number];
+export type Reason = { when: ReasonWhen | (string & {}); items: BasisItem[] };
+
+/** "이 풀이에 쓰인 별" 하나: 놓인 자리는 body + sign, 하우스 모임은 house + count, 각도 · 다스리는 별은 body 하나 */
+export type Star = { body?: string; sign?: string; house?: number; count?: number };
+
 export type Reading = {
   headline: string;
-  sections: { title: string; body: string; basis: string[] }[];
+  /** reason 은 요약 해석 v2 의 근거 구조. basis 는 옛 근거 낱말로 서버 S⑦ 까지만 함께 온다(앱은 읽지 않는다) */
+  sections: { title: string; body: string; reason: Reason; basis?: string[] }[];
   strengths: string[];
+  /** 보완점 2(요약 해석 v2) */
   cautions: string[];
   /** 요약 해석 v2 의 만든 때(UTC ISO-8601, 서버 결정 030 · 031). 옛 응답에는 없다 — 홈의 "별명을 받은 지 N일"(결정 047) */
   createdAt?: string;
 };
 
+/** 나 탭 풀이의 영역(결정 048). 서버는 이 순서로 다섯 영역을 모두 준다 */
+export const ME_AREAS = ['PERSONALITY', 'LOVE', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
+export type MeArea = (typeof ME_AREAS)[number];
+
+/**
+ * 나 탭 풀이의 한 영역. 공통 칸 + 영역마다의 칸 하나(그 영역이 아니면 키가 없다): 성격 glance · 연애 practices + reason ·
+ * 관계 closer · 일 workStyle(서버가 차트로 셈한 10~90, 0 쪽 혼자서 · 계획대로 · 꼼꼼하게) · 감정 shaken. 연애는 문단이 없다.
+ */
+export type MeAreaReport = {
+  area: MeArea;
+  title: string;
+  keywords: [string, string, string];
+  stars: Star[];
+  paragraphs: { title: string; body: string; reason: Reason }[];
+  glance?: { shining: [string, string]; tiring: [string, string] };
+  practices?: { title: string; body: string }[];
+  reason?: Reason;
+  closer?: { first: string; close: string; longtime: string };
+  workStyle?: { together: number; flexible: number; fast: number };
+  shaken?: { when: string; comfort: string };
+};
+
+export type MeReport = { areas: MeAreaReport[] };
+
+/** `GET /me-report`. 풀이는 DONE 일 때만 온다(지금 프로필의 차트 기준 — 출생 정보를 고치면 NONE) */
+export type MeReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: MeReport };
+
+/** `POST /me-report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
+export type MeReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
+
 /**
  * `GET /account` · `PATCH /account` 에서 앱이 쓰는 값 — 홈 별명 카드와 마이 · 계정 화면이 함께 쓴다(결정 047 · 056):
- * 닉네임 · 프로필 그림(계약은 1~8, 옛 계정은 둘 다 null — 서버 결정 025 · 028) · 이메일(옛 계정 null) · 공급자 · 마케팅 수신 동의.
- * 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
+ * 닉네임 · 프로필 그림(계약은 1~8, 옛 계정은 둘 다 null — 서버 결정 025 · 028) · 이메일(옛 계정 null) · 공급자 · 마케팅 수신 동의 ·
+ * 이용 정지 여부(`suspended` — 없는 옛 서버는 false, 사유는 오지 않는다). 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만
+ * 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
  */
-export type MyAccount = { nickname: string | null; avatar: number | null; email: string | null; provider: string; marketingConsent: boolean };
+export type MyAccount = {
+  nickname: string | null;
+  avatar: number | null;
+  email: string | null;
+  provider: string;
+  marketingConsent: boolean;
+  suspended: boolean;
+};
 
 /** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028). 마케팅 · 푸시 동의는 알림 화면(계획 A8-2)이 더한다 */
 export type AccountPatch = { nickname?: string; avatar?: number };
@@ -270,12 +332,29 @@ export type SynastryReportState =
 /** `POST /synastry/{id}/report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
 export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
-/** 문의의 종류(결정 024). 계정 · 풀이/리포트 · 궁합 · 오류 신고 · 기타 */
-export const INQUIRY_CATEGORIES = ['ACCOUNT', 'READING', 'SYNASTRY', 'BUG', 'OTHER'] as const;
+/** 문의의 종류(결정 058, 서버 결정 039): 오류 · 제안 · 계정 · 기타. 옛 문의의 다른 값(READING · SYNASTRY · OTHER …)은 앱이 기타로 읽는다 */
+export const INQUIRY_CATEGORIES = ['BUG', 'IDEA', 'ACCOUNT', 'ETC'] as const;
 export type InquiryCategory = (typeof INQUIRY_CATEGORIES)[number];
 
-/** `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~2000자(유니코드 코드 포인트로 센다), replyEmail 은 답장을 받지 않으면 null */
-export type InquiryInput = { category: InquiryCategory; body: string; replyEmail: string | null };
+/**
+ * `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~1000자(유니코드 코드 포인트로 센다). 이메일 칸은 없다 —
+ * `replyEmail` 키를 보내면 서버가 옛 앱으로 보고 옛 규칙을 쓰므로 싣지 않는다(서버 결정 039 의 2).
+ */
+export type InquiryInput = { category: InquiryCategory; body: string };
+
+/**
+ * `GET /inquiries` · `GET /inquiries/{id}` 의 한 건에서 앱이 쓰는 값(결정 058). 모르는 종류는 `ETC`. 답(answer)이 있으면 답한 문의다 —
+ * 서버의 `status` 는 답이 있을 때만 `ANSWERED` 라 같은 뜻이고, 앱은 답의 유무로 본다. `emailed` 는 옛 앱이 이메일로 답을 받기로 한 문의
+ * (서버가 `replyEmail` 을 준 것 — 이메일 글자는 앱이 들고 있지 않는다).
+ */
+export type InquiryItem = {
+  id: string;
+  category: InquiryCategory;
+  body: string;
+  createdAt: string;
+  answer: { body: string; answeredAt: string } | null;
+  emailed: boolean;
+};
 
 /** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */
 export type InquiryCreated = { id: string };
@@ -404,20 +483,136 @@ export function isPlaceList(v: unknown): v is Place[] {
 
 const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((item) => typeof item === 'string');
 
-/** 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다 */
+const isHouseNumber = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 12;
+const isOptionalHouse = (v: unknown) => v === undefined || isHouseNumber(v);
+const isNonEmptyText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+
+/** 아는 kind 는 제 필드가 계약의 모양이어야 한다. 모르는 kind 는 받는다(그 이유 줄만 숨긴다 — 결정 054 의 7) */
+function isBasisItem(v: unknown): v is BasisItem {
+  if (!isObject(v) || typeof v.kind !== 'string') return false;
+  switch (v.kind) {
+    case 'PLACEMENT':
+      return isNonEmptyText(v.body) && isNonEmptyText(v.sign) && isOptionalHouse(v.house);
+    case 'CLUSTER':
+      return isHouseNumber(v.house) && Array.isArray(v.bodies) && v.bodies.length > 0 && v.bodies.every(isNonEmptyText);
+    case 'ASPECT':
+      return isNonEmptyText(v.a) && isNonEmptyText(v.b) && isNonEmptyText(v.type);
+    case 'RULER':
+      return isNonEmptyText(v.body) && isNonEmptyText(v.ruler);
+    case 'TRANSIT':
+      // 지나가는 별 × 내 별의 각도(target + type), 또는 지나가는 별 × 내 하우스(house)
+      return (
+        isNonEmptyText(v.mover) &&
+        (v.target === undefined || isNonEmptyText(v.target)) &&
+        (v.type === undefined || isNonEmptyText(v.type)) &&
+        isOptionalHouse(v.house) &&
+        ((v.target !== undefined && v.type !== undefined) || v.house !== undefined)
+      );
+    default:
+      return true;
+  }
+}
+
+/** 근거는 1~2개. 때(when)는 비지 않은 글자면 받는다 — 모르는 때는 그 이유 줄만 숨긴다(리뷰 #49) */
+export function isReason(v: unknown): v is Reason {
+  return (
+    isObject(v) &&
+    isNonEmptyText(v.when) &&
+    Array.isArray(v.items) &&
+    v.items.length >= 1 &&
+    v.items.length <= 2 &&
+    v.items.every(isBasisItem)
+  );
+}
+
+/** 요약 해석 v2 의 보완점 수(서버 결정 030) */
+const READING_CAUTIONS = 2;
+
+/**
+ * 요약 해석 v2: 문단마다 근거 구조(reason)가 있어야 받는다 — 옛 모양(근거 낱말만 · 보완점 3)으로 기기에 보관된 글은 여기서 걸러져
+ * 다시 받는다(결정 048 의 8). 옛 근거 낱말(basis)은 서버 S⑦ 까지 함께 오고 그 뒤에 빠진다 — 있으면 낱말 목록이어야 한다.
+ * 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다.
+ */
 export function isReading(v: unknown): v is Reading {
   return (
     isObject(v) &&
     typeof v.headline === 'string' &&
     Array.isArray(v.sections) &&
     v.sections.every(
-      (s) => isObject(s) && typeof s.title === 'string' && typeof s.body === 'string' && isStringList(s.basis),
+      (s) =>
+        isObject(s) &&
+        typeof s.title === 'string' &&
+        typeof s.body === 'string' &&
+        isReason(s.reason) &&
+        (s.basis === undefined || isStringList(s.basis)),
     ) &&
     isStringList(v.strengths) &&
     isStringList(v.cautions) &&
+    v.cautions.length === READING_CAUTIONS &&
     (v.createdAt === undefined || typeof v.createdAt === 'string')
   );
 }
+
+const isStar = (v: unknown): v is Star =>
+  isObject(v) &&
+  (v.body === undefined || isNonEmptyText(v.body)) &&
+  (v.sign === undefined || isNonEmptyText(v.sign)) &&
+  isOptionalHouse(v.house) &&
+  (v.count === undefined || Number.isInteger(v.count));
+
+const isTextList = (v: unknown, length: number) => Array.isArray(v) && v.length === length && v.every(isNonEmptyText);
+
+/** 일 방식 막대의 값: 정수, 막대 위에 놓일 자리(0~100). 범위 10~90 은 서버의 몫이라 판정하지 않는다 */
+const isBarValue = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 100;
+
+/** 영역마다의 칸(키 이름)과 그 모양. 그 영역이 아니면 그 키가 없어야 한다 */
+const ME_AREA_FIELDS: Record<MeArea, Record<string, (v: unknown) => boolean>> = {
+  PERSONALITY: { glance: (v) => isObject(v) && isTextList(v.shining, 2) && isTextList(v.tiring, 2) },
+  LOVE: {
+    practices: (v) =>
+      Array.isArray(v) && v.length === 3 && v.every((p) => isObject(p) && isNonEmptyText(p.title) && isNonEmptyText(p.body)),
+    reason: isReason,
+  },
+  RELATIONSHIP: { closer: (v) => isObject(v) && isNonEmptyText(v.first) && isNonEmptyText(v.close) && isNonEmptyText(v.longtime) },
+  WORK: { workStyle: (v) => isObject(v) && isBarValue(v.together) && isBarValue(v.flexible) && isBarValue(v.fast) },
+  EMOTION: { shaken: (v) => isObject(v) && isNonEmptyText(v.when) && isNonEmptyText(v.comfort) },
+};
+const ME_EXTRA_KEYS = Object.values(ME_AREA_FIELDS).flatMap((fields) => Object.keys(fields));
+/** 연애 말고 문단은 정확히 넷, 연애는 없다 */
+const ME_PARAGRAPHS = 4;
+
+function isMeAreaReport(v: unknown, area: MeArea): v is MeAreaReport {
+  if (!isObject(v) || v.area !== area || !isNonEmptyText(v.title) || !isTextList(v.keywords, 3)) return false;
+  if (!Array.isArray(v.stars) || v.stars.length < 1 || v.stars.length > 3 || !v.stars.every(isStar)) return false;
+  const paragraphs = area === 'LOVE' ? 0 : ME_PARAGRAPHS;
+  if (
+    !Array.isArray(v.paragraphs) ||
+    v.paragraphs.length !== paragraphs ||
+    !v.paragraphs.every((p) => isObject(p) && isNonEmptyText(p.title) && isNonEmptyText(p.body) && isReason(p.reason))
+  )
+    return false;
+  const own = ME_AREA_FIELDS[area];
+  return ME_EXTRA_KEYS.every((key) => (key in own ? own[key](v[key]) : v[key] === undefined));
+}
+
+/** 다섯 영역이 계약의 순서대로 모두 있고, 영역마다 제 칸만 있어야 한다 */
+export function isMeReport(v: unknown): v is MeReport {
+  return (
+    isObject(v) &&
+    Array.isArray(v.areas) &&
+    v.areas.length === ME_AREAS.length &&
+    v.areas.every((a, i) => isMeAreaReport(a, ME_AREAS[i]))
+  );
+}
+
+export function isMeReportState(v: unknown): v is MeReportState {
+  if (!isObject(v)) return false;
+  if (v.status === 'DONE') return isMeReport(v.report);
+  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+const isMeReportRequest = (v: unknown): v is MeReportRequest =>
+  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
 
 export function isMyAccount(v: unknown): v is MyAccount {
   return (
@@ -427,7 +622,8 @@ export function isMyAccount(v: unknown): v is MyAccount {
     (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar))) &&
     (v.email === null || typeof v.email === 'string') &&
     typeof v.provider === 'string' &&
-    typeof v.marketingConsent === 'boolean'
+    typeof v.marketingConsent === 'boolean' &&
+    (v.suspended === undefined || typeof v.suspended === 'boolean')
   );
 }
 
@@ -437,6 +633,7 @@ const myAccountOf = (v: MyAccount): MyAccount => ({
   email: v.email,
   provider: v.provider,
   marketingConsent: v.marketingConsent,
+  suspended: v.suspended === true,
 });
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -702,6 +899,41 @@ const isReportRequest = (v: unknown): v is ReportRequest =>
 
 const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
 
+/** 서버의 한 건(값이 없는 키는 빠져 온다 — answer · replyEmail) */
+type InquiryItemWire = {
+  id: string;
+  category: string;
+  body: string;
+  status: string;
+  createdAt: string;
+  answer?: { body: string; answeredAt: string };
+  replyEmail?: string | null;
+};
+
+const isInquiryItemWire = (v: unknown): v is InquiryItemWire =>
+  isObject(v) &&
+  isText(v.id) &&
+  typeof v.category === 'string' &&
+  typeof v.body === 'string' &&
+  typeof v.status === 'string' &&
+  isText(v.createdAt) &&
+  (v.answer === undefined || (isObject(v.answer) && typeof v.answer.body === 'string' && isText(v.answer.answeredAt))) &&
+  (v.replyEmail === undefined || v.replyEmail === null || typeof v.replyEmail === 'string');
+
+const isInquiryList = (v: unknown): v is InquiryItemWire[] => Array.isArray(v) && v.every(isInquiryItemWire);
+
+const isInquiryCategory = (v: string): v is InquiryCategory => INQUIRY_CATEGORIES.some((c) => c === v);
+
+/** 앱이 쓰는 모양으로: 모르는 종류는 기타, 답이 없으면 null, 이메일 글자는 버리고 있었는지만 */
+const inquiryItemOf = (v: InquiryItemWire): InquiryItem => ({
+  id: v.id,
+  category: isInquiryCategory(v.category) ? v.category : 'ETC',
+  body: v.body,
+  createdAt: v.createdAt,
+  answer: v.answer ? { body: v.answer.body, answeredAt: v.answer.answeredAt } : null,
+  emailed: typeof v.replyEmail === 'string' && v.replyEmail.length > 0,
+});
+
 /** 하나라도 어긋나면 목록 전체를 받지 않는다. 계약에 없는 필드는 보지 않는다 */
 export function isFaqList(v: unknown): v is Faq[] {
   return (
@@ -783,6 +1015,8 @@ export type ApiConfig = {
   onUpdateRequired?: () => void;
   /** 서버가 503 `MAINTENANCE` 로 거절했을 때 부른다(결정 030) */
   onMaintenance?: () => void;
+  /** 서버가 403 `ACCOUNT_SUSPENDED` 로 거절했을 때 부른다(이용 정지 — 결정 065 의 5, 서버 결정 044) */
+  onSuspended?: () => void;
   /**
    * 웹이면 true: 세션은 서버의 httpOnly 쿠키 `bm_session` 이다(결정 034). 모든 요청에 쿠키를 싣고(`credentials: 'include'`),
    * Authorization 헤더를 붙이지 않으며, 로그인 · 가입 · 개발용 로그인에 `cookie: true` 를 보내고 받은 토큰을 버린다.
@@ -802,6 +1036,8 @@ const UPDATE_REQUIRED = 'UPDATE_REQUIRED';
 
 /** `{ error }` 로 오는 이름: 점검 중이다(상태 503). `/app-config` 를 뺀 모든 주소가 이렇게 답한다 */
 const MAINTENANCE = 'MAINTENANCE';
+/** 이용이 정지된 계정의 거절 이름(서버 결정 044) — 문의 · 계정 보기 · 로그아웃 · 계정 삭제 말고는 모두 이 403 이다 */
+const ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED';
 
 /** 가짜 서버의 설정. 아무도 막지 않는다 */
 const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
@@ -816,7 +1052,7 @@ const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
 const FIXTURE_TOKEN = 'fixture-session';
 
 /** 모의 서버(`useFixtures`)의 내 계정 */
-const FIXTURE_MY_ACCOUNT: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+const FIXTURE_MY_ACCOUNT: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 
 export function createApi(config: ApiConfig) {
   /**
@@ -869,6 +1105,7 @@ export function createApi(config: ApiConfig) {
       const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
       if (status === 426 && code.code === UPDATE_REQUIRED) config.onUpdateRequired?.();
       if (status === 503 && code.code === MAINTENANCE) config.onMaintenance?.();
+      if (status === 403 && code.code === ACCOUNT_SUSPENDED) config.onSuspended?.();
       return { ok: false, error: 'SERVER', status, ...code };
     }
 
@@ -1028,17 +1265,6 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)의 이성 · 미래 주제. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
-     * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
-     * 미래는 "지금의 시기" 가 달라진 날부터 같은 요청이 새 글을 준다. 그래서 볼 때마다 부른다(결정 026).
-     */
-    async createDirection(topic: 'LOVE' | 'FUTURE'): Promise<ApiResult<Direction>> {
-      if (config.useFixtures)
-        return { ok: true, data: topic === 'FUTURE' ? fixtures.directionFuture : fixtures.direction };
-      return request('POST', '/directions', { body: { topic }, validate: isDirectionOf(topic) });
-    },
-
-    /**
      * `POST /directions` 의 궁합 주제: 직접 입력 궁합 한 건(`synastryId`)에 대한 글. birth 는 상대의 출생 정보이고
      * 그 궁합의 글을 처음 만들 때만 필요하다(서버에 없어 다시 보낸다). 글이 없는데 보내지 않으면 400 `BIRTH_REQUIRED`,
      * 그 궁합의 상대가 아니면 400 `BIRTH_MISMATCH`, 내 출생 정보가 바뀌었으면 409 `PROFILE_CHANGED` 가 code 로 온다.
@@ -1066,11 +1292,26 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/reports/me', { validate: isReportState });
     },
 
+    /** `POST /me-report` 나 탭 풀이를 쓰기 시작한다(결정 048). 202 로 바로 답하고 글은 뒤에서 쓴다. 402 `PURCHASE_REQUIRED` 는 1.1.0 예약 */
+    async requestMeReport(): Promise<ApiResult<MeReportRequest>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
+      return request('POST', '/me-report', { validate: isMeReportRequest });
+    },
+
+    /** `GET /me-report` 나 탭 풀이의 상태와(DONE 이면) 글 */
+    async getMeReport(): Promise<ApiResult<MeReportState>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.meReport } };
+      return request('GET', '/me-report', { validate: isMeReportState });
+    },
+
     /** `GET /account` 내 계정 — 홈 별명 카드(닉네임 · 프로필, 결정 047)와 마이 · 계정 화면(결정 056)이 함께 쓴다. 동의 일시 · 푸시 동의는 앱이 쓰지 않아 버린다 */
     async getMyAccount(): Promise<ApiResult<MyAccount>> {
       if (config.useFixtures) return { ok: true, data: FIXTURE_MY_ACCOUNT };
       const res = await request('GET', '/account', { validate: isMyAccount });
-      return res.ok ? { ok: true, data: myAccountOf(res.data) } : res;
+      if (!res.ok) return res;
+      // 정지된 계정에도 이 경로는 200 이다 — 403 대신 이 값으로 정지를 알린다(서버 결정 044)
+      if (res.data.suspended === true) config.onSuspended?.();
+      return { ok: true, data: myAccountOf(res.data) };
     },
 
     /**
@@ -1090,15 +1331,32 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /inquiries` 문의를 보낸다(결정 024). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` ·
-     * `INVALID_BODY` · `INVALID_EMAIL`). 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용과 주소는 어디에도 남기지 않는다.
+     * `POST /inquiries` 문의를 보낸다(결정 058). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` · `INVALID_BODY`).
+     * 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용은 어디에도 남기지 않는다.
      */
     async createInquiry(input: InquiryInput): Promise<ApiResult<InquiryCreated>> {
       if (config.useFixtures) return { ok: true, data: { id: 'fixture-inquiry' } };
       return request('POST', '/inquiries', {
-        body: { category: input.category, body: input.body, replyEmail: input.replyEmail },
+        body: { category: input.category, body: input.body },
         validate: isInquiryCreated,
       });
+    },
+
+    /** `GET /inquiries` 내 문의 전부, 새것부터(서버 순서 그대로). 없으면 빈 목록. 한 줄이라도 모양이 틀리면 INVALID */
+    async getInquiries(): Promise<ApiResult<InquiryItem[]>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.inquiries };
+      const res = await request('GET', '/inquiries', { validate: isInquiryList });
+      return res.ok ? { ok: true, data: res.data.map(inquiryItemOf) } : res;
+    },
+
+    /** `GET /inquiries/{id}` 내 문의 한 건과 답. 남의 것 · 없는 것은 404 `NOT_FOUND` */
+    async getInquiry(id: string): Promise<ApiResult<InquiryItem>> {
+      if (config.useFixtures) {
+        const found = fixtures.inquiries.find((item) => item.id === id);
+        return found ? { ok: true, data: found } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
+      }
+      const res = await request('GET', `/inquiries/${encodeURIComponent(id)}`, { validate: isInquiryItemWire });
+      return res.ok ? { ok: true, data: inquiryItemOf(res.data) } : res;
     },
 
     /**
@@ -1228,6 +1486,13 @@ export function setMaintenanceHandler(handler: (() => void) | null) {
   maintenanceHandler = handler;
 }
 
+let suspendedHandler: (() => void) | null = null;
+
+/** 이용 정지(403 `ACCOUNT_SUSPENDED`)를 받았을 때 부를 것을 정한다. 정지 문(`features/auth/suspension-gate.tsx`)이 건다 */
+export function setSuspendedHandler(handler: (() => void) | null) {
+  suspendedHandler = handler;
+}
+
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
@@ -1237,5 +1502,6 @@ export const api = createApi({
   client: appClient,
   onUpdateRequired: () => updateRequiredHandler?.(),
   onMaintenance: () => maintenanceHandler?.(),
+  onSuspended: () => suspendedHandler?.(),
   cookieSession: Platform.OS === 'web',
 });

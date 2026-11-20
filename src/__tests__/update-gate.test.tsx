@@ -7,6 +7,7 @@ import { AppState, Pressable, Text, type AppStateStatus } from 'react-native';
 
 import RootLayout from '@/app/_layout';
 import { strings } from '@/content/strings';
+import { clearDeviceData } from '@/features/auth/delete-account';
 import { useSession } from '@/features/auth/use-session';
 import { UpdateGate, useGenerationBusy, useUpdateBusy } from '@/features/update/update-gate';
 import {
@@ -310,7 +311,8 @@ describe('강제 업데이트(결정 027)', () => {
 
 describe('업데이트 권유(결정 059)', () => {
   const S = U.suggest;
-  const ASKED_KEY = 'byeolmyeong.updateAsked.v1';
+  /** 사람이 아니라 기기에 붙는 값이라 로그아웃 · 탈퇴가 지우지 않는 머리(`byeolmyeong-device.`, 소개 기록과 같다) */
+  const ASKED_KEY = 'byeolmyeong-device.updateAsked.v1';
   /** 내 버전 1.0.0 보다 새 최신 1.1.0 이 나왔다(최소는 없다) */
   const newer = configOf({ latestVersion: '1.1.0', storeUrl: STORE_URL });
   /** 권유 창이 떠 있는가 — 막는 화면과 제목이 같아 설명으로 가린다 */
@@ -368,6 +370,21 @@ describe('업데이트 권유(결정 059)', () => {
     expect(mockOpenURL).toHaveBeenCalledWith(STORE_URL);
     expect(dialog()).toBeNull();
     expect(await AsyncStorage.getItem(ASKED_KEY)).toBe('1.1.0');
+  });
+
+  it('물은 버전은 로그아웃 · 탈퇴가 기기를 비워도 남는다 — 다시 로그인해도 같은 최신 버전은 묻지 않는다', async () => {
+    const first = await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await fireEvent.press(await screen.findByRole('button', { name: S.later }));
+    await first.unmount();
+
+    await AsyncStorage.setItem('byeolmyeong.birth.v1', '{}');
+    await clearDeviceData();
+    expect(await AsyncStorage.getItem('byeolmyeong.birth.v1')).toBeNull();
+    expect(await AsyncStorage.getItem(ASKED_KEY)).toBe('1.1.0');
+
+    await render(<UpdateGate canSuggest>{app}</UpdateGate>);
+    await settle();
+    expect(dialog()).toBeNull();
   });
 
   it('같은 최신 버전을 이 기기에서 이미 물었으면 앱을 새로 켜도 묻지 않는다', async () => {

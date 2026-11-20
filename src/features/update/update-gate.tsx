@@ -18,8 +18,11 @@ import { appClient } from '@/lib/app-client';
 
 const UpdateContext = createContext<UpdateStore | null>(null);
 
-/** 업데이트를 권한 최신 버전(결정 059). 기기 저장소에 둔다 — `byeolmyeong.` 머리라 로그아웃 · 탈퇴 때 함께 지워진다 */
-const UPDATE_ASKED_KEY = 'byeolmyeong.updateAsked.v1';
+/**
+ * 업데이트를 권한 최신 버전(결정 059). 사람이 아니라 기기에 붙는 값이라 로그아웃 · 탈퇴의 `clearDeviceData` 가 지우지 않는
+ * `byeolmyeong-device.` 머리로 둔다(소개 기록과 같다) — 다시 로그인해도 같은 최신 버전은 묻지 않는다.
+ */
+const UPDATE_ASKED_KEY = 'byeolmyeong-device.updateAsked.v1';
 
 export type UpdateGateProps = {
   children: ReactNode;

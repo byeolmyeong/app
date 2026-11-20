@@ -7,11 +7,12 @@ last_reviewed: 2026-11-20
 # 홈 · 나 탭 · 시기 · 오늘의 하늘 · 알림함 · 공유 — 확정 시안 구현(앱)
 
 > 상태: 승인(소유자 2026-11-20 "그 작업해야지 지금까지 만들어 놓은 것들은" — 확정 시안대로 구현) · 기준 2026-11-20 develop `29f9b6c` · 브랜치 `docs/home-me-timing-plan`(이 계획 · 결정 046~054) · 시안: 피그마 `UlZGMcMO4LidtzLlJl4KFv` 「별명」 보드 11 · 12 · 13, 캔버스 https://claude.ai/artifact/Rt33TzPSEe4PdxNRCej3xT 의 "14 시기" 보드 8개 · 서버 계획: 서버 저장소 `docs/plans/2026-11-20-home-me-timing.md`(같은 이름 브랜치, 계약 표의 원본)
+> **이어받음(2026-11-20)**: `docs/plans/2026-11-20-sian-all-repos.md` 가 이 계획의 순서 · 바뀐 줄 · 새 묶음을 맡는다. 결정 055 로 아래 탭은 **넷**(궁합은 1.1.0), 057 로 휴대폰 푸시가 1.0.0 에 들어온다.
 
 ## 목표
 - 무엇을: 확정 시안의 홈 v2 · 아래 탭 다섯 칸 · 나 탭(칩 다섯) · 시기 탭(이번 달 · 올해 · 인생 · 시기 자세히 · 그날의 하늘) · 오늘의 하늘 · 알림함 · 공유 v2 · "이렇게 풀이한 이유" 를 앱(iOS · Android · 웹)에 옮긴다.
 - 누구를 위해: 가입한 사람이 매일 다시 열 이유(오늘의 하늘 · 이번 달)를 얻고, 나 · 시기를 따로 자세히 받는다(1.1.0 부터 유료).
-- 끝나면: 아래 탭 홈 · 나 · 시기 · 궁합 · 마이, `/report` · `/direction` 없음, 모든 풀이 문단에 펼치는 이유 줄, 공유는 스토리 · 이미지 저장.
+- 끝나면: 아래 탭 홈 · 나 · 시기 · 마이(결정 055), `/report` · `/direction` 없음, 모든 풀이 문단에 펼치는 이유 줄, 공유는 스토리 · 이미지 저장.
 
 ## 결정된 전제
 - 원본: docs/raw/2026-11-20-session-owner-qna-home-me-timing.md(질문 · 답 1~12). 정리본은 아래 결정이다.
@@ -69,7 +70,7 @@ last_reviewed: 2026-11-20
 ## PR 묶음과 순서
 | 묶음 | 결정 | 기다리는 것 |
 |---|---|---|
-| A① 아래 탭 5칸 + 홈 v2 | 046 · 047 | 없음 |
+| A① 아래 탭 넷 + 홈 v2 | 046 · 047 · 055 | 없음 |
 | A② 나 탭 + 나 탭 풀이 + 이유 펼침 · 말풍선 | 048 · 050 · 054 | 서버 S① · S②, `feat/sky-map` 합침, 온보딩 v2 합침 |
 | A③ 시기 탭 + 홈 시기 칸 | 049 · 050 | 서버 S③ · S④ |
 | A④ 오늘의 하늘 + 알림함 + 홈 오늘의 하늘 · 종 | 051 · 052 | 서버 S④ · S⑤ |
@@ -79,21 +80,21 @@ last_reviewed: 2026-11-20
 
 ## 태스크
 
-### A① 아래 탭 5칸 + 홈 v2
+### A① 아래 탭 넷 + 홈 v2 (결정 055)
 
 #### 1. strings-tabs-home · 상태: 대기
 - 읽을 것: 결정 046 · 047, 보드 11 · 11-1, `src/content/strings.ts` 의 `tabs` · `home`
-- 할 것: `strings.tabs` 다섯(홈 · 나 · 시기 · 궁합 · 마이), `strings.home` 의 별명 카드("○○ 님" · "별명을 받은 지 ○일" · 풀이 읽기). 쓰지 않게 되는 홈 카테고리 문구는 지운다.
+- 할 것: `strings.tabs` 넷(홈 · 나 · 시기 · 마이 — 결정 055), `strings.home` 의 별명 카드("○○ 님" · "별명을 받은 지 ○일" · 풀이 읽기). 쓰지 않게 되는 홈 카테고리 문구는 지운다.
 - 주는 것: 문구 키
 - 하지 말 것: 화면 파일에 문구를 쓰지 않는다.
 - 검증: `npm test -- strings` 통과, 새 키에 빈 값 없음(테스트)
 
 #### 2. bottom-tabs-five · 상태: 대기
 - 읽을 것: `src/features/home/main-tabs.tsx` · `src/components/bottom-tabs.tsx` · 그 테스트
-- 할 것: `MainTab = 'home' | 'me' | 'timing' | 'synastry' | 'my'`, 다섯 칸 · 시안 아이콘, 누르면 `router.replace`. 나 → `/reading`, 시기 → `/report?area=TIMING`, 궁합 → `/synastry`(임시 대상은 한 곳의 표). 아래 탭을 그리는 화면: 홈 · 마이 · `/reading` · `/report` · `/synastry`.
-- 주는 것: 다섯 칸 탭
+- 할 것: `MainTab = 'home' | 'me' | 'timing' | 'my'`, 네 칸 · 시안 아이콘, 누르면 `router.replace`. 나 → `/reading`, 시기 → `/report?area=TIMING`(임시 대상은 한 곳의 표). 아래 탭을 그리는 화면: 홈 · 마이 · `/reading` · `/report`. `/synastry` 로 들어오면 홈으로(결정 055 의 1).
+- 주는 것: 네 칸 탭
 - 하지 말 것: Expo Router `Tabs` 로 바꾸지 않는다. 이유: 결정 046 의 2.
-- 검증: 탭 다섯이 보이고 누르면 그 경로로 바뀌며 뒤로 가기에 쌓이지 않는다(테스트)
+- 검증: 탭 넷이 보이고 누르면 그 경로로 바뀌며 뒤로 가기에 쌓이지 않는다(테스트)
 
 #### 3. home-v2 · 상태: 대기
 - 읽을 것: 결정 047, 보드 11 · 11-1, `home-categories.tsx` · `home-reading-card.tsx`, `src/app/index.tsx`
@@ -103,11 +104,11 @@ last_reviewed: 2026-11-20
 - 검증: `createdAt` 있음/없음 · 시각 모름 각각의 홈 렌더 테스트, 지운 파일을 가리키는 import 없음(`npx tsc --noEmit`)
 
 #### 4. docs-a1 · 상태: 대기
-- 할 것: docs/release-1.0.0.md "화면" 표(아래 탭 다섯 · 홈), docs/architecture.md 디렉터리 설명(홈).
+- 할 것: docs/release-1.0.0.md "화면" 표(아래 탭 넷 · 홈), docs/architecture.md 디렉터리 설명(홈).
 - 검증: 지운 화면 이름이 문서에 남지 않음(`grep -n home-categories docs` 비어 있음)
 
 #### 5. verify-a1 · 상태: 대기
-- 할 것: `/verify`, 웹에서 홈 → 탭 다섯 → 홈 왕복, 보드 11-1 과 나란히 스크린샷.
+- 할 것: `/verify`, 웹에서 홈 → 탭 넷 → 홈 왕복, 보드 11-1 과 나란히 스크린샷.
 - 검증: 표 전부 통과
 
 ### A② 나 탭 + 나 탭 풀이 + 이유 펼침 (서버 S① · S②, `feat/sky-map` · 온보딩 v2 합친 뒤)

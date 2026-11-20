@@ -10,6 +10,7 @@ import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
+import { TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -35,6 +36,8 @@ jest.mock('@/lib/api', () => ({
     createReading: jest.fn(),
     // 기기가 비어 있으면 서버의 출생 정보로 되살려 본다(결정 029) — 이 테스트들에서는 저장된 것이 없다
     getProfile: jest.fn(async () => ({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' })),
+    // 홈의 시기 칸(결정 047 의 1-4)은 시기 풀이 상태만 묻는다 — 만들기(POST)는 시기 탭에서 사람이 누를 때만
+    getTimingReport: jest.fn(),
   },
 }));
 
@@ -51,6 +54,7 @@ beforeEach(async () => {
   jest.clearAllMocks();
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
+  mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
 });
 
 /** 기기 시계를 고정한 테스트가 쓴다(별명을 받은 지 N일) */
@@ -166,7 +170,7 @@ describe('홈', () => {
     expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
   });
 
-  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /timing(A③ 전까지 임시 화면)', async () => {
+  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /timing(시기 탭, 결정 049)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findByTestId('nickname-card');
@@ -243,6 +247,73 @@ describe('홈', () => {
     await render(<HomeScreen />);
     await screen.findByPlaceholderText(strings.home.datePlaceholder);
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
+  });
+});
+
+describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2)', () => {
+  const T = strings.timing;
+  const report = fixtures.timingReport;
+  const main = report.intervals.find((i) => i.id === report.current.mainId)!;
+  const birthKey = JSON.stringify([profile.date, profile.time, profile.place.id]);
+  beforeEach(async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
+  });
+
+  it('시기 풀이가 다 됐으면 "지금 나의 시기"(지나온 시기 — 지금 — 2028 큰 변화, 대표 구간 이름 · "2027년 1월까지") · 작은 실천 셋, 누르면 시기 탭', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
+    await render(<HomeScreen />);
+    const card = await screen.findByTestId('home-timing-card');
+    expect(within(card).getByText(T.now)).toBeTruthy();
+    expect(within(card).getByText(T.home.past)).toBeTruthy();
+    expect(within(card).getByText('2028 큰 변화')).toBeTruthy();
+    expect(within(card).getByText(main.title)).toBeTruthy();
+    expect(within(card).getByText('2027년 1월까지')).toBeTruthy();
+    const practices = screen.getByTestId('home-timing-practices');
+    expect(within(practices).getAllByTestId('timing-todo')).toHaveLength(3);
+    expect(within(practices).getByText(main.practices![0].title)).toBeTruthy();
+    await fireEvent.press(card);
+    expect(router.replace).toHaveBeenLastCalledWith('/timing');
+  });
+
+  it('받아 둔 시기 풀이는 기기에서 먼저 그린다(결정 047 의 2)', async () => {
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report }));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
+  });
+
+  it('시기 풀이가 없으면 "지금 나는 어떤 시기일까 · 자세한 풀이 받기" — 누르면 시기 탭(여기서 만들기를 시작하지 않는다)', async () => {
+    await render(<HomeScreen />);
+    const empty = await screen.findByTestId('home-timing-empty');
+    expect(within(empty).getByText(T.home.emptyTitle)).toBeTruthy();
+    await fireEvent.press(within(empty).getByRole('button', { name: T.home.request }));
+    expect(router.replace).toHaveBeenLastCalledWith('/timing');
+    expect(screen.queryByTestId('home-timing-card')).toBeNull();
+  });
+
+  it('쓰는 중이면 칸이 없다(보드 11-2)', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => {});
+    expect(screen.queryByTestId('home-timing-card')).toBeNull();
+    expect(screen.queryByTestId('home-timing-empty')).toBeNull();
+  });
+
+  it('상태를 못 물었으면 그 자리에 안내(19-1) · 다시 보기, 서버에 경로가 없으면(404) 칸을 숨긴다', async () => {
+    mockApi.getTimingReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 500 });
+    const view = await render(<HomeScreen />);
+    expect(await screen.findByTestId('card-fail')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: strings.states.loadFail.retry }));
+    expect(await screen.findByTestId('home-timing-empty')).toBeTruthy();
+    await view.unmount();
+    mockApi.getTimingReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404 });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => {});
+    expect(screen.queryByTestId('card-fail')).toBeNull();
+    expect(screen.queryByTestId('home-timing-empty')).toBeNull();
   });
 });
 

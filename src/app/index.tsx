@@ -9,7 +9,7 @@ import { Screen } from '@/components/screen';
 import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
 import { useLoadingPhase } from '@/components/use-loading-phase';
-import { useOnline } from '@/components/use-online';
+import { useOnReconnect, useOnline } from '@/components/use-online';
 import { Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { recheckSession, useSession } from '@/features/auth/use-session';
@@ -24,10 +24,12 @@ import { MainTabs } from '@/features/home/main-tabs';
 import { NicknameCard } from '@/features/home/nickname-card';
 import { useAccount } from '@/features/home/use-account';
 import { useStoredHeadline } from '@/features/reading/use-reading';
+import { HomeTimingCards } from '@/features/timing/home-timing-card';
+import { useTimingReport } from '@/features/timing/use-timing-report';
 
 /**
- * 홈 v2(결정 047 · 055, 보드 11 · 11-1). 출생 정보가 있으면 머리(로고) · 별명 카드 · 아래 탭 넷을 보여 주고
- * (오늘의 하늘 · 지금 나의 시기 · 작은 실천 칸은 계획 묶음 A③ · A④ 가 더한다), 없으면 출생 정보 입력부터 받는다.
+ * 홈 v2(결정 047 · 055, 보드 11 · 11-1 · 11-2). 출생 정보가 있으면 머리(로고) · 별명 카드 · 지금 나의 시기 · 작은 실천 · 아래 탭 넷을 보여 주고
+ * (오늘의 하늘 칸은 계획 묶음 A④ 가 더한다), 없으면 출생 정보 입력부터 받는다. 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
  * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
  * 기기에 출생 정보가 없고 세션이 있으면 서버에 저장된 것으로 한 번 되살려 본다(결정 029). 그동안에는 불러오는 중만 보여 주고,
  * 되살리지 못하면 입력부터 받는다. 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts).
@@ -62,6 +64,12 @@ function Home({ onRetry }: { onRetry: () => void }) {
   useEffect(() => {
     if (firstData || phase === 'timeout') markHomeReady();
   }, [firstData, phase]);
+  // 시기 칸(결정 047 의 1-4 · 1-5): 로그인이 확인된 뒤에만 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41)
+  const timing = useTimingReport(session.ready && session.status === 'signedIn' ? input : null);
+  useOnReconnect(online, () => {
+    if (timing.state.status === 'done') timing.refresh();
+    else if (timing.state.status === 'unknown') timing.recheck();
+  });
   const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} />;
   if (phase === 'timeout')
     return (
@@ -109,6 +117,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
             headline={reading?.headline ?? null}
             onOpen={() => router.push('/reading')}
           />
+          {/* 누르면 시기 탭 — 탭을 바꾸는 것과 같이 쌓지 않는다(결정 046 의 2) */}
+          <HomeTimingCards state={timing.state} online={online} onOpen={() => router.replace('/timing')} onRetry={timing.recheck} />
         </View>
       </Screen>
     );

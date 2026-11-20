@@ -168,12 +168,15 @@ export default function MeScreen() {
   // 상태를 10초 넘게 묻지 못하면 빈 화면 대신 카드 자리 안내(결정 065 의 2) — 기다리던 요청은 훅이 같은 10초에 끊는다
   const checkTimedOut = s.status === 'checking' && phase === 'timeout';
   if (!reading || (s.status === 'checking' && !checkTimedOut)) {
-    if (phase !== 'skeleton') return <Screen nav={afterNav} footer={tabs}>{null}</Screen>;
     // 뼈대는 다 그려질 화면의 배치 그대로(결정 071). 기기에 받아 둔 풀이가 없어 대개 받기 전이다 — 칩을 골라 들어왔고
-    // (`?area=` — 푸시 "자세한 풀이가 다 됐어요" 는 12-8 로 연다, 결정 066) 아직 상태를 묻는 중이면 받은 뒤 배치
-    if (askedArea && s.status === 'checking')
+    // (`?area=` — 푸시 "자세한 풀이가 다 됐어요" 는 12-8 로 연다, 결정 066) 아직 상태를 묻는 중이면 받은 뒤 배치.
+    // 0.3초 전 빈 단계에도 그 배치의 머리 · 아래 탭을 둔다(중간에 바뀌지 않게, 071 의 6)
+    const afterLayout = askedArea !== null && s.status === 'checking';
+    const loadingNav = afterLayout ? afterNav : <NavBar title={strings.reading.title} chevron />;
+    if (phase !== 'skeleton') return <Screen nav={loadingNav} footer={tabs}>{null}</Screen>;
+    if (afterLayout)
       return (
-        <Screen nav={afterNav} footer={tabs}>
+        <Screen nav={loadingNav} footer={tabs}>
           <SkeletonGroup testID="me-after-skeleton">
             <View>
               <MeNicknameCardSkeleton />
@@ -184,7 +187,7 @@ export default function MeScreen() {
         </Screen>
       );
     return (
-      <Screen nav={<NavBar title={strings.reading.title} chevron />} footer={tabs}>
+      <Screen nav={loadingNav} footer={tabs}>
         <SkeletonGroup testID="me-skeleton">
           <View>
             <ReadingSkeleton card={chart ? <SignCardSkeleton chart={chart} /> : null} />

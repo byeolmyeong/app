@@ -155,6 +155,15 @@ describe('뼈대 = 다 그려진 화면의 칸 · 순서(결정 071)', () => {
   it('나 탭 받은 뒤(칩을 골라 들어옴 — 푸시 12-8): 별명 카드 → 칩 다섯 → 영역 카드(키워드 셋 · 쓰인 별 셋)', async () => {
     (useLocalSearchParams as jest.Mock).mockReturnValue({ area: 'PERSONALITY' });
     await storeReading();
+    // 0.3초 전 빈 단계부터 받은 뒤 화면의 머리(나) — 중간에 바뀌지 않게(결정 071 의 6)
+    mockApi.getMeReport.mockReturnValueOnce(new Promise(() => {}));
+    jest.useFakeTimers();
+    const blank = await render(<MeScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(100)));
+    expect(screen.queryByTestId('me-after-skeleton')).toBeNull();
+    expect(screen.queryByText(strings.reading.title)).toBeNull();
+    await blank.unmount();
+    jest.useRealTimers();
     let resolve: (r: { ok: true; data: { status: 'DONE'; report: typeof fixtures.meReport } }) => void = () => {};
     mockApi.getMeReport.mockReturnValueOnce(new Promise((r) => (resolve = r)));
     const { names: skeleton, view } = await skeletonOf(<MeScreen />, 'me-after-skeleton');

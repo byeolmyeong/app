@@ -71,6 +71,9 @@ describe('요약 해석 화면', () => {
     await act(async () => void (await jest.advanceTimersByTimeAsync(100)));
     expect(screen.queryByTestId('reading-skeleton')).toBeNull();
     expect(screen.queryByText(R.generating)).toBeNull();
+    // 0.3초 전 빈 단계에도 뼈대와 같은 머리 · 아래 탭(결정 071 의 6)
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
     await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
     expect(screen.getByTestId('reading-skeleton')).toBeTruthy();
     expect(screen.getByLabelText(ST.loading)).toBeTruthy();

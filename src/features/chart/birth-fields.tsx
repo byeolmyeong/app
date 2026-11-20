@@ -4,10 +4,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { CheckBox } from '@/components/checkbox';
 import { Field, FieldInput, FieldSelect } from '@/components/field';
-import { ScrollPicker } from '@/components/scroll-picker';
 import { Sheet } from '@/components/sheet';
+import { TimeWheel } from '@/components/time-wheel';
 import { Txt } from '@/components/txt';
-import { Colors, Sizes, Spacing } from '@/constants/theme';
+import { Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import {
   formatDateTyping,
@@ -29,12 +29,6 @@ const DATE_LENGTH = 10;
 /** 시각을 처음 고를 때 가운데에 놓이는 값 */
 const DEFAULT_TIME: TimePick = { period: 'PM', hour: 12, minute: 0 };
 
-const PERIODS = [
-  { value: 'AM' as const, label: strings.detail.am },
-  { value: 'PM' as const, label: strings.detail.pm },
-];
-const HOURS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
-const MINUTES = Array.from({ length: 60 }, (_, i) => ({ value: i, label: String(i).padStart(2, '0') }));
 
 /**
  * 출생 정보 세 칸(생년월일 · 태어난 시각 · 태어난 곳)의 값과 검사. 내 출생 정보 입력과 궁합의 상대 입력이 함께 쓴다.
@@ -212,33 +206,7 @@ export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
 
       <Sheet visible={c.sheet === 'time'} onClose={() => c.setSheet(null)}>
         <View testID="time-body" style={styles.timeBody}>
-          <View style={styles.pickers}>
-            <View pointerEvents="none" style={styles.band} />
-            <ScrollPicker
-              testID="time-period"
-              band={false}
-              items={PERIODS}
-              value={c.timeDraft.period}
-              onChange={(period) => c.setTimeDraft((d) => ({ ...d, period }))}
-            />
-            <ScrollPicker
-              testID="time-hour"
-              band={false}
-              loop
-              items={HOURS}
-              value={c.timeDraft.hour}
-              onChange={(hour) => c.setTimeDraft((d) => ({ ...d, hour }))}
-            />
-            <Txt variant="pickerOn">{strings.common.timeColon}</Txt>
-            <ScrollPicker
-              testID="time-minute"
-              band={false}
-              loop
-              items={MINUTES}
-              value={c.timeDraft.minute}
-              onChange={(minute) => c.setTimeDraft((d) => ({ ...d, minute }))}
-            />
-          </View>
+          <TimeWheel value={c.timeDraft} onChange={c.setTimeDraft} />
           <Button label={S.timeConfirm} onPress={c.onConfirmTime} />
         </View>
       </Sheet>
@@ -256,28 +224,9 @@ export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
   );
 }
 
-const PICKER_HEIGHT = Sizes.pickerRow * Sizes.pickerRows;
-
 const styles = StyleSheet.create({
   fields: { gap: Spacing.lg },
   unknown: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xxs + Spacing.hairline },
   /** 제목 없는 시트(결정 056 의 9 · 061 의 6): 시트 위 여백(32)에 더해, 시트 위 끝에서 드럼까지 시안 8-1 의 58 */
   timeBody: { gap: Spacing.md + Spacing.xxs, marginTop: Sizes.pickerSheetTop - Spacing.xl },
-  pickers: {
-    height: PICKER_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xxs,
-  },
-  /** 세 열을 가로지르는 가운데 줄 뒤의 띠 */
-  band: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: Sizes.pickerRow * Math.floor(Sizes.pickerRows / 2),
-    height: Sizes.pickerRow,
-    borderRadius: Sizes.pickerBandRadius,
-    backgroundColor: Colors.sheetFill,
-  },
 });

@@ -197,9 +197,9 @@ describe('api: 마이의 내 계정', () => {
     pushConsentAt: '2026-11-20T00:00:00Z',
     avatar: 3,
   };
-  const mine = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
+  const mine = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false, pushConsent: true };
 
-  it('GET /account 에서 닉네임 · 프로필 · 이메일 · 공급자 · 마케팅 동의만 읽는다(동의 일시 · 푸시 동의는 버린다)', async () => {
+  it('GET /account 에서 닉네임 · 프로필 · 이메일 · 공급자 · 마케팅 동의 · 푸시 동의를 읽는다(동의 일시는 버린다)', async () => {
     const fetchFn = fakeFetch(200, account);
     const res = await app(fetchFn).getMyAccount();
     expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/account`);
@@ -230,6 +230,31 @@ describe('api: 마이의 내 계정', () => {
     }
   });
 
+  it('오늘의 하늘 두 칸(S10-2)은 둘 다 올 때만 읽고, 푸시 동의가 없는 옛 서버는 그 칸 없이 받는다', async () => {
+    const sky = await app(fakeFetch(200, { ...account, todaySkyPush: false, todaySkyTime: '21:05' })).getMyAccount();
+    expect(sky).toEqual({ ok: true, data: { ...mine, todaySkyPush: false, todaySkyTime: '21:05' } });
+    const half = await app(fakeFetch(200, { ...account, todaySkyPush: true })).getMyAccount();
+    expect(half).toEqual({ ok: true, data: mine });
+    const { pushConsent: _p, pushConsentAt: _a, ...old } = account;
+    const res = await app(fakeFetch(200, old)).getMyAccount();
+    expect(res.ok && 'pushConsent' in res.data).toBe(false);
+  });
+
+  it('알림 칸의 꼴이 틀리면 계정은 받고 그 칸만 없는 것으로 본다(받는 시간은 5분 단위 HH:mm — 홈 · 마이 · 정지 문이 같은 계정을 쓴다)', async () => {
+    const { pushConsent: _p, ...rest } = mine;
+    const noPush = await app(fakeFetch(200, { ...account, pushConsent: 'true' })).getMyAccount();
+    expect(noPush).toEqual({ ok: true, data: rest });
+    for (const bad of [
+      { ...account, todaySkyPush: 1, todaySkyTime: '08:00' },
+      { ...account, todaySkyPush: true, todaySkyTime: '08:03' },
+      { ...account, todaySkyPush: true, todaySkyTime: '8:00' },
+      { ...account, todaySkyPush: true, todaySkyTime: '24:00' },
+      { ...account, todaySkyPush: true, todaySkyTime: null },
+    ]) {
+      expect(await app(fakeFetch(200, bad)).getMyAccount()).toEqual({ ok: true, data: mine });
+    }
+  });
+
   it('PATCH /account 에 보낸 칸만 싣고, 바뀐 계정을 받는다', async () => {
     const fetchFn = fakeFetch(200, { ...account, nickname: '별빛' });
     const res = await app(fetchFn).updateAccount({ nickname: '별빛' });
@@ -242,12 +267,18 @@ describe('api: 마이의 내 계정', () => {
     const avatar = fakeFetch(200, { ...account, avatar: 5 });
     await app(avatar).updateAccount({ avatar: 5 });
     expect(bodyOf(avatar)).toEqual({ avatar: 5 });
+
+    // 알림 설정(A8-2) · 홈의 알림 받기 권유가 보내는 칸
+    const notif = fakeFetch(200, { ...account, todaySkyPush: true, todaySkyTime: '21:05' });
+    await app(notif).updateAccount({ pushConsent: true, todaySkyPush: true, todaySkyTime: '21:05' });
+    expect(bodyOf(notif)).toEqual({ pushConsent: true, todaySkyPush: true, todaySkyTime: '21:05' });
   });
 
   it.each([
     [409, 'NICKNAME_TAKEN'],
     [400, 'INVALID_NICKNAME'],
     [400, 'INVALID_AVATAR'],
+    [400, 'INVALID_TODAY_SKY_TIME'],
   ])('PATCH /account 의 %i %s 를 code 로 돌려준다', async (status, code) => {
     expect(await app(fakeFetch(status, { error: code })).updateAccount({ nickname: 'x' })).toEqual({ ok: false, error: 'SERVER', status, code });
   });

@@ -95,7 +95,7 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(await card.findByText('새벽별')).toBeTruthy();
     expect(card.getByText(M.card.birth)).toBeTruthy();
     expect(card.queryByText(/년 .*월/)).toBeNull();
-    for (const label of [R.faq, R.inquiry, R.terms, R.privacy, R.version]) expect(screen.getByText(label)).toBeTruthy();
+    for (const label of [R.notifications, R.faq, R.inquiry, R.terms, R.privacy, R.version]) expect(screen.getByText(label)).toBeTruthy();
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
   });
 
@@ -110,10 +110,10 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.queryByLabelText(strings.nickname.avatars[2])).toBeNull();
   });
 
-  it('줄은 카드 아래 자주 묻는 질문 · 문의하기 / 이용약관 · 개인정보 처리방침 · 앱 버전(숫자만) 순서다. 로그아웃 · 계정 삭제는 없다', async () => {
+  it('줄은 카드 아래 알림 · 자주 묻는 질문 · 문의하기 / 이용약관 · 개인정보 처리방침 · 앱 버전(숫자만) 순서다. 로그아웃 · 계정 삭제는 없다', async () => {
     await render(<MyScreen />);
     await screen.findByText('새벽별');
-    const labels = [M.card.account, R.faq, R.inquiry, R.terms, R.privacy, R.version];
+    const labels = [M.card.account, R.notifications, R.faq, R.inquiry, R.terms, R.privacy, R.version];
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
     expect(places.every((p) => p >= 0)).toBe(true);
@@ -131,6 +131,7 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
   it.each([
     [M.card.account, '/my/account'],
     [M.card.birth, '/my/birth'],
+    [R.notifications, '/my/notifications'],
     [R.faq, '/settings/faq'],
     [R.inquiry, '/my/inquiries'],
     [R.terms, '/settings/terms'],
@@ -140,6 +141,20 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     await screen.findByText('새벽별');
     await fireEvent.press(screen.getByText(label));
     expect(router.push).toHaveBeenLastCalledWith(path);
+  });
+
+  it.each([
+    ['푸시 · 오늘의 하늘 둘 다 켬', { pushConsent: true, todaySkyPush: true, todaySkyTime: '21:05' }, '오후 9:05'],
+    ['푸시 끔', { pushConsent: false, todaySkyPush: true, todaySkyTime: '21:05' }, null],
+    ['오늘의 하늘 끔', { pushConsent: true, todaySkyPush: false, todaySkyTime: '21:05' }, null],
+    ['오늘의 하늘 칸이 없는 서버', { pushConsent: true }, null],
+  ])('알림 줄 오른쪽 받는 시간: %s → %s(보드 16, 끄면 숨김)', async (_, fields, shown) => {
+    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...account, ...fields } });
+    await render(<MyScreen />);
+    await screen.findByText('새벽별');
+    const row = screen.getByRole('button', { name: R.notifications });
+    if (shown) expect(within(row).getByText(shown)).toBeTruthy();
+    else expect(within(row).queryByText(/오전|오후/)).toBeNull();
   });
 
   it('문의 메일 주소를 어디에도 적지 않는다(결정 024)', async () => {

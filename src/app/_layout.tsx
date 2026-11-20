@@ -8,6 +8,7 @@ import { useSlideUpScreenOptions } from '@/components/slide-up';
 import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
+import { SuspensionGate } from '@/features/auth/suspension-gate';
 import { useSession } from '@/features/auth/use-session';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { UpdateGate } from '@/features/update/update-gate';
@@ -66,6 +67,8 @@ export default function RootLayout() {
               <Stack.Screen key={name} name={name} options={slideUp} />
             ))}
           </Stack>
+          {/* 이용 정지(결정 065 의 5): 403 ACCOUNT_SUSPENDED · 계정의 suspended 면 정지 화면으로. 로그인 직후 답이 올 때까지 스스로 가린다 */}
+          <SuspensionGate signedIn={session.status === 'signedIn'} />
           {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
         </UpdateGate>
       ) : null}

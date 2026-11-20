@@ -18,7 +18,7 @@ jest.mock('expo-router', () => ({
     },
   }),
   useSegments: jest.fn(() => []),
-  router: { replace: jest.fn() },
+  router: { replace: jest.fn(), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
 }));
 // 글꼴을 받았는지는 시험이 정한다(기본: 받음)
 let mockFontsLoaded = true;
@@ -226,5 +226,35 @@ describe('스플래시', () => {
     mockUseSession.mockReturnValue(session('signedOut'));
     await view.rerender(<RootLayout />);
     expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('루트 레이아웃의 이용 정지 문(결정 065 의 5)', () => {
+  it('로그인한 계정이 정지면 정지 화면(/suspended)으로 보낸다 — 답이 오기 전에는 가린다', async () => {
+    const { api } = jest.requireActual('@/lib/api') as typeof import('@/lib/api');
+    const { clearSuspended } = jest.requireActual('@/features/auth/suspension') as typeof import('@/features/auth/suspension');
+    let answer: () => void = () => {};
+    const spy = jest.spyOn(api, 'getMyAccount').mockReturnValue(
+      new Promise((resolve) => {
+        answer = () => {
+          // 진짜 lib/api 처럼 정지 알림을 부른 뒤 답한다
+          const { markSuspended } = jest.requireActual('@/features/auth/suspension') as typeof import('@/features/auth/suspension');
+          markSuspended();
+          resolve({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: true } });
+        };
+      }),
+    );
+    try {
+      mockSegments.mockReturnValue([]);
+      (useSession as jest.Mock).mockReturnValue({ status: 'signedIn', token: 't', ready: true, lastError: null });
+      await render(<RootLayout />);
+      expect(screen.getByTestId('suspension-cover')).toBeTruthy();
+      await act(async () => answer());
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/suspended'));
+    } finally {
+      spy.mockRestore();
+      clearSuspended();
+      (useSession as jest.Mock).mockReturnValue({ status: 'checking', token: null, ready: false, lastError: null });
+    }
   });
 });

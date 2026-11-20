@@ -32,7 +32,7 @@ flowchart LR
 ## 디렉터리 구조 (src/)
 ```
 app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇게: features 의 훅·부품을 조립만 한다
-  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 · 소개 안 봄 /intro, 로그인 전 /login, 가입 중 /signup/terms(가입 단계와 이용약관 · 개인정보 수집 · 이용 동의 · 처리방침 · 마케팅 수신 동의 약관은 열림), /s · /auth 는 열림, 결정 034 · 042) · 스플래시(웹은 components/splash-view.tsx 를 그리고 앱은 네이티브 스플래시를 둔다 — 글꼴 · 세션 · 소개 기록 확인이 끝나 보낼 곳에 간 뒤 걷는다, 웹은 최소 0.8초, 결정 067) · 약관 글 네 화면은 아래에서 올라오는 창(Stack.Screen 옵션 components/slide-up.ts, 결정 067)
+  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 이용 정지 문(features/auth/suspension-gate.tsx — Stack 뒤, 결정 065 의 5) · 로그인 전 가드(features/auth/guard.ts — 로그인 전 · 소개 안 봄 /intro, 로그인 전 /login, 가입 중 /signup/terms(가입 단계와 이용약관 · 개인정보 수집 · 이용 동의 · 처리방침 · 마케팅 수신 동의 약관은 열림), /s · /auth 는 열림, 결정 034 · 042) · 스플래시(웹은 components/splash-view.tsx 를 그리고 앱은 네이티브 스플래시를 둔다 — 글꼴 · 세션 · 소개 기록 확인이 끝나 보낼 곳에 간 뒤 걷는다, 웹은 최소 0.8초, 결정 067) · 약관 글 네 화면은 아래에서 올라오는 창(Stack.Screen 옵션 components/slide-up.ts, 결정 067)
   index.tsx          홈 v2(별명 카드 · 아래 탭 넷, 결정 047 · 055. 출생 정보가 없으면 입력 · 서버의 것으로 되살리기)
   intro.tsx · login.tsx · auth/kakao.tsx   소개 2장(이 기기에서 처음 한 번, 결정 055) · 로그인(공급자 버튼 — 서버를 기다리는 동안 이 화면에 머물고 누른 버튼에 돌기, 결정 067) · 카카오 웹 로그인에서 돌아오는 화면(스플래시 모양으로 기다린다, 결정 034 · 042 · 067)
   signup/            단계식 가입(결정 042): terms.tsx(약관 동의) → nickname.tsx(닉네임 · 프로필) → birth.tsx(출생 정보, 여기서 POST /auth/signup 한 번)

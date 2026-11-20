@@ -209,7 +209,7 @@ last_reviewed: 2026-11-20
 - 할 것: `/my/inquiries`(내역 · 비면 "아직 문의가 없어요" · 주 버튼 "새 문의하기") · `/my/inquiries/new`(종류 칩 넷 · 내용 10~1000자, 이메일 칸 없음) · 보냄 화면 · `/my/inquiries/[id]`(내 문의 + 답변 카드). `src/app/settings/inquiry.tsx` 는 `/my/inquiries/new` 로 보낸다. API: `getInquiries` · `getInquiry` · `postInquiry`(종류 새 값) + 검사 함수.
 - 검증: 검사 함수 테스트(모르는 종류 → 기타) · 화면 테스트 · 알림 `INQUIRY_ANSWERED` 를 누르면 그 답변으로(A④ 의 표).
 
-#### A7-6. suspended-screen · 상태: 진행(`feat/suspended` — 문 · 화면 · 문의 돌아가기 끝. 남음: 루트에 `<SuspensionGate />` 한 줄(길 A 의 fix/resume-and-splash 뒤, 음악 두 줄과 같이) · 서버 S⑪ 합침 뒤 넘김)
+#### A7-6. suspended-screen · 상태: 완료(PR #52 + 루트 한 줄 `feat/root-suspension-gate` — 문 · 화면 · 문의 돌아가기 · 루트의 `<SuspensionGate signedIn />`)
 - 읽을 것: 앱 결정 065 의 5, 서버 결정 044, 캔버스 "공통 상태" 22, `src/lib/` 의 요청 함수 · 오류 처리
 - 할 것: 어떤 요청이든 403 `ACCOUNT_SUSPENDED` 를 받으면 `/suspended`(22: 결정 061 틀, 주 버튼 "문의하기" → `/my/inquiries/new` → 보내면 22 로, 글자 버튼 "로그아웃"). 앱을 열 때 `GET /account` 의 `suspended: true` 도 22 로. 정지 화면에서는 아래 탭 · 뒤로가 없다.
 - 검증: 단위 테스트(403 → 22 · 문의 보낸 뒤 22 · 로그아웃) · 화면 테스트.
@@ -492,4 +492,5 @@ last_reviewed: 2026-11-20
   - 옛 `/birth` 화면은 그대로 둔다(홈의 출생 정보 입력과 같은 부품 — 길 A 의 홈 일).
 - A7-3 독립 리뷰(PR #53): 차단 1 · 수정 4 · 제안 6 · 불확실 2. 고침 — ① develop(#50)과 충돌해 CI 가 돌지 않았다 → develop 을 합침(문서 둘 다 살림) · ② 저장(`PUT /profile`)의 응답만 잃으면 서버는 새 값 · 기기는 옛 값으로 어긋났다 → 확실한 거절(4xx)이 아니면 `GET /profile` 로 확인해 새 값이면 마저 바꿈 · ③ 바꾸는 동안 뒤로 갈 수 있어 떠난 화면에서 결과가 났다 → `usePreventRemove` · 머리 꺾쇠 막음, 떠나기는 막기가 풀린 뒤 · ④ `sameBirth` 주석 자리 · ⑤ DESIGN.md 의 `inkSoft` 자리에 16-4 안내 · 제안: 시각 "모름" 인 채 곳만 바꾸면 묻지 않고 기기의 곳만 · 저장 실패는 "바꾸지 못했어요" · 기기 저장 실패해도 떠남(홈이 서버에서 되살림) · `sameBirth` 단위 시험 · delete-account 주석에 세 번째 호출자 · 릴리스 문서의 옛 `/birth` · S9-1 상태. 새 시험은 고치기 전 화면에서 5개 실패를 봄. 물어볼 것(67 에게) — 바꾼 뒤 별명 공개(10)를 다시 보일지(지금은 짓는 중 → 글) · 다른 기기는 결정 029("기기가 이긴다")대로 옛 출생 정보를 계속 보인다.
 - A7-3 소유자 답(2026-11-20, 67 경유): ① 바꾼 뒤 별명 공개(보드 10)를 다시 보인다 — 짓는 중 → 새 별명 공개(별명이 같아도 한 번) → 풀이. `/reading?from=birth` + 메모리로 넘긴 닉네임(`features/reading/reveal-once.ts`, 앱을 다시 켜면 없어 글로 바로). 시험은 먼저 실패를 봄(모듈 없음). ② 다른 기기는 결정 029 그대로(기기가 이긴다).
+- A7-6 루트 한 줄(`feat/root-suspension-gate`, 2026-11-20): `_layout.tsx` 의 UpdateGate 안 Stack 뒤에 `<SuspensionGate signedIn={session.status === 'signedIn'} />` — 문은 루트가 읽은 로그인 여부를 받는다(문이 세션 훅을 따로 부르면 루트의 "세션을 시작하는 한 곳" 이 흐려진다). 음악 두 줄은 넣지 않는다(결정 069 — 1.1.0). 레이아웃 시험 1(그 줄이 없으면 실패를 봄).
 

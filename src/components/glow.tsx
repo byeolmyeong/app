@@ -176,3 +176,22 @@ export function GlowBackdrop({ color, extent, centerY = 0.5, centerX = 0.5 }: Gl
     </View>
   );
 }
+
+/** 뒤 빛 그림(0~100 칸)에서 빛이 퍼지는 반지름: 칸의 가장 먼 모서리까지(50√2) */
+const GLOW_RADIUS = 50 * Math.SQRT2;
+
+/** 별이 뒤의 둥근 빛(칸을 가득 채운다). 별명 짓는 중 · 별명 공개 · 상태 화면이 쓴다 — id 는 화면마다 다르게 */
+export function GlowOrb({ id }: { id: string }) {
+  return (
+    <Svg width="100%" height="100%" viewBox="0 0 100 100">
+      <Defs>
+        {/* 시안의 CSS radial-gradient(circle) 는 반지름이 가장 먼 모서리(50√2)까지라 그대로 맞춘다 */}
+        <RadialGradient id={id} cx={50} cy={50} r={GLOW_RADIUS} gradientUnits="userSpaceOnUse">
+          <Stop offset="0" stopColor={BrandColors.glowMid} stopOpacity={0.55} />
+          <Stop offset="0.7" stopColor={BrandColors.glowMid} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Circle cx={50} cy={50} r={50} fill={`url(#${id})`} />
+    </Svg>
+  );
+}

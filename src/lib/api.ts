@@ -447,16 +447,39 @@ export type AppConfig = { ios: PlatformConfig; android: PlatformConfig; maintena
 export const SEASONS = ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'] as const;
 export type Season = (typeof SEASONS)[number];
 
+/** 해 별자리(공유 v2 내 별명 카드의 `sunSign` — 차트 계약의 sign 과 같은 값) */
+export const SIGNS = [
+  'ARIES',
+  'TAURUS',
+  'GEMINI',
+  'CANCER',
+  'LEO',
+  'VIRGO',
+  'LIBRA',
+  'SCORPIO',
+  'SAGITTARIUS',
+  'CAPRICORN',
+  'AQUARIUS',
+  'PISCES',
+] as const;
+export type Sign = (typeof SIGNS)[number];
+
 /**
- * 공유 카드(서버 결정 012). `kind` 로 가리는 네 모양이고 적힌 키가 전부다. 값이 없는 키는 오지 않는다.
+ * 공유 카드(서버 결정 012 · 036). `kind` 로 가리는 여덟 모양이고 적힌 키가 전부다. 값이 없는 키는 오지 않는다.
  * 출생 정보 · 근거 · 본문은 어느 카드에도 없다. SCORE 의 names 는 [공유하는 사람, 상대] 순서,
  * RANKING 의 entries 는 1~3명이고 name 은 서버가 만든 이니셜이거나(기본) 적은 이름 그대로다.
+ * 공유 v2 넷(NICKNAME · ME_AREA · DAY_SKY · NEXT_BIG, 결정 053)의 nickname 은 계정의 닉네임이고 옛 계정이라 없으면 키가 없다.
+ * DAY_SKY 의 date 는 그 날(YYYY-MM-DD, 한국 날짜), NEXT_BIG 의 year · age 는 서버가 셈한 다음 큰 마디의 해와 만 나이다.
  */
 export type ShareCard =
   | { kind: 'READING'; headline: string; keywords: [string, string, string] }
   | { kind: 'SCORE'; names: [string, string]; score: number; scoreLabel?: string; headline: string }
   | { kind: 'RANKING'; relation: Relation; entries: { name: string; score: number }[] }
-  | { kind: 'NEXT_TURN'; year: number; season: Season; theme: string };
+  | { kind: 'NEXT_TURN'; year: number; season: Season; theme: string }
+  | { kind: 'NICKNAME'; nickname?: string; sunSign: Sign; headline: string }
+  | { kind: 'ME_AREA'; nickname?: string; area: MeArea; title: string }
+  | { kind: 'DAY_SKY'; nickname?: string; date: string; title: string }
+  | { kind: 'NEXT_BIG'; nickname?: string; year: number; age: number; title: string };
 
 export type ShareKind = ShareCard['kind'];
 
@@ -465,7 +488,11 @@ export type ShareRequest =
   | { kind: 'READING' }
   | { kind: 'SCORE'; synastryId: string; myName: string }
   | { kind: 'RANKING'; relation: Relation; showNames?: boolean }
-  | { kind: 'NEXT_TURN' };
+  | { kind: 'NEXT_TURN' }
+  | { kind: 'NICKNAME' }
+  | { kind: 'ME_AREA'; area: MeArea }
+  | { kind: 'DAY_SKY'; date: string }
+  | { kind: 'NEXT_BIG' };
 
 /** `POST /shares` 의 응답. card 는 `GET /shared/{shareId}` 가 주는 것과 같다 */
 export type ShareCreated = { shareId: string; card: ShareCard };
@@ -939,10 +966,29 @@ export function isShareCard(v: unknown): v is ShareCard {
       );
     case 'NEXT_TURN':
       return Number.isInteger(v.year) && SEASONS.some((season) => season === v.season) && isText(v.theme);
+    case 'NICKNAME':
+      return isOptionalNickname(v.nickname) && SIGNS.some((sign) => sign === v.sunSign) && isText(v.headline);
+    case 'ME_AREA':
+      return isOptionalNickname(v.nickname) && ME_AREAS.some((area) => area === v.area) && isText(v.title);
+    case 'DAY_SKY':
+      return isOptionalNickname(v.nickname) && typeof v.date === 'string' && ISO_DATE.test(v.date) && isText(v.title);
+    case 'NEXT_BIG':
+      return (
+        isOptionalNickname(v.nickname) &&
+        Number.isInteger(v.year) &&
+        Number.isInteger(v.age) &&
+        (v.age as number) >= 0 &&
+        isText(v.title)
+      );
     default:
       return false;
   }
 }
+
+/** 공유 v2 카드의 닉네임: 없으면 키가 없고(옛 계정), 있으면 빈 글자가 아니다 */
+const isOptionalNickname = (v: unknown) => v === undefined || isText(v);
+/** 그날의 하늘 카드의 날짜 꼴(YYYY-MM-DD) */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const isShareCreated = (v: unknown): v is ShareCreated => isObject(v) && isText(v.shareId) && isShareCard(v.card);
 
@@ -953,6 +999,10 @@ const shareBody = (input: ShareRequest) => {
       return { kind: input.kind, synastryId: input.synastryId, myName: input.myName };
     case 'RANKING':
       return { kind: input.kind, relation: input.relation, showNames: input.showNames === true };
+    case 'ME_AREA':
+      return { kind: input.kind, area: input.area };
+    case 'DAY_SKY':
+      return { kind: input.kind, date: input.date };
     default:
       return { kind: input.kind };
   }
@@ -978,6 +1028,18 @@ function fixtureShare(input: ShareRequest): ShareCreated {
     }
     case 'NEXT_TURN':
       return { shareId: `${FIXTURE_SHARE_PREFIX}nextTurn`, card: C.nextTurn };
+    case 'NICKNAME':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}nickname`, card: C.nickname };
+    case 'ME_AREA': {
+      // 서버와 같은 규칙: 연애는 영역 제목, 나머지는 첫 문단 제목(예시 나 탭 풀이에서)
+      const area = fixtures.meReport.areas.find((a) => a.area === input.area);
+      const title = (input.area === 'LOVE' ? area?.title : area?.paragraphs[0]?.title) ?? C.meArea.title;
+      return { shareId: `${FIXTURE_SHARE_PREFIX}meArea`, card: { ...C.meArea, area: input.area, title } };
+    }
+    case 'DAY_SKY':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}daySky`, card: { ...C.daySky, date: input.date } };
+    case 'NEXT_BIG':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}nextBig`, card: C.nextBig };
   }
 }
 

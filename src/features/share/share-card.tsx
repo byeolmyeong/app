@@ -29,7 +29,7 @@ const ART = {
 const MARK_RATIO = 424 / 224;
 
 /** 별이의 표정은 카드 종류로만 정한다. 점수에 따라 바꾸지 않는다(앱이 점수를 판단하지 않게) */
-const FACE: Record<ShareCard['kind'], keyof typeof ART.byeoli> = {
+const FACE: Partial<Record<ShareCard['kind'], keyof typeof ART.byeoli>> = {
   READING: 'default',
   SCORE: 'happy',
   RANKING: 'default',
@@ -50,7 +50,7 @@ export type ShareCardViewProps = {
  */
 export function ShareCardView({ card, width = Sizes.shareCardWidth, ref }: ShareCardViewProps) {
   const height = Math.round((width * SHARE_IMAGE.height) / SHARE_IMAGE.width);
-  const face = FACE[card.kind];
+  const face = FACE[card.kind] ?? 'default';
   const byeoli = Math.round(width * 0.34);
   const markHeight = Math.round(width * 0.075);
   return (

@@ -107,16 +107,19 @@ export function useGenerationBusy(generating: boolean, hasResult: boolean) {
 const noSubscribe = () => () => {};
 const settledOutside = () => true;
 const noSuggestion = () => null;
+const noState = () => null;
 
 /**
- * 홈의 다른 권유(알림 받기, 결정 066)가 업데이트 권유(결정 059)와 같이 뜨지 않게 보는 상태: 첫 확인 전이면 'checking', 권할 최신 버전이
- * 있으면 'suggesting'(권유 창이 떠 있거나 곧 뜬다), 아니면 'none'. UpdateGate 밖에서는 'none'.
+ * 홈의 다른 권유(알림 받기, 결정 066)가 업데이트 권유(결정 059)와 같이 뜨지 않게 보는 상태: 첫 확인 전이면 'checking', 권유 창이
+ * 뜨는 조건(권할 최신 버전 + 스토어 주소)이면 'suggesting', 아니면 'none'. UpdateGate 밖에서는 'none'.
  */
 export function useUpdateSuggestion(): 'checking' | 'suggesting' | 'none' {
   const store = useContext(UpdateContext);
   const settled = useSyncExternalStore(store?.subscribeSettled ?? noSubscribe, store?.getSettled ?? settledOutside, store?.getSettled ?? settledOutside);
   const suggestion = useSyncExternalStore(store?.subscribe ?? noSubscribe, store?.getSuggestion ?? noSuggestion, store?.getSuggestion ?? noSuggestion);
-  if (suggestion) return 'suggesting';
+  const state = useSyncExternalStore(store?.subscribe ?? noSubscribe, store?.getSnapshot ?? noState, store?.getSnapshot ?? noState);
+  // 스토어 주소가 없으면 창이 뜨지 않으니(UpdateGate 의 조건) 기다리게 하지 않는다(#70 리뷰)
+  if (suggestion && state?.storeUrl) return 'suggesting';
   return settled ? 'none' : 'checking';
 }
 

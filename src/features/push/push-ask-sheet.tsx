@@ -25,6 +25,8 @@ export const PUSH_ASK_PENDING_KEY = 'byeolmyeong-device.push-ask-pending.v1';
 const DEFAULT_TIME = '08:00';
 const TIME_STEP = 5;
 const FALLBACK: WheelTime = { period: 'AM', hour: 8, minute: 0 };
+/** 업데이트 확인이 이만큼 지나도 끝나지 않으면 기다리지 않는다(요청이 멈춘 경우, #70 리뷰) */
+const UPDATE_WAIT_MS = 5000;
 
 /** 저장을 보낸다. 못 하면 기기에 남겨 다음에 다시 보낸다 */
 async function save(patch: AccountPatch): Promise<void> {
@@ -58,6 +60,7 @@ export function PushAskSheet({ time: savedTime, ready = true }: { time?: string;
   /** 이번 홈 방문에 업데이트 권유가 있었다 — 이 방문에서는 띄우지 않는다 */
   const [deferred, setDeferred] = useState(false);
   if (update === 'suggesting' && !deferred) setDeferred(true);
+  const [updateWaitOver, setUpdateWaitOver] = useState(false);
   const [eligible, setEligible] = useState(false);
   const [step, setStep] = useState<'hidden' | 'ask' | 'time'>('hidden');
   const [time, setTime] = useState(savedTime ?? DEFAULT_TIME);
@@ -90,8 +93,17 @@ export function PushAskSheet({ time: savedTime, ready = true }: { time?: string;
     };
   }, []);
 
+  const waiting = eligible && splashGone && ready && update === 'checking';
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = setTimeout(() => setUpdateWaitOver(true), UPDATE_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [waiting]);
+  const updateClear = update === 'none' || (update === 'checking' && updateWaitOver);
   // 스플래시가 걷힌 뒤에 띄운다(스플래시 · 정지 확인 위로 올라오지 않게)
-  if (eligible && splashGone && ready && update === 'none' && !deferred && step === 'hidden' && !answered) setStep('ask');
+  if (eligible && splashGone && ready && updateClear && !deferred && step === 'hidden' && !answered) setStep('ask');
+  // 떠 있는 동안 업데이트 권유가 나타나면(앱으로 돌아와 다시 확인한 경우) 접는다 — 답한 것으로 적지 않아 다음 방문에 다시(#70 리뷰)
+  if (deferred && step !== 'hidden' && !answered) setStep('hidden');
 
   const finish = () => {
     acted.current = true;

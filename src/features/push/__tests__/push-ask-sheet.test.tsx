@@ -83,6 +83,29 @@ describe('알림 받기 권유(보드 11-10, 결정 066 의 2)', () => {
     expect(screen.getByText(A.title)).toBeTruthy();
   });
 
+  it('떠 있는 동안 업데이트 권유가 나타나면 접고, 답한 것으로 적지 않는다(다음 방문에 다시, #70 리뷰)', async () => {
+    const view = await shown();
+    expect(screen.getByText(A.title)).toBeTruthy();
+    mockUpdate.value = 'suggesting';
+    await view.rerender(<PushAskSheet ready />);
+    expect(screen.queryByTestId('push-ask')).toBeNull();
+    expect(await AsyncStorage.getItem(PUSH_ASK_KEY)).toBeNull();
+  });
+
+  it('업데이트 확인이 5초 넘게 끝나지 않으면 기다리지 않고 띄운다(요청이 멈춘 경우)', async () => {
+    jest.useFakeTimers();
+    try {
+      mockUpdate.value = 'checking';
+      await render(<PushAskSheet ready />);
+      await act(async () => {});
+      expect(screen.queryByText(A.title)).toBeNull();
+      await act(async () => jest.advanceTimersByTime(5000));
+      expect(screen.getByText(A.title)).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('"나중에" → 닫고 다시 묻지 않는다(휴대폰 창도 띄우지 않는다)', async () => {
     await shown();
     await fireEvent.press(screen.getByText(A.later));

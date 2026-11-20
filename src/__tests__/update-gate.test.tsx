@@ -10,7 +10,7 @@ import RootLayout from '@/app/_layout';
 import { strings } from '@/content/strings';
 import { clearDeviceData } from '@/features/auth/delete-account';
 import { useSession } from '@/features/auth/use-session';
-import { UpdateGate, useGenerationBusy, useUpdateBusy } from '@/features/update/update-gate';
+import { UpdateGate, useGenerationBusy, useUpdateBusy, useUpdateSuggestion } from '@/features/update/update-gate';
 import {
   api,
   createApi,
@@ -103,6 +103,51 @@ beforeEach(() => {
   jest.restoreAllMocks();
   mockClient.current = { platform: 'ios', version: '1.0.0' };
   mockApi.getAppConfig.mockResolvedValue(configOf({}));
+});
+
+describe('업데이트 권유 상태(홈의 알림 받기 권유가 본다, 결정 059 · 066)', () => {
+  function Probe() {
+    return <Text testID="suggestion">{useUpdateSuggestion()}</Text>;
+  }
+  const seen = () => screen.getByTestId('suggestion').props.children;
+
+  it('첫 확인 전에는 checking, 권할 것이 없으면 none', async () => {
+    let answer: (r: ApiResult<AppConfig>) => void = () => {};
+    mockApi.getAppConfig.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    await render(
+      <UpdateGate canSuggest>
+        <Probe />
+      </UpdateGate>,
+    );
+    expect(seen()).toBe('checking');
+    await act(async () => answer(configOf({})));
+    expect(seen()).toBe('none');
+  });
+
+  it('권할 최신 버전과 스토어 주소가 있으면 suggesting — 스토어 주소가 없으면 창이 안 뜨니 none(#70 리뷰)', async () => {
+    mockApi.getAppConfig.mockResolvedValue(configOf({ latestVersion: '1.1.0', storeUrl: null }));
+    const view = await render(
+      <UpdateGate canSuggest>
+        <Probe />
+      </UpdateGate>,
+    );
+    await act(async () => {});
+    expect(seen()).toBe('none');
+    await view.unmount();
+    mockApi.getAppConfig.mockResolvedValue(configOf({ latestVersion: '1.1.0', storeUrl: STORE_URL }));
+    await render(
+      <UpdateGate canSuggest>
+        <Probe />
+      </UpdateGate>,
+    );
+    await act(async () => {});
+    expect(seen()).toBe('suggesting');
+  });
+
+  it('UpdateGate 밖에서는 none', async () => {
+    await render(<Probe />);
+    expect(seen()).toBe('none');
+  });
 });
 
 describe('강제 업데이트(결정 027)', () => {

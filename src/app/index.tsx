@@ -83,16 +83,19 @@ function Home({ onRetry }: { onRetry: () => void }) {
   const todayLoading = asking !== null && today.state.status === 'loading';
   const todayPhase = useLoadingPhase(todayLoading);
   const todayWriting = useWritingAfter(todayLoading);
+  // 끊겨서 못 받았을 때만 연결이 돌아오면 다시 묻는다 — 못 쓴(502) · 한도(429)는 사람이 "다시 쓰기" 를 누를 때만(리뷰 #66)
   useOnReconnect(online, () => {
-    if (today.state.status === 'failed') today.retry();
+    if (today.state.status === 'failed' && today.state.error === 'NETWORK') today.retry();
   });
-  // 머리의 종(결정 052 의 4): 홈을 열 때 · 알림함에서 돌아올 때 다시 묻는다. 서버에 알림함이 없으면(404 — S⑤ 전) 종을 숨긴다
+  // 머리의 종(결정 052 의 4): 홈을 열 때 · 알림함에서 돌아올 때 다시 묻는다. 서버에 알림함이 없으면(404 — S⑤ 전) 종을 숨긴다.
+  // 종은 출생 정보가 있는 홈에만 — 입력 · 되살리는 중 · 실패 화면의 머리에는 두지 않는다(리뷰 #66)
   const notifications = useNotifications().state;
   const bell =
     notifications.status === 'failed' && notifications.httpStatus === 404 ? null : (
       <HomeBell unread={notifications.status === 'ready' && hasUnread(notifications.list)} onPress={() => router.push('/notifications')} />
     );
-  const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} right={bell} />;
+  const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} />;
+  const homeNav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} right={bell} />;
   if (phase === 'timeout')
     return (
       <StateScreen
@@ -128,7 +131,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
     // 해 별자리는 서버 차트의 SUN 그대로(날짜로 셈하지 않는다, 결정 006)
     const sun = chart.positions.find((p) => p.body === 'SUN');
     return (
-      <Screen nav={nav} footer={<MainTabs active="home" />}>
+      <Screen nav={homeNav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>
           {online && !unreachable ? null : <OfflineBanner />}
           <NicknameCard

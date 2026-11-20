@@ -375,6 +375,12 @@ describe('홈 머리의 종(결정 052 의 4, 보드 11)', () => {
     expect(screen.queryByTestId('home-bell-dot')).toBeNull();
   });
 
+  it('출생 정보를 넣기 전(입력 화면)에는 종이 없다 — 종은 출생 정보가 있는 홈에만(리뷰 #66)', async () => {
+    await render(<HomeScreen />);
+    await screen.findByPlaceholderText(strings.home.datePlaceholder);
+    expect(screen.queryByTestId('home-bell')).toBeNull();
+  });
+
   it('못 받았으면 점 없이 종은 둔다. 서버에 알림함이 없으면(404 — S⑤ 전) 종을 숨긴다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     mockApi.getNotifications.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
@@ -443,6 +449,30 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     await act(async () => finish({ ok: true, data: sky }));
     expect(screen.getByTestId('home-today-card')).toBeTruthy();
     jest.useRealTimers();
+  });
+
+  it('연결이 돌아오면 끊겨서 못 받은 것만 다시 묻는다 — 못 쓴 것(502)은 다시 쓰기를 누를 때만(리뷰 #66)', async () => {
+    let listener: ((s: { isConnected: boolean; isInternetReachable: boolean }) => void) | null = null;
+    (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
+      listener = cb;
+      return () => {};
+    });
+    await saveBirth({ profile, chart: fixtures.chart });
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
+    const view = await render(<HomeScreen />);
+    expect(await screen.findByText(strings.today.fail)).toBeTruthy();
+    await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
+    await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    await view.unmount();
+    mockApi.postDaySky.mockClear();
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
+    await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
+    expect(await screen.findByTestId('home-today-card')).toBeTruthy();
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
   });
 
   it('서버에 그 경로가 없으면(404 — S④ 전) 칸을 숨긴다', async () => {

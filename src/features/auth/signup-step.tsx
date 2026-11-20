@@ -12,6 +12,7 @@ import { useSlideUp } from '@/components/slide-up';
 import { reduceMotionNow } from '@/components/byeoli';
 import { Screen } from '@/components/screen';
 import { StateScreen } from '@/components/state-screen';
+import { useOnline } from '@/components/use-online';
 import { Txt } from '@/components/txt';
 import { Colors, ScreenPaddingX, Sizes, StepLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -164,6 +165,12 @@ const styles = StyleSheet.create({
  * 볼 게 없는 화면(20-1)을 보이고, 다시 시도는 세션을 다시 확인한다(가입권이 살아 있으면 하던 단계로).
  */
 export function SignupOffline() {
+  // 인터넷은 되는데 서버만 닿지 않으면 끊김(20-1)이 아니라 "불러오지 못했어요"(19) — 소유자 2026-11-21
+  const online = useOnline();
+  if (online) {
+    const F = strings.states.loadFail;
+    return <StateScreen title={F.title.page} body={F.body} primary={{ label: F.retry, onPress: () => void recheckSession() }} />;
+  }
   const S = strings.states.offlineEmpty;
   return <StateScreen title={S.title} body={S.body} primary={{ label: S.retry, onPress: () => void recheckSession() }} />;
 }

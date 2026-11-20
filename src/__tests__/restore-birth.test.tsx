@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import BirthScreen from '@/app/birth';
@@ -289,26 +290,53 @@ describe('홈의 첫 데이터', () => {
   });
 });
 
-// 결정 068 의 4: 웹이 시작할 때 서버에 닿지 못했으면(offline) 로그인으로 보내지 않고 받아 둔 홈 + 띠(20), 없으면 20-1
+// 결정 068 의 4: 웹이 시작할 때 서버에 닿지 못했으면(offline) 로그인으로 보내지 않고 받아 둔 홈을 보인다. 받아 둔 것이 없으면
+// 인터넷이 끊겼을 때만 20-1, 인터넷은 되는데 서버만 닿지 않으면 19 "불러오지 못했어요"(소유자 2026-11-21)
 describe('홈: 서버에 닿지 못하고 시작함', () => {
   const offline = { status: 'offline' as const, token: null, ready: true, lastError: null };
+  /** 인터넷이 끊긴 기기(연결 상태 알림) */
+  const disconnect = () =>
+    (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
+      cb({ isConnected: false, isInternetReachable: false });
+      return () => {};
+    });
+  afterEach(() => (NetInfo.addEventListener as jest.Mock).mockReset());
 
-  it('받아 둔 출생 정보가 있으면 홈과 연결 끊김 띠. 서버에 묻지 않는다', async () => {
+  it('받아 둔 출생 정보가 있으면 홈. 서버에 묻지 않고, 인터넷이 되면 끊김 띠도 없다', async () => {
+    await saveBirth({ profile: { date: known.date, time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    mockSession.current = offline;
+    await render(<HomeScreen />);
+    await homeShown();
+    expect(screen.queryByText(strings.states.offline.title)).toBeNull();
+    expect(mockApi.getProfile).not.toHaveBeenCalled();
+    expect(getHomeReady()).toBe(true);
+  });
+
+  it('인터넷이 끊겼으면 받아 둔 홈 위에 끊김 띠', async () => {
+    disconnect();
     await saveBirth({ profile: { date: known.date, time: null, place: null }, chart: fixtures.chartTimeUnknown });
     mockSession.current = offline;
     await render(<HomeScreen />);
     await homeShown();
     expect(screen.getByText(strings.states.offline.title)).toBeTruthy();
-    expect(mockApi.getProfile).not.toHaveBeenCalled();
-    expect(getHomeReady()).toBe(true);
   });
 
-  it('받아 둔 것이 없으면 볼 게 없는 화면(20-1). 다시 시도는 세션을 다시 확인한다', async () => {
+  it('받아 둔 것이 없고 인터넷은 되면 19 "홈을 불러오지 못했어요" — 다시 보기는 세션을 다시 확인한다', async () => {
+    mockSession.current = offline;
+    await render(<HomeScreen />);
+    expect(await screen.findByText(strings.states.loadFail.title.home)).toBeTruthy();
+    expect(screen.queryByText(strings.states.offlineEmpty.title)).toBeNull();
+    expect(getHomeReady()).toBe(true);
+    await fireEvent.press(screen.getByRole('button', { name: strings.states.loadFail.retry }));
+    expect(recheckSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('받아 둔 것이 없고 인터넷이 끊겼으면 볼 게 없는 화면(20-1). 다시 시도는 세션을 다시 확인한다', async () => {
+    disconnect();
     mockSession.current = offline;
     await render(<HomeScreen />);
     expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
     expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
-    expect(getHomeReady()).toBe(true);
     await fireEvent.press(screen.getByRole('button', { name: strings.states.offlineEmpty.retry }));
     expect(recheckSession).toHaveBeenCalledTimes(1);
   });

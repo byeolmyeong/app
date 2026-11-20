@@ -123,8 +123,8 @@ export const strings = {
     nicknameSuffix: '님의 별명은',
     read: '풀이 읽기',
   },
-  /** 아래 탭(결정 019) */
-  tabs: { home: '홈', my: '마이' },
+  /** 아래 탭 넷, 이 순서(결정 055 의 2 — 궁합 탭은 1.1.0) */
+  tabs: { home: '홈', me: '나', timing: '시기', my: '마이' },
   /** 마이: 출생 정보와 설정의 줄을 한 화면에(결정 038) */
   my: {
     title: '마이',
@@ -290,6 +290,14 @@ export const strings = {
     subtitle: '태어난 순간의 하늘을 계산해\n나를 설명하는 글로 풀어 드립니다.',
     /** 기기에 출생 정보가 없어 서버에 저장된 것을 확인하는 동안(결정 029) */
     restoring: '불러오는 중이에요',
+    /** 홈 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): "새벽별 님" · "물병자리 · 별명을 받은 지 12일" · 풀이 읽기 */
+    card: {
+      nicknameSuffix: ' 님',
+      separator: ' · ',
+      daysPrefix: '별명을 받은 지 ',
+      daysSuffix: '일',
+      read: '풀이 읽기',
+    },
     dateLabel: '생년월일',
     datePlaceholder: '2000-06-15',
     timeLabel: '태어난 시각',

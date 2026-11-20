@@ -38,6 +38,8 @@ const main = report.intervals.find((i) => i.id === report.current.mainId)!;
 const day = fixtures.daySky;
 const tabs = () => screen.queryAllByRole('tab');
 const tick = (ms: number) => act(async () => void (await jest.advanceTimersByTimeAsync(ms)));
+type NetListener = (state: { isConnected: boolean; isInternetReachable: boolean }) => void;
+let netListener: NetListener | null = null;
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -47,7 +49,11 @@ beforeEach(async () => {
   mockApi.postDaySky.mockResolvedValue({ ok: true, data: day });
   mockApi.saveProfile.mockImplementation(async (i) => ({ ok: true, data: i }));
   await saveBirth({ profile, chart: fixtures.chart });
-  (NetInfo.addEventListener as jest.Mock).mockImplementation(() => () => {});
+  netListener = null;
+  (NetInfo.addEventListener as jest.Mock).mockImplementation((cb: NetListener) => {
+    netListener = cb;
+    return () => {};
+  });
 });
 
 afterEach(() => jest.useRealTimers());
@@ -175,6 +181,29 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     await render(<TimingDayScreen />);
     expect(screen.getByText(T.day.outOfRange.title)).toBeTruthy();
     expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+  });
+
+  it('다 받은 그날의 하늘을 보던 중 연결이 끊기면 머리 아래 띠(결정 061 의 4)', async () => {
+    mockParams.mockReturnValue({ date: '2026-11-21' });
+    await render(<TimingDayScreen />);
+    expect(await screen.findByTestId('day-hero')).toBeTruthy();
+    await act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
+    expect(screen.getByText(ST.offline.title)).toBeTruthy();
+    expect(screen.getByTestId('day-hero')).toBeTruthy();
+  });
+
+  it('다른 400(INVALID_REQUEST) · 응답 모양이 틀림(INVALID)은 다시 써도 같으니 다시 쓰기 대신 돌아가기', async () => {
+    mockParams.mockReturnValue({ date: '2026-11-21' });
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 400, code: 'INVALID_REQUEST' });
+    const view = await render(<TimingDayScreen />);
+    expect(await screen.findByText(T.day.cannotOpen.title)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: ST.writeFail.retry })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: T.day.cannotOpen.back }));
+    expect(router.back).toHaveBeenCalled();
+    await view.unmount();
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'INVALID', status: 200 });
+    await render(<TimingDayScreen />);
+    expect(await screen.findByText(T.day.cannotOpen.title)).toBeTruthy();
   });
 
   it('서버에 출생 정보가 없으면(404) 저장하고 한 번만 더 부른다', async () => {

@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { MakingView } from '@/components/making-view';
 import { NavBar } from '@/components/nav-bar';
+import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
 import { StateScreen } from '@/components/state-screen';
 import { useLoadingPhase } from '@/components/use-loading-phase';
@@ -81,6 +82,9 @@ export default function TimingDayScreen() {
     );
 
   if (state.status === 'failed') {
+    // 그 밖의 400(INVALID_REQUEST 등) · 응답 모양이 틀림은 다시 써도 같다 — 돌아가기만(리뷰 #63)
+    if (state.httpStatus === 400 || state.error === 'INVALID')
+      return <StateScreen nav={nav()} title={T.day.cannotOpen.title} body={T.day.cannotOpen.body} primary={{ label: T.day.cannotOpen.back, onPress: back }} />;
     if (state.error === 'NETWORK' && !online)
       return <StateScreen nav={nav()} title={ST.offlineEmpty.title} body={ST.offlineEmpty.body} primary={{ label: ST.offlineEmpty.retry, onPress: retry }} />;
     return (
@@ -98,6 +102,8 @@ export default function TimingDayScreen() {
   const shareSpot = <View testID="day-share-spot" style={styles.shareSpot} />;
   return (
     <Screen nav={nav(shareSpot)} footer={<MainTabs active="timing" nested />}>
+      {/* 연결 끊김(결정 061 의 4): 받은 글은 그대로 두고 머리 아래 띠 */}
+      {online ? null : <OfflineBanner />}
       <DayView sky={state.sky} chart={chart} today={today} />
     </Screen>
   );

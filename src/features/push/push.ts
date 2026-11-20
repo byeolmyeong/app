@@ -31,8 +31,14 @@ function permissionOf(s: Notifications.NotificationPermissionsStatus): PushPermi
     return 'granted';
   }
   if (s.granted) return 'granted';
-  return s.status === 'undetermined' ? 'undetermined' : 'denied';
+  if (s.status === 'undetermined') return 'undetermined';
+  // 안드로이드 13+ 는 아직 묻지 않았어도 알림이 꺼져 있으면 denied 로 온다 — 다시 물을 수 있으면 아직 묻지 않은 것으로 본다(#65 리뷰)
+  if (Platform.OS === 'android' && s.canAskAgain) return 'undetermined';
+  return 'denied';
 }
+
+/** 권한을 물은 뒤 다시 읽어야 하는 화면들(usePushPermission) — 앱이 잠깐 비활성이 되지 않아도 결과가 바로 보이게 */
+const permissionListeners = new Set<() => void>();
 
 /** 안드로이드 13 이상은 채널이 하나도 없으면 권한 창이 뜨지 않고 토큰도 받지 못한다 — 묻기 · 토큰 전에 만든다 */
 async function ensureChannel(): Promise<void> {
@@ -59,8 +65,10 @@ export async function requestPushPermission(): Promise<PushPermission> {
     // 채널이 없으면 안드로이드 13+ 는 창이 뜨지 않을 수 있다 — 결과(거절)가 그대로 돌아온다
   }
   let permission = await getPushPermission();
-  if (permission === 'undetermined')
+  if (permission === 'undetermined') {
     permission = permissionOf(await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowBadge: true, allowSound: true } }));
+    permissionListeners.forEach((l) => l());
+  }
   if (permission === 'granted') void registerPushDevice();
   return permission;
 }
@@ -73,9 +81,11 @@ export function usePushPermission(): PushPermission | null {
     const read = () => void getPushPermission().then((p) => alive && setPermission(p));
     read();
     const sub = AppState.addEventListener('change', (state) => state === 'active' && read());
+    permissionListeners.add(read);
     return () => {
       alive = false;
       sub.remove();
+      permissionListeners.delete(read);
     };
   }, []);
   return permission;

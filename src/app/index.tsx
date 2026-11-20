@@ -112,7 +112,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
           />
         </View>
         {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때) */}
-        <PushAskSheet />
+        <PushAskSheet time={account?.todaySkyTime} />
       </Screen>
     );
   }

@@ -723,18 +723,18 @@ export const InquiryLayout = {
 } as const;
 
 /**
- * 알림 받기 권유 시트(보드 11-10, 결정 066 의 2): 별이 칸(빛무리 120 안에 그림 80) · 제목(20/30) 위 · 설명 위 · 받는 시간 줄(채운 면 · 모서리 ·
- * 최소 높이 · 안 여백 · 화살표) 위 · 버튼 묶음 위 · "나중에" 높이와 아래 사이
+ * 알림 받기 권유 시트(보드 11-10, 결정 066 의 2): 별이 칸(빛무리 120 안에 그림 80, 시트 위 여백 32 가 보드의 손잡이 위 32 와 같아 더 띄우지 않는다) ·
+ * 제목(20/30) 위 · 설명 위 · 받는 시간 줄(모서리 · 최소 높이 · 안 여백 · 사이 · 화살표) 위 · 버튼 묶음 위 · "나중에" 높이와 아래 사이
  */
 export const PushAskLayout = {
-  artTop: 18,
+  artTop: 0,
   glow: 120,
   byeoli: 80,
   titleTop: 16,
   titleLine: 30,
   bodyTop: 10,
   rowTop: 20,
-  row: { radius: 14, minHeight: 52, paddingV: 12, paddingH: 16, chevron: 16 },
+  row: { radius: 14, minHeight: 52, paddingV: 12, paddingH: 16, gap: 12, chevron: 16 },
   buttonsTop: 20,
   later: 48,
   laterGap: 8,

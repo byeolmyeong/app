@@ -82,21 +82,28 @@ describe('웹의 이미지 저장(결정 053 의 1 · 5)', () => {
     delete g.document;
   });
 
-  it('카드를 가로 1080 이 되는 배율로 그려 PNG 로 내려받는다(SAVED)', async () => {
+  it('카드를 가로 1080 이 되는 배율로 그리고 정확히 1080×1920 에 옮겨 PNG 로 내려받는다(SAVED)', async () => {
     const anchor = { href: '', download: '', click: jest.fn() };
-    g.document = { createElement: jest.fn(() => anchor) };
-    mockHtml2canvas.mockResolvedValue({ toDataURL: jest.fn(() => 'data:image/png;base64,AAAA') });
+    const drawImage = jest.fn();
+    const out = { width: 0, height: 0, getContext: jest.fn(() => ({ drawImage })), toDataURL: jest.fn(() => 'data:image/png;base64,AAAA') };
+    g.document = { createElement: jest.fn((tag: string) => (tag === 'canvas' ? out : anchor)) };
+    // 미리보기 높이를 반올림해 9:16 에서 조금 어긋난 그림(1080×1922)
+    const drawn = { width: 1080, height: 1922 };
+    mockHtml2canvas.mockResolvedValue(drawn);
     expect(await web.saveImage(view)).toBe('SAVED');
     expect(mockHtml2canvas.mock.calls[0][0]).toBe((view as { current: unknown }).current);
     expect(mockHtml2canvas.mock.calls[0][1]).toMatchObject({ scale: 1080 / 220 });
+    expect([out.width, out.height]).toEqual([1080, 1920]);
+    expect(drawImage).toHaveBeenCalledWith(drawn, 0, 0, 1080, 1920);
     expect(anchor.href).toBe('data:image/png;base64,AAAA');
     expect(anchor.download).toMatch(/\.png$/);
     expect(anchor.click).toHaveBeenCalledTimes(1);
   });
 
   it('카드 속 그림은 숨은 원본 <img> 로 그려 1080 에서도 흐리지 않다(결정 036 — 옛 카드의 별이 그림)', async () => {
-    g.document = { createElement: jest.fn(() => ({ href: '', download: '', click: jest.fn() })) };
-    mockHtml2canvas.mockResolvedValue({ toDataURL: jest.fn(() => 'data:image/png;base64,AAAA') });
+    const out = { width: 0, height: 0, getContext: () => ({ drawImage: jest.fn() }), toDataURL: () => 'data:image/png;base64,AAAA' };
+    g.document = { createElement: jest.fn((tag: string) => (tag === 'canvas' ? out : { href: '', download: '', click: jest.fn() })) };
+    mockHtml2canvas.mockResolvedValue({ width: 1080, height: 1920 });
     await web.saveImage(view);
     const { onclone } = mockHtml2canvas.mock.calls[0][1] as { onclone: (doc: unknown, el: unknown) => void };
     // react-native-web 의 Image 는 그림을 배경으로 그리고, 같은 그림의 <img> 를 투명하게 숨겨 둔다

@@ -16,16 +16,23 @@ export async function shareStory(_card: CardRef, _appId: string | null): Promise
   return 'FAILED';
 }
 
-/** 이미지 저장: 카드 요소를 가로 1080 이 되는 배율로 그려 PNG 로 내려받는다(사진 앱 · 권한 없음) */
+/**
+ * 이미지 저장: 카드 요소를 가로 1080 이 되는 배율로 그려 PNG 로 내려받는다(사진 앱 · 권한 없음).
+ * 미리보기 높이는 화면 픽셀로 반올림돼 9:16 에서 1~2px 어긋나므로, 그린 그림을 정확히 1080×1920 칸에 옮겨 담는다.
+ */
 export async function saveImage(card: CardRef): Promise<SaveResult> {
   try {
     const element = card.current as unknown as HTMLElement | null;
     if (!element) return 'FAILED';
-    const canvas = await html2canvas(element, {
+    const drawn = await html2canvas(element, {
       scale: SHARE_IMAGE.width / element.offsetWidth,
       backgroundColor: Colors.paper,
       onclone: showSourceImages,
     });
+    const canvas = document.createElement('canvas');
+    canvas.width = SHARE_IMAGE.width;
+    canvas.height = SHARE_IMAGE.height;
+    canvas.getContext('2d')?.drawImage(drawn, 0, 0, SHARE_IMAGE.width, SHARE_IMAGE.height);
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
     link.download = FILE_NAME;

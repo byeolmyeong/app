@@ -80,18 +80,21 @@ export default function MeScreen() {
     return (
       <Screen nav={afterNav} footer={tabs}>
         {banner}
-        <MeNicknameCard
-          nickname={account?.nickname ?? null}
-          avatar={account?.avatar ?? null}
-          headline={reading?.headline ?? null}
-          onOpen={() => router.push('/reading')}
-        />
-        <AreaChips value={selected} onChange={setPicked} />
-        {s.report.areas
-          .filter((a) => a.area === selected)
-          .map((a) => (
-            <AreaView key={a.area} area={a} nickname={account?.nickname ?? null} chart={chart} />
-          ))}
+        {/* 한 덩어리로 둔다 — 화면의 칸 사이 간격(16)이 끼지 않게 시안 12-8 의 간격 그대로 */}
+        <View>
+            <MeNicknameCard
+            nickname={account?.nickname ?? null}
+            avatar={account?.avatar ?? null}
+            headline={reading?.headline ?? null}
+            onOpen={() => router.push('/reading')}
+          />
+          <AreaChips value={selected} onChange={setPicked} />
+          {s.report.areas
+            .filter((a) => a.area === selected)
+            .map((a) => (
+              <AreaView key={a.area} area={a} nickname={account?.nickname ?? null} chart={chart} />
+            ))}
+        </View>
       </Screen>
     );
 
@@ -166,19 +169,21 @@ export default function MeScreen() {
   return (
     <Screen nav={beforeNav} footer={tabs}>
       {banner}
-      <ReadingView reading={reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
-      {s.status === 'unknown' && online ? (
-        <View style={styles.cardFail}>
-          <CardFail
-            kicker={S.detail.kicker}
-            title={S.loadFail.title}
-            body={S.loadFail.body}
-            retry={{ label: ST.loadFail.retry, onPress: me.recheck }}
-          />
-        </View>
-      ) : (
-        <DetailCard blocked={s.status === 'none' && s.blocked === true} onRequest={me.start} />
-      )}
+      <View>
+        <ReadingView reading={reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
+        {s.status === 'unknown' && online ? (
+          <View style={styles.cardFail}>
+            <CardFail
+              kicker={S.detail.kicker}
+              title={S.loadFail.title}
+              body={S.loadFail.body}
+              retry={{ label: ST.loadFail.retry, onPress: me.recheck }}
+            />
+          </View>
+        ) : (
+          <DetailCard blocked={s.status === 'none' && s.blocked === true} onRequest={me.start} />
+        )}
+      </View>
     </Screen>
   );
 }

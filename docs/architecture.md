@@ -32,7 +32,7 @@ flowchart LR
 ## 디렉터리 구조 (src/)
 ```
 app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇게: features 의 훅·부품을 조립만 한다
-  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 · 소개 안 봄 /intro, 로그인 전 /login, 가입 중 /signup/terms(가입 단계와 이용약관 · 개인정보 수집 · 이용 동의 · 처리방침 · 마케팅 수신 동의 약관은 열림), /s · /auth 는 열림, 결정 034 · 042) · 스플래시(웹은 components/splash-view.tsx 를 그리고 앱은 네이티브 스플래시를 둔다 — 글꼴 · 세션 · 소개 기록 확인이 끝나 보낼 곳에 간 뒤 걷는다, 웹은 최소 0.8초, 결정 067) · 약관 글 네 화면은 아래에서 올라오는 창(Stack.Screen 옵션 components/slide-up.ts, 결정 067) · 결정 068: 가입 중이면 하던 단계로 보내고, 스플래시는 로그인한 홈의 첫 데이터(features/home/home-ready.ts) · 루트 문이 붙잡는 동안(components/splash-hold.ts) 둔다 · 공유 페이지엔 없다 · 웹이 서버에 닿지 못해 세션이 offline 이면 30초마다 다시 확인 · 덮인 동안 화면 쌓기는 inert · 오류 경계(ErrorBoundary)가 웹 화면 조각 실패를 받아 한 번 새로 고침(features/update/chunk-reload.tsx) · 가입 닉네임 · 출생 정보 단계는 웹에서 오른쪽에서 밀려 들어온다
+  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 · 소개 안 봄 /intro, 로그인 전 /login, 가입 중 /signup/terms(가입 단계와 이용약관 · 개인정보 수집 · 이용 동의 · 처리방침 · 마케팅 수신 동의 약관은 열림), /s · /auth 는 열림, 결정 034 · 042) · 스플래시(웹은 components/splash-view.tsx 를 그리고 앱은 네이티브 스플래시를 둔다 — 글꼴 · 세션 · 소개 기록 확인이 끝나 보낼 곳에 간 뒤 걷는다, 웹은 최소 0.8초, 결정 067) · 약관 글 네 화면은 아래에서 올라오는 창(Stack.Screen 옵션 components/slide-up.ts, 결정 067) · 결정 068: 가입 중이면 하던 단계로 보내고, 스플래시는 로그인한 홈의 첫 데이터(features/home/home-ready.ts) 둔다 · 공유 페이지엔 없다 · 웹이 서버에 닿지 못해 세션이 offline 이면 30초마다 다시 확인 · 덮인 동안 화면 쌓기는 inert · 오류 경계(ErrorBoundary)가 웹 화면 조각 실패를 받아 한 번 새로 고침(features/update/chunk-reload.tsx) · 가입 닉네임 · 출생 정보 단계는 웹에서 오른쪽에서 밀려 들어온다
   index.tsx          홈 v2(별명 카드 · 아래 탭 넷, 결정 047 · 055. 출생 정보가 없으면 입력 · 서버의 것으로 되살리기)
   intro.tsx · login.tsx · auth/kakao.tsx   소개 2장(이 기기에서 처음 한 번, 결정 055) · 로그인(공급자 버튼 — 서버를 기다리는 동안 이 화면에 머물고 누른 버튼에 돌기, 결정 067) · 카카오 웹 로그인에서 돌아오는 화면(스플래시 모양으로 기다린다, 결정 034 · 042 · 067)
   signup/            단계식 가입(결정 042): terms.tsx(약관 동의) → nickname.tsx(닉네임 · 프로필) → birth.tsx(출생 정보, 여기서 POST /auth/signup 한 번)
@@ -53,7 +53,7 @@ features/            기능별 로직과 기능 전용 부품
   support/           자주 묻는 질문을 받아 오는 상태(use-faqs.ts, 메모리에만 5분) · 목록, 문의의 입력 확인 · 날짜(inquiry.ts) · 보내는 상태(use-inquiry.ts) · 내역 · 한 건을 보일 때마다 받기(use-inquiries.ts) · 종류 칩(결정 028 · 058)
   update/            강제 업데이트(결정 027 · 059)와 점검 안내(결정 030 · 060): 버전 비교 · 권유 판정(version.ts) · 셋의 판정(update-store.ts) · 루트를 감싸는 문과 바쁨 등록(update-gate.tsx) · 막는 화면(update-required.tsx · maintenance-notice.tsx) · 권유 창(update-suggest.tsx) · 웹 화면 조각을 못 불러오면 한 번 새로 고침(chunk-reload.tsx — 루트의 ErrorBoundary)
   share/             공유 카드(9:16, 서버가 준 card 만으로 그린다)·공유 버튼과 시트·공유 주소·이미지와 링크 보내기(앱 share-actions.ts, 웹 share-actions.web.ts)·공유 페이지의 카드 받기
-components/          공용 부품(버튼·입력 줄·표·시트·가운데 창 Dialog·짧은 알림 Toast·뼈대 Skeleton·탭·제목 없는 목록 카드 ListCard(화살표 · 값 · 스위치 줄)…, 별명 카드(홈 · 마이)의 별자리 장식 CardConstellation, 상태: 실패 화면 StateScreen · 연결 끊김 띠 OfflineBanner, 브랜드 그림: 로고 · 별이 · 빛나는 모양 · 스플래시 SplashView, 아래 · 오른쪽에서 들어오는 화면 slide-up.ts — 약관 글 TextPage · 가입 단계 SignupStep 이 쓴다, 스플래시를 붙잡는 문 splash-hold.ts, 웹 inert use-inert.ts). 기능을 모른다
+components/          공용 부품(버튼·입력 줄·표·시트·가운데 창 Dialog·짧은 알림 Toast·뼈대 Skeleton·탭·제목 없는 목록 카드 ListCard(화살표 · 값 · 스위치 줄)…, 별명 카드(홈 · 마이)의 별자리 장식 CardConstellation, 상태: 실패 화면 StateScreen · 연결 끊김 띠 OfflineBanner, 브랜드 그림: 로고 · 별이 · 빛나는 모양 · 스플래시 SplashView, 아래 · 오른쪽에서 들어오는 화면 slide-up.ts — 약관 글 TextPage · 가입 단계 SignupStep 이 쓴다, 웹 inert use-inert.ts). 기능을 모른다
 constants/theme.ts   디자인 값의 단일 출처
 content/strings.ts   문구의 단일 출처
 content/legal.ts     약관 · 처리방침 · 마케팅 수신 동의 약관의 글. 랜딩 app/data/legal.ts 와 같은 사본(결정 043)

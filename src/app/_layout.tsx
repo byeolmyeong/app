@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { slideInScreenOptions, useSlideUpScreenOptions } from '@/components/slide-up';
-import { useSplashHeld } from '@/components/splash-hold';
 import { useInert } from '@/components/use-inert';
 import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
@@ -74,15 +73,14 @@ export default function RootLayout() {
 
   // ── 스플래시: 걷는 때는 splashDone 한 곳에서 정한다(결정 067 의 3 · 068).
   // 처음 열 때 글꼴 · 세션 확인 · (로그인 전이면) 소개 기록 확인이 끝나 보낼 곳에 간 뒤에 걷는다.
-  // 로그인한 홈이면 홈의 첫 데이터까지(home-ready), 루트에 걸린 문이 붙잡으면 놓을 때까지(splash-hold) 둔다.
+  // 로그인한 홈이면 홈의 첫 데이터까지(home-ready) 둔다. 루트에 걸리는 문(예: 이용 정지 확인)의 가림막은 그 조건을 여기에 더한다.
   // 문이 막는 화면을 띄우면 화면들이 빠져 보낼 수 없으니 바로 걷는다. 공유 페이지(/s/…)에는 스플래시가 아예 없다.
   // 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지(최대 5초) 둔다.
   const [gateBlocked, setGateBlocked] = useState(false);
   const homeReady = useHomeReady();
-  const gatesHeld = useSplashHeld();
   const waitHome = first === undefined && (session.status === 'signedIn' || session.status === 'offline') && !homeReady;
   const splashDone = useSplashDone(
-    fontsDone && (gateBlocked || (!covered && !waitHome && !gatesHeld && (first === 's' || session.ready))),
+    fontsDone && (gateBlocked || (!covered && !waitHome && (first === 's' || session.ready))),
     first === 's',
   );
   useEffect(() => {

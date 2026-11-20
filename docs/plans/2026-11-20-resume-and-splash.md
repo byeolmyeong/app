@@ -16,7 +16,7 @@ last_reviewed: 2026-11-20
 5. 계정 호출 하나로: `getAccount` · `isAccount` 를 지우고 홈도 `getMyAccount`. — 됨
 6. #46 에서 미룬 것: 스플래시/가림막 아래 inert · 움직임 값(300 · 220 · bezier) theme 하나로. — 됨. 웹 구글 "최근 로그인" 숨은 글은 결정 070(웹 구글 리디렉트)으로 뺌(되돌림).
 7. 조각 불러오기 실패 → 한 번만 새로 고침(루트 ErrorBoundary, 시각으로 5분에 한 번). — 됨
-8. 루트 자리: 스플래시를 붙잡는 문(useSplashHold), 웹 스플래시 상한 10초. SuspensionGate(#56)는 6a 가 꽂는다. 음악 자리는 결정 069 로 없음. — 됨
+8. 루트 자리: 루트 훅 · 스플래시 · 화면들 세 묶음, 웹 스플래시 상한 10초. 이용 정지 가림막(#56)은 6a 가 스플래시 조건에 직접 더한다(처음 만든 useSplashHold 는 쓰는 곳이 없어져 지움). 음악 자리는 결정 069 로 없음. — 됨
 9. 가입 단계 사이 반짝임: 운영 웹 한 묶음(asyncRoutes.web development) · 웹 가입 단계 오른쪽에서 밀려 들어옴 · 가려진 단계 inert. — 됨
 10. 닉네임 중복: 치기를 멈추면 0.5초 뒤 확인(늦은 답은 번호로 버림) · 초록 / 빨강 안내. 마이 닉네임 확인 경로는 서버 계약 필요(PR 본문). — 됨
 
@@ -26,5 +26,5 @@ last_reviewed: 2026-11-20
 
 ## 겹침
 - A②(#49) 가 홈 `index.tsx` 를 고친다 — 늦게 합치는 쪽이 rebase.
-- 6a 의 SuspensionGate(#56)는 `_layout.tsx` 화면들 묶음의 화면 쌓기 칸 뒤에 두고 확인을 기다리는 동안 `useSplashHold(true)`.
+- 6a 의 #56: 루트 훅 묶음에 `useSuspensionGate(...)` 한 줄, 스플래시 묶음의 조건에 `!suspensionCovers`, 화면들 묶음에 가림막 View.
 - 웹 구글 버튼(`google.web.tsx` · `social-button.tsx`)은 결정 070 의 리디렉트 PR 이 바꾼다 — 이 PR 은 건드리지 않는다.

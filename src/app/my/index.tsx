@@ -56,8 +56,7 @@ export default function MyScreen() {
         <ListCard>
           {/* 음악 줄(/my/music)은 루트에 음악 줄을 거는 PR(길 A 의 스플래시 PR 뒤)에서 더한다 — 그 전에는 소리가 나지 않아 스위치가 아무 일도 하지 않는다 */}
           <ListCardRow label={R.faq} onPress={() => router.push('/settings/faq')} />
-          {/* 앱 안 문의(`/my/inquiries`, 결정 058)는 서버 S⑧ 뒤 계획 A7-4 */}
-          <ListCardRow label={R.inquiry} onPress={() => router.push('/settings/inquiry')} />
+          <ListCardRow label={R.inquiry} onPress={() => router.push('/my/inquiries')} />
         </ListCard>
         <ListCard>
           <ListCardRow label={R.terms} onPress={() => router.push('/settings/terms')} />

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, InquiryLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { INQUIRY_CATEGORIES, type InquiryCategory } from '@/lib/api';
 
@@ -9,25 +9,23 @@ export type CategoryChipsProps = {
   /** 고른 종류. 아직 고르지 않았으면 null */
   value: InquiryCategory | null;
   onChange: (category: InquiryCategory) => void;
-  invalid?: boolean;
 };
 
-/** 문의 종류를 고르는 칩. 궁합의 관계 유형 칩과 같은 모양이고(고른 칩은 옅은 주색), 다섯 개라 줄을 넘기면 다음 줄로 간다. */
-export function CategoryChips({ value, onChange, invalid = false }: CategoryChipsProps) {
+/** 문의 종류 칩 넷(결정 058, 보드 16-8): 한 줄에 같은 폭, 고른 칩은 밝은 바탕에 어두운 글자, 나머지는 떠 있는 면에 회색 글자 */
+export function CategoryChips({ value, onChange }: CategoryChipsProps) {
   return (
-    <View style={styles.row}>
+    <View accessibilityRole="radiogroup" style={styles.row}>
       {INQUIRY_CATEGORIES.map((category) => {
         const on = category === value;
         return (
           <Pressable
             key={category}
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={strings.inquiry.categories[category]}
-            accessibilityState={{ selected: on }}
+            accessibilityState={{ selected: on, checked: on }}
             onPress={() => onChange(category)}
-            style={[styles.chip, invalid && styles.invalid, on && styles.on]}
-          >
-            <Txt variant="table" color={on ? 'ink' : 'gray'} style={on && styles.onText}>
+            style={[styles.chip, on ? styles.on : styles.off]}>
+            <Txt variant="table" color={on ? 'paper' : 'gray'} style={on ? styles.onText : null}>
               {strings.inquiry.categories[category]}
             </Txt>
           </Pressable>
@@ -38,18 +36,9 @@ export function CategoryChips({ value, onChange, invalid = false }: CategoryChip
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
-  chip: {
-    height: Sizes.chipHeight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.fill,
-    borderRadius: Radius,
-    borderWidth: LineWidth,
-    borderColor: 'transparent',
-  },
-  invalid: { borderColor: Colors.danger },
-  on: { backgroundColor: Colors.primarySoft, borderColor: Colors.primary },
+  row: { flexDirection: 'row', gap: L.category.gap },
+  chip: { flex: 1, height: L.category.height, borderRadius: L.category.radius, alignItems: 'center', justifyContent: 'center' },
+  on: { backgroundColor: Colors.ink },
+  off: { backgroundColor: Colors.raised },
   onText: { fontWeight: FontWeight.semibold },
 });

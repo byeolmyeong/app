@@ -53,7 +53,7 @@ export default function FaqScreen() {
           <Txt variant="table" color="gray">
             {F.emptyNote}
           </Txt>
-          <TextLink label={F.toInquiry} onPress={() => router.push('/settings/inquiry')} />
+          <TextLink label={F.toInquiry} onPress={() => router.push('/my/inquiries/new')} />
         </View>
       </Screen>
     );

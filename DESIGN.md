@@ -41,7 +41,7 @@ last_reviewed: 2026-11-20
 - 브랜드 그림 원본: `assets/brand/*.svg` → PNG(`assets/images/`)는 `node scripts/render-brand.mjs`.
   - 면 세 단: `paper`(바탕) · `raised`(하단 시트) · `fill`(입력칸·보조 버튼·카드). 선: `hair`.
   - 글씨 네 단: `ink`(본문, 주색·빨강 위 글씨) · `gray`(보조) · `hint`(도움말·안내) · `muted`(비활성, 일부러 흐림). 그 사이 `inkSoft` 는 말풍선의 설명 · 관계의 각도 말(내 하늘 지도 시안 13-1 · 13-2) · 마이 카드의 한 줄 별명 · 계정 삭제의 지워지는 것 목록(보드 16 · 16-10)에만.
-  - 주색: `primary`(푸른 보라), 고른 칩의 바탕 `primarySoft`. 오류·삭제: `danger`.
+  - 주색: `primary`(푸른 보라), 고른 칩의 바탕 `primarySoft`. 오류·삭제: `danger`. 예외(시안 16-8): 새 문의의 종류 칩은 고르면 밝은 바탕(`ink`)에 어두운 글자(`paper`), 문의 내역의 "답변 왔어요" 칩과 별명 답변 카드는 옅은 보라(`InquiryLayout.status` · `answer` — 강조색을 면에 쓰지 않는 원칙의 예외, 이 둘에만).
 - 문구: `src/content/strings.ts`
 - 글꼴: Pretendard 하나(`FontFamily`), 굵기는 `FontWeight` 세 가지(regular 400 · medium 500 · semibold 600). 파일과 라이선스는 `assets/fonts/`, 적재는 `src/app/_layout.tsx` 의 `useFonts`. 자간은 20 이상 -2%, 15~18 -1%, 14 이하 0. 숫자가 줄 맞춰야 하는 곳은 `fontVariant: tabular-nums`(`table`·`mono`·`number`·`picker`).
 - 앱 설정: `app.json` 의 `userInterfaceStyle: dark`, 스플래시 바탕은 `paper` 와 같은 색. 웹에는 네이티브 스플래시가 없어 앱이 같은 그림을 그린다(`SplashView` — `BackdropShape.splash` · `Sizes.splashArt`, 결정 067).

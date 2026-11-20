@@ -1,5 +1,6 @@
 import {
   createApi,
+  INQUIRY_CATEGORIES,
   isAppConfig,
   isChart,
   isDirection,
@@ -890,63 +891,90 @@ describe('api: 궁합(직접 입력)', () => {
   });
 });
 
-describe('api: 문의하기', () => {
-  const inquiry = { category: 'BUG' as const, body: '리포트 화면이 열리지 않아요.', replyEmail: null };
+describe('api: 문의하기 · 내 문의(결정 058, 서버 S⑧)', () => {
+  const inquiry = { category: 'BUG' as const, body: '리포트 화면이 열리지 않아요.' };
+  const call = (status: number, body?: unknown) => {
+    const fetchFn = fakeFetch(status, body);
+    return { fetchFn, api: createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }) };
+  };
+  const item = {
+    id: '0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10',
+    category: 'BUG',
+    body: '아침에 오늘의 하늘 알림이 오지 않아요.',
+    status: 'ANSWERED',
+    createdAt: '2026-11-18T01:00:00Z',
+    answer: { body: '알려 주셔서 고마워요.', answeredAt: '2026-11-19T02:00:00Z' },
+  };
+  const mine = { id: item.id, category: 'BUG', body: item.body, createdAt: item.createdAt, answer: item.answer, emailed: false };
 
-  it('POST /inquiries 에 종류 · 내용 · 답장 주소(없으면 null)를 세션 헤더와 함께 보내고, 201 의 식별자를 받는다', async () => {
-    const fetchFn = fakeFetch(201, { id: '0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10' });
+  it('POST /inquiries 에 종류 · 내용만 보낸다 — replyEmail 키를 보내면 서버가 옛 앱으로 보므로 싣지 않는다', async () => {
+    const fetchFn = fakeFetch(201, { id: item.id });
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'session-abc' });
-    expect(await api.createInquiry(inquiry)).toEqual({
-      ok: true,
-      data: { id: '0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10' },
-    });
+    expect(await api.createInquiry(inquiry)).toEqual({ ok: true, data: { id: item.id } });
     const [url, init] = fetchFn.mock.calls[0];
     expect(url).toBe(`${BASE}/inquiries`);
     expect(init?.method).toBe('POST');
-    expect(JSON.parse(init?.body as string)).toEqual({
-      category: 'BUG',
-      body: '리포트 화면이 열리지 않아요.',
-      replyEmail: null,
-    });
+    expect(JSON.parse(init?.body as string)).toEqual({ category: 'BUG', body: '리포트 화면이 열리지 않아요.' });
+    expect(JSON.parse(init?.body as string)).not.toHaveProperty('replyEmail');
     expect(headersOf(fetchFn).Authorization).toBe('Bearer session-abc');
   });
 
-  it('답장 주소가 있으면 그대로 보낸다', async () => {
-    const fetchFn = fakeFetch(201, { id: 'a' });
-    const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
-    await api.createInquiry({ ...inquiry, replyEmail: 'me@example.test' });
-    expect(JSON.parse(fetchFn.mock.calls[0][1]?.body as string).replyEmail).toBe('me@example.test');
+  it('새 종류는 오류 · 제안 · 계정 · 기타 넷이다', () => {
+    expect(INQUIRY_CATEGORIES).toEqual(['BUG', 'IDEA', 'ACCOUNT', 'ETC']);
   });
 
   it('400 은 서버가 적은 이름을 code 로, 429 는 한도 결과로 돌려주고 다시 부르지 않는다', async () => {
-    const call = (status: number, body?: unknown) => {
-      const fetchFn = fakeFetch(status, body);
-      return { fetchFn, api: createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }) };
-    };
-    const bad = call(400, { error: 'INVALID_EMAIL' });
-    expect(await bad.api.createInquiry(inquiry)).toEqual({
-      ok: false,
-      error: 'SERVER',
-      status: 400,
-      code: 'INVALID_EMAIL',
-    });
+    const bad = call(400, { error: 'INVALID_BODY' });
+    expect(await bad.api.createInquiry(inquiry)).toEqual({ ok: false, error: 'SERVER', status: 400, code: 'INVALID_BODY' });
     expect(bad.fetchFn).toHaveBeenCalledTimes(1);
-    expect(await call(429, { error: 'RATE_LIMITED' }).api.createInquiry(inquiry)).toEqual({
-      ok: false,
-      error: 'LIMIT',
-      status: 429,
-    });
+    expect(await call(429, { error: 'RATE_LIMITED' }).api.createInquiry(inquiry)).toEqual({ ok: false, error: 'LIMIT', status: 429 });
+    expect(await call(201, {}).api.createInquiry(inquiry)).toEqual({ ok: false, error: 'INVALID', status: 201 });
   });
 
-  it('식별자가 없는 성공 응답은 INVALID 다', async () => {
-    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(201, {}), getToken: () => 't' });
-    expect(await api.createInquiry(inquiry)).toEqual({ ok: false, error: 'INVALID', status: 201 });
+  it('GET /inquiries 는 내 문의를 받은 순서 그대로(새것부터) 읽고, 없으면 빈 목록이다', async () => {
+    const open = { id: 'b', category: 'IDEA', body: '별명을 다시 받을 수 있나요?', status: 'OPEN', createdAt: '2026-11-20T01:00:00Z' };
+    const list = call(200, [open, item]);
+    expect(await list.api.getInquiries()).toEqual({
+      ok: true,
+      data: [{ id: 'b', category: 'IDEA', body: open.body, createdAt: open.createdAt, answer: null, emailed: false }, mine],
+    });
+    expect(list.fetchFn.mock.calls[0][0]).toBe(`${BASE}/inquiries`);
+    expect(list.fetchFn.mock.calls[0][1]?.method).toBe('GET');
+    expect(await call(200, []).api.getInquiries()).toEqual({ ok: true, data: [] });
+  });
+
+  it('모르는 종류(옛 READING · SYNASTRY · OTHER 등)는 기타로, 옛 문의의 replyEmail 은 이메일로 답한 문의로 읽는다(이메일 글자는 버린다)', async () => {
+    const old = { ...item, category: 'READING', status: 'OPEN', answer: undefined, replyEmail: 'me@example.test' };
+    const res = await call(200, [old, { ...item, category: 'SOMETHING_NEW' }]).api.getInquiries();
+    expect(res).toEqual({ ok: true, data: [{ ...mine, category: 'ETC', answer: null, emailed: true }, { ...mine, category: 'ETC' }] });
+    expect(JSON.stringify(res)).not.toContain('me@example.test');
+  });
+
+  it('한 줄이라도 모양이 계약과 다르면 목록 전체가 INVALID 다', async () => {
+    for (const bad of [{ ...item, id: 3 }, { ...item, body: null }, { ...item, createdAt: undefined }, { ...item, answer: { body: '답' } }, { ...item, category: 1 }]) {
+      expect(await call(200, [item, bad]).api.getInquiries()).toMatchObject({ ok: false, error: 'INVALID' });
+    }
+    expect(await call(200, { items: [] }).api.getInquiries()).toMatchObject({ ok: false, error: 'INVALID' });
+  });
+
+  it('GET /inquiries/{id} 는 한 건을 같은 모양으로, 남의 것 · 없는 것은 404 NOT_FOUND 를 code 로 준다', async () => {
+    const one = call(200, item);
+    expect(await one.api.getInquiry(item.id)).toEqual({ ok: true, data: mine });
+    expect(one.fetchFn.mock.calls[0][0]).toBe(`${BASE}/inquiries/${item.id}`);
+    expect(await call(404, { error: 'NOT_FOUND' }).api.getInquiry('x')).toEqual({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+  });
+
+  it('식별자는 주소에 넣기 전에 인코딩한다', async () => {
+    const one = call(404, { error: 'NOT_FOUND' });
+    await one.api.getInquiry('a/b?c');
+    expect(one.fetchFn.mock.calls[0][0]).toBe(`${BASE}/inquiries/a%2Fb%3Fc`);
   });
 
   it('가짜 서버를 켜면 fetch 없이 성공한다', async () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     expect(await api.createInquiry(inquiry)).toMatchObject({ ok: true, data: { id: expect.any(String) } });
+    expect(await api.getInquiries()).toMatchObject({ ok: true });
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 import { strings } from '@/content/strings';
 import {
   birthInputOf,
+  sameBirth,
   formatBirthLine,
   formatBirthSummary,
   formatDateTyping,
@@ -197,5 +198,18 @@ describe('시각 고르기(오전/오후 · 시 · 분)', () => {
     expect(formatTimeDisplay('21:00')).toBe('오후 9:00');
     expect(formatTimeDisplay('00:05')).toBe('오전 12:05');
     expect(formatTimeDisplay('')).toBe('');
+  });
+});
+
+describe('sameBirth — 기기에서 같은 출생 정보인가(출생 정보 바꾸기 · 입력 폼)', () => {
+  const p = { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } };
+  it('날짜 · 시각 · 곳(식별자)이 같으면 같다 — 곳 이름은 보지 않는다', () => {
+    expect(sameBirth(p, { ...p, place: { id: 1, name: '' } })).toBe(true);
+  });
+  it('하나라도 다르면 다르다 — 시각 "모름" 이어도 곳까지 본다(기기에는 곳이 남는다)', () => {
+    expect(sameBirth(p, { ...p, date: '1999-03-09' })).toBe(false);
+    expect(sameBirth(p, { ...p, time: null })).toBe(false);
+    expect(sameBirth({ ...p, time: null }, { ...p, time: null, place: { id: 2, name: '부산' } })).toBe(false);
+    expect(sameBirth({ ...p, time: null, place: null }, { ...p, time: null, place: null })).toBe(true);
   });
 });

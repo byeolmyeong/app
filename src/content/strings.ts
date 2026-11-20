@@ -254,7 +254,7 @@ export const strings = {
     /** 종류 칩 넷(결정 058). 옛 문의의 다른 종류는 "기타" 로 보인다 */
     categories: { BUG: '오류', IDEA: '제안', ACCOUNT: '계정', ETC: '기타' },
     /** 내역 한 줄의 상태(보드 16-8) */
-    status: { open: '확인 중', answered: '답변 왔어요' },
+    status: { open: '확인 중', answered: '답변 왔어요', emailed: '이메일로 보냈어요' },
     /** 날짜: "11월 20일", 올해가 아니면 "2025년 12월 31일" */
     date: { year: '년 ', month: '월 ', day: '일' },
     newInquiry: '새 문의하기',
@@ -289,7 +289,7 @@ export const strings = {
       answer: '별명 답변',
       waiting: '확인하고 답변을 드릴게요. 답변이 오면 알림으로 알려 드려요.',
       /** 옛 앱이 이메일로 답을 받기로 한 문의(결정 058 의 결과) */
-      emailed: '이 문의의 답변은 이메일로 보내 드려요.',
+      emailed: '이 문의의 답변은 이메일로 보냈어요.',
       notFound: { title: '문의를 찾지 못했어요', body: '지워졌거나 다른 계정의 문의예요.\n문의 내역에서 다시 골라 주세요.' },
     },
   },

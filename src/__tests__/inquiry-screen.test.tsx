@@ -8,14 +8,23 @@ import OldInquiryScreen from '@/app/settings/inquiry';
 import { strings } from '@/content/strings';
 import { api, type InquiryItem } from '@/lib/api';
 
+/** 화면을 떠났다 돌아옴을 흉내 낸다: key 를 바꾸고 다시 그리면 포커스 효과가 정리되고 다시 돈다 */
+const mockFocus = { key: 0 };
+const mockSession = { status: 'signedIn' as string };
+const mockOnline = { value: true };
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), dismissTo: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({ id: 'a' })),
-  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect, mockFocus.key]),
   Redirect: ({ href }: { href: string }) => {
     const { Text } = jest.requireActual('react-native');
     return <Text testID="redirect">{href}</Text>;
   },
+}));
+jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: mockSession.status })) }));
+jest.mock('@/components/use-online', () => ({
+  ...jest.requireActual('@/components/use-online'),
+  useOnline: jest.fn(() => mockOnline.value),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -38,6 +47,8 @@ const open: InquiryItem = { id: 'b', category: 'IDEA', body: '별명을 다시 �
 let nowSpy: jest.SpyInstance;
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSession.status = 'signedIn';
+  mockOnline.value = true;
   nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
 });
 afterEach(() => nowSpy.mockRestore());
@@ -90,6 +101,97 @@ describe('문의 내역(/my/inquiries, 보드 16-8)', () => {
     await render(<InquiriesScreen />);
     await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
     expect(router.replace).toHaveBeenCalledWith('/my');
+  });
+});
+
+describe('문의 내역 — 다시 받기 · 불러오기 · 끊김(결정 061 · 065 의 2)', () => {
+  type ListResult = Awaited<ReturnType<typeof api.getInquiries>>;
+  const deferred = () => {
+    let resolve: (r: ListResult) => void = () => {};
+    const promise = new Promise<ListResult>((r) => (resolve = r));
+    return { promise, resolve };
+  };
+
+  it('로그인 확인 전에는 묻지 않는다(토큰 없이 나가 보관 토큰이 지워지지 않게), 확인되면 묻는다', async () => {
+    mockSession.status = 'checking';
+    mockApi.getInquiries.mockResolvedValue({ ok: true, data: [open] });
+    const view = await render(<InquiriesScreen />);
+    expect(mockApi.getInquiries).not.toHaveBeenCalled();
+    mockSession.status = 'signedIn';
+    await view.rerender(<InquiriesScreen />);
+    expect(await screen.findByText(open.body)).toBeTruthy();
+    expect(mockApi.getInquiries).toHaveBeenCalledTimes(1);
+  });
+
+  it('다시 볼 때 받지 못하면 받아 둔 목록을 그대로 둔다', async () => {
+    mockApi.getInquiries.mockResolvedValueOnce({ ok: true, data: [open] }).mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 500 });
+    const view = await render(<InquiriesScreen />);
+    await screen.findByText(open.body);
+    mockFocus.key++;
+    await view.rerender(<InquiriesScreen />);
+    await waitFor(() => expect(mockApi.getInquiries).toHaveBeenCalledTimes(2));
+    expect(screen.getByText(open.body)).toBeTruthy();
+    expect(screen.queryByText(I.loadFail.title)).toBeNull();
+  });
+
+  it('늦게 온 "다시 보기" 의 답은 그 뒤에 받은 새 목록을 덮지 않는다', async () => {
+    const late = deferred();
+    mockApi.getInquiries
+      .mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 500 })
+      .mockReturnValueOnce(late.promise)
+      .mockResolvedValueOnce({ ok: true, data: [open, answered] });
+    const view = await render(<InquiriesScreen />);
+    await fireEvent.press(await screen.findByText(strings.states.loadFail.retry));
+    // 다시 보기의 답이 오기 전에 떠났다 돌아와(새 문의를 보내고) 새 목록을 받았다
+    mockFocus.key++;
+    await view.rerender(<InquiriesScreen />);
+    expect(await screen.findByText(open.body)).toBeTruthy();
+    await act(async () => late.resolve({ ok: true, data: [answered] }));
+    expect(screen.getByText(open.body)).toBeTruthy();
+  });
+
+  it('화면을 떠난 뒤 온 답은 쓰지 않는다', async () => {
+    const first = deferred();
+    mockApi.getInquiries.mockReturnValueOnce(first.promise).mockResolvedValueOnce({ ok: true, data: [open] });
+    const view = await render(<InquiriesScreen />);
+    mockFocus.key++;
+    await view.rerender(<InquiriesScreen />);
+    expect(await screen.findByText(open.body)).toBeTruthy();
+    await act(async () => first.resolve({ ok: true, data: [] }));
+    expect(screen.getByText(open.body)).toBeTruthy();
+    expect(screen.queryByText(I.empty.title)).toBeNull();
+  });
+
+  it('0.3초가 넘으면 뼈대, 10초가 넘으면 실패 화면', async () => {
+    jest.useFakeTimers();
+    try {
+      mockApi.getInquiries.mockReturnValue(new Promise(() => {}));
+      await render(<InquiriesScreen />);
+      expect(screen.queryByLabelText(strings.states.loading)).toBeNull();
+      await act(async () => jest.advanceTimersByTime(350));
+      expect(screen.getByLabelText(strings.states.loading)).toBeTruthy();
+      await act(async () => jest.advanceTimersByTime(10_000));
+      expect(screen.getByText(I.loadFail.title)).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('끊겨서 못 받았으면 20-1(인터넷에 연결되어 있지 않아요), 연결이 돌아오면 다시 부른다', async () => {
+    mockOnline.value = false;
+    mockApi.getInquiries.mockResolvedValueOnce({ ok: false, error: 'NETWORK' }).mockResolvedValueOnce({ ok: true, data: [open] });
+    const view = await render(<InquiriesScreen />);
+    expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
+    mockOnline.value = true;
+    await view.rerender(<InquiriesScreen />);
+    expect(await screen.findByText(open.body)).toBeTruthy();
+    expect(mockApi.getInquiries).toHaveBeenCalledTimes(2);
+  });
+
+  it('옛 이메일 문의는 상태 칩이 "이메일로 보냈어요"', async () => {
+    mockApi.getInquiries.mockResolvedValue({ ok: true, data: [{ ...open, emailed: true }] });
+    await render(<InquiriesScreen />);
+    expect(await screen.findByText(I.status.emailed)).toBeTruthy();
   });
 });
 
@@ -202,10 +304,21 @@ describe('답변 보기(/my/inquiries/[id], 보드 16-8)', () => {
     await waitFor(() => expect(screen.getByTestId('inquiry-answer')).toBeTruthy());
   });
 
-  it('주소의 식별자가 없으면 빈 식별자로 묻고(서버가 404) 찾지 못했다고 보인다', async () => {
-    (useLocalSearchParams as jest.Mock).mockReturnValueOnce({});
-    mockApi.getInquiry.mockResolvedValue({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+  it('주소에 식별자가 없으면 묻지 않고 찾지 못했다고 보인다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({});
+    try {
+      await render(<InquiryDetailScreen />);
+      expect(await screen.findByText(I.detail.notFound.title)).toBeTruthy();
+      expect(mockApi.getInquiry).not.toHaveBeenCalled();
+    } finally {
+      (useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'a' });
+    }
+  });
+
+  it('끊겨서 못 받았으면 20-1', async () => {
+    mockOnline.value = false;
+    mockApi.getInquiry.mockResolvedValue({ ok: false, error: 'NETWORK' });
     await render(<InquiryDetailScreen />);
-    expect(await screen.findByText(I.detail.notFound.title)).toBeTruthy();
+    expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
   });
 });

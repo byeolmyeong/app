@@ -122,7 +122,7 @@ export default function NewInquiryScreen() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   /** 머리 아래 12, 묶음 사이 22, 이름표 · 칸 · 안내 사이 8(보드 16-8) */
-  content: { gap: MyLayout.delete.gap, paddingTop: MyLayout.gap, paddingHorizontal: ScreenPaddingX, paddingBottom: Spacing.md },
+  content: { gap: L.groupGap, paddingTop: MyLayout.gap, paddingHorizontal: ScreenPaddingX, paddingBottom: Spacing.md },
   group: { gap: Spacing.xs },
   box: {
     height: L.body.height,

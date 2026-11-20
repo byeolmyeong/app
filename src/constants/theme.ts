@@ -544,11 +544,16 @@ export const MyLayout = {
  */
 export const InquiryLayout = {
   row: { paddingV: 14, paddingH: 16, gap: 6, metaGap: 8 },
+  /** 새 문의의 묶음(종류 · 내용) 사이 */
+  groupGap: 22,
   status: { height: 22, paddingH: 8, radius: 11, answeredFill: 'rgba(154,163,255,0.14)', answeredText: '#C9CEFF' },
   category: { height: 36, radius: 18, gap: 6 },
   body: { height: 180, paddingV: 14, paddingH: 16 },
   card: { padding: 16, gap: 8 },
   answer: { fill: 'rgba(71,82,255,0.10)', border: 'rgba(154,163,255,0.28)', label: '#C9CEFF' },
-  empty: { icon: 72, glyph: 32, titleTop: 20, bodyTop: 8 },
+  /** 비었을 때: 머리 아래 높이 560 칸의 가운데(보드 16-8 비었을 때) */
+  empty: { height: 560, icon: 72, glyph: 32, titleTop: 20, bodyTop: 8 },
+  /** 처음 불러올 때 뼈대 줄 수 · 줄 높이(보드 24 의 카드 줄) */
+  skeleton: { rows: 3, line: 16, meta: 12 },
   sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
 } as const;

@@ -1171,13 +1171,17 @@ export function createApi(config: ApiConfig) {
 
     /** `GET /inquiries` 내 문의 전부, 새것부터(서버 순서 그대로). 없으면 빈 목록. 한 줄이라도 모양이 틀리면 INVALID */
     async getInquiries(): Promise<ApiResult<InquiryItem[]>> {
-      if (config.useFixtures) return { ok: true, data: [] };
+      if (config.useFixtures) return { ok: true, data: fixtures.inquiries };
       const res = await request('GET', '/inquiries', { validate: isInquiryList });
       return res.ok ? { ok: true, data: res.data.map(inquiryItemOf) } : res;
     },
 
     /** `GET /inquiries/{id}` 내 문의 한 건과 답. 남의 것 · 없는 것은 404 `NOT_FOUND` */
     async getInquiry(id: string): Promise<ApiResult<InquiryItem>> {
+      if (config.useFixtures) {
+        const found = fixtures.inquiries.find((item) => item.id === id);
+        return found ? { ok: true, data: found } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
+      }
       const res = await request('GET', `/inquiries/${encodeURIComponent(id)}`, { validate: isInquiryItemWire });
       return res.ok ? { ok: true, data: inquiryItemOf(res.data) } : res;
     },

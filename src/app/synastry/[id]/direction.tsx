@@ -37,7 +37,7 @@ export default function SynastryDirectionScreen() {
   useGenerationBusy(state.status === 'loading', state.status === 'done');
   /** 이 화면에서 다시 넣은 상대의 출생 정보. 거절됐을 때 칸을 다시 채우는 데만 쓴다(메모리) */
   const [typed, setTyped] = useState<BirthProfile | null>(null);
-  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
 
   const reenter = (
     <PartnerBirthForm

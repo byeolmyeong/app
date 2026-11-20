@@ -29,7 +29,7 @@ export default function SynastryRankingScreen() {
   const { state, retry } = useRanking(ready ? relation : null);
 
   return (
-    <Screen nav={<NavBar title={R.title} onBack={goBackOrHome} />}>
+    <Screen nav={<NavBar title={R.title} onBack={goBackOrHome} chevron />}>
       <Tabs tabs={RELATIONS.map((r) => ({ key: r, label: S.relations[r] }))} value={relation} onChange={setRelation} />
       {state.status === 'loading' ? (
         <View style={styles.status}>

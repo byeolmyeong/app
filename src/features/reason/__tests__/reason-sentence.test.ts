@@ -117,6 +117,8 @@ describe('이유 문장: 시각 모름 · 모르는 값(결정 054 의 6 · 7)',
 
   it('모르는 kind · 사전에 없는 값이면 그 이유 줄을 숨긴다(null)', () => {
     expect(reasonSentence(birth({ kind: 'MIDPOINT' }), known)).toBeNull();
+    // 모르는 때(when)도 그 줄만 숨긴다(리뷰 #49)
+    expect(reasonSentence({ when: 'LATER', items: [{ kind: 'PLACEMENT', body: 'SUN', sign: 'AQUARIUS' }] }, known)).toBeNull();
     expect(reasonSentence(birth({ kind: 'PLACEMENT', body: 'CHIRON', sign: 'AQUARIUS' }), known)).toBeNull();
     expect(reasonSentence(birth({ kind: 'PLACEMENT', body: 'SUN', sign: 'OPHIUCHUS' }), known)).toBeNull();
     expect(reasonSentence(birth({ kind: 'ASPECT', a: 'SATURN', b: 'SUN', type: 'QUINCUNX' }), known)).toBeNull();

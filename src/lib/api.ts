@@ -113,9 +113,10 @@ export type KnownBasisItem =
 /** 모르는 kind 는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
 export type BasisItem = KnownBasisItem | { kind: string };
 
-/** 근거의 때: 태어날 때 · 지금 지나는 시기 · 그날 */
+/** 근거의 때: 태어날 때 · 지금 지나는 시기 · 그날. 모르는 때는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
 export const REASON_WHENS = ['BIRTH', 'NOW', 'DAY'] as const;
-export type Reason = { when: (typeof REASON_WHENS)[number]; items: BasisItem[] };
+export type ReasonWhen = (typeof REASON_WHENS)[number];
+export type Reason = { when: ReasonWhen | (string & {}); items: BasisItem[] };
 
 /** "이 풀이에 쓰인 별" 하나: 놓인 자리는 body + sign, 하우스 모임은 house + count, 각도 · 다스리는 별은 body 하나 */
 export type Star = { body?: string; sign?: string; house?: number; count?: number };
@@ -506,11 +507,11 @@ function isBasisItem(v: unknown): v is BasisItem {
   }
 }
 
-/** 근거는 1~2개 */
+/** 근거는 1~2개. 때(when)는 비지 않은 글자면 받는다 — 모르는 때는 그 이유 줄만 숨긴다(리뷰 #49) */
 export function isReason(v: unknown): v is Reason {
   return (
     isObject(v) &&
-    REASON_WHENS.some((when) => when === v.when) &&
+    isNonEmptyText(v.when) &&
     Array.isArray(v.items) &&
     v.items.length >= 1 &&
     v.items.length <= 2 &&

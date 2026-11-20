@@ -4,7 +4,7 @@
  * 나 탭 · 내 별명 · 시기 · 오늘의 하늘이 함께 쓴다(eslint.config.js 의 SHARED_FEATURE_FILES).
  */
 import { strings } from '@/content/strings';
-import type { BasisItem, KnownBasisItem, Reason } from '@/lib/api';
+import { REASON_WHENS, type BasisItem, type KnownBasisItem, type Reason, type ReasonWhen } from '@/lib/api';
 
 const R = strings.reason;
 const G = strings.glossary;
@@ -207,12 +207,13 @@ export function needsTime(item: KnownBasisItem): boolean {
  * 남는 근거가 없으면 null — 그 이유 줄을 숨긴다(결정 054 의 7).
  */
 export function reasonSentence(reason: Reason, { timeKnown, today = false }: ReasonOptions): ReasonSentence | null {
-  if (!reason.items.every(isKnown)) return null;
+  if (!reason.items.every(isKnown) || !(REASON_WHENS as readonly string[]).includes(reason.when)) return null;
   const items = reason.items.filter((item) => timeKnown || !needsTime(item));
   const clauses = items.map((item) => clauseOf(item, timeKnown));
   if (clauses.length === 0 || clauses.some((c) => c === null)) return null;
   const list = clauses as Clause[];
-  const head = reason.when === 'DAY' ? (today ? R.when.TODAY : R.when.DAY) : R.when[reason.when];
+  const when = reason.when as ReasonWhen;
+  const head = when === 'DAY' ? (today ? R.when.TODAY : R.when.DAY) : R.when[when];
   const pieces: Piece[] = [{ t: `${head} ` }];
   if (list.length === 2 && list.every((c) => c.angleAt)) {
     pieces.push(...list[0].pieces, { t: R.join }, ...list[1].pieces, { t: ` ${list[1].verb.end}` });

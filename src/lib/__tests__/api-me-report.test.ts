@@ -38,8 +38,9 @@ describe('근거 구조(Reason · BasisItem, 서버 결정 031)', () => {
     expect(isReason({ when: 'BIRTH', items: [items[0], items[1]] })).toBe(true);
   });
 
-  it('모르는 kind 는 그 줄만 숨기도록 받는다(풀이 전체를 거절하지 않는다, 결정 054 의 7)', () => {
+  it('모르는 kind · 모르는 때(when)는 그 줄만 숨기도록 받는다(풀이 전체를 거절하지 않는다, 결정 054 의 7 · 리뷰 #49)', () => {
     expect(isReason({ when: 'BIRTH', items: [{ kind: 'MIDPOINT', a: 'SUN' }] })).toBe(true);
+    expect(isReason({ when: 'LATER', items: [{ kind: 'PLACEMENT', body: 'SUN', sign: 'AQUARIUS' }] })).toBe(true);
   });
 
   it('필드가 빠지거나 타입이 틀리면 거절한다', () => {
@@ -47,7 +48,8 @@ describe('근거 구조(Reason · BasisItem, 서버 결정 031)', () => {
     const broken: unknown[] = [
       null,
       { items: [p] },
-      { when: 'LATER', items: [p] },
+      { when: '', items: [p] },
+      { when: 1, items: [p] },
       { when: 'BIRTH', items: [] },
       { when: 'BIRTH', items: [p, p, p] },
       { when: 'BIRTH', items: [{ ...p, sign: undefined }] },

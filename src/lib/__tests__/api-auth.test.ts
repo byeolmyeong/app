@@ -291,14 +291,14 @@ describe('api: 이용 정지', () => {
   it('어떤 요청이든 403 ACCOUNT_SUSPENDED 를 받으면 정지 알림을 부르고, 결과는 code 로 돌려준다', async () => {
     const onSuspended = jest.fn();
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(403, { error: 'ACCOUNT_SUSPENDED' }), getToken: () => 't', onSuspended });
-    expect(await api.getReport()).toEqual({ ok: false, error: 'SERVER', status: 403, code: 'ACCOUNT_SUSPENDED' });
+    expect(await api.getTimingReport()).toEqual({ ok: false, error: 'SERVER', status: 403, code: 'ACCOUNT_SUSPENDED' });
     expect(onSuspended).toHaveBeenCalledTimes(1);
   });
 
   it('다른 403(FORBIDDEN_ORIGIN 등)은 정지가 아니다', async () => {
     const onSuspended = jest.fn();
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(403, { error: 'FORBIDDEN_ORIGIN' }), getToken: () => 't', onSuspended });
-    await api.getReport();
+    await api.getTimingReport();
     expect(onSuspended).not.toHaveBeenCalled();
   });
 

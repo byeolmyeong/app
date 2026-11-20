@@ -36,10 +36,11 @@ app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇
   index.tsx          홈 v2(별명 카드 · 아래 탭 넷, 결정 047 · 055. 출생 정보가 없으면 입력 · 서버의 것으로 되살리기)
   intro.tsx · login.tsx · auth/kakao.tsx   소개 2장(이 기기에서 처음 한 번, 결정 055) · 로그인(공급자 버튼 — 서버를 기다리는 동안 이 화면에 머물고 누른 버튼에 돌기, 결정 067) · 카카오 웹 로그인에서 돌아오는 화면(스플래시 모양으로 기다린다, 결정 034 · 042 · 067)
   signup/            단계식 가입(결정 042): terms.tsx(약관 동의) → nickname.tsx(닉네임 · 프로필) → birth.tsx(출생 정보, 여기서 POST /auth/signup 한 번)
-  reading.tsx · report.tsx · direction.tsx · chart/(index 내 하늘 지도 · detail 차트 자세히 표) · synastry/(1.0.0 에서는 _layout.tsx 가 모든 주소를 홈으로 보낸다, 결정 055) · s/[shareId].tsx · my/(마이 v2, 결정 056: index 별명 카드 · 제목 없는 목록 카드 둘 · account 계정(프로필 · 닉네임 · 연결된 계정 · 로그아웃 가운데 창 · 맨 아래 계정 삭제) · nickname 닉네임 바꾸기 · delete 계정 삭제 → 지웠어요) · settings/(자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 마케팅 수신 동의 약관 · 개인정보 수집 · 이용 동의(privacy-consent — 약관 단계의 보기 · 동의하기, 결정 045) — 목록 화면은 없다. 약관 글은 결정 043)
+  reading.tsx · report.tsx · direction.tsx · chart/(index 내 하늘 지도 · detail 차트 자세히 표) · synastry/(1.0.0 에서는 _layout.tsx 가 모든 주소를 홈으로 보낸다, 결정 055) · s/[shareId].tsx · my/(마이 v2, 결정 056: index 별명 카드 · 제목 없는 목록 카드 둘 · account 계정(프로필 · 닉네임 · 연결된 계정 · 로그아웃 가운데 창 · 맨 아래 계정 삭제) · nickname 닉네임 바꾸기 · delete 계정 삭제 → 지웠어요 · music 음악 스위치 셋, 결정 062) · settings/(자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 마케팅 수신 동의 약관 · 개인정보 수집 · 이용 동의(privacy-consent — 약관 단계의 보기 · 동의하기, 결정 045) — 목록 화면은 없다. 약관 글은 결정 043)
 features/            기능별 로직과 기능 전용 부품
   auth/              세션(session-store · use-session 의 useAuth — 소셜 로그인 · 가입 · 닉네임 확인 · 가입 그만두기 · 로그아웃, 개발용 세션), 공급자 버튼(providers/ — `google`·`apple`·`kakao` 의 기본(앱) · `.ios` · `.web` 파일, 같은 이름의 버튼, 모양은 social-button.tsx 하나 — 웹 구글은 같은 모양(SocialButtonFace) 위에 GIS 버튼을 투명하게 겹쳐 받는다, 결정 067), 최근 로그인(last-provider.ts — 마지막에 로그인한 공급자 이름만 AsyncStorage `byeolmyeong-device.lastProvider.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 044), 세션 토큰 보관, 로그인 전 가드(guard.ts), 가입 단계 뼈대(signup-step.tsx) · 초안(signup-draft.ts, 메모리만) · 닉네임 규칙(nickname-rule.ts) · 프로필 고르기 시트(avatar-sheet.tsx), 로그아웃(sign-out.ts — 기기 저장도 비움), 계정 삭제(delete-account.ts — 서버가 지운 뒤 기기 저장 비움. 세션은 "계정을 지웠어요" 의 확인에서 화면이 비운다 — 먼저 비우면 루트 가드가 그 화면을 로그인으로 바꾼다)
   home/              홈의 별명 카드(nickname-card.tsx) · 계정의 닉네임 · 프로필(use-account.ts, `GET /account`) · 받은 지 며칠(days-since.ts, 한국 날짜) · 아래 탭 넷(main-tabs.tsx — 나 · 시기는 새 화면 전까지 /reading · /report?area=TIMING, 결정 046 의 4)
+  audio/             음악 세 곡(결정 062): 곡 파일 · 음량(tracks.ts — 파일은 `assets/audio/`, 바꿔 끼우는 법은 그 README) · 앱에 하나인 음악 줄(soundtrack.ts — 배경이 기본, 화면이 청한 곡, 꺼 둔 곡은 틀지 않음, 바뀔 때 줄였다 키움, 무음 모드 존중 · 섞임 · 뒤로 가면 멈추고 돌아오면 이어서(iOS 가 스스로 다시 트는 플레이어는 멈춤) · 웹은 첫 누름(pointerup · touchend · keydown) 뒤 배경만) · 화면 훅(use-soundtrack.ts — 공유 파일: `useSoundtrack('waiting' | 'opening')` · 루트의 `useSoundtrackRoot`) · 설정(music-settings.ts — AsyncStorage `byeolmyeong-device.music.v1`, 로그아웃 · 탈퇴가 지우지 않는다)
   my/                마이 v2(결정 056): 마이의 별명 카드(my-card.tsx) · 계정을 화면이 보일 때마다 받기(use-my-account.ts, `GET /account` — 기기에 두지 않음) · 연결된 계정의 가린 이메일(mask-email.ts) · 공급자 표시(provider-badge.tsx)
   onboarding/        소개 2장의 그림(intro-art.tsx)과 이 기기에서 봤는지(intro-seen.ts — AsyncStorage `byeolmyeong-device.introSeen.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 042)
   chart/             내 하늘 지도(휠 · "별마다 있던 자리" · 별 시트, 용어는 `strings.glossary`)·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) · 태어난 곳 시트(place-sheet.tsx — 검색 · 시 · 도 칩 → 시 · 군 · 구, 결정 042) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
@@ -59,13 +60,13 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
 ```
 - 기능 폴더 안에서 훅은 `use-<이름>.ts`, 부품은 `<이름>.tsx`, 테스트는 `__tests__/`.
 - 화면을 렌더하는 테스트는 `src/__tests__/` 에 둔다. `app/` 안에 두면 라우트가 되고, `features/` 에 두면 `app` 을 import 해 의존 규칙에 걸린다.
-- 다른 기능이 가져다 써도 되는 파일은 `eslint.config.js` 의 `SHARED_FEATURE_FILES` 에 적는다(지금: `chart/ChartWheel.tsx`, `auth/use-session.ts`).
+- 다른 기능이 가져다 써도 되는 파일은 `eslint.config.js` 의 `SHARED_FEATURE_FILES` 에 적는다(지금: `chart/ChartWheel.tsx`, `auth/use-session.ts`, `audio/use-soundtrack.ts`).
 
 ## 의존 규칙 (결정 017 — `npx expo lint` 가 실패하면 위반이다)
 | 규칙 | 이유 | 강제 |
 |---|---|---|
 | 공용(`components`·`constants`·`content`·`lib`, 그리고 `app`·`features`·`__tests__` 밖의 모든 `src/` 최상위 폴더)은 `app`·`features` 를 import 하지 않는다 | 공용이 기능을 알면 순환이 생긴다 | `import/no-restricted-paths` |
-| `features/<A>` 는 다른 `features/<B>` 를 import 하지 않는다. 예외: `eslint.config.js` 의 `SHARED_FEATURE_FILES`(지금 `chart/ChartWheel.tsx`, `auth/use-session.ts`). `features/` 바로 아래에는 파일을 두지 않는다 | 기능 하나를 고칠 때 다른 기능이 깨지지 않게 | `import/no-restricted-paths` |
+| `features/<A>` 는 다른 `features/<B>` 를 import 하지 않는다. 예외: `eslint.config.js` 의 `SHARED_FEATURE_FILES`(지금 `chart/ChartWheel.tsx`, `auth/use-session.ts`, `audio/use-soundtrack.ts`). `features/` 바로 아래에는 파일을 두지 않는다 | 기능 하나를 고칠 때 다른 기능이 깨지지 않게 | `import/no-restricted-paths` |
 | `features` 는 `app` 을 import 하지 않는다 | 화면은 위, 기능은 아래 | `import/no-restricted-paths` |
 | 서버 호출은 `lib/` 에서만 한다(`lib/api.ts`). 화면·기능은 `fetch`·`XMLHttpRequest`·`expo/fetch` 를 쓰지 않는다 | 세션 헤더·오류 처리를 한 곳에서 | `no-restricted-globals`·`-properties`·`-imports` |
 | 색·글자·간격은 `constants/theme.ts`, 문구는 `content/strings.ts` 에서만 | 디자인·번역이 한 곳에서 바뀐다 | 리뷰 |

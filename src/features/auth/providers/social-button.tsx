@@ -90,7 +90,7 @@ function Content({ provider, label, loading, recent }: Pick<SocialButtonProps, '
       {loading ? (
         <ActivityIndicator testID={`social-spinner-${provider}`} size="small" color={text[provider].color} />
       ) : (
-        <Text style={[styles.text, text[provider]]}>{label}</Text>
+        <Text style={[styles.text, styles.textPassThrough, text[provider]]}>{label}</Text>
       )}
       {recent ? <RecentBadge /> : null}
     </>
@@ -106,7 +106,7 @@ export function SocialButton({ provider, label, onPress, disabled = false, loadi
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
       onPress={onPress}
-      style={[styles.base, styles[provider], disabled && !loading && styles.disabled]}>
+      style={[styles.base, styles[provider], disabled && !loading && styles.disabled, disabled || loading ? styles.idle : styles.pointer]}>
       <Content provider={provider} label={label} loading={loading} recent={recent} />
     </Pressable>
   );
@@ -140,7 +140,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: B.logoInset + B.logo,
+    /** 웹: 글자를 고를 수 없고(글자 위 I 커서 없음) 버튼 전체가 누름 대상 */
+    userSelect: 'none',
   },
+  pointer: { cursor: 'pointer' },
+  idle: { cursor: 'default' },
   KAKAO: { backgroundColor: B.kakao.background },
   APPLE: { backgroundColor: B.apple.background },
   GOOGLE: { backgroundColor: B.google.background, borderWidth: LineWidth, borderColor: B.google.border },
@@ -158,6 +162,8 @@ const styles = StyleSheet.create({
   /** 테두리(1) 안쪽에서 재므로 한 칸 덜 들어가야 바깥 기준 16 · 가운데가 된다 */
   logoInBorder: { left: B.logoInset - LineWidth, top: (B.height - B.logo) / 2 - LineWidth },
   text: { ...B.text },
+  /** 글자는 누름을 받지 않고 버튼에 넘긴다(웹에서 글자 위 커서가 바뀌지 않게) */
+  textPassThrough: { userSelect: 'none', pointerEvents: 'none' },
   badge: {
     position: 'absolute',
     top: R.top,

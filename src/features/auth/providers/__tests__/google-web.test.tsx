@@ -118,6 +118,14 @@ describe('구글(웹): 준비 전', () => {
     await layout(350);
     expect(flat('social-button-GOOGLE').opacity).toBe(0.4);
     expect(screen.getByTestId('google-gis-overlay', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
+    expect(flat('google-gis-overlay').cursor).toBe('default');
+  });
+
+  it('준비되면 겹친 칸이 손가락 커서다', async () => {
+    await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} />);
+    await layout(350);
+    await waitFor(() => expect(renderButton).toHaveBeenCalled());
+    expect(flat('google-gis-overlay').cursor).toBe('pointer');
   });
 
   it('스크립트가 10초 안에 오지 않으면 버튼을 거두고 실패를 알린다(로그인 화면의 안내)', async () => {

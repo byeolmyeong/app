@@ -267,7 +267,8 @@ export const NicknameCardLayout = {
   moreTop: 14,
   chevron: 16,
   glow: { x: 0.88, y: 0.08, extent: 0.58 },
-  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55 },
+  /** 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기 */
+  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8 },
   /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." · "내 별명 읽기" 막대 폭 */
   skeleton: { name: 72, meta: 64, empty: 168, more: 72 },
 } as const;

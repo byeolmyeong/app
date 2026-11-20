@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Avatar, isAvatarId } from '@/components/avatar';
-import { CardConstellation } from '@/components/card-constellation';
+import { CardConstellation, type CardConstellationArt } from '@/components/card-constellation';
 import { GlowBackdrop } from '@/components/glow';
 import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
@@ -19,6 +19,8 @@ export type NicknameCardProps = {
   avatar: number | null;
   /** 해 별자리 이름("쌍둥이자리" — 서버 차트의 SUN). 없으면 null */
   sunSign: string | null;
+  /** 오른쪽 위에 그릴 해 별자리 그림(서버 차트의 SUN 으로 화면이 고른다). 없으면 그리지 않는다 */
+  art: CardConstellationArt | null;
   /** 별명을 받은 지 며칠(받은 날 1일). 요약 해석에 만든 때가 없으면 null */
   days: number | null;
   /** 받아 둔 요약 해석의 한 줄 별명. 아직 없으면 null */
@@ -30,12 +32,12 @@ export type NicknameCardProps = {
  * 홈의 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): 프로필 그림 · "○○ 님" · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 풀이 읽기.
  * 카드 전체를 누르면 내 별명(풀이 글)으로 간다. 브랜드 자리라 오른쪽 위에 옅은 빛과 별자리 장식이 있다(결정 035).
  */
-export function NicknameCard({ nickname, avatar, sunSign, days, headline, onOpen }: NicknameCardProps) {
+export function NicknameCard({ nickname, avatar, sunSign, art, days, headline, onOpen }: NicknameCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
   return (
     <Pressable testID="nickname-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
-      <CardConstellation />
+      <CardConstellation art={art} />
       <View style={styles.row}>
         {isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>

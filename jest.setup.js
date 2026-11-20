@@ -30,3 +30,22 @@ jest.mock('expo-audio', () => ({
   createAudioPlayer: jest.fn(() => ({ volume: 1, loop: false, play: jest.fn(), pause: jest.fn(), seekTo: jest.fn(async () => {}), remove: jest.fn() })),
   setAudioModeAsync: jest.fn(async () => {}),
 }));
+
+// 휴대폰 푸시(expo-notifications)도 네이티브 모듈이다(결정 057). 권한은 "아직 묻지 않음", 토큰은 받지 못한 것으로 두는 가짜를 깐다.
+// 권한 · 토큰 · 누르면 이동을 보는 시험(features/push)은 그 파일에서 바꿔 끼운다.
+jest.mock('expo-notifications', () => ({
+  IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3, EPHEMERAL: 4 },
+  AndroidImportance: { DEFAULT: 3, HIGH: 4 },
+  getPermissionsAsync: jest.fn(async () => ({ granted: false, status: 'undetermined', canAskAgain: true, expires: 'never' })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: false, status: 'denied', canAskAgain: false, expires: 'never' })),
+  getExpoPushTokenAsync: jest.fn(async () => {
+    throw new Error('no token in tests');
+  }),
+  setNotificationChannelAsync: jest.fn(async () => null),
+  setNotificationHandler: jest.fn(),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponseAsync: jest.fn(async () => null),
+  clearLastNotificationResponseAsync: jest.fn(async () => {}),
+}));

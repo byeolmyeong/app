@@ -46,8 +46,10 @@ export const Colors = {
   primarySoft: '#1D2050',
   /** 오류 · 삭제. 대비 4.9, 그 위 ink 3.5 */
   danger: '#E5484D',
-  /** 연결 끊김 아이콘의 빗금(보드 20) */
+  /** 연결 끊김 아이콘의 빗금(보드 20) · 짧은 알림의 실패 아이콘(보드 23-1) */
   dangerSoft: '#FF8A8A',
+  /** 짧은 알림의 성공 체크(보드 23) */
+  success: '#7EE0B5',
 } as const;
 
 export type ColorName = keyof typeof Colors;
@@ -209,6 +211,22 @@ export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, ab
 
 /** 가운데 창(결정 061 의 6, 보드 17): 화면 양옆에서 · 안 여백(위 · 나머지) · 모서리 · 제목과 설명 사이 · 설명과 버튼 사이 · 버튼 사이 · 버튼 높이 */
 export const DialogLayout = { inset: 28, paddingTop: 26, padding: 20, radius: 20, bodyTop: 8, actionsTop: 22, actionGap: 8, button: 50 } as const;
+
+/**
+ * 짧은 알림(보드 23 · 23-1, ADR 065 예정): 화면 좌우 · 감싼 것(아래 탭 · 주 버튼)과의 사이 · 안 여백(세로 · 가로) · 모서리 ·
+ * 아이콘(크기 · 선 굵기) · 아이콘과 글 사이 · 그림자
+ */
+export const ToastLayout = {
+  inset: 20,
+  above: 12,
+  paddingV: 14,
+  paddingH: 16,
+  radius: 14,
+  icon: 18,
+  iconStroke: 2.2,
+  gap: 10,
+  shadow: '0 8px 24px rgba(0,0,0,0.45)',
+} as const;
 
 /** 연결 끊김 띠(결정 061 의 4, 보드 20) */
 export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, icon: 20, gap: 10 } as const;

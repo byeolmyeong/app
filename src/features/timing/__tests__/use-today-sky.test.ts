@@ -2,12 +2,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 
+import type { PushData } from '@/features/push/push-data';
 import { DAY_SKY_STORAGE_KEY, useTodaySky } from '@/features/timing/use-today-sky';
 import { api, type BirthInput, type DaySky } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
+}));
+// 쓰는 중에 온 푸시(결정 066 의 5) — 시험이 직접 보낸다
+let mockPush: ((push: PushData) => void) | null = null;
+jest.mock('@/features/push/push', () => ({
+  onPushReceived: (listener: (push: PushData) => void) => {
+    mockPush = listener;
+    return () => {
+      if (mockPush === listener) mockPush = null;
+    };
+  },
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -126,5 +137,51 @@ describe('오늘의 하늘(결정 051 의 2)', () => {
     await act(async () => {});
     expect(result.current.state).toEqual({ status: 'loading' });
     expect(mockApi.postDaySky).not.toHaveBeenCalled();
+  });
+
+  describe('다른 화면이 받아 둔 것 · 아침 푸시(리뷰 #66 의 5 · 8)', () => {
+    /** AppState 의 "앱으로 돌아옴" 을 시험이 직접 보낸다(화면이 다시 보일 때와 같은 확인) */
+    let appState: ((s: AppStateStatus) => void) | null = null;
+    let spy: jest.SpyInstance;
+    beforeEach(() => {
+      appState = null;
+      spy = jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, l) => {
+        appState = l as (s: AppStateStatus) => void;
+        return { remove: jest.fn() } as unknown as ReturnType<typeof AppState.addEventListener>;
+      });
+    });
+    afterEach(() => spy.mockImplementation(() => ({ remove: jest.fn() }) as unknown as ReturnType<typeof AppState.addEventListener>));
+
+    it('못 썼던 홈 카드는 다시 보일 때 기기를 다시 읽어, 오늘의 하늘 화면이 다시 쓰기로 받아 둔 오늘 것을 그린다 — 서버는 다시 부르지 않는다', async () => {
+      mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
+      const { result } = await renderHook(() => useTodaySky(birth));
+      await waitFor(() => expect(result.current.state.status).toBe('failed'));
+      await store(sky('2026-11-19'));
+      await act(async () => appState?.('active'));
+      await waitFor(() => expect(result.current.state).toEqual({ status: 'done', sky: sky('2026-11-19') }));
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    });
+
+    it('못 썼고 기기에도 없으면 실패 그대로 — 스스로 서버를 부르지 않는다', async () => {
+      mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
+      const { result } = await renderHook(() => useTodaySky(birth));
+      await waitFor(() => expect(result.current.state.status).toBe('failed'));
+      await act(async () => appState?.('active'));
+      expect(result.current.state.status).toBe('failed');
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    });
+
+    it('오늘의 하늘 푸시가 오면: 못 썼거나 지난날 것이면 새로 묻고, 이미 오늘 것이면 부르지 않는다', async () => {
+      mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
+      const { result } = await renderHook(() => useTodaySky(birth));
+      await waitFor(() => expect(result.current.state.status).toBe('failed'));
+      await act(async () => mockPush?.({ type: 'TODAY_SKY', date: '2026-11-19' }));
+      await waitFor(() => expect(result.current.state).toEqual({ status: 'done', sky: sky('2026-11-19') }));
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+      await act(async () => mockPush?.({ type: 'TODAY_SKY', date: '2026-11-19' }));
+      // 다른 종류의 푸시는 오늘의 하늘과 상관없다
+      await act(async () => mockPush?.({ type: 'READING_DONE' }));
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+    });
   });
 });

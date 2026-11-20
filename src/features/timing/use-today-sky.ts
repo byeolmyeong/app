@@ -11,6 +11,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { onPushReceived } from '@/features/push/push';
 import { koreaToday } from '@/features/timing/dates';
 import { api, isDaySky, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
 
@@ -113,10 +114,36 @@ export function useTodaySky(input: BirthInput | null) {
     };
   }, [key, fetchToday]);
 
-  // 날이 바뀌었으면 다시 부른다: 화면이 다시 보일 때 · 앱으로 돌아올 때(앱을 켜 둔 채 자정을 넘긴 다음 날 아침)
+  /** 지금 상태(화면이 다시 보일 때 · 푸시가 왔을 때 견준다) */
+  const status = useRef<TodaySkyState['status']>('loading');
+  useEffect(() => {
+    status.current = state.status;
+  }, [state.status]);
+
+  // 화면이 다시 보일 때 · 앱으로 돌아올 때:
+  // - 못 썼으면 기기를 다시 읽는다 — 다른 화면(오늘의 하늘의 다시 쓰기)이 받아 둔 오늘 것이 있을 수 있다. 서버는 부르지 않는다(리뷰 #66 의 5)
+  // - 날이 바뀌었으면 다시 부른다(앱을 켜 둔 채 자정을 넘긴 다음 날 아침)
   const recheckDay = useCallback(() => {
+    if (key === null) return;
+    if (status.current === 'failed') {
+      void readStored(key).then((stored) => {
+        if (!stored || stored.date !== koreaToday() || status.current !== 'failed') return;
+        shownDate.current = stored.date;
+        setState({ status: 'done', sky: stored });
+      });
+      return;
+    }
     if (shownDate.current !== null && shownDate.current !== koreaToday()) fetchToday();
-  }, [fetchToday]);
+  }, [key, fetchToday]);
+  // 오늘의 하늘 푸시(아침 — 서버가 미리 만들어 두었다): 오늘 것을 그리고 있지 않으면(못 씀 · 지난날) 새로 묻는다. 묻는 중이면 그대로(리뷰 #66 의 8)
+  useEffect(
+    () =>
+      onPushReceived((push) => {
+        if (push.type !== 'TODAY_SKY' || status.current === 'loading') return;
+        if (status.current === 'failed' || shownDate.current !== koreaToday()) fetchToday();
+      }),
+    [fetchToday],
+  );
   useFocusEffect(recheckDay);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {

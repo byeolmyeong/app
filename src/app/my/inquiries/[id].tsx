@@ -4,12 +4,12 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { Skeleton, SkeletonCard } from '@/components/skeleton';
+import { Skeleton } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
-import { Colors, InquiryLayout as L, LineWidth, MyLayout, ScreenPaddingX, Spacing } from '@/constants/theme';
+import { Colors, InquiryLayout as L, LineWidth, MyLayout, ScreenPaddingX, Spacing, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatInquiryDate } from '@/features/support/inquiry';
 import { useInquiryItem } from '@/features/support/use-inquiries';
@@ -73,12 +73,27 @@ export default function InquiryDetailScreen() {
   if (state.status === 'loading')
     return (
       <Screen nav={nav}>
+        {/* 다 그려진 화면과 같은 자리: 내 문의 카드(머리 — 종류 · 날짜 / 글 줄) + 아래 안내 한 줄(답이 왔는지는 모른다), 결정 065 */}
         {phase === 'skeleton' ? (
-          <View style={styles.skeleton}>
-            <SkeletonCard>
-              <Skeleton width="40%" height={L.skeleton.meta} />
-              <Skeleton width="90%" height={L.skeleton.line} />
-            </SkeletonCard>
+          <View accessible accessibilityLabel={strings.states.loading} style={styles.content}>
+            <View testID="skeleton-card" style={styles.card}>
+              <View style={styles.head}>
+                <View style={styles.captionBox}>
+                  <Skeleton width="40%" height={L.skeleton.meta} />
+                </View>
+                <View style={styles.dateBox}>
+                  <Skeleton width={L.skeleton.date} height={L.skeleton.meta} />
+                </View>
+              </View>
+              {Array.from({ length: L.skeleton.bodyLines }, (_, i) => (
+                <View key={i} testID="skeleton-body-line" style={styles.bodyBox}>
+                  <Skeleton width={i === L.skeleton.bodyLines - 1 ? '60%' : '100%'} height={L.skeleton.line} />
+                </View>
+              ))}
+            </View>
+            <View testID="skeleton-note" style={[styles.note, styles.captionBox]}>
+              <Skeleton width="70%" height={L.skeleton.meta} />
+            </View>
           </View>
         ) : null}
       </Screen>
@@ -123,5 +138,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.sm },
   answerLabel: { color: L.answer.label },
   note: { paddingHorizontal: Spacing.xxs },
-  skeleton: { paddingTop: MyLayout.gap },
+  captionBox: { flex: 1, height: Typography.caption.lineHeight, justifyContent: 'center' },
+  dateBox: { height: Typography.caption.lineHeight, justifyContent: 'center' },
+  bodyBox: { height: Typography.body.lineHeight, justifyContent: 'center' },
 });

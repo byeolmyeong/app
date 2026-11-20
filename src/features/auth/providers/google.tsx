@@ -12,7 +12,7 @@ import { strings } from '@/content/strings';
 import { SocialButton } from '@/features/auth/providers/social-button';
 import type { LoginButtonProps } from '@/features/auth/providers/types';
 
-export function GoogleLoginButton({ onCredential, onError, disabled, recent }: LoginButtonProps) {
+export function GoogleLoginButton({ onCredential, onError, disabled, loading, recent }: LoginButtonProps) {
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
   const [busy, setBusy] = useState(false);
@@ -35,5 +35,5 @@ export function GoogleLoginButton({ onCredential, onError, disabled, recent }: L
     }
   }
 
-  return <SocialButton provider="GOOGLE" label={strings.login.google} onPress={() => void press()} disabled={disabled || busy} recent={recent} />;
+  return <SocialButton provider="GOOGLE" label={strings.login.google} onPress={() => void press()} disabled={disabled || busy} loading={loading} recent={recent} />;
 }

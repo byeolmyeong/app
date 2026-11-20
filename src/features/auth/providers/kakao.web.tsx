@@ -7,9 +7,9 @@ import { SocialButton } from '@/features/auth/providers/social-button';
 import type { LoginButtonProps } from '@/features/auth/providers/types';
 import { KAKAO_RETURN_PATH, kakaoAuthorizeUrl, newKakaoState, webOrigin } from '@/features/auth/providers/web-redirect';
 
-export function KakaoLoginButton({ disabled, recent }: LoginButtonProps) {
+export function KakaoLoginButton({ disabled, loading, recent }: LoginButtonProps) {
   const restApiKey = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY?.trim();
   if (!restApiKey) return null;
   const press = () => window.location.assign(kakaoAuthorizeUrl(restApiKey, webOrigin() + KAKAO_RETURN_PATH, newKakaoState()));
-  return <SocialButton provider="KAKAO" label={strings.login.kakao} onPress={press} disabled={disabled} recent={recent} />;
+  return <SocialButton provider="KAKAO" label={strings.login.kakao} onPress={press} disabled={disabled} loading={loading} recent={recent} />;
 }

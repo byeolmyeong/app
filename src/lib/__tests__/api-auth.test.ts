@@ -1,4 +1,5 @@
 import { createApi } from '@/lib/api';
+import { fixtures } from '@/lib/fixtures';
 
 const BASE = 'https://api.example.test';
 
@@ -347,6 +348,22 @@ describe('api: 푸시 기기 등록 · 해제', () => {
   ])('POST 의 %i %s 를 code 로 돌려준다', async (status, code) => {
     const res = await app(fakeFetch(status, { error: code })).registerPushDevice({ expoToken: 'x', platform: 'ANDROID' });
     expect(res).toEqual({ ok: false, error: 'SERVER', status, code });
+  });
+});
+
+// 공유 카드 미리 받기(서버 결정 051)
+describe('api: 공유 카드 미리 받기', () => {
+  it('POST /shares/preview 에 POST /shares 와 같은 몸통을 보내고 card 만 받는다', async () => {
+    const card = fixtures.shareCards.nickname;
+    const fetchFn = fakeFetch(200, { card });
+    const res = await createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }).previewShare({ kind: 'NICKNAME' });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/shares/preview`);
+    expect(initOf(fetchFn).method).toBe('POST');
+    expect(bodyOf(fetchFn)).toEqual({ kind: 'NICKNAME' });
+    expect(res).toEqual({ ok: true, data: card });
+    // 다른 종류의 카드면 계약과 다르다
+    const wrong = await createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { card }), getToken: () => 't' }).previewShare({ kind: 'NEXT_BIG' });
+    expect(wrong).toMatchObject({ ok: false, error: 'INVALID' });
   });
 });
 

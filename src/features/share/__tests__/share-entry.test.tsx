@@ -6,6 +6,7 @@ import { Colors, Sizes } from '@/constants/theme';
 
 import { strings } from '@/content/strings';
 import { saveImage, shareStory } from '@/features/share/share-actions';
+import { resetPrefetchedForTest } from '@/features/share/share-cache';
 import { ShareEntry, type ShareTarget } from '@/features/share/share-entry';
 import * as story from '@/features/share/story';
 import * as webStory from '@/features/share/story.web';
@@ -14,7 +15,7 @@ import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { createShare: jest.fn() },
+  api: { createShare: jest.fn(), previewShare: jest.fn(async () => ({ ok: false, error: 'NETWORK' })) },
 }));
 jest.mock('@/features/share/share-actions', () => ({
   saveImage: jest.fn(async () => 'SAVED'),
@@ -315,6 +316,23 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     await fireEvent.press(screen.getByText(S.retry));
     expect(await screen.findByTestId('share-card')).toBeTruthy();
     expect(mockApi.createShare).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('공유 카드 미리 받기(소유자 2026-11-21, 서버 결정 051)', () => {
+  beforeEach(() => resetPrefetchedForTest());
+
+  it('공유 아이콘이 있는 화면에 들어오면 저장 없는 미리보기로 카드를 받아 둔다(POST /shares 는 부르지 않는다)', async () => {
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+    await act(async () => {});
+    expect(mockApi.previewShare).toHaveBeenCalledWith({ kind: 'NICKNAME' });
+    expect(mockApi.createShare).not.toHaveBeenCalled();
+  });
+
+  it('궁합 카드는 미리 받지 않는다', async () => {
+    await render(<ShareEntry target={{ kind: 'RANKING', relation: 'FRIEND' }} />);
+    await act(async () => {});
+    expect(mockApi.previewShare).not.toHaveBeenCalled();
   });
 });
 

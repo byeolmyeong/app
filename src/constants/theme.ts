@@ -518,7 +518,7 @@ export const TimingLayout = {
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */
   /** 뼈대(결정 065 의 2 · 071 — 다 그려진 화면의 배치를 본뜬다): 글자 막대는 글자 크기보다 이만큼 낮게 · 딱지 폭 */
   skeleton: { barInset: 2, tag: 44 },
-  locked: { height: 640, padX: 20, padBottom: 16, padTop: 24, cardPadTop: 24, cardPadX: 20, cardPadBottom: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18, fill: 'rgba(22,23,29,0.92)', ghostOpacity: 0.55 },
+  locked: { cardPadTop: 24, cardPadX: 20, cardPadBottom: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18 },
 } as const;
 
 /**

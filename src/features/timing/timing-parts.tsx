@@ -4,7 +4,7 @@ import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-nativ
 
 import { Button } from '@/components/button';
 import { GlowBackdrop } from '@/components/glow';
-import { Skeleton, SkeletonStill, SkeletonText } from '@/components/skeleton';
+import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, Sizes, TimingLayout as L, type ColorName } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -256,39 +256,33 @@ export function DetailCard({ blocked, onRequest }: { blocked: boolean; onRequest
   );
 }
 
-/** 잠긴 칩을 눌렀을 때(보드 14 잠긴 칩 — 올해 · 인생 같은 모양): 그 자리에 흐린 미리보기와 자물쇠 카드 · "자세한 풀이 받기" */
-export function LockedView({ chip, blocked, onRequest, ghost }: { chip: 'year' | 'life'; blocked: boolean; onRequest: () => void; ghost: React.ReactNode }) {
+/**
+ * 잠긴 칩을 눌렀을 때(보드 14 잠긴 칩 — 올해 · 인생 같은 모양): 칩 아래 그 자리에 자물쇠 카드 · "자세한 풀이 받기" 만.
+ * 뒤에 비치던 흐린 미리보기(멈춘 뼈대)는 뺐다 — 불러오는 중으로 읽혔다(소유자 지적 2026-11-21).
+ */
+export function LockedView({ chip, blocked, onRequest }: { chip: 'year' | 'life'; blocked: boolean; onRequest: () => void }) {
   const text = T.locked[chip];
   return (
-    <View testID="timing-locked" style={styles.locked}>
-      {/* 흐린 미리보기: 그 칩이 다 그려졌을 때의 배치를 본뜬 옅은 모양(시안의 흐림 대신 — 브랜드 자리 밖의 흐림은 쓰지 않는다, DESIGN.md) */}
-      <View aria-hidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={styles.ghost}>
-        {/* 멈춘 막대 — 반짝이면 "불러오는 중" 으로 읽힌다(리뷰 #63) */}
-        <SkeletonStill>{ghost}</SkeletonStill>
+    <View testID="timing-locked" style={styles.lockedCard}>
+      <View style={styles.lockIcon}>
+        <Svg width={K.glyph} height={K.glyph} viewBox="0 0 24 24" fill="none">
+          <Rect x={5} y={11} width={14} height={9} rx={2} stroke={Colors.accentText} strokeWidth={1.8} />
+          <Path d="M8 11V8a4 4 0 0 1 8 0v3" stroke={Colors.accentText} strokeWidth={1.8} strokeLinecap="round" />
+        </Svg>
       </View>
-      <View style={styles.lockedOver}>
-        <View style={styles.lockedCard}>
-          <View style={styles.lockIcon}>
-            <Svg width={K.glyph} height={K.glyph} viewBox="0 0 24 24" fill="none">
-              <Rect x={5} y={11} width={14} height={9} rx={2} stroke={Colors.accentText} strokeWidth={1.8} />
-              <Path d="M8 11V8a4 4 0 0 1 8 0v3" stroke={Colors.accentText} strokeWidth={1.8} strokeLinecap="round" />
-            </Svg>
-          </View>
-          <Txt variant="paragraphTitle" keepAll style={styles.lockedTitle}>
-            {text.title}
-          </Txt>
-          <Txt variant="desc" color="gray" keepAll style={styles.lockedBody}>
-            {text.body}
-          </Txt>
-          {blocked ? (
-            <Txt variant="caption" color="gray" style={styles.blocked}>
-              {T.detail.blocked}
-            </Txt>
-          ) : null}
-          <View style={styles.lockedButton}>
-            <Button label={T.detail.request} onPress={onRequest} />
-          </View>
-        </View>
+      <Txt variant="paragraphTitle" keepAll style={styles.lockedTitle}>
+        {text.title}
+      </Txt>
+      <Txt variant="desc" color="gray" keepAll style={styles.lockedBody}>
+        {text.body}
+      </Txt>
+      {blocked ? (
+        <Txt variant="caption" color="gray" style={styles.blocked}>
+          {T.detail.blocked}
+        </Txt>
+      ) : null}
+      <View style={styles.lockedButton}>
+        <Button label={T.detail.request} onPress={onRequest} />
       </View>
     </View>
   );
@@ -481,9 +475,6 @@ const styles = StyleSheet.create({
   detailBody: { marginTop: D.bodyTop },
   blocked: { marginTop: D.buttonTop, textAlign: 'center' },
   request: { marginTop: D.buttonTop },
-  locked: { height: K.height, overflow: 'hidden' },
-  ghost: { gap: L.listGap, paddingTop: K.padTop, opacity: K.ghostOpacity },
-  lockedOver: { ...StyleSheet.absoluteFill, justifyContent: 'center', paddingBottom: K.padBottom },
   lockedCard: {
     alignItems: 'center',
     paddingTop: K.cardPadTop,
@@ -492,7 +483,7 @@ const styles = StyleSheet.create({
     borderRadius: D.radius,
     borderWidth: LineWidth,
     borderColor: Colors.hair,
-    backgroundColor: K.fill,
+    backgroundColor: Colors.raised,
   },
   lockIcon: { width: K.icon, height: K.icon, borderRadius: K.icon / 2, backgroundColor: Colors.fill, alignItems: 'center', justifyContent: 'center' },
   lockedTitle: { marginTop: K.titleTop, textAlign: 'center' },

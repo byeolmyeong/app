@@ -197,7 +197,7 @@ export default function TimingScreen() {
         )}
       </>
     );
-  else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} ghost={chip === 'year' ? <YearSkeleton /> : <LifeSkeleton />} />;
+  else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} />;
   else if (chip === 'year') content = <YearView report={report} onPeriod={(id) => router.push(`/timing/period?id=${id}`)} />;
   else content = <LifeView report={report} share={<ShareEntry target={{ kind: 'NEXT_BIG' }} trigger="cardIcon" label={strings.share.openNextBig} />} />;
 
@@ -215,8 +215,7 @@ export default function TimingScreen() {
         <View style={main ? styles.chips : locked ? styles.chipsLocked : styles.chipsBare}>
           <ChipRow value={chip} locked={!report} onChange={setPicked} />
         </View>
-        {/* 잠긴 자리는 칩 바로 아래부터(보드 14 잠긴 칩 — 흐린 미리보기가 제 여백을 갖는다) */}
-        <View style={locked ? null : styles.content}>{content}</View>
+        <View style={styles.content}>{content}</View>
       </View>
     </Screen>
   );

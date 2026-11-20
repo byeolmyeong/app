@@ -81,10 +81,11 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
   });
 
-  it('잠긴 칩을 누르면 그 자리에 흐린 미리보기와 자물쇠 카드(14 잠긴 칩), 그 카드에서 받기를 누를 수 있다', async () => {
+  it('잠긴 칩을 누르면 그 자리에 자물쇠 카드만(뒤에 비치는 뼈대 없이 — 소유자 지적 2), 그 카드에서 받기를 누를 수 있다', async () => {
     await render(<TimingScreen />);
     await fireEvent.press(await screen.findByTestId('timing-chip-year'));
     expect(screen.getByTestId('timing-locked')).toBeTruthy();
+    expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
     expect(screen.getByText(T.locked.year.title)).toBeTruthy();
     expect(chip('year').props.accessibilityState).toMatchObject({ selected: true });
     await fireEvent.press(chip('life'));

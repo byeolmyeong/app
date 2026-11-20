@@ -183,6 +183,39 @@ describe('요약 해석 화면', () => {
     expect(await screen.findByText(R.failed.LIMIT)).toBeTruthy();
   });
 
+  it('가입 직후(from=signup) 별명을 짓지 못하면 보드 9-1: "별명을 짓지 못했어요" · 다시 짓기 하나, 머리 · 아래 탭 · 나중에 하기는 없다 — 누르면 처음부터 다시 짓는다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502 });
+    await render(<ReadingScreen />);
+    expect(await screen.findByRole('header', { name: '별명을 짓지 못했어요' })).toBeTruthy();
+    expect(screen.getByText('잠깐 문제가 생겼어요.\n다시 짓기를 누르면 처음부터 다시 지어요.')).toBeTruthy();
+    expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByText(ST.loadFail.title.reading)).toBeNull();
+    expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
+    expect(screen.queryByTestId('bottom-tabs')).toBeNull();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+
+    await fireEvent.press(screen.getByRole('button', { name: '다시 짓기' }));
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(mockApi.createReading).toHaveBeenCalledTimes(2);
+  });
+
+  it('가입 직후여도 끊겨서 못 받으면 보드 20-1 그대로, 요청이 많으면 9-1 에 그 안내', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    const first = await render(<ReadingScreen />);
+    expect(await screen.findByText(ST.offlineEmpty.title)).toBeTruthy();
+    expect(screen.queryByText('별명을 짓지 못했어요')).toBeNull();
+    await first.unmount();
+
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.failed.LIMIT)).toBeTruthy();
+    expect(screen.getByText('별명을 짓지 못했어요')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '다시 짓기' })).toBeTruthy();
+  });
+
   it('끊겨서 못 받았으면 연결이 돌아올 때 저절로 다시 부른다(결정 061 의 4)', async () => {
     mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     await render(<ReadingScreen />);

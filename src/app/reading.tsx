@@ -30,6 +30,7 @@ import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
 const ST = strings.states;
+const MF = strings.making.fail;
 
 /**
  * 요약 해석: 서버가 쓴 글(총평 · 문단 · 강점 · 보완점)을 보여 준다. 차트는 여기서 "내 차트 보기" 로 연다.
@@ -97,7 +98,8 @@ export default function ReadingScreen() {
   // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
   if (state.status === 'loading') return <MakingView nav={from === 'signup' ? undefined : nav} />;
 
-  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겼으면 보드 20-1, 그 밖에는 보드 19 — 요청이 많을 때만 그 안내로
+  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겼으면 보드 20-1, 가입 직후면 보드 9-1(머리 · 탭 없이 다시 짓기만),
+  // 그 밖에는 보드 19 — 요청이 많을 때만 그 안내로
   if (state.status === 'failed')
     return state.error === 'NETWORK' ? (
       <StateScreen
@@ -106,6 +108,12 @@ export default function ReadingScreen() {
         title={ST.offlineEmpty.title}
         body={ST.offlineEmpty.body}
         primary={{ label: ST.offlineEmpty.retry, onPress: retry }}
+      />
+    ) : from === 'signup' ? (
+      <StateScreen
+        title={MF.title}
+        body={state.error === 'LIMIT' ? S.failed.LIMIT : MF.body}
+        primary={{ label: MF.retry, onPress: retry }}
       />
     ) : (
       <StateScreen

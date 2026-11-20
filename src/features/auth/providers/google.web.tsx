@@ -8,7 +8,7 @@
  * GIS 를 불러오지 못하면(10초 안에 오지 않으면 포함) 그리지 않는다(최근 로그인 배지도 없다, 결정 044).
  */
 import { useEffect, useEffectEvent, useRef, useState, type ComponentRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { SocialButtonStyle } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -141,8 +141,6 @@ export function GoogleLoginButton({ onCredential, onError, disabled = false, loa
         style={[styles.overlay, blocked || !ready ? styles.idle : styles.pointer]}>
         <View ref={container} testID="google-gis" style={[styles.gis, cover]} />
       </View>
-      {/* 우리 모양(배지 포함)은 화면 읽기에서 숨기므로 "최근 로그인" 은 화면 읽기만 읽는 글로 따로 알린다(결정 068 의 5) */}
-      {recent ? <Text style={styles.readerOnly}>{strings.login.recent}</Text> : null}
     </View>
   );
 }
@@ -151,8 +149,6 @@ const styles = StyleSheet.create({
   /** 우리 버튼과 같은 칸. 보이지 않지만 누름은 받는다 */
   overlay: { ...StyleSheet.absoluteFill, opacity: 0, overflow: 'hidden', borderRadius: SocialButtonStyle.radius },
   gis: { position: 'absolute' },
-  /** 화면에는 보이지 않고 화면 읽기만 읽는다 */
-  readerOnly: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
   /** 웹 커서: 누를 수 있을 때만 손가락(GIS iframe 안은 구글이 정한다) */
   pointer: { cursor: 'pointer' },
   idle: { cursor: 'default' },

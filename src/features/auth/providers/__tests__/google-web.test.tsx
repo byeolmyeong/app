@@ -175,14 +175,3 @@ describe('구글(웹): GIS 가 없으면 버튼도 없다', () => {
     expect(screen.queryByTestId('recent-badge', { includeHiddenElements: true })).toBeNull();
   });
 });
-
-// 리뷰 PR #46 의 6: 우리 모양(배지 포함)은 화면 읽기에서 숨겨져 "최근 로그인" 을 못 읽었다 — 화면 읽기용 숨은 글로 알린다
-describe('구글(웹): 화면 읽기의 최근 로그인', () => {
-  it('recent 면 화면 읽기가 읽는 "최근 로그인" 글이 있고, 아니면 없다', async () => {
-    const view = await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} recent />);
-    expect(screen.getByText(strings.login.recent)).toBeTruthy();
-    await view.unmount();
-    await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} />);
-    expect(screen.queryByText(strings.login.recent)).toBeNull();
-  });
-});

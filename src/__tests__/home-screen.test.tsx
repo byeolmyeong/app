@@ -136,6 +136,15 @@ describe('홈', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
+  it('머리는 높이 56, 별명 카드는 그 아래 12(보드 11 · 11-1)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    const card = await screen.findByTestId('nickname-card');
+    expect(StyleSheet.flatten(screen.getByTestId('nav-bar').props.style).height).toBe(56);
+    expect(card).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('home-column').props.style)).toMatchObject({ paddingTop: 12, gap: 12 });
+  });
+
   it('탭 이름은 시안 11 의 11/15 — 고른 탭은 600 · 본문색, 나머지는 500 · 안내색', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);

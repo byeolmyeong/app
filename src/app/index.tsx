@@ -39,7 +39,7 @@ export default function HomeScreen() {
   const account = useAccount();
   // "별명을 받은 지 N일" 의 오늘 — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
   const [now] = useState(Date.now);
-  const nav = <NavBar left={<BrandMark height={Sizes.brandMarkHeight} />} />;
+  const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (empty && (!session.ready || (canRestore && !restoreSettled)))
     return (
@@ -56,14 +56,16 @@ export default function HomeScreen() {
     const sun = chart.positions.find((p) => p.body === 'SUN');
     return (
       <Screen nav={nav} footer={<MainTabs active="home" />}>
-        <NicknameCard
-          nickname={account?.nickname ?? null}
-          avatar={account?.avatar ?? null}
-          sunSign={sun ? signName(sun.sign) + strings.chart.signSuffix : null}
-          days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
-          headline={reading?.headline ?? null}
-          onOpen={() => router.push('/reading')}
-        />
+        <View testID="home-column" style={styles.column}>
+          <NicknameCard
+            nickname={account?.nickname ?? null}
+            avatar={account?.avatar ?? null}
+            sunSign={sun ? signName(sun.sign) + strings.chart.signSuffix : null}
+            days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
+            headline={reading?.headline ?? null}
+            onOpen={() => router.push('/reading')}
+          />
+        </View>
       </Screen>
     );
   }
@@ -82,4 +84,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   intro: { gap: Spacing.sm, paddingTop: Spacing.lg, paddingBottom: Spacing.xs },
+  /** 머리 아래 12, 카드끼리 12(보드 11) */
+  column: { gap: Spacing.sm, paddingTop: Spacing.sm },
 });

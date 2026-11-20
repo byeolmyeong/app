@@ -14,12 +14,14 @@ export type NavBarProps = {
   left?: ReactNode;
   /** 꺾쇠 머리(시안 13 내 하늘 지도): 높이 56 · 뒤로 가기 꺾쇠(가입 단계와 같은 것) · 제목 17 */
   chevron?: boolean;
+  /** 높이 56 머리(시안 11 홈) — 꺾쇠 머리는 늘 이 높이다 */
+  tall?: boolean;
 };
 
 /** 화면 머리. 왼쪽 뒤로 가기(또는 차트 표식), 가운데 제목. */
-export function NavBar({ title, onBack, left, chevron = false }: NavBarProps) {
+export function NavBar({ title, onBack, left, chevron = false, tall = false }: NavBarProps) {
   return (
-    <View style={[styles.bar, chevron && styles.tall]}>
+    <View testID="nav-bar" style={[styles.bar, (chevron || tall) && styles.tall]}>
       <View style={styles.side}>
         {onBack ? (
           <Pressable

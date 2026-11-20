@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -32,13 +32,15 @@ export type StateScreenProps = {
  * 맨 아래 주 버튼(아래 34, 탭이 있으면 탭 바로 위 16) · 그 위 "나중에 하기". 주 버튼 아래에는 아무것도 두지 않는다(결정 061 의 5).
  */
 export function StateScreen({ title, body, primary, later, nav, tabs }: StateScreenProps) {
+  // 웹에서 상태 화면이 둘 겹쳐도 그림의 빛(그라데이션 id)이 서로를 가리키지 않게 화면마다 다른 id
+  const glowId = `stateGlow${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <Screen scroll={false} nav={nav} footer={tabs}>
       <View style={styles.body}>
         <GlowBackdrop color={BrandColors.backdropDim} extent={BackdropShape.making.extent} centerY={BackdropShape.making.centerY} />
         <View testID="state-art" aria-hidden importantForAccessibility="no-hide-descendants" style={styles.art}>
           <View style={styles.glow}>
-            <GlowOrb id="stateGlow" />
+            <GlowOrb id={glowId} />
           </View>
           <View style={styles.orbit}>
             <View style={styles.orbitDot} />

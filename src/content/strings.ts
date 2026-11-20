@@ -430,6 +430,8 @@ export const strings = {
     /** 방향성 "이성" 화면(`/direction`)으로 들어가는 줄(결정 023) */
     seeDirection: '연애에서 해 볼 만한 것 보기',
     seeChart: '내 차트 보기',
+    /** 별자리 카드 아래 줄(보드 12) → 내 하늘 지도 */
+    seeSkyMap: '내 하늘 지도 보기',
     /** 앞날·건강·투자를 단정하지 않는다(golden-rules "프로젝트 규칙") */
     disclaimer: '오락과 자기 성찰을 위한 내용이에요. 앞날을 알려 주거나 전문가의 조언을 대신하지 않습니다.',
     failed: {

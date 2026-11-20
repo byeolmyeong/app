@@ -280,6 +280,23 @@ export const SkyMapLayout = {
  * 말풍선의 최대 폭 · 안쪽 여백(가로 · 세로) · 줄 사이 · 꼬리 · 물음표와 말풍선 사이
  */
 /**
+ * 내 별명(보드 12): 머리 아래 한 줄 별명 · 별자리 카드 · 문단들 · 강점과 보완점의 간격.
+ * 별자리 카드는 내 별자리 그림 · 이름 · 셋(나의 중심 · 나의 마음 · 나의 첫인상) · "내 하늘 지도 보기" 줄.
+ */
+export const ReadingLayout = {
+  headlineTop: 20,
+  cardTop: 28,
+  sectionsTop: 48,
+  sectionsGap: 44,
+  bodyTop: 10,
+  listsTop: 48,
+  listsGap: 32,
+  listGap: 12,
+  itemGap: 8,
+  card: { radius: 20, padTop: 24, padX: 16, padBottom: 20, picture: 154, nameTop: 12, gridTop: 20, gridPadV: 20, gridGap: 8, cellGap: 4, mapRow: 52, chevron: 18 },
+} as const;
+
+/**
  * "이렇게 풀이한 이유" 줄(보드 12 · 12-1, 결정 054): 접힌 상자(안쪽 여백 · 모서리 · 이름과 문장 사이 · 꺾쇠)와 펼친 안(작은 지도 · 용어 줄 · 하늘 지도 보기 단추).
  * 작은 지도는 하늘 지도의 휠을 지름 120 으로 줄이고 그 근거의 별 · 칸만 빛낸다.
  */
@@ -379,6 +396,9 @@ export const Typography = {
   desc: type(14, 21, FontWeight.regular),
   /** 이유 줄의 한 문장(보드 12 — 굵은 자리는 semibold) */
   reason: type(14, 22, FontWeight.regular),
+  /** 풀이 문단의 제목과 본문(보드 12 · 12-8~12-12) */
+  paragraphTitle: type(19, 27, FontWeight.semibold),
+  paragraph: type(16, 26, FontWeight.regular),
   /** 이유 펼침의 용어 이름 · 하늘 지도 보기 단추(보드 12-1) */
   term: type(14, 20, FontWeight.semibold),
   /** 약관의 "모두 동의"(결정 042 시안) · 약관 글 화면의 머리 제목(결정 044 시안) */
@@ -500,6 +520,8 @@ export const Sizes = {
   handleHeight: 4,
   sheetTitleTop: 36,
   sheetBackIcon: 22,
+  /** 머리 오른쪽의 공유하기 아이콘(보드 12 · 12-8) */
+  navIcon: 22,
   /** 드럼 시트(태어난 시각 · 받는 시간)의 위 끝에서 드럼 위 끝까지(시안 8-1 · 16-3: 위 10 + 손잡이 4 + 28 + 16) */
   pickerSheetTop: 58,
   /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */

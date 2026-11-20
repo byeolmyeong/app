@@ -1,7 +1,7 @@
 import { CONSTELLATIONS } from '@/features/chart/constellations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import ReadingScreen from '@/app/reading';
@@ -23,7 +23,8 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { createReading: jest.fn(), createDirection: jest.fn(), saveProfile: jest.fn() },
+  // 공유는 시트를 열 때 만든다 — 이 화면의 시험에서는 끝나지 않는 요청으로 둔다
+  api: { createReading: jest.fn(), createDirection: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn(() => new Promise(() => {})) },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
@@ -92,23 +93,36 @@ describe('요약 해석 화면', () => {
       expect(screen.getByText(section.title)).toBeTruthy();
       expect(screen.getByText(section.body)).toBeTruthy();
     }
-    // 문단마다 근거가 된 차트 요소를 작게 적는다
-    expect(screen.getByText('근거 · 태양 · 쌍둥이 · 6하우스')).toBeTruthy();
-    expect(screen.getByText('근거 · 달 · 사수 · 11하우스')).toBeTruthy();
+    // 문단마다 접힌 "이렇게 풀이한 이유" 한 문장(결정 054) — 옛 근거 낱말 줄은 없다
+    expect(screen.getAllByText(strings.reason.label)).toHaveLength(reading.sections.length);
+    expect(screen.getByText('태어날 때 나의 중심(해)이 호기심 많은 쌍둥이자리, 일상의 자리(6하우스)에 있었어요')).toBeTruthy();
+    expect(screen.getByText('태어날 때 마음(달)이 멀리 내다보는 사수자리, 친구와 모임의 자리(11하우스)에 있었어요')).toBeTruthy();
+    expect(screen.queryByText(/^근거 · /)).toBeNull();
     expect(screen.getByText(R.strengths)).toBeTruthy();
     expect(screen.getByText(R.cautions)).toBeTruthy();
     for (const item of [...reading.strengths, ...reading.cautions]) expect(screen.getByText(item)).toBeTruthy();
-    expect(screen.getByText(R.disclaimer)).toBeTruthy();
+    // 화면 아래 면책 문구는 두지 않는다(결정 064)
+    expect(screen.queryByText(R.disclaimer)).toBeNull();
     // 서버에는 본문 없이 요청한다(출생 정보는 서버에 저장된 것을 쓴다)
     expect(mockApi.createReading).toHaveBeenCalledWith();
   });
 
-  it('근거가 없는 문단에는 근거 줄을 그리지 않는다', async () => {
-    const section = { title: '제목', body: '본문', reason: reading.sections[0].reason, basis: [] };
+  it('문장을 만들 수 없는 근거(모르는 kind)면 그 이유 줄만 숨기고 글은 그대로 보인다(결정 054 의 7)', async () => {
+    const section = { title: '제목', body: '본문', reason: { when: 'BIRTH' as const, items: [{ kind: 'MIDPOINT' }] } };
     mockApi.createReading.mockResolvedValue({ ok: true, data: { ...reading, sections: [section] } });
     await render(<ReadingScreen />);
     expect(await screen.findByText('본문')).toBeTruthy();
-    expect(screen.queryByText(new RegExp(`^${R.basisLabel}`))).toBeNull();
+    expect(screen.queryByText(strings.reason.label)).toBeNull();
+  });
+
+  it('이유 줄을 누르면 그 자리에서 펼쳐 작은 지도 · 용어 줄 · 하늘 지도에서 보기가 보인다(보드 12-1)', async () => {
+    await render(<ReadingScreen />);
+    const text = '태어날 때 나의 중심(해)이 호기심 많은 쌍둥이자리, 일상의 자리(6하우스)에 있었어요';
+    await fireEvent.press(await screen.findByRole('button', { name: `${strings.reason.label}, ${text}` }));
+    expect(screen.getByTestId('reason-wheel')).toBeTruthy();
+    expect(screen.getAllByTestId('reason-term')).toHaveLength(3);
+    await fireEvent.press(screen.getByText(strings.reason.seeOnMap));
+    expect(router.push).toHaveBeenCalledWith('/chart?selected=SUN');
   });
 
   it('글이 보이면 아래 탭 넷이 있고 나가 골라져 있다 — 방금 받은 글도, 기기에 받아 둔 글도(결정 046 의 4 · 055 의 2)', async () => {
@@ -135,28 +149,30 @@ describe('요약 해석 화면', () => {
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
   });
 
-  it('"내 차트 보기" 는 /chart 로 간다', async () => {
+  it('"내 하늘 지도 보기" 는 /chart 로 간다', async () => {
     await render(<ReadingScreen />);
-    await fireEvent.press(await screen.findByText(R.seeChart));
+    await fireEvent.press(await screen.findByRole('button', { name: R.seeSkyMap }));
     expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
-  it('글 아래에 "연애에서 해 볼 만한 것" 으로 들어가는 줄이 있고, 누르면 /direction 으로 간다. 이 화면은 방향성 제시를 요청하지 않는다', async () => {
+  it('"연애에서 해 볼 만한 것" 줄은 없다 — 연애의 실천은 나 탭 연애 칩이 맡는다(결정 048 의 5)', async () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
-    await fireEvent.press(screen.getByText(R.seeDirection));
-    expect(router.push).toHaveBeenCalledWith('/direction');
+    expect(screen.queryByText('연애에서 해 볼 만한 것 보기')).toBeNull();
     expect(mockApi.createDirection).not.toHaveBeenCalled();
   });
 
-  it('누를 수 있는 것은 뒤로 가기, 차트로 가는 그림, "공유하기", "연애에서 해 볼 만한 것" 과 "내 차트 보기" 뿐이다(다시 생성·리포트 없음)', async () => {
+  it('누를 수 있는 것은 뒤로 가기 · 머리의 공유하기 · 내 하늘 지도 보기 · 문단마다의 이유 줄뿐이다(다시 생성 · 리포트 없음, 보드 12)', async () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
-    // 버튼은 뒤로 가기, 하늘 그림(차트로 간다), 공유하기(결정 025) 셋이다
-    expect(screen.queryAllByRole('button')).toHaveLength(3);
+    expect(screen.queryAllByRole('button')).toHaveLength(3 + reading.sections.length);
     expect(screen.getByRole('button', { name: strings.share.open })).toBeTruthy();
     expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
-    expect(screen.queryAllByRole('link')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: R.seeSkyMap })).toBeTruthy();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    // 머리의 공유하기는 지금의 공유 시트(요약 해석 카드)를 연다
+    await fireEvent.press(screen.getByRole('button', { name: strings.share.open }));
+    expect(await screen.findByTestId('sheet-dim')).toBeTruthy();
   });
 
   it('못 받으면 실패 화면(보드 19: "내 별명을 불러오지 못했어요" · 다시 보기)을 보여 주고, 누르면 한 번 더 요청한다(결정 061 의 1 · 3)', async () => {
@@ -324,22 +340,32 @@ describe('요약 해석 화면', () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     expect(screen.getByTestId('chart-picture')).toBeTruthy();
-    // 그림은 내 별자리(태양 자리)의 별 모양이고, 그 아래에 이름을 적는다
+    // 그림은 내 별자리(태양 자리)의 별 모양이고, 그 아래에 이름을 적는다(보드 12)
     expect(screen.getAllByTestId('picture-star')).toHaveLength(CONSTELLATIONS.GEMINI.stars.length);
     expect(screen.getAllByTestId('picture-star-line')).toHaveLength(CONSTELLATIONS.GEMINI.lines.length);
-    expect(screen.getByTestId('picture-sign-name')).toBeTruthy();
+    expect(screen.getByTestId('sign-card-name').props.children).toBe(strings.signs.GEMINI + strings.chart.signSuffix);
     expect(screen.getByTestId('chart-picture').props.accessibilityLabel).toBe(
       strings.signs.GEMINI + strings.chart.signSuffix,
     );
     // 차트의 번호나 천체 이름 같은 글자는 없다
     expect(screen.queryAllByTestId('wheel-house-number')).toHaveLength(0);
     expect(screen.queryByText(strings.bodiesShort.SUN)).toBeNull();
-    // 그림 아래에는 중심 · 마음 · 첫인상을 글로 적는다
-    expect(screen.getByText(strings.chart.keySun)).toBeTruthy();
-    expect(screen.getByText(strings.signs.GEMINI + strings.chart.signSuffix)).toBeTruthy();
-    // 누르면 차트로 간다
-    await fireEvent.press(screen.getByTestId('chart-picture'));
-    expect(router.push).toHaveBeenCalledWith('/chart');
+    // 그림 아래에는 중심 · 마음 · 첫인상 셋을 글로 적는다(시각을 알 때)
+    const cells = screen.getAllByTestId('sign-card-cell');
+    expect(cells).toHaveLength(3);
+    expect(within(cells[0]).getByText(strings.chart.keySun)).toBeTruthy();
+    expect(within(cells[2]).getByText(strings.chart.keyAsc)).toBeTruthy();
+  });
+
+  it('시각 "모름" 이면 첫인상 칸이 없다(셋 → 둘)', async () => {
+    await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(screen.getAllByTestId('sign-card-cell')).toHaveLength(2);
+    expect(screen.queryByText(strings.chart.keyAsc)).toBeNull();
+    // 이유 줄도 하우스 부분 없이
+    expect(screen.getByText('태어날 때 나의 중심(해)이 호기심 많은 쌍둥이자리에 있었어요')).toBeTruthy();
   });
 });
 

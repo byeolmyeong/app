@@ -4,7 +4,10 @@
  */
 export type Track = 'opening' | 'waiting' | 'background';
 
-/** 앱에 음악이 들어가 있는가. 1.0.0 에서는 꺼 둔다 — 1.1.0 때 켤 일은 결정 069 의 목록(이것을 true 로 하면 `/my/music` 이 열린다) */
+/**
+ * `/my/music`(음악 스위치 화면)을 여는가. 1.0.0 에서는 꺼 둔다. **이것만 켜도 소리는 나지 않는다** — 루트 · 스플래시 · 마이 줄을 함께 거는
+ * 1.1.0 의 할 일은 결정 069 의 4 목록
+ */
 export const MUSIC_IN_APP = false;
 
 export const TRACK_SOURCES: Record<Track, number> = {

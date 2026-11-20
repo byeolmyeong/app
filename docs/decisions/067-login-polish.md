@@ -3,7 +3,7 @@ type: decision
 tags: [로그인, 구글 로그인, GIS, 웹 스플래시, 약관 보기, 화면 전환, 로그인 기다림, 디자인 시안]
 status: active
 last_reviewed: 2026-11-20
-superseded_by: 068-signup-resume-and-start-states.md (3 의 스플래시 걷는 때를 068 의 2 · 3 이 넓힌다 — 홈의 첫 데이터까지 · 공유 페이지에는 없음.)
+superseded_by: 068-signup-resume-and-start-states.md (3 의 스플래시 걷는 때를 068 의 2 · 3 이 넓힌다 — 홈의 첫 데이터까지 · 공유 페이지에는 없음.) · 070-google-web-redirect.md (4 의 "로그인은 여전히 GIS 로 받는다 — GIS 버튼을 우리 버튼 위에 투명하게 겹친다" 와 그에 딸린 키보드 · 화면 읽기 · GIS 를 불러오지 못할 때는 070 이 대체 — 우리 버튼이 구글 OpenID Connect 리디렉트로 보내고 `/auth/google` 이 ID 토큰을 받는다. 4 의 버튼 모양과 나머지는 유효)
 ---
 # 067. 약관 글은 아래에서 올라오고, 로그인을 기다리는 동안 로그인 화면에 머물고, 웹에도 스플래시를 두고, 웹 구글 버튼은 우리 모양으로 그린다
 

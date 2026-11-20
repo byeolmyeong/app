@@ -661,12 +661,17 @@ export const MyLayout = {
     buttonRadius: 10,
     buttonFill: 'rgba(255,255,255,0.08)',
   },
-  list: { radius: 16, row: 52, paddingV: 12, paddingH: 16, gap: 12, chevron: 18, switch: { width: 48, height: 28, knob: 22, inset: 3 } },
+  list: { radius: 16, row: 52, paddingV: 12, paddingH: 16, gap: 12, chevron: 18, descGap: 2, switch: { width: 48, height: 28, knob: 22, inset: 3 } },
   account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 18, badgeGlyph: 11, badgeGap: 6 },
   delete: { headingTop: 8, gap: 22, notePadding: 18, noteGap: 12, dot: 4, dotTop: 10, dotGap: 10, checkGap: 10, checkPadV: 4, checkPadH: 2 },
   done: { icon: 72, iconGlyph: 32, titleTop: 24, bodyTop: 10, lift: 40 },
   /** 출생 정보 바꾸기(16-4): 안내 칸(안 여백 · 모서리 · 아이콘 · 아이콘과 글 사이) · 묶음 사이 */
   birth: { noticePadV: 14, noticePadH: 16, noticeRadius: 14, noticeIcon: 20, noticeIconTop: 1, noticeGap: 10, gap: 22 },
+  /**
+   * 알림 설정(16-2 · 16-2-2): 푸시를 끄면 오늘의 하늘 묶음을 흐리게(불투명도) · 그 아래 안내 글의 가로 여백 ·
+   * 처음 불러올 때 뼈대(이름 · 설명 막대의 높이 · 너비 — 막대는 글자 줄 높이 칸 가운데에 둔다. 스위치 크기는 list.switch)
+   */
+  notifications: { dim: 0.4, hintPadH: 4, skeleton: { label: 16, desc: 12, labelWidth: '40%', descWidth: '70%' } },
 } as const;
 
 /**

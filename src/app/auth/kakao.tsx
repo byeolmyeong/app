@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { SplashView } from '@/components/splash-view';
 import { strings } from '@/content/strings';
 import { KAKAO_RETURN_PATH, readKakaoReturn, takeKakaoState, webOrigin } from '@/features/auth/providers/web-redirect';
-import { useAuth } from '@/features/auth/use-session';
+import { useAuth, whenSessionChecked } from '@/features/auth/use-session';
 
 /** 같은 돌아옴을 두 번 처리하지 않는다(코드는 한 번만 쓸 수 있다. 개발 모드는 효과를 두 번 돌린다) */
 let handled: string | null = null;
@@ -26,9 +26,11 @@ export default function KakaoReturnScreen() {
       router.replace('/login');
       return;
     }
-    void signIn({ provider: 'KAKAO', code: result.code, redirectUri: webOrigin() + KAKAO_RETURN_PATH }).then((outcome) =>
-      router.replace(outcome === 'signedIn' ? '/' : outcome === 'signingUp' ? '/signup/terms' : '/login'),
-    );
+    // 켤 때의 세션 확인이 끝난 뒤에 로그인한다(그 401 이 늦게 와 로그인을 덮지 않게, 결정 070)
+    const authCode = result.code;
+    void whenSessionChecked()
+      .then(() => signIn({ provider: 'KAKAO', code: authCode, redirectUri: webOrigin() + KAKAO_RETURN_PATH }))
+      .then((outcome) => router.replace(outcome === 'signedIn' ? '/' : outcome === 'signingUp' ? '/signup/terms' : '/login'));
     // key 가 code · state · error 를 모두 담는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);

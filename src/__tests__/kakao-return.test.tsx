@@ -17,6 +17,7 @@ jest.mock('@/features/auth/providers/web-redirect', () => ({
 const mockSignIn = jest.fn();
 jest.mock('@/features/auth/use-session', () => ({
   useAuth: jest.fn(() => ({ status: 'signedOut', lastError: null, signIn: mockSignIn })),
+  whenSessionChecked: jest.fn(async () => {}),
 }));
 
 const mockParams = useLocalSearchParams as jest.Mock;

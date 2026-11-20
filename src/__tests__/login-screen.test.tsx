@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, StyleSheet } from 'react-native';
 
 import LoginScreen from '@/app/login';
@@ -15,6 +16,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn(), getSession: jest.fn(() => ({ lastError: null })) }));
+// 주소의 검색 값(웹 구글에서 실패하고 돌아오면 `?failed=1`, 결정 070)
+jest.mock('expo-router', () => ({ useLocalSearchParams: jest.fn(() => ({})), router: { setParams: jest.fn() } }));
 type FakeProps = { onCredential: (c: unknown) => void; onError: () => void; recent?: boolean; loading?: boolean; disabled?: boolean };
 // 공급자 버튼은 누르면 자격 증명을 넘기는 가짜로 바꾼다(진짜는 providers 테스트가 본다). 최근 로그인(recent)을 받으면 "recent:이름" 을 함께 그린다.
 jest.mock('@/features/auth/providers/google', () => {
@@ -72,6 +75,7 @@ beforeEach(async () => {
   auth();
   (getSession as jest.Mock).mockReturnValue({ lastError: null });
   (AppleLoginButton as jest.Mock).mockImplementation(FakeApple);
+  (useLocalSearchParams as jest.Mock).mockReturnValue({});
 });
 
 type Json = { children?: (Json | string)[] | null } | string | null;
@@ -150,6 +154,28 @@ describe('로그인 화면', () => {
     await render(<LoginScreen />);
     await fireEvent.press(screen.getAllByText('google-error')[0]);
     expect((await screen.findAllByText(S.failed)).length).toBeGreaterThan(0);
+  });
+
+  // 웹 구글은 돌아오는 화면(/auth/google)에서 로그인하고, 실패하면 `?failed=1` 로 여기 온다(결정 070)
+  it('웹 구글에서 실패하고 돌아오면(?failed=1) 같은 실패 안내를 보인다. 거부하고 돌아오면(값 없음) 안내가 없다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ failed: '1' });
+    await render(<LoginScreen />);
+    expect(screen.getByText(S.failed)).toBeTruthy();
+    // 정적 HTML(주소의 검색값을 모른다)과 첫 그림이 같아야 하므로(하이드레이션 #418) 그린 뒤에 읽고, 새로 고침에 반복되지 않게 주소에서 지운다
+    expect(router.setParams).toHaveBeenCalledWith({ failed: undefined });
+
+    (useLocalSearchParams as jest.Mock).mockReturnValue({});
+    await render(<LoginScreen />);
+    expect(screen.queryByText(S.failed)).toBeNull();
+  });
+
+  it('웹 구글에서 이메일이 없어(EMAIL_REQUIRED) 돌아오면 알림 창으로만 알린다(실패 안내를 겹쳐 띄우지 않는다)', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ failed: '1' });
+    auth({ lastError: 'EMAIL_REQUIRED' });
+    await render(<LoginScreen />);
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(S.failed)).toBeNull();
   });
 
   it('만 14세 미만으로 가입을 못 했거나 가입 시간이 지났으면 그 이유를 보여 준다', async () => {

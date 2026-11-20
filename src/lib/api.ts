@@ -170,10 +170,33 @@ export type Account = { nickname: string | null; avatar: number | null };
  * 마케팅 수신 동의 · 이용 정지 여부(`suspended` — 없는 옛 서버는 false, 사유는 오지 않는다). 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만
  * 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
  */
-export type MyAccount = Account & { email: string | null; provider: string; marketingConsent: boolean; suspended: boolean };
+export type MyAccount = Account & {
+  email: string | null;
+  provider: string;
+  marketingConsent: boolean;
+  suspended: boolean;
+  /** 푸시 알림 받기 동의(서버 결정 027). 이 칸이 없는 옛 서버는 알림 화면이 "받지 못함" 으로 본다 */
+  pushConsent?: boolean;
+  /**
+   * 오늘의 하늘 알림 스위치 · 받는 시간 "HH:mm"(24시간 · 5분 단위, 서버 S10-2). 사용자가 직접 정한 적 없으면 서버가 `pushConsent` 를 따라 준다 —
+   * 그대로 그린다. 보내기는 푸시 동의와 이 스위치가 둘 다 켜졌을 때만이다. 이 칸이 없는 서버면 둘 다 없다
+   */
+  todaySkyPush?: boolean;
+  todaySkyTime?: string;
+};
 
-/** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028). 마케팅 · 푸시 동의는 알림 화면(계획 A8-2)이 더한다 */
-export type AccountPatch = { nickname?: string; avatar?: number };
+/** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028, S10-2). 동의 · 오늘의 하늘은 알림 화면(계획 A8-2)과 홈의 알림 받기 권유가 보낸다 */
+export type AccountPatch = {
+  nickname?: string;
+  avatar?: number;
+  pushConsent?: boolean;
+  marketingConsent?: boolean;
+  todaySkyPush?: boolean;
+  todaySkyTime?: string;
+};
+
+/** 오늘의 하늘 받는 시간의 꼴: "HH:mm" 24시간, 5분 단위(서버 S10-2 — 아니면 400 `INVALID_TODAY_SKY_TIME`) */
+export const isTodaySkyTime = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5][05]$/.test(v);
 
 /** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
 export const DIRECTION_TOPICS = ['LOVE', 'FUTURE', 'SYNASTRY'] as const;
@@ -625,6 +648,9 @@ export function isMyAccount(v: unknown): v is MyAccount {
     typeof v.provider === 'string' &&
     typeof v.marketingConsent === 'boolean' &&
     (v.suspended === undefined || typeof v.suspended === 'boolean') &&
+    (v.pushConsent === undefined || typeof v.pushConsent === 'boolean') &&
+    (v.todaySkyPush === undefined || typeof v.todaySkyPush === 'boolean') &&
+    (v.todaySkyTime === undefined || isTodaySkyTime(v.todaySkyTime)) &&
     isAccount(v)
   );
 }
@@ -636,6 +662,9 @@ const myAccountOf = (v: MyAccount): MyAccount => ({
   provider: v.provider,
   marketingConsent: v.marketingConsent,
   suspended: v.suspended === true,
+  // 알림 칸은 서버가 줄 때만 둔다(없는 옛 서버를 알림 화면이 알아보게)
+  ...(v.pushConsent !== undefined ? { pushConsent: v.pushConsent } : {}),
+  ...(v.todaySkyPush !== undefined && v.todaySkyTime !== undefined ? { todaySkyPush: v.todaySkyPush, todaySkyTime: v.todaySkyTime } : {}),
 });
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -1054,7 +1083,17 @@ const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
 const FIXTURE_TOKEN = 'fixture-session';
 
 /** 모의 서버(`useFixtures`)의 내 계정 */
-const FIXTURE_MY_ACCOUNT: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
+const FIXTURE_MY_ACCOUNT: MyAccount = {
+  nickname: '새벽별',
+  avatar: 3,
+  email: 'dawnstar@kakao.com',
+  provider: 'KAKAO',
+  marketingConsent: false,
+  suspended: false,
+  pushConsent: true,
+  todaySkyPush: true,
+  todaySkyTime: '08:00',
+};
 
 export function createApi(config: ApiConfig) {
   /**
@@ -1324,8 +1363,8 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `PATCH /account` 닉네임 · 프로필을 바꾼다(보낸 칸만). 400 `INVALID_NICKNAME` · `INVALID_AVATAR`,
-     * 409 `NICKNAME_TAKEN` 은 code 로 온다 — 그때는 같이 보낸 칸도 바뀌지 않는다.
+     * `PATCH /account` 닉네임 · 프로필 · 동의 · 오늘의 하늘을 바꾼다(보낸 칸만). 400 `INVALID_NICKNAME` · `INVALID_AVATAR` ·
+     * `INVALID_TODAY_SKY_TIME`, 409 `NICKNAME_TAKEN` 은 code 로 온다 — 그때는 같이 보낸 칸도 바뀌지 않는다.
      */
     async updateAccount(patch: AccountPatch): Promise<ApiResult<MyAccount>> {
       if (config.useFixtures) return { ok: true, data: { ...FIXTURE_MY_ACCOUNT, ...patch } };

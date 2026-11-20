@@ -26,6 +26,8 @@ export function ListCard({ children }: { children: ReactNode }) {
 
 export type ListCardRowProps = {
   label: string;
+  /** 이름 아래 작은 설명 한두 줄(알림 설정의 스위치 줄, 보드 16-2) */
+  description?: string;
   /** 오른쪽에 적는 값(받는 시간 · 닉네임 · 앱 버전) */
   value?: string;
   /** 값 대신 오른쪽에 둘 것(연결된 계정의 공급자 표시) */
@@ -48,12 +50,23 @@ function SwitchMark({ on }: { on: boolean }) {
 }
 
 /** 목록 카드의 한 줄: 왼쪽 이름(과 설명), 오른쪽 값 · 덧붙일 것 · 화살표 또는 스위치. 최소 높이 52 */
-export function ListCardRow({ label, value, trailing, onPress, chevron = true, toggle }: ListCardRowProps) {
+export function ListCardRow({ label, description, value, trailing, onPress, chevron = true, toggle }: ListCardRowProps) {
   const content = (
     <>
-      <Txt variant="item" style={styles.label}>
-        {label}
-      </Txt>
+      {description !== undefined ? (
+        <View style={styles.names}>
+          <Txt variant="item" style={styles.labelText}>
+            {label}
+          </Txt>
+          <Txt variant="caption" color="hint" keepAll>
+            {description}
+          </Txt>
+        </View>
+      ) : (
+        <Txt variant="item" style={styles.label}>
+          {label}
+        </Txt>
+      )}
       {value !== undefined ? (
         <Txt variant="desc" color="gray">
           {value}
@@ -107,6 +120,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: L.paddingH,
   },
   label: { flex: 1, fontWeight: FontWeight.medium },
+  /** 설명이 있으면 이름과 설명을 한 칸에 위아래로(사이 2) */
+  names: { flex: 1, gap: L.descGap },
+  labelText: { fontWeight: FontWeight.medium },
   switch: { width: L.switch.width, height: L.switch.height, borderRadius: L.switch.height / 2, justifyContent: 'center' },
   switchOn: { backgroundColor: Colors.primary },
   switchOff: { backgroundColor: Colors.hair },

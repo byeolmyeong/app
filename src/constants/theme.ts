@@ -912,4 +912,6 @@ export const ShareCardLayout = {
     { right: 40, top: 300, size: 2, opacity: 0.4 },
     { left: 60, top: 330, size: 3, opacity: 0.35 },
   ],
+  /** 기다리는 동안의 뼈대(결정 071): 칩 · 이름표 · 제목 두 줄 · 한 줄 소개 막대의 폭(360 기준). 그림 · 로고는 카드와 같은 크기 */
+  skeleton: { chip: 90, label: 140, title: [260, 180], tagline: 150 },
 } as const;

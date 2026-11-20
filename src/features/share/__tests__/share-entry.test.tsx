@@ -6,7 +6,6 @@ import { Colors, Sizes } from '@/constants/theme';
 
 import { strings } from '@/content/strings';
 import { saveImage, shareStory } from '@/features/share/share-actions';
-import { resetShareRequests } from '@/features/share/share-cache';
 import { ShareEntry, type ShareTarget } from '@/features/share/share-entry';
 import * as story from '@/features/share/story';
 import * as webStory from '@/features/share/story.web';
@@ -42,7 +41,6 @@ const fillOf = (label: string) => StyleSheet.flatten(button(label).props.style).
 
 beforeEach(async () => {
   await AsyncStorage.clear();
-  resetShareRequests();
   jest.clearAllMocks();
   process.env.EXPO_PUBLIC_META_APP_ID = APP_ID;
   mockApi.createShare.mockImplementation(async (request: ShareRequest) => {
@@ -262,6 +260,27 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
       expect(screen.getAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(7);
       expect(screen.getByLabelText(strings.states.loading)).toBeTruthy();
       expect(actionLabels()).toEqual([]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('10초가 넘도록 카드가 오지 않으면 뼈대 대신 실패 안내와 "다시 시도"(결정 065 의 2), 다시 시도하면 처음부터 기다린다', async () => {
+    jest.useFakeTimers();
+    try {
+      mockApi.createShare.mockImplementation(() => new Promise(() => {}));
+      await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+      await open();
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(screen.getByText(S.failed.OTHER)).toBeTruthy();
+      expect(screen.queryByTestId('share-card-skeleton')).toBeNull();
+      expect(actionLabels()).toEqual([]);
+      await fireEvent.press(screen.getByText(S.retry));
+      expect(mockApi.createShare).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('share-card-skeleton')).toBeTruthy();
+      expect(screen.queryByText(S.failed.OTHER)).toBeNull();
     } finally {
       jest.useRealTimers();
     }

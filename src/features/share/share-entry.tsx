@@ -89,8 +89,8 @@ function ShareBody({ target }: { target: ShareTarget }) {
     return { kind: target.kind };
   }, [target, myName, showNames]);
   const { state, retry } = useShareCard(request);
-  // 기다리는 동안 0.3초가 넘으면 카드 모양 뼈대(결정 065 의 2 · 071)
-  const phase = useLoadingPhase(state.status === 'loading');
+  /** 기다림을 다시 시작한 횟수(10초가 넘어 "다시 시도" 를 누르면 기다림 단계를 처음부터 센다) */
+  const [round, setRound] = useState(0);
   const cardRef: CardRef = useRef(null);
   const { toast, show, hide } = useToast();
   /** 이미지를 찍는 동안 버튼을 다시 누르지 못하게(같은 그림이 두 장 저장되지 않게). 같은 순간의 두 번 눌림도 막도록 ref */
@@ -129,9 +129,14 @@ function ShareBody({ target }: { target: ShareTarget }) {
   return (
     <View style={styles.body}>
       {state.status === 'loading' ? (
-        <View style={styles.preview}>
-          <ShareCardSkeleton kind={target.kind} bars={phase === 'skeleton' || phase === 'timeout'} />
-        </View>
+        <CardPending
+          key={round}
+          kind={target.kind}
+          onRetry={() => {
+            setRound((n) => n + 1);
+            retry();
+          }}
+        />
       ) : state.status === 'failed' ? (
         state.notFound ? (
           <Txt variant="body">{S.nothing[target.kind]}</Txt>
@@ -159,6 +164,26 @@ function ShareBody({ target }: { target: ShareTarget }) {
           {appId ? <Button label={S.actions.story} onPress={story} /> : null}
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * 카드를 기다리는 동안(결정 065 의 2 · 071): 0.3초가 넘으면 카드 모양 뼈대, 10초가 넘으면 실패 안내와 "다시 시도"(그 사이 버튼은 없다).
+ * 다시 시도하면 새로 그려져 처음부터 센다.
+ */
+function CardPending({ kind, onRetry }: { kind: ShareTarget['kind']; onRetry: () => void }) {
+  const phase = useLoadingPhase(true);
+  if (phase === 'timeout')
+    return (
+      <>
+        <Txt variant="body">{S.failed.OTHER}</Txt>
+        <Button label={S.retry} onPress={onRetry} />
+      </>
+    );
+  return (
+    <View style={styles.preview}>
+      <ShareCardSkeleton kind={kind} bars={phase === 'skeleton'} />
     </View>
   );
 }

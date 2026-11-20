@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
 import { strings } from '@/content/strings';
-import { SHARE_IMAGE, ShareCardView } from '@/features/share/share-card';
+import { SHARE_IMAGE, ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
 import type { ShareCard } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -177,5 +177,29 @@ describe('공유 카드 v2 글자 굵기(시안 12-7: 칩 500 · 이름표 500 �
     expect(weight('새벽별 님의 별명')).toBe('500');
     expect(weight(C.nickname.headline)).toBe('600');
     expect(weight(S.cards.taglines.me)).toBe('400');
+  });
+});
+
+describe('카드를 기다리는 동안의 뼈대(결정 071 — 다 그려진 카드와 같은 크기 · 같은 그림 칸)', () => {
+  const size = (id: string) => {
+    const { width, height } = StyleSheet.flatten(screen.getByTestId(id, { includeHiddenElements: true }).props.style);
+    return [width, height];
+  };
+  const cases: [ShareCard, string][] = [
+    [C.nickname, 'share-art-sign-AQUARIUS'],
+    [C.meArea, 'share-art-area-LOVE'],
+    [C.daySky, 'share-art-moon'],
+    [C.nextBig, 'share-art-steps'],
+  ];
+  it.each(cases)('%j 의 뼈대는 카드와 틀 크기 · 그림 칸 크기가 같다', async (card, artId) => {
+    const view = await render(<ShareCardView card={card} width={209} />);
+    const frame = size('share-card-frame');
+    const art = size(artId);
+    await view.unmount();
+    await render(<ShareCardSkeleton kind={card.kind} bars width={209} />);
+    expect(size('share-card-skeleton')).toEqual(frame);
+    expect(size('share-card-skeleton-art')).toEqual(art);
+    // 칩 · 이름표 · 제목 두 줄 · 아래 줄(로고 · 한 줄 소개)
+    expect(screen.getAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(7);
   });
 });

@@ -4,7 +4,7 @@
  * - 카드(`card` — 출생 정보가 없다, 결정 053 의 4)만 키마다 따로 둔다: `byeolmyeong.shareCards.v1.<NICKNAME | ME_AREA:영역 | DAY_SKY:날짜 | NEXT_BIG>`.
  *   머리가 `byeolmyeong.` 이라 로그아웃 · 계정 삭제 · 출생 정보 바꾸기가 함께 지운다(features/auth/delete-account.ts). 공유 식별자는 두지 않는다.
  * - 세대 표식(`…gen`)을 요청을 시작할 때 읽고, 끝났을 때 같을 때만 쓴다 — 그 사이 기기를 지웠으면(표식도 지워진다) 앞사람 카드를 다시 써 넣지 않는다.
- *   같은 세대 · 같은 키의 진행 중 요청은 같이 쓴다.
+ * - 진행 중 요청을 같이 쓰지 않는다(미리 받기가 없어 겹칠 일이 드물고, 멈춘 요청이 "다시 시도" 를 막지 않게).
  * - 공유할 것이 없어지면(404) 그 키를 지우고, 그 밖의 실패에는 남긴다. 그날의 하늘을 둘 때 한국 날짜로 지난 날의 것은 지운다.
  * - 궁합 카드(SCORE · RANKING)는 내 이름 · 이름 표시에 따라 달라 기억하지 않는다.
  */
@@ -17,7 +17,6 @@ export const SHARE_CARDS_STORAGE_PREFIX = 'byeolmyeong.shareCards.v1.';
 const GENERATION_KEY = `${SHARE_CARDS_STORAGE_PREFIX}gen`;
 const DAY_SKY = 'DAY_SKY:';
 
-const inFlight = new Map<string, Promise<ApiResult<ShareCreated>>>();
 /** 세대 표식을 만드는 중(처음 동시에 부른 요청들이 같은 세대를 쓰게) */
 let creating: Promise<string> | null = null;
 
@@ -83,7 +82,7 @@ export async function readCachedShare(key: string): Promise<ShareCard | null> {
   }
 }
 
-/** `POST /shares`. 같은 세대 · 같은 키의 진행 중 요청을 같이 쓰고, 결과로 기억을 고친다 */
+/** `POST /shares` 를 부르고 결과로 기억을 고친다(시작할 때의 세대가 그대로일 때만) */
 export async function fetchShare(request: ShareRequest): Promise<ApiResult<ShareCreated>> {
   const key = shareKeyOf(request);
   if (!key) return api.createShare(request);
@@ -93,22 +92,8 @@ export async function fetchShare(request: ShareRequest): Promise<ApiResult<Share
   } catch {
     return api.createShare(request);
   }
-  const flightKey = `${gen}|${key}`;
-  const running = inFlight.get(flightKey);
-  if (running) return running;
-  const promise = api
-    .createShare(request)
-    .then(async (result) => {
-      if (result.ok) await remember(key, gen, result.data.card);
-      else if (result.status === 404) await remember(key, gen, null);
-      return result;
-    })
-    .finally(() => inFlight.delete(flightKey));
-  inFlight.set(flightKey, promise);
-  return promise;
-}
-
-/** 시험용: 진행 중 요청의 기억을 비운다(끝나지 않는 요청을 둔 시험이 다음 시험에 남기지 않게) */
-export function resetShareRequests(): void {
-  inFlight.clear();
+  const result = await api.createShare(request);
+  if (result.ok) await remember(key, gen, result.data.card);
+  else if (result.status === 404) await remember(key, gen, null);
+  return result;
 }

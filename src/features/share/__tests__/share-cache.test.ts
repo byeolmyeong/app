@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { fetchShare, readCachedShare, resetShareRequests, SHARE_CARDS_STORAGE_PREFIX, shareKeyOf } from '@/features/share/share-cache';
+import { fetchShare, readCachedShare, SHARE_CARDS_STORAGE_PREFIX, shareKeyOf } from '@/features/share/share-cache';
 import { api, type ShareCard } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -18,7 +18,6 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   jest.useRealTimers();
-  resetShareRequests();
 });
 
 describe('공유 카드 기억', () => {
@@ -49,20 +48,6 @@ describe('공유 카드 기억', () => {
     await Promise.all([fetchShare({ kind: 'ME_AREA', area: 'LOVE' }), fetchShare({ kind: 'ME_AREA', area: 'WORK' }), fetchShare({ kind: 'NICKNAME' })]);
     const kept = await Promise.all(['ME_AREA:LOVE', 'ME_AREA:WORK', 'NICKNAME'].map(readCachedShare));
     expect(kept.every(Boolean)).toBe(true);
-  });
-
-  it('같은 키의 요청이 진행 중이면 그것을 같이 쓴다(서버는 한 번), 끝난 뒤에는 새로 묻는다', async () => {
-    let resolve: (v: ReturnType<typeof made>) => void = () => {};
-    mockApi.createShare.mockImplementation(() => new Promise((r) => (resolve = r)));
-    const a = fetchShare({ kind: 'NEXT_BIG' });
-    const b = fetchShare({ kind: 'NEXT_BIG' });
-    await new Promise((r) => setTimeout(r, 0));
-    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
-    resolve(made(C.nextBig));
-    expect(await a).toEqual(await b);
-    mockApi.createShare.mockResolvedValue(made(C.nextBig));
-    await fetchShare({ kind: 'NEXT_BIG' });
-    expect(mockApi.createShare).toHaveBeenCalledTimes(2);
   });
 
   it('공유할 것이 없어지면(404) 기억도 지우고, 그 밖의 실패에는 기억을 남긴다', async () => {

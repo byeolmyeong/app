@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { clearDeviceData } from '@/features/auth/delete-account';
-import { fetchShare, readCachedShare, resetShareRequests } from '@/features/share/share-cache';
+import { fetchShare, readCachedShare } from '@/features/share/share-cache';
 import { api, type ShareCreated } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -15,7 +15,6 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  resetShareRequests();
 });
 
 // 기기 지우기(로그아웃 · 계정 삭제 · 출생 정보 바꾸기, features/auth/delete-account.ts)와 진행 중이던 공유 요청(#61 리뷰 수정 2 · R1)
@@ -33,7 +32,7 @@ describe('공유 카드 기억과 기기 지우기', () => {
     expect(await readCachedShare('NICKNAME')).toBeNull();
   });
 
-  it('기기를 지운 뒤의 같은 키 요청은 앞 계정의 진행 중 요청을 같이 쓰지 않는다', async () => {
+  it('기기를 지운 뒤의 같은 키 요청은 새로 묻고 다음 사람 카드만 기억한다', async () => {
     mockApi.createShare.mockImplementationOnce(() => new Promise(() => {}));
     void fetchShare({ kind: 'NICKNAME' });
     await flush();

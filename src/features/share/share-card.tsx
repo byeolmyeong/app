@@ -2,7 +2,7 @@ import type { ComponentRef, Ref } from 'react';
 import { Image, StyleSheet, View, type TextStyle } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
-import { Skeleton } from '@/components/skeleton';
+import { Skeleton, SkeletonGroup } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, CardRadius, Colors, LineWidth, ShareCardLayout as L, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -75,43 +75,45 @@ export function ShareCardView({ card, width = Sizes.shareCardWidth, ref }: Share
 }
 
 /**
- * 카드를 기다리는 동안의 미리보기 자리(결정 065 의 2 · 071): 다 그린 카드와 같은 크기 · 같은 자리에 그림 · 칩 · 이름표 · 제목 두 줄 · 아래 줄(로고 · 한 줄 소개)
- * 막대를 둔다. 해 별자리 그림(내 별명)과 그 밖의 그림(200)은 크기가 달라 kind 로 고른다. bars 가 false 면(0.3초 전) 같은 크기의 빈 자리만.
+ * 카드를 기다리는 동안의 미리보기 자리(결정 065 의 2 · 071): 다 그린 카드(StoryFace)와 같은 틀 · 같은 여백 · 같은 그림 칸에 칩 · 이름표 · 제목 두 줄 ·
+ * 아래 줄(로고 · 한 줄 소개) 막대를 둔다. 막대 폭은 ShareCardLayout.skeleton. 그림 칸은 해 별자리(내 별명)와 그 밖(200)이 달라 kind 로 고른다.
+ * bars 가 false 면(0.3초 전) 같은 크기의 빈 자리만.
  */
 export function ShareCardSkeleton({ kind, bars, width = Sizes.shareCardWidth }: { kind: ShareCard['kind']; bars: boolean; width?: number }) {
   const height = Math.round((width * SHARE_IMAGE.height) / SHARE_IMAGE.width);
   const k = width / L.base;
+  const B = L.skeleton;
   const sign = kind === 'NICKNAME';
-  const chipHeight = (L.chip.text.lineHeight + L.chip.padV * 2) * k;
+  const art = Math.round(L.art * k);
   /** 한 줄 칸 안에 글자 높이만큼의 막대(줄 사이 여백은 칸이 맡는다) */
   const line = (text: { fontSize: number; lineHeight: number }, barWidth: number, top = 0) => (
-    <View style={{ height: text.lineHeight * k, marginTop: top * k, justifyContent: 'center', alignItems: 'center', alignSelf: 'stretch' }}>
+    <View style={[styles.skeletonLine, { height: text.lineHeight * k, marginTop: top * k }]}>
       <Skeleton width={barWidth * k} height={text.fontSize * k} />
     </View>
   );
   return (
-    <View
-      testID="share-card-skeleton"
-      accessible
-      accessibilityLabel={strings.states.loading}
-      style={[styles.frame, styles.skeleton, { width, height }]}>
+    <View testID="share-card-skeleton" style={[styles.frame, styles.skeleton, { width, height }]}>
       {bars ? (
-        <View style={[styles.story, { paddingTop: L.padTop * k, paddingHorizontal: L.padX * k, paddingBottom: L.padBottom * k }]}>
-          {sign ? (
-            <Skeleton width={L.sign.width * k} height={L.sign.height * k} />
-          ) : (
-            <Skeleton width={L.art * k} height={L.art * k} pill style={{ marginTop: L.artTop * k }} />
-          )}
-          <Skeleton width={90 * k} height={chipHeight} pill style={{ marginTop: L.chip.top * k }} />
-          {line(L.label.text, 140, L.label.top)}
-          {line(L.title.text, 260, L.title.top)}
-          {line(L.title.text, 180)}
+        <SkeletonGroup
+          testID="share-card-skeleton-bars"
+          style={[styles.story, { paddingTop: L.padTop * k, paddingHorizontal: L.padX * k, paddingBottom: L.padBottom * k }]}>
+          <View
+            testID="share-card-skeleton-art"
+            style={sign ? { width: Math.round(L.sign.width * k), height: Math.round(L.sign.height * k) } : { width: art, height: art, marginTop: L.artTop * k }}>
+            <Skeleton width="100%" height={sign ? Math.round(L.sign.height * k) : art} pill={!sign} />
+          </View>
+          <View style={{ marginTop: L.chip.top * k }}>
+            <Skeleton width={B.chip * k} height={(L.chip.text.lineHeight + L.chip.padV * 2) * k} pill />
+          </View>
+          {line(L.label.text, B.label, L.label.top)}
+          {line(L.title.text, B.title[0], L.title.top)}
+          {line(L.title.text, B.title[1])}
           <View style={styles.grow} />
           <View style={[styles.storyFoot, { paddingTop: L.foot.padTop * k }]}>
-            <Skeleton width={Math.round((L.foot.mark * 212) / 112) * k} height={L.foot.mark * k} />
-            <Skeleton width={150 * k} height={L.foot.text.fontSize * k} />
+            <Skeleton width={Math.round(L.foot.mark * MARK_RATIO * k)} height={L.foot.mark * k} />
+            <Skeleton width={B.tagline * k} height={L.foot.text.fontSize * k} />
           </View>
-        </View>
+        </SkeletonGroup>
       ) : null}
     </View>
   );
@@ -186,7 +188,7 @@ function StoryFace({ card, width }: { card: StoryCard; width: number }) {
       ) : (
         <View style={{ marginTop: L.artTop * k }}>
           {card.kind === 'ME_AREA' ? (
-            <View testID={`share-art-area-${card.area}`} aria-hidden>
+            <View testID={`share-art-area-${card.area}`} aria-hidden style={{ width: art, height: art }}>
               <AreaArt area={card.area} size={art} variant="hero" />
             </View>
           ) : (
@@ -341,6 +343,7 @@ const styles = StyleSheet.create({
   frame: { borderRadius: CardRadius, overflow: 'hidden' },
   card: { flex: 1, backgroundColor: Colors.paper },
   skeleton: { backgroundColor: Colors.paper, borderWidth: LineWidth, borderColor: Colors.hair },
+  skeletonLine: { alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
   byeoli: { flex: 1, alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md },
   story: { flex: 1, alignItems: 'center', overflow: 'hidden' },
   chip: { borderWidth: LineWidth, borderColor: Colors.hair, borderRadius: 999 },

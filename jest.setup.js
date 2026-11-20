@@ -27,6 +27,6 @@ jest.mock('@react-native-async-storage/async-storage', () => require('@react-nat
 // 소리(expo-audio)도 네이티브 모듈이라 jest 에서는 읽어 들이는 순간 던진다. 쓰는 중 화면이 기다릴 때 음악을 청하므로(결정 062)
 // 소리를 내지 않는 가짜를 모든 시험에 깐다. 음악 줄 자체의 시험(features/audio)은 그 파일에서 다시 깔아 틀고 멈춤을 본다.
 jest.mock('expo-audio', () => ({
-  createAudioPlayer: jest.fn(() => ({ volume: 1, loop: false, play: jest.fn(), pause: jest.fn(), seekTo: jest.fn(async () => {}) })),
+  createAudioPlayer: jest.fn(() => ({ volume: 1, loop: false, play: jest.fn(), pause: jest.fn(), seekTo: jest.fn(async () => {}), remove: jest.fn() })),
   setAudioModeAsync: jest.fn(async () => {}),
 }));

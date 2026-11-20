@@ -46,7 +46,9 @@ export function loadMusicSettings(): Promise<MusicSettings> {
 
 /** 스위치 하나를 바꾼다. 바로 알리고(지금 울리는 곡이 따라 바뀐다) 기기에 적는다 — 적지 못해도 이번 실행에서는 바뀐 대로 둔다 */
 export async function setMusicSetting(track: Track, on: boolean): Promise<void> {
-  const next = { ...(await loadMusicSettings()), [track]: on };
+  await loadMusicSettings();
+  // 읽기를 기다리는 동안 다른 스위치가 바뀌었을 수 있으니 기다린 뒤의 값에 더한다
+  const next = { ...(cached ?? DEFAULT_MUSIC), [track]: on };
   cached = next;
   listeners.forEach((fn) => fn(next));
   await AsyncStorage.setItem(MUSIC_STORAGE_KEY, JSON.stringify(next)).catch(() => {});

@@ -6,7 +6,7 @@ import { MUSIC_STORAGE_KEY, resetMusicSettingsForTest, setMusicSetting } from '@
 import { createSoundtrack } from '@/features/audio/soundtrack';
 import { FADE_MS, TRACK_SOURCES, TRACK_VOLUME, type Track } from '@/features/audio/tracks';
 
-type FakePlayer = { source: unknown; volume: number; loop: boolean; playing: boolean; play: jest.Mock; pause: jest.Mock; seekTo: jest.Mock };
+type FakePlayer = { source: unknown; volume: number; loop: boolean; playing: boolean; play: jest.Mock; pause: jest.Mock; seekTo: jest.Mock; remove: jest.Mock };
 
 jest.mock('expo-audio', () => ({
   createAudioPlayer: jest.fn((source: unknown) => {
@@ -22,6 +22,7 @@ jest.mock('expo-audio', () => ({
         p.playing = false;
       }),
       seekTo: jest.fn(async () => {}),
+      remove: jest.fn(),
     };
     return p;
   }),
@@ -124,8 +125,8 @@ describe('음악 한 줄(결정 062)', () => {
 
   it.each([
     ['배경만 끔', { background: false }, 'waiting', ['waiting'], []],
-    ['기다릴 때만 끔 — 쓰는 중에도 배경', { waiting: false }, 'waiting', ['background'], ['background']],
-    ['앱 열 때만 끔 — 스플래시에도 배경', { opening: false }, 'opening', ['background'], ['background']],
+    ['기다릴 때만 끔 — 쓰는 중에는 소리 없음', { waiting: false }, 'waiting', [], ['background']],
+    ['앱 열 때만 끔 — 스플래시에는 소리 없음', { opening: false }, 'opening', [], ['background']],
     ['모두 끔', { background: false, opening: false, waiting: false }, 'waiting', [], []],
   ] as const)('설정(%s): 청한 곡 · 놓은 뒤', async (_name, off, track, whileRequested, afterRelease) => {
     await AsyncStorage.setItem(MUSIC_STORAGE_KEY, JSON.stringify({ background: true, opening: true, waiting: true, ...off }));
@@ -149,16 +150,71 @@ describe('음악 한 줄(결정 062)', () => {
     expect(playing()).toEqual(['background']);
   });
 
-  it('앱이 뒤로 가면 줄이지 않고 바로 멈추고, 돌아오면 다시 튼다', async () => {
+  it('앱이 뒤로 가면 줄이지 않고 바로 멈추고, 돌아오면 같은 곡을 되감지 않고 이어서 튼다', async () => {
     const soundtrack = await started();
     await fadeDone();
     soundtrack.request('waiting');
     await fadeDone();
+    expect(playerOf('waiting')?.seekTo).toHaveBeenCalledTimes(1);
     appStateHandler('background');
     expect(playing()).toEqual([]);
     appStateHandler('active');
     await fadeDone();
     expect(playing()).toEqual(['waiting']);
+    // 처음 청할 때 한 번만 되감았다
+    expect(playerOf('waiting')?.seekTo).toHaveBeenCalledTimes(1);
+  });
+
+  it('iOS 가 돌아올 때 뒤로 가기 전의 플레이어를 스스로 다시 틀어도, 고른 곡 하나만 울린다', async () => {
+    const soundtrack = await started();
+    await fadeDone();
+    const release = soundtrack.request('waiting');
+    jest.advanceTimersByTime(FADE_MS / 2);
+    // 곡이 바뀌는 중에 뒤로 갔고, 그동안 쓰기가 끝나 기다릴 때 음악을 놓았다
+    appStateHandler('background');
+    release();
+    // 네이티브가 뒤로 가기 전에 울리던 둘을 다시 튼다
+    playerOf('waiting')!.playing = true;
+    playerOf('background')!.playing = true;
+    appStateHandler('active');
+    await fadeDone();
+    expect(playing()).toEqual(['background']);
+  });
+
+  it('곡이 바뀌는 중에 다시 앞 곡으로 돌아와도 한 곡만 남는다', async () => {
+    const soundtrack = await started();
+    await fadeDone();
+    const release = soundtrack.request('waiting');
+    jest.advanceTimersByTime(FADE_MS / 2);
+    release();
+    await fadeDone();
+    expect(playing()).toEqual(['background']);
+    expect(playerOf('background')?.volume).toBeCloseTo(TRACK_VOLUME.background);
+  });
+
+  it('두 번 켜도 한 번이고, 같은 청을 두 번 놓아도 다른 청은 남는다', async () => {
+    const soundtrack = createSoundtrack();
+    stops.push(soundtrack.start());
+    stops.push(soundtrack.start());
+    await flush();
+    expect(setAudioModeAsync).toHaveBeenCalledTimes(1);
+    const first = soundtrack.request('waiting');
+    soundtrack.request('opening');
+    first();
+    first();
+    await fadeDone();
+    expect(soundtrack.currentTrack()).toBe('opening');
+  });
+
+  it('끄면 모두 멈추고 만든 플레이어를 놓는다(스스로 놓이지 않는다)', async () => {
+    const soundtrack = createSoundtrack();
+    const stop = soundtrack.start();
+    await flush();
+    await fadeDone();
+    stop();
+    expect(playing()).toEqual([]);
+    expect(playerOf('background')?.remove).toHaveBeenCalledTimes(1);
+    expect(soundtrack.currentTrack()).toBeNull();
   });
 
   it('저장된 설정을 읽기 전에는 틀지 않는다', async () => {
@@ -190,22 +246,36 @@ describe('웹(결정 062 의 5)', () => {
     delete (globalThis as unknown as { document?: object }).document;
   });
 
-  it('처음 누르기 전에는 아무것도 틀지 않고, 누른 그 순간 배경을 튼다', async () => {
+  it('처음 누르기 전에는 아무것도 틀지 않고, 손을 뗀 그 순간(pointerup · touchend · keydown) 배경을 튼다', async () => {
     await started();
     expect(playing()).toEqual([]);
-    listeners.pointerdown();
-    expect(playing()).toEqual(['background']);
-    // 한 번 풀리면 듣기를 그만둔다
+    // 터치의 pointerdown 은 브라우저가 허락으로 치지 않는다 — 듣지 않는다
     expect(listeners.pointerdown).toBeUndefined();
-    expect(listeners.keydown).toBeUndefined();
+    listeners.pointerup();
+    expect(playing()).toEqual(['background']);
+    expect(Object.keys(listeners).sort()).toEqual(['keydown', 'pointerup', 'touchend']);
   });
 
-  it('앱 열 때 음악은 웹에서 틀지 않는다(배경으로 대신)', async () => {
+  it('브라우저가 첫 누름의 재생을 막았으면 다음 누름에서 다시 튼다', async () => {
+    await started();
+    // 첫 누름: 재생을 부르지만 브라우저가 막는다
+    listeners.touchend();
+    const bg = playerOf('background')!;
+    bg.playing = false;
+    expect(bg.play).toHaveBeenCalledTimes(1);
+    listeners.touchend();
+    expect(bg.play).toHaveBeenCalledTimes(2);
+    expect(bg.playing).toBe(true);
+  });
+
+  it('웹에서는 앱 열 때 · 기다릴 때 음악 대신 배경만 튼다(계획 A9-1)', async () => {
     const soundtrack = createSoundtrack();
     soundtrack.request('opening');
+    soundtrack.request('waiting');
     await started(soundtrack);
     listeners.keydown();
     expect(playing()).toEqual(['background']);
     expect(playerOf('opening')).toBeUndefined();
+    expect(playerOf('waiting')).toBeUndefined();
   });
 });

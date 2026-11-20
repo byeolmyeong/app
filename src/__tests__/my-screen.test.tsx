@@ -85,7 +85,7 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(await card.findByText('새벽별')).toBeTruthy();
     expect(card.getByText(M.card.birth)).toBeTruthy();
     expect(card.queryByText(/년 .*월/)).toBeNull();
-    for (const label of [R.music, R.faq, R.inquiry, R.terms, R.privacy, R.version]) expect(screen.getByText(label)).toBeTruthy();
+    for (const label of [R.faq, R.inquiry, R.terms, R.privacy, R.version]) expect(screen.getByText(label)).toBeTruthy();
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
   });
 
@@ -100,10 +100,10 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.queryByLabelText(strings.nickname.avatars[2])).toBeNull();
   });
 
-  it('줄은 카드 아래 음악 · 자주 묻는 질문 · 문의하기 / 이용약관 · 개인정보 처리방침 · 앱 버전(숫자만) 순서다. 로그아웃 · 계정 삭제는 없다', async () => {
+  it('줄은 카드 아래 자주 묻는 질문 · 문의하기 / 이용약관 · 개인정보 처리방침 · 앱 버전(숫자만) 순서다. 로그아웃 · 계정 삭제는 없다', async () => {
     await render(<MyScreen />);
     await screen.findByText('새벽별');
-    const labels = [M.card.account, R.music, R.faq, R.inquiry, R.terms, R.privacy, R.version];
+    const labels = [M.card.account, R.faq, R.inquiry, R.terms, R.privacy, R.version];
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
     expect(places.every((p) => p >= 0)).toBe(true);
@@ -122,7 +122,6 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     [M.card.account, '/my/account'],
     // 새 출생 정보 바꾸기(/my/birth)는 서버 S⑨ 뒤 — 그 전에는 지금 화면
     [M.card.birth, '/birth'],
-    [R.music, '/my/music'],
     [R.faq, '/settings/faq'],
     // 앱 안 문의(/my/inquiries)는 계획 A7-4 — 그 전에는 지금 화면
     [R.inquiry, '/settings/inquiry'],

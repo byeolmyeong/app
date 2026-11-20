@@ -12,5 +12,5 @@
 1. 받은 파일을 **같은 이름**으로 이 폴더에 덮어쓴다(`opening.wav` · `waiting.wav` · `background.wav`). 코드는 고치지 않는다.
 2. 형식이 다르면(예: `.m4a` · `.mp3`) 파일 이름의 확장자만 바꾸고, `src/features/audio/tracks.ts` 의 `require(...)` 세 줄의 확장자를 같이 바꾼다. iOS · 안드로이드 · 웹이 모두 읽는 형식은 AAC(`.m4a`) · MP3 다.
 3. 크기를 본다 — 앱에 실리는 파일이라 한 곡에 1MB 안팎을 넘기지 않는다(배경은 반복되니 짧게 잘라 이어지게).
-4. 음량은 파일이 아니라 `src/features/audio/tracks.ts` 의 `TRACK_VOLUME` 에서 맞춘다(배경은 작게).
+4. 음량은 `src/features/audio/tracks.ts` 의 `TRACK_VOLUME` 에서 맞춘다(배경은 작게). **단, iPhone · iPad 의 웹 브라우저는 코드로 음량을 바꿀 수 없어** 파일 그대로의 음량으로 나고 곡이 바뀔 때 줄였다 키우기도 안 된다 — 그래서 파일 자체도 들릴 음량(배경은 작게)으로 맞춰 넣는다.
 5. `npm test` 와 기기 개발 빌드에서 한 번 들어 본다(무음 모드 · 다른 앱 소리와 섞임 · 뒤로 갔다 돌아옴).

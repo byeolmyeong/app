@@ -49,6 +49,7 @@
       [
         "expo-audio",
         {
+          "microphonePermission": "별명은 녹음하지 않아요. 음악을 틀 때 쓰는 소리 기능에 붙은 설정이에요.",
           "enableBackgroundPlayback": false,
           "recordAudioAndroid": false
         }

@@ -316,12 +316,12 @@ last_reviewed: 2026-11-20
 - 할 것: `/my/notifications`(오늘의 하늘 알림 · 받는 시간 → 시트(8-1 모양, 5분 단위) · 이벤트 · 혜택 알림 = `marketingConsent`) → `PATCH /account`. 마이 첫 줄 오른쪽에 받는 시간(끄면 숨김).
 - 검증: 화면 테스트(켜기/끄기 · 시간 저장 · 실패 시 되돌림).
 
-#### A9-1. audio · 상태: 완료(`feat/audio` — 실행 기록 아래. 루트 · 스플래시에 거는 두 줄은 길 A 의 스플래시 PR 뒤)
+#### A9-1. audio · 상태: 진행(`feat/audio` — 음악 줄 · 파일 · 설정 · 별명 짓는 중의 waiting 끝. 남음: 루트 `useSoundtrackRoot()` · 스플래시 opening 과 마이 › 음악 줄 — 길 A 의 스플래시 PR 뒤 작은 PR)
 - 읽을 것: 결정 062, Expo SDK 58 `expo-audio` 문서
 - 할 것: `npx expo install expo-audio`, `assets/audio/` 에 무음 자리표시 셋(`opening.wav` · `waiting.wav` · `background.wav`, 파이썬 `wave` 로 1초) + 바꿔 끼우는 법을 `assets/audio/README.md` 에. `src/features/audio/`(`useSoundtrack(track: 'opening' | 'waiting' | 'background')` · 설정 `byeolmyeong.music.v1 { background, opening, waiting }` 기본 모두 켬 · 무음 모드 존중 · 다른 소리와 섞기(끼어들지 않음) · 뒤로 가면 멈춤 · 넘어갈 때 짧게 줄였다 키움). 쓰는 중 화면들은 `waiting`, 스플래시는 `opening`, 나머지는 `background`. 웹은 처음 누른 뒤부터 배경만.
 - 검증: 단위 테스트(설정 끔 → 안 틂 · 화면 전환 표 · 웹 첫 누름 전 무음).
 
-#### A9-2. my-music · verify-a8-a9 · 상태: 진행(`/my/music` 완료 — 기기 확인은 새 개발 빌드 때)
+#### A9-2. my-music · verify-a8-a9 · 상태: 진행(`/my/music` 화면 끝 — 마이의 줄은 루트 PR 에서, 기기 확인은 새 개발 빌드 때)
 - 할 것: `/my/music` 스위치 셋. `/verify` · 새 개발 빌드(`npx eas-cli@latest build --profile development`)로 기기에서 푸시 한 번 · 음악 전환 확인 → PR → CI → 합침.
 - 검증: 기기 확인은 **차단 가능**(APNs · FCM 이 EAS 에 없으면 소유자).
 
@@ -452,8 +452,8 @@ last_reviewed: 2026-11-20
 | A9-2 | 마이에 음악 줄 없음 → `/my/music` 스위치 셋 · 마이 첫 카드 맨 위 "음악" | my-music-screen 3 · my-screen 줄 표 | 1b6b8c5 |
 - 계획과 다르게 한 것:
   - 설정 키를 `byeolmyeong-device.music.v1` 로 — 이 기기의 소리 환경이라 로그아웃 · 탈퇴가 지우지 않는 기기 값(결정 042 의 규칙). 계획의 `byeolmyeong.music.v1` 이면 로그아웃이 저장소만 지우고 메모리 값은 남아 어긋난다.
-  - 꺼 둔 곡은 배경 음악으로 대신한다(기다릴 때만 끄면 쓰는 중에도 배경, 앱 열 때만 끄면 스플래시에도 배경). 배경도 끄면 아무것도 틀지 않는다.
-  - 웹은 처음 누른(pointerdown · keydown) 그 순간부터 배경 · 기다릴 때 음악을 튼다(062 의 5 — 앱 열 때 음악만 웹에서 안 틂).
+  - 꺼 둔 곡은 틀지 않는다(그 곡을 청한 화면은 소리 없음, 놓으면 배경). 웹은 처음 누른 뒤 배경만(계획 그대로). — 처음엔 "꺼 둔 곡은 배경으로 대신 · 웹에서도 기다릴 때 음악" 으로 만들었으나 결정 062 · 계획에 없는 정책이라 리뷰 뒤 글자 그대로로 되돌렸다.
   - 루트에 거는 `useSoundtrackRoot()` 와 스플래시의 `useSoundtrack('opening')` 은 `_layout.tsx`(길 A) 라 길 A 의 스플래시 PR 이 합쳐진 뒤 작은 PR 로 — 그 전에는 소리가 나지 않는다. 새 쓰는 중 화면(나 · 시기 · 오늘의 하늘)에는 길 A 가 `useSoundtrack('waiting')` 을 넣는다.
   - `app.json` 에 expo-audio 플러그인(뒤에서 틀지 않음 · 안드로이드 녹음 권한 없음). 마이크 문구는 플러그인 기본값 그대로(쓰지 않지만 라이브러리가 녹음 API 를 품어 심사의 문구 경고를 피한다). jest 에 소리 가짜를 전역으로.
+- A⑨ 독립 리뷰(PR #48): 차단 1 · 수정 6 · 제안 5. 고침 — ① `expo-asset`(expo-audio 의 짝 패키지)이 없어 `expo-doctor` 19/20 → 설치, 20/20 · ② iOS 는 뒤로 갈 때 울리던 플레이어를 돌아올 때 스스로 다시 틀어(JS pause 로 안 지워짐) 두 곡이 겹칠 수 있었다 → 돌아올 때 모두 멈추고 고른 곡만 · ③ 웹의 터치 pointerdown 은 재생 허락을 만들지 않는다 → pointerup · touchend · keydown, 막혔으면 다음 누름에서 다시 · ④ 루트에 안 걸려 소리가 안 나는데 음악 스위치가 보였다 → 마이 줄은 루트 PR 에서, A9-1 은 진행 · ⑤ 뒤에서 돌아오면 처음부터 → 이어서 · ⑥ 결정에 없는 정책 둘 → 되돌림 · ⑦ iOS 웹은 음량을 못 바꿈 → README 에 · 제안 끌 때 플레이어 놓기 · 설정 두 번 바꿈 경쟁 · 마이크 문구 한국어. 새 시험은 고치기 전 코드에서 8개 실패를 봄. 그대로 둔 것 — 11 별명 짓는 중이 금방 받는 경우에도 잠깐 waiting(쓰는 중 화면만 청함, 짧으면 줄였다 키우는 사이에 끝남) · "자세한 풀이 쓰는 중"(`/report`)은 길 A 의 PR #49 가 화면을 없앤다.
 

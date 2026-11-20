@@ -160,7 +160,6 @@ export const strings = {
     /** 카드의 출생 정보 한 줄: "1999년 3월 8일 · 오후 2:10 · 서울 강남구", 시각을 모르면 "1999년 3월 8일 · 시각 모름" */
     birthLine: { year: '년 ', month: '월 ', day: '일', timeUnknown: '시각 모름' },
     rows: {
-      music: '음악',
       faq: '자주 묻는 질문',
       inquiry: '문의하기',
       terms: '이용약관',

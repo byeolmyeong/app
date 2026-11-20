@@ -253,3 +253,37 @@ it('치는 닉네임을 초안에 따라 쓴다', async () => {
   await fireEvent.changeText(input(), '새벽');
   expect(getDraft()?.nickname).toBe('새벽');
 });
+
+// 리뷰 PR #57 수정 2: 첫 확인이 늦는 동안 바꾸고 멈추면 둘째 확인이 버려져 새 이름에 안내가 끝내 안 떴다
+describe('닉네임 단계: 늦은 확인', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('첫 확인이 0.5초보다 늦어도 바꾸고 멈추면 새 이름으로 다시 묻고, 늦게 온 옛 답은 버린다', async () => {
+    const pending: ((v: unknown) => void)[] = [];
+    checkNickname.mockImplementation(() => new Promise((r) => pending.push(r)));
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await act(async () => jest.advanceTimersByTime(500));
+    await fireEvent.changeText(input(), '새벽달');
+    await act(async () => jest.advanceTimersByTime(500));
+    expect(checkNickname).toHaveBeenCalledTimes(2);
+    expect(checkNickname).toHaveBeenLastCalledWith('새벽달');
+    await act(async () => pending[0]({ ok: true, data: { available: false } }));
+    expect(screen.queryByText(N.taken)).toBeNull();
+    await act(async () => pending[1]({ ok: true, data: { available: true } }));
+    expect(screen.getByText(N.available)).toBeTruthy();
+    expect(nextDisabled()).toBe(false);
+  });
+
+  it('뒤에 공백만 더해(다듬은 값이 같으면) 초록 · 빨강을 지우지 않는다', async () => {
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await act(async () => jest.advanceTimersByTime(500));
+    expect(screen.getByText(N.available)).toBeTruthy();
+    await fireEvent.changeText(input(), '새벽별 ');
+    await act(async () => jest.advanceTimersByTime(500));
+    expect(screen.getByText(N.available)).toBeTruthy();
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+  });
+});

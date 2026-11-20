@@ -49,8 +49,10 @@ export default function NicknameStep() {
 
 function NicknameStepScreen() {
   const { status, checkNickname: askServer } = useAuth();
-  /** 서버에 묻는 중(두 번 누르기 · 엔터가 겹쳐도 한 번만 묻는다) */
+  /** 다음을 눌러 넘어가는 중(두 번 누르기 · 엔터가 겹쳐도 한 번만) */
   const asking = useRef(false);
+  /** 서버에 물은 차례(늦게 온 옛 답을 가린다) */
+  const asked = useRef(0);
   const [draft] = useState(getDraft);
   const [avatar, setAvatar] = useState<AvatarId>(() => draft?.avatar ?? randomAvatar());
   const [raw, setRaw] = useState(draft?.nickname ?? '');
@@ -116,20 +118,22 @@ function NicknameStepScreen() {
   const confirmed = check.ok && available === check.value;
 
   function onChange(text: string) {
+    // 다듬은 값이 같으면(뒤 공백만 더함) 받은 안내(초록 · 빨강)를 그대로 둔다 — 초록은 다듬은 값으로 비교한다(confirmed)
+    const before = checkNickname(raw);
+    const after = checkNickname(text);
+    const same = before.ok && after.ok && before.value === after.value;
     setRaw(text);
-    setServerError(null);
-    setAvailable(null);
+    if (!same) setServerError(null);
     // 이어 하기(결정 068): 다음을 누르기 전에 나가도 적던 닉네임이 남게 초안에 따라 쓴다(판정은 다음 · 가입 때 서버)
     setDraft({ nickname: text });
   }
 
-  /** 서버에 묻는다. 그사이 칸이 바뀌었으면 답을 버린다. 쓸 수 있으면 true */
+  /** 서버에 묻는다. 늦게 온 옛 답(뒤에 새로 물었거나 그사이 칸이 바뀜)은 버린다. 쓸 수 있으면 true */
   async function ask(value: string): Promise<boolean> {
-    if (asking.current) return false;
-    asking.current = true;
+    const mine = ++asked.current;
     setChecking(true);
     const r = await askServer(value);
-    asking.current = false;
+    if (mine !== asked.current) return false;
     setChecking(false);
     const current = checkNickname(latest.current);
     if (!current.ok || current.value !== value) return false;
@@ -156,7 +160,10 @@ function NicknameStepScreen() {
     // "이미 있는 닉네임" 이 떠 있거나 묻는 중이면 다시 묻지 않는다(엔터 포함). 쓸 수 있다고 확인한 이름이면 묻지 않고 넘어간다
     if (!check.ok || !canNext || asking.current) return;
     const value = check.value;
-    if (confirmed || (await ask(value))) {
+    asking.current = true;
+    const ok = confirmed || (await ask(value));
+    asking.current = false;
+    if (ok) {
       setDraft({ nickname: value, avatar });
       router.push('/signup/birth');
     }

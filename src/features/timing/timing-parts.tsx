@@ -1,12 +1,12 @@
 import { useId } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { Button } from '@/components/button';
 import { GlowBackdrop } from '@/components/glow';
-import { Skeleton, SkeletonCard } from '@/components/skeleton';
+import { Skeleton } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L, type ColorName } from '@/constants/theme';
+import { BrandColors, Colors, FontWeight, LineWidth, Sizes, TimingLayout as L, Typography, type ColorName, type TypographyName } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { lookup } from '@/features/reason/reason-sentence';
 import { formatPeriod } from '@/features/timing/dates';
@@ -16,7 +16,6 @@ const T = strings.timing;
 const H = L.hero;
 const D = L.detail;
 const K = L.locked;
-const S = L.skeleton;
 
 /** 시기 탭의 칩: 이번 달 · 올해 · 인생 */
 export const TIMING_CHIPS = ['month', 'year', 'life'] as const;
@@ -115,7 +114,7 @@ export function NowCard({ interval, onPress }: { interval: TimingInterval; onPre
 /** 칩 셋(보드 14): 고른 칩은 밝은 바탕에 어두운 글씨. 잠긴 칩(시기 풀이 전의 올해 · 인생)은 흐린 글씨이고 누르면 잠긴 자리를 보인다 */
 export function ChipRow({ value, locked, onChange }: { value: TimingChip; locked: boolean; onChange: (chip: TimingChip) => void }) {
   return (
-    <View accessibilityRole="tablist" accessibilityLabel={T.chipsLabel} style={styles.chips}>
+    <View testID="timing-chips" accessibilityRole="tablist" accessibilityLabel={T.chipsLabel} style={styles.chips}>
       {TIMING_CHIPS.map((chip) => {
         const on = chip === value;
         const isLocked = locked && chip !== 'month';
@@ -141,7 +140,7 @@ export function ChipRow({ value, locked, onChange }: { value: TimingChip; locked
 /** 칸 제목(19/27)과 그 아래 한 줄 안내 */
 export function SectionTitle({ title, note }: { title: string; note?: string }) {
   return (
-    <View style={styles.sectionTitle}>
+    <View testID="timing-section-title" style={styles.sectionTitle}>
       <Txt variant="paragraphTitle" accessibilityRole="header" keepAll>
         {title}
       </Txt>
@@ -257,33 +256,15 @@ export function DetailCard({ blocked, onRequest }: { blocked: boolean; onRequest
   );
 }
 
-/** 잠긴 자리 뒤의 흐린 모양(보드 14 잠긴 칩 — 시안의 흐림 대신 옅은 막대: 브랜드 자리 밖의 흐림은 쓰지 않는다, DESIGN.md) */
-function Ghost() {
-  return (
-    <View aria-hidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={styles.ghost}>
-      <Skeleton width="44%" height={S.title} />
-      <SkeletonCard>
-        {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} width="100%" height={S.sub} />
-        ))}
-      </SkeletonCard>
-      <Skeleton width="36%" height={S.title} />
-      {['70%', '62%'].map((w) => (
-        <SkeletonCard key={w}>
-          <Skeleton width={w as `${number}%`} height={S.line} />
-          <Skeleton width="40%" height={S.sub} />
-        </SkeletonCard>
-      ))}
-    </View>
-  );
-}
-
 /** 잠긴 칩을 눌렀을 때(보드 14 잠긴 칩 — 올해 · 인생 같은 모양): 그 자리에 흐린 미리보기와 자물쇠 카드 · "자세한 풀이 받기" */
-export function LockedView({ chip, blocked, onRequest }: { chip: 'year' | 'life'; blocked: boolean; onRequest: () => void }) {
+export function LockedView({ chip, blocked, onRequest, ghost }: { chip: 'year' | 'life'; blocked: boolean; onRequest: () => void; ghost: React.ReactNode }) {
   const text = T.locked[chip];
   return (
     <View testID="timing-locked" style={styles.locked}>
-      <Ghost />
+      {/* 흐린 미리보기: 그 칩이 다 그려졌을 때의 배치를 본뜬 옅은 모양(시안의 흐림 대신 — 브랜드 자리 밖의 흐림은 쓰지 않는다, DESIGN.md) */}
+      <View aria-hidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={styles.ghost}>
+        {ghost}
+      </View>
       <View style={styles.lockedOver}>
         <View style={styles.lockedCard}>
           <View style={styles.lockIcon}>
@@ -312,22 +293,117 @@ export function LockedView({ chip, blocked, onRequest }: { chip: 'year' | 'life'
   );
 }
 
-/** 처음 불러올 때 뼈대(보드 24 의 방식 — 시기는 같은 방식): 달 머리 · 달력 카드 · 눈여겨볼 날 둘 */
-export function TimingSkeleton() {
+/**
+ * 뼈대의 한 줄(결정 065 의 2 · 071): 그 글자 단계의 줄 높이만큼 칸을 잡고 가운데에 막대 — 다 그려진 글과 같은 자리 · 같은 높이가 된다.
+ */
+export function SkLine({ width, variant, style }: { width: DimensionValue; variant: TypographyName; style?: StyleProp<ViewStyle> }) {
+  const t = Typography[variant];
   return (
-    <View testID="timing-skeleton" style={styles.skeleton}>
-      <Skeleton width="40%" height={S.head} />
-      <SkeletonCard>
-        <Skeleton width="100%" height={S.line} />
-        <Skeleton width="100%" height={S.calendar} />
-      </SkeletonCard>
-      {['60%', '54%'].map((w) => (
-        <SkeletonCard key={w}>
-          <Skeleton width={w as `${number}%`} height={S.title} />
-          <Skeleton width="36%" height={S.sub} />
-        </SkeletonCard>
-      ))}
+    <View style={[{ height: t.lineHeight, justifyContent: 'center' }, style]}>
+      <Skeleton width={width} height={t.fontSize - L.skeleton.barInset} />
     </View>
+  );
+}
+
+/** 뼈대 묶음: 화면 읽기는 "불러오는 중이에요" 한 번(막대는 숨김). testID 는 본뜬 칸의 testID 앞에 "sk-" */
+export function SkBlock({ of, style, children }: { of: string; style?: StyleProp<ViewStyle>; children?: React.ReactNode }) {
+  return (
+    <View testID={`sk-${of}`} accessible accessibilityLabel={strings.states.loading} style={style}>
+      {children}
+    </View>
+  );
+}
+
+/** "지금 나의 시기" 카드의 뼈대 — 이름표 · 이름 두 줄 · 딱지와 기간 · 한 줄 두 줄 */
+export function NowCardSkeleton() {
+  return (
+    <SkBlock of="timing-now-card" style={styles.hero}>
+      <SkLine width="30%" variant="captionStrong" />
+      <View style={styles.heroTitle}>
+        <SkLine width="90%" variant="title" />
+        <SkLine width="50%" variant="title" />
+      </View>
+      <View style={styles.meta}>
+        <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
+        <SkLine width="44%" variant="desc" />
+      </View>
+      <View style={styles.summary}>
+        <SkLine width="100%" variant="body" />
+        <SkLine width="60%" variant="body" />
+      </View>
+    </SkBlock>
+  );
+}
+
+/** 칩 셋의 뼈대 */
+export function ChipsSkeleton() {
+  return (
+    <SkBlock of="timing-chips" style={styles.chips}>
+      {TIMING_CHIPS.map((c) => (
+        <View key={c} style={styles.flex}>
+          <Skeleton width="100%" height={L.chips.height} pill />
+        </View>
+      ))}
+    </SkBlock>
+  );
+}
+
+/** 칸 제목의 뼈대 */
+export function SectionTitleSkeleton({ width = '44%', note = false }: { width?: DimensionValue; note?: boolean }) {
+  return (
+    <SkBlock of="timing-section-title" style={styles.sectionTitle}>
+      <SkLine width={width} variant="paragraphTitle" />
+      {note ? <SkLine width="86%" variant="desc" /> : null}
+    </SkBlock>
+  );
+}
+
+/** 작은 실천 셋의 뼈대 */
+export function PracticeCardsSkeleton() {
+  return (
+    <View>
+      <SectionTitleSkeleton width="40%" />
+      <View style={styles.practices}>
+        {[0, 1, 2].map((i) => (
+          <SkBlock key={i} of="timing-practice" style={styles.practice}>
+            <Skeleton width={L.badge} height={L.badge} pill />
+            <SkLine width={i === 1 ? '54%' : '64%'} variant="clause" style={styles.flex} />
+          </SkBlock>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** 구간 한 줄의 뼈대 */
+export function IntervalRowSkeleton() {
+  return (
+    <SkBlock of="timing-interval" style={styles.row}>
+      <View style={styles.rowText}>
+        <SkLine width="70%" variant="stat" />
+        <View style={styles.rowMeta}>
+          <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
+          <SkLine width="30%" variant="caption" />
+        </View>
+      </View>
+    </SkBlock>
+  );
+}
+
+/** 자세한 풀이 카드의 뼈대 */
+export function DetailCardSkeleton() {
+  return (
+    <SkBlock of="timing-detail-card" style={styles.detail}>
+      <SkLine width="24%" variant="captionStrong" />
+      <SkLine width="70%" variant="cardTitle" style={styles.detailTitle} />
+      <View style={styles.detailBody}>
+        <SkLine width="100%" variant="desc" />
+        <SkLine width="40%" variant="desc" />
+      </View>
+      <View style={styles.request}>
+        <Skeleton width="100%" height={Sizes.buttonHeight} />
+      </View>
+    </SkBlock>
   );
 }
 
@@ -430,5 +506,4 @@ const styles = StyleSheet.create({
   lockedTitle: { marginTop: K.titleTop, textAlign: 'center' },
   lockedBody: { marginTop: K.bodyTop, textAlign: 'center' },
   lockedButton: { alignSelf: 'stretch', marginTop: K.buttonTop },
-  skeleton: { gap: L.listGap, paddingTop: L.contentTop },
 });

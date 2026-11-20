@@ -2,11 +2,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { GlowBackdrop } from '@/components/glow';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
+import { BrandColors, Colors, FontWeight, LineWidth, ReasonLayout, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ReasonLine } from '@/features/reason/reason-line';
 import { formatMonthOnly, formatPeriod, periodNow } from '@/features/timing/dates';
-import { PracticeCards, Tag, TimingArt, areaLabel } from '@/features/timing/timing-parts';
+import { Skeleton } from '@/components/skeleton';
+import { PracticeCards, PracticeCardsSkeleton, SkBlock, SkLine, Tag, TimingArt, areaLabel } from '@/features/timing/timing-parts';
 import type { Chart, TimingDetail, TimingInterval } from '@/lib/api';
 
 const T = strings.timing;
@@ -80,7 +81,11 @@ export function PeriodView({ interval, detail, today, chart }: { interval: Timin
             <Track interval={interval} today={today} />
           </View>
         </View>
-        {interval.reason ? <ReasonLine reason={interval.reason} chart={chart} /> : null}
+        {interval.reason ? (
+          <View testID="period-reason">
+            <ReasonLine reason={interval.reason} chart={chart} />
+          </View>
+        ) : null}
       </View>
       {SECTIONS.map((key) => (
         <View key={key} testID="period-section">
@@ -96,6 +101,50 @@ export function PeriodView({ interval, detail, today, chart }: { interval: Timin
         </View>
       ))}
       {interval.practices ? <PracticeCards practices={interval.practices} /> : null}
+    </View>
+  );
+}
+
+/** 시기 자세히의 뼈대(결정 071): 머리 카드(딱지 · 이름 두 줄 · 영역과 기간 · 시작 ~ 끝 줄) · 이유 상자 · 01 ~ 03 · 작은 실천 셋 */
+export function PeriodSkeleton() {
+  return (
+    <View style={styles.root}>
+      <View style={styles.head}>
+        <SkBlock of="period-hero" style={styles.hero}>
+          <Skeleton width={P.badgeBar} height={L.tag.height} pill />
+          <View style={styles.title}>
+            <SkLine width="90%" variant="title" />
+            <SkLine width="44%" variant="title" />
+          </View>
+          <View style={styles.meta}>
+            <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
+            <SkLine width="44%" variant="desc" />
+          </View>
+          <View style={styles.trackTop}>
+            <View style={styles.track}>
+              <View style={styles.trackLine} />
+            </View>
+            <View style={styles.labels} />
+          </View>
+        </SkBlock>
+        <SkBlock of="period-reason" style={styles.reasonBox}>
+          <SkLine width="28%" variant="label" />
+          <SkLine width="96%" variant="reason" />
+          <SkLine width="40%" variant="reason" />
+        </SkBlock>
+      </View>
+      {SECTIONS.map((key) => (
+        <SkBlock key={key} of="period-section">
+          <SkLine width={P.numberBar} variant="label" />
+          <SkLine width="44%" variant="paragraphTitle" style={styles.sectionTitle} />
+          <View style={styles.sectionBody}>
+            <SkLine width="100%" variant="paragraph" />
+            <SkLine width="96%" variant="paragraph" />
+            <SkLine width="38%" variant="paragraph" />
+          </View>
+        </SkBlock>
+      ))}
+      <PracticeCardsSkeleton />
     </View>
   );
 }
@@ -149,6 +198,16 @@ const styles = StyleSheet.create({
   labelEnd: { position: 'absolute', right: 0 },
   nowLabel: { position: 'absolute', width: H.art, marginLeft: P.trackInset - H.art / 2, alignItems: 'center' },
   number: { fontWeight: FontWeight.semibold, letterSpacing: L.period.numberTracking },
+  /** 이유 상자의 뼈대 — ReasonLine(접힌 상자)의 여백 · 모서리 그대로 */
+  reasonBox: {
+    gap: ReasonLayout.textGap,
+    paddingTop: ReasonLayout.padTop,
+    paddingRight: ReasonLayout.padRight,
+    paddingBottom: ReasonLayout.padBottom,
+    paddingLeft: ReasonLayout.padLeft,
+    borderRadius: ReasonLayout.radius,
+    backgroundColor: Colors.raised,
+  },
   sectionTitle: { marginTop: P.sectionTitleTop },
   sectionBody: { marginTop: P.sectionBodyTop },
 });

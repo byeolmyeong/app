@@ -65,7 +65,9 @@ function Home({ onRetry }: { onRetry: () => void }) {
     if (firstData || phase === 'timeout') markHomeReady();
   }, [firstData, phase]);
   // 시기 칸(결정 047 의 1-4 · 1-5): 로그인이 확인된 뒤에만 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41)
-  const timing = useTimingReport(session.ready && session.status === 'signedIn' ? input : null);
+  const asking = session.ready && session.status === 'signedIn' ? input : null;
+  const timing = useTimingReport(asking);
+  const timingPhase = useLoadingPhase(asking !== null && timing.state.status === 'checking');
   useOnReconnect(online, () => {
     if (timing.state.status === 'done') timing.refresh();
     else if (timing.state.status === 'unknown') timing.recheck();
@@ -118,7 +120,10 @@ function Home({ onRetry }: { onRetry: () => void }) {
             onOpen={() => router.push('/reading')}
           />
           {/* 누르면 시기 탭 — 탭을 바꾸는 것과 같이 쌓지 않는다(결정 046 의 2) */}
-          <HomeTimingCards state={timing.state} online={online} onOpen={() => router.replace('/timing')} onRetry={timing.recheck} />
+          <HomeTimingCards
+            state={timing.state}
+            skeleton={timingPhase === 'skeleton' || timingPhase === 'timeout'}
+            online={online} onOpen={() => router.replace('/timing')} onRetry={timing.recheck} />
         </View>
       </Screen>
     );

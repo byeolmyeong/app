@@ -5,7 +5,8 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { PracticeCards, SectionTitle } from '@/features/timing/timing-parts';
+import { Skeleton } from '@/components/skeleton';
+import { PracticeCards, PracticeCardsSkeleton, SectionTitle, SectionTitleSkeleton, SkBlock, SkLine } from '@/features/timing/timing-parts';
 import { mainInterval } from '@/features/timing/year-view';
 import type { TimingMilestone, TimingReport } from '@/lib/api';
 
@@ -101,6 +102,45 @@ export function LifeView({ report }: { report: TimingReport }) {
   );
 }
 
+/** 인생의 뼈대(결정 071): 제목 · 안내 · 다음 큰 변화 카드 · 네 줄의 길 · 작은 실천 셋 — 다 그려진 인생과 같은 배치 */
+export function LifeSkeleton() {
+  return (
+    <View style={styles.root}>
+      <View>
+        <SectionTitleSkeleton width="40%" note />
+        <SkBlock of="life-next" style={styles.next}>
+          <SkLine width="24%" variant="captionStrong" />
+          <View style={styles.yearRow}>
+            <SkLine width={F.yearBar} variant="yearBig" />
+            <SkLine width="24%" variant="clause" />
+          </View>
+          <SkLine width="64%" variant="heading" style={styles.nextTitle} />
+          <View style={styles.nextBody}>
+            <SkLine width="100%" variant="reason" />
+            <SkLine width="56%" variant="reason" />
+          </View>
+        </SkBlock>
+        <SkBlock of="life-path" style={styles.path}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} testID="sk-life-step" style={styles.step}>
+              <View style={styles.rail}>
+                <View style={styles.dotBox}>
+                  <Skeleton width={F.dot} height={F.dot} pill />
+                </View>
+              </View>
+              <View style={[styles.stepText, i < 3 && styles.stepGap]}>
+                <SkLine width="36%" variant="captionStrong" style={styles.stepYearBox} />
+                <SkLine width={i === 1 ? '76%' : '58%'} variant="clause" />
+              </View>
+            </View>
+          ))}
+        </SkBlock>
+      </View>
+      <PracticeCardsSkeleton />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { gap: L.sectionGap },
   regular: { fontWeight: FontWeight.regular },
@@ -142,5 +182,6 @@ const styles = StyleSheet.create({
   stepText: { flex: 1, gap: F.textGap },
   stepGap: { paddingBottom: F.stepBottom },
   stepYear: { fontWeight: FontWeight.semibold, lineHeight: F.rail },
+  stepYearBox: { height: F.rail },
   past: { opacity: F.pastOpacity },
 });

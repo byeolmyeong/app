@@ -209,6 +209,12 @@ describe('시기 탭 · 불러오기(결정 061 · 065)', () => {
     await render(<TimingScreen />);
     await tick(400);
     expect(screen.getByTestId('timing-skeleton')).toBeTruthy();
+    // 뼈대는 다 그려질 배치를 본뜬다(결정 071): 받아 둔 풀이가 없으니 받기 전의 이번 달 — 칩 · 달 머리 · 달력 · 눈여겨볼 날 셋 · 자세한 풀이 카드
+    expect(screen.queryByTestId('sk-timing-now-card')).toBeNull();
+    expect(screen.getByTestId('sk-timing-chips')).toBeTruthy();
+    expect(screen.getByTestId('sk-month-calendar')).toBeTruthy();
+    expect(screen.getAllByTestId('sk-month-day')).toHaveLength(3);
+    expect(screen.getByTestId('sk-timing-detail-card')).toBeTruthy();
     expect(bottomTabs()).toHaveLength(4);
     await tick(10_000);
     expect(screen.getByText(T.loadFail.title)).toBeTruthy();
@@ -219,6 +225,19 @@ describe('시기 탭 · 불러오기(결정 061 · 065)', () => {
     await tick(0);
     expect(screen.getByTestId('timing-detail-card')).toBeTruthy();
     expect(mockApi.requestTimingReport).not.toHaveBeenCalled();
+  });
+
+  it('주소가 올해를 고르면 뼈대도 받은 뒤의 올해 배치(지금 나의 시기 · 칩 · 흐름 · 줄 · 작은 실천)', async () => {
+    jest.useFakeTimers();
+    mockParams.mockReturnValue({ tab: 'year' });
+    mockApi.getMonth.mockReturnValue(new Promise(() => {}));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    await render(<TimingScreen />);
+    await tick(400);
+    expect(screen.getByTestId('sk-timing-now-card')).toBeTruthy();
+    expect(screen.getByTestId('sk-year-flow')).toBeTruthy();
+    expect(screen.getAllByTestId('sk-timing-practice')).toHaveLength(3);
+    expect(screen.queryByTestId('sk-month-calendar')).toBeNull();
   });
 
   it('볼 게 없는데 끊겼으면 보드 20-1, 연결이 돌아오면 다시 묻는다', async () => {

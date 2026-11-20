@@ -12,8 +12,7 @@ import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
-import { PeriodView } from '@/features/timing/period-view';
-import { TimingSkeleton } from '@/features/timing/timing-parts';
+import { PeriodSkeleton, PeriodView } from '@/features/timing/period-view';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 
 const T = strings.timing;
@@ -42,7 +41,7 @@ export default function TimingPeriodScreen() {
   if (s.status === 'checking' && phase !== 'timeout')
     return (
       <Screen nav={nav} footer={tabs}>
-        {phase === 'skeleton' ? <TimingSkeleton /> : null}
+        {phase === 'skeleton' ? <PeriodSkeleton /> : null}
       </Screen>
     );
 

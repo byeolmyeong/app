@@ -19,21 +19,23 @@ import { ChartEmpty } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { koreaToday } from '@/features/timing/dates';
-import { LifeView } from '@/features/timing/life-view';
-import { MonthView } from '@/features/timing/month-view';
+import { LifeSkeleton, LifeView } from '@/features/timing/life-view';
+import { MonthSkeleton, MonthView } from '@/features/timing/month-view';
 import {
   ChipRow,
+  ChipsSkeleton,
   DetailCard,
+  DetailCardSkeleton,
   LockedView,
   NowCard,
+  NowCardSkeleton,
   PracticeCards,
   TIMING_CHIPS,
-  TimingSkeleton,
   type TimingChip,
 } from '@/features/timing/timing-parts';
 import { useMonth } from '@/features/timing/use-month';
 import { useTimingReport } from '@/features/timing/use-timing-report';
-import { YearView, mainInterval } from '@/features/timing/year-view';
+import { YearSkeleton, YearView, mainInterval } from '@/features/timing/year-view';
 import { useGenerationBusy } from '@/features/update/update-gate';
 
 const T = strings.timing;
@@ -139,7 +141,7 @@ export default function TimingScreen() {
   if (s.status === 'checking' || (!done && monthPending))
     return (
       <Screen nav={nav} footer={tabs}>
-        {phase === 'skeleton' ? <TimingSkeleton /> : null}
+        {phase === 'skeleton' ? <TimingTabSkeleton chip={TIMING_CHIPS.find((c) => c === tab) ?? 'month'} month={today.slice(0, 7)} /> : null}
       </Screen>
     );
 
@@ -181,7 +183,7 @@ export default function TimingScreen() {
         )}
       </>
     );
-  else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} />;
+  else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} ghost={chip === 'year' ? <YearSkeleton /> : <LifeSkeleton />} />;
   else if (chip === 'year') content = <YearView report={report} onPeriod={(id) => router.push(`/timing/period?id=${id}`)} />;
   else content = <LifeView report={report} />;
 
@@ -203,6 +205,34 @@ export default function TimingScreen() {
         <View style={locked ? null : styles.content}>{content}</View>
       </View>
     </Screen>
+  );
+}
+
+/**
+ * 처음 불러올 때의 뼈대(결정 065 의 2 · 071): 다 그려질 시기 탭의 배치를 본뜬다. 받아 둔 시기 풀이가 없을 때만 보이므로 이번 달이면 받기 전의 모양
+ * (칩 · 이번 달 · 자세한 풀이 카드), 주소가 올해 · 인생을 고르면 받은 뒤의 모양(지금 나의 시기 · 칩 · 그 칩).
+ */
+function TimingTabSkeleton({ chip, month }: { chip: TimingChip; month: string }) {
+  const done = chip !== 'month';
+  return (
+    <View testID="timing-skeleton">
+      {done ? <NowCardSkeleton /> : null}
+      <View style={done ? styles.chips : styles.chipsBare}>
+        <ChipsSkeleton />
+      </View>
+      <View style={styles.content}>
+        {chip === 'month' ? (
+          <>
+            <MonthSkeleton month={month} />
+            <DetailCardSkeleton />
+          </>
+        ) : chip === 'year' ? (
+          <YearSkeleton />
+        ) : (
+          <LifeSkeleton />
+        )}
+      </View>
+    </View>
   );
 }
 

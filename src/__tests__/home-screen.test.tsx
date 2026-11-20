@@ -283,6 +283,17 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
   });
 
+  it('처음 묻는 중이 0.3초를 넘으면 다 그려질 시기 칸의 뼈대(결정 071, 보드 24)', async () => {
+    jest.useFakeTimers();
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    await render(<HomeScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
+    expect(screen.getByTestId('sk-home-timing-card')).toBeTruthy();
+    expect(screen.getByTestId('sk-home-timing-practices')).toBeTruthy();
+    expect(screen.getAllByTestId('sk-timing-todo')).toHaveLength(3);
+    jest.useRealTimers();
+  });
+
   it('시기 풀이가 없으면 "지금 나는 어떤 시기일까 · 자세한 풀이 받기" — 누르면 시기 탭(여기서 만들기를 시작하지 않는다)', async () => {
     await render(<HomeScreen />);
     const empty = await screen.findByTestId('home-timing-empty');

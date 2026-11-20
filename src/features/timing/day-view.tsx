@@ -3,11 +3,12 @@ import Svg, { Path } from 'react-native-svg';
 
 import { GlowBackdrop } from '@/components/glow';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
+import { BrandColors, Colors, FontWeight, LineWidth, ReasonLayout, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ReasonLine } from '@/features/reason/reason-line';
 import { formatDayLong } from '@/features/timing/dates';
-import { TodoList } from '@/features/timing/timing-parts';
+import { Skeleton } from '@/components/skeleton';
+import { SkBlock, SkLine, TodoList } from '@/features/timing/timing-parts';
 import type { Chart, DaySky } from '@/lib/api';
 
 const T = strings.timing;
@@ -37,7 +38,7 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
         </Txt>
       </View>
       <View style={styles.section}>
-        <Txt variant="emphasis" accessibilityRole="header">
+        <Txt testID="day-section-title" variant="emphasis" accessibilityRole="header">
           {T.day.flow}
         </Txt>
         <View style={styles.flow}>
@@ -53,13 +54,61 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
           ))}
         </View>
       </View>
-      <ReasonLine reason={sky.reason} chart={chart} today={sky.date === today} style={styles.reason} />
+      <View testID="day-reason" style={styles.reason}>
+        <ReasonLine reason={sky.reason} chart={chart} today={sky.date === today} />
+      </View>
       <View style={styles.section}>
-        <Txt variant="emphasis" accessibilityRole="header">
+        <Txt testID="day-section-title" variant="emphasis" accessibilityRole="header">
           {T.day.practices}
         </Txt>
         <View style={styles.todos}>
           <TodoList items={sky.practices} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/** 그날의 하늘의 뼈대(결정 071): 머리 카드(날짜 · 제목) · 그날의 흐름 셋 · 이유 상자 · 그날의 작은 실천 셋 — 다 그려진 그날과 같은 배치 */
+export function DaySkeleton() {
+  return (
+    <View>
+      <SkBlock of="day-hero" style={styles.hero}>
+        <SkLine width="34%" variant="captionStrong" />
+        <SkLine width="60%" variant="title" style={styles.title} />
+      </SkBlock>
+      <View style={styles.section}>
+        <SkBlock of="day-section-title">
+          <SkLine width="30%" variant="emphasis" />
+        </SkBlock>
+        <View style={styles.flow}>
+          {[0, 1, 2].map((i) => (
+            <SkBlock key={i} of="day-flow" style={[styles.row, i > 0 && styles.rowLine]}>
+              <SkLine width={D.labelBar} variant="item" style={styles.rowLabel} />
+              <View style={styles.rowText}>
+                <SkLine width="100%" variant="paragraph" />
+                <SkLine width={i === 0 ? '90%' : '48%'} variant="paragraph" />
+              </View>
+            </SkBlock>
+          ))}
+        </View>
+      </View>
+      <SkBlock of="day-reason" style={[styles.reason, styles.reasonBox]}>
+        <SkLine width="28%" variant="label" />
+        <SkLine width="96%" variant="reason" />
+        <SkLine width="40%" variant="reason" />
+      </SkBlock>
+      <View style={styles.section}>
+        <SkBlock of="day-section-title">
+          <SkLine width="36%" variant="emphasis" />
+        </SkBlock>
+        <View style={styles.todos}>
+          {[0, 1, 2].map((i) => (
+            <SkBlock key={i} of="timing-todo" style={styles.todo}>
+              <Skeleton width={L.badge} height={L.badge} pill />
+              <SkLine width={i === 1 ? '50%' : '60%'} variant="item" style={styles.rowText} />
+            </SkBlock>
+          ))}
         </View>
       </View>
     </View>
@@ -87,4 +136,14 @@ const styles = StyleSheet.create({
   rowText: { flex: 1 },
   reason: { marginTop: D.reasonTop },
   todos: { marginTop: D.todosTop },
+  todo: { flexDirection: 'row', alignItems: 'center', gap: L.card.gap, minHeight: D.todo },
+  reasonBox: {
+    gap: ReasonLayout.textGap,
+    paddingTop: ReasonLayout.padTop,
+    paddingRight: ReasonLayout.padRight,
+    paddingBottom: ReasonLayout.padBottom,
+    paddingLeft: ReasonLayout.padLeft,
+    borderRadius: ReasonLayout.radius,
+    backgroundColor: Colors.raised,
+  },
 });

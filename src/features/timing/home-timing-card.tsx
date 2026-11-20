@@ -7,7 +7,8 @@ import { Txt } from '@/components/txt';
 import { Colors, FontWeight, LineWidth, Spacing, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth } from '@/features/timing/dates';
-import { ChevronRight, TodoList } from '@/features/timing/timing-parts';
+import { Skeleton } from '@/components/skeleton';
+import { ChevronRight, SkBlock, SkLine, TodoList } from '@/features/timing/timing-parts';
 import type { TimingReportView } from '@/features/timing/use-timing-report';
 import { mainInterval } from '@/features/timing/year-view';
 
@@ -71,7 +72,21 @@ function NowLine({ nextYear }: { nextYear: number | null }) {
  * 대표 구간의 이름 · "○○○○년 ○월까지") · "이 시기의 작은 실천" 셋, 없으면 "지금 나는 어떤 시기일까 · 자세한 풀이 받기"(시기 탭으로),
  * 쓰는 중이면 칸이 없다. 상태를 못 물었으면 그 자리에 안내(19-1) — 서버에 그 경로가 없으면(404) 칸을 숨긴다. 누르면 시기 탭.
  */
-export function HomeTimingCards({ state, online, onOpen, onRetry }: { state: TimingReportView; online: boolean; onOpen: () => void; onRetry: () => void }) {
+export function HomeTimingCards({
+  state,
+  skeleton,
+  online,
+  onOpen,
+  onRetry,
+}: {
+  state: TimingReportView;
+  /** 처음 묻는 중이 0.3초를 넘었다(결정 065 의 2) — 다 그려질 칸을 본뜬 뼈대 */
+  skeleton: boolean;
+  online: boolean;
+  onOpen: () => void;
+  onRetry: () => void;
+}) {
+  if (state.status === 'checking') return skeleton ? <HomeTimingSkeleton /> : null;
   if (state.status === 'none')
     return (
       <View testID="home-timing-empty" style={styles.card}>
@@ -121,6 +136,34 @@ export function HomeTimingCards({ state, online, onOpen, onRetry }: { state: Tim
   );
 }
 
+/** 홈 시기 칸의 뼈대(결정 071, 보드 24): 다 그려진 "지금 나의 시기" 카드(이름표 · 줄 · 이름 · 언제까지)와 작은 실천 카드(셋)를 본뜬다 */
+export function HomeTimingSkeleton() {
+  return (
+    <>
+      <SkBlock of="home-timing-card" style={styles.card}>
+        <SkLine width="36%" variant="captionStrong" />
+        <View style={styles.lineBox}>
+          <Skeleton width="100%" height={P.track} pill />
+          <View style={styles.labels} />
+        </View>
+        <SkLine width="66%" variant="emphasis" style={styles.title} />
+        <SkLine width="40%" variant="desc" style={styles.sub} />
+      </SkBlock>
+      <SkBlock of="home-timing-practices" style={styles.card}>
+        <SkLine width="40%" variant="captionStrong" />
+        <View style={styles.todos}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} testID="sk-timing-todo" style={styles.todo}>
+              <Skeleton width={L.badge} height={L.badge} pill />
+              <SkLine width={i === 1 ? '50%' : '62%'} variant="item" style={styles.flex} />
+            </View>
+          ))}
+        </View>
+      </SkBlock>
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     padding: H.pad,
@@ -155,4 +198,6 @@ const styles = StyleSheet.create({
   sub: { marginTop: H.subTop },
   link: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: Spacing.hairline, marginTop: H.linkTop },
   todos: { marginTop: H.todosTop },
+  todo: { flexDirection: 'row', alignItems: 'center', gap: L.card.gap, minHeight: L.day.todo },
+  flex: { flex: 1 },
 });

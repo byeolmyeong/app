@@ -6,7 +6,17 @@ import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth, formatPeriod, upcoming, yearNow, yearSpan } from '@/features/timing/dates';
-import { IntervalRow, PracticeCards, SectionTitle } from '@/features/timing/timing-parts';
+import { Skeleton } from '@/components/skeleton';
+import {
+  IntervalRow,
+  IntervalRowSkeleton,
+  PracticeCards,
+  PracticeCardsSkeleton,
+  SectionTitle,
+  SectionTitleSkeleton,
+  SkBlock,
+  SkLine,
+} from '@/features/timing/timing-parts';
 import type { LifeArea, TimingInterval, TimingReport } from '@/lib/api';
 
 const T = strings.timing;
@@ -113,6 +123,42 @@ export function YearView({ report, onPeriod }: { report: TimingReport; onPeriod:
         </View>
       ) : null}
       {main?.practices ? <PracticeCards practices={main.practices} /> : null}
+    </View>
+  );
+}
+
+/** 올해의 뼈대(결정 071): 흐름 제목 · 띠 카드(영역 넷 · 달 눈금) · 지금 지나는 중 둘 · 다가오는 시기 하나 · 작은 실천 셋 — 다 그려진 올해와 같은 배치 */
+export function YearSkeleton() {
+  return (
+    <View style={styles.root}>
+      <View>
+        <SectionTitleSkeleton width="40%" />
+        <SkBlock of="year-flow" style={styles.card}>
+          {ROWS.map((area) => (
+            <View key={area} style={styles.row}>
+              <SkLine width={Y.labelBar} variant="label" style={styles.label} />
+              <View style={styles.track}>
+                <View style={styles.line} />
+              </View>
+            </View>
+          ))}
+          <View style={styles.ticks}>
+            {T.year.ticks.map((t) => (
+              <Skeleton key={t} width={Y.tickBar} height={Y.tickBarHeight} />
+            ))}
+          </View>
+        </SkBlock>
+      </View>
+      <View style={styles.list}>
+        <SectionTitleSkeleton width="36%" />
+        <IntervalRowSkeleton />
+        <IntervalRowSkeleton />
+      </View>
+      <View style={styles.list}>
+        <SectionTitleSkeleton width="32%" />
+        <IntervalRowSkeleton />
+      </View>
+      <PracticeCardsSkeleton />
     </View>
   );
 }

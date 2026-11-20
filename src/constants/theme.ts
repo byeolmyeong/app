@@ -416,6 +416,9 @@ export const TimingLayout = {
     dayGap: 14,
     dateWidth: 40,
     dateLine: 22,
+    /** 뼈대: 날 숫자 · 요일 막대의 폭 */
+    dateBar: 22,
+    weekBar: 12,
     dayTextGap: 4,
     quietPadV: 20,
     quietGap: 6,
@@ -439,6 +442,10 @@ export const TimingLayout = {
     nowLabelTop: -22,
     ticksTop: 8,
     itemGap: 6,
+    /** 뼈대: 영역 이름 · 달 눈금 막대 */
+    labelBar: 40,
+    tickBar: 20,
+    tickBarHeight: 9,
   },
   life: {
     noteGap: 4,
@@ -460,6 +467,8 @@ export const TimingLayout = {
     stepGap: 14,
     textGap: 2,
     pastOpacity: 0.55,
+    /** 뼈대: 다음 큰 변화의 해 막대 */
+    yearBar: 96,
   },
   period: {
     top: 8,
@@ -477,6 +486,9 @@ export const TimingLayout = {
     sectionBodyTop: 10,
     /** 01 · 02 · 03 의 자간(0.04em) */
     numberTracking: 0.48,
+    /** 뼈대: 딱지 · 번호 막대 */
+    badgeBar: 92,
+    numberBar: 18,
   },
   day: {
     heroTop: 16,
@@ -492,6 +504,8 @@ export const TimingLayout = {
     rowGap: 12,
     rowLabel: 44,
     rowLabelLine: 24,
+    /** 뼈대: 흐름 이름 막대 */
+    labelBar: 30,
     reasonTop: 20,
     todosTop: 8,
     todo: 44,
@@ -501,7 +515,8 @@ export const TimingLayout = {
   /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */
   detail: { radius: 24, padTop: 22, padX: 18, padBottom: 18, art: 76, artInset: 12, titleTop: 6, titleRight: 80, bodyTop: 6, buttonTop: 18, glow: { x: 0.85, y: 0.1, extent: 0.58 } },
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */
-  skeleton: { head: 20, title: 18, line: 14, sub: 12, calendar: 120 },
+  /** 뼈대(결정 065 의 2 · 071 — 다 그려진 화면의 배치를 본뜬다): 글자 막대는 글자 크기보다 이만큼 낮게 · 딱지 폭 */
+  skeleton: { barInset: 2, tag: 44 },
   locked: { height: 640, padX: 20, padBottom: 16, padTop: 24, cardPadTop: 24, cardPadX: 20, cardPadBottom: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18, fill: 'rgba(22,23,29,0.92)', ghostOpacity: 0.55 },
 } as const;
 

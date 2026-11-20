@@ -1,14 +1,14 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { CardFail } from '@/components/card-fail';
-import { Skeleton, SkeletonCard } from '@/components/skeleton';
+import { Skeleton } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { calendarCells, formatMonth, formatMonthDay, inCalendarRange, weekdayOf } from '@/features/timing/dates';
-import { CATEGORY_DOT, CATEGORY_TEXT, SectionTitle, Tag, areaLabel, categoryLabel } from '@/features/timing/timing-parts';
+import { CATEGORY_DOT, CATEGORY_TEXT, SectionTitle, SectionTitleSkeleton, SkBlock, SkLine, Tag, areaLabel, categoryLabel } from '@/features/timing/timing-parts';
 import type { MonthState } from '@/features/timing/use-month';
 import type { MonthDay, MonthSky } from '@/lib/api';
 
@@ -164,7 +164,7 @@ function DayRow({ day, pressable, onPress }: { day: MonthDay; pressable: boolean
  */
 export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetry, today, onDay }: MonthViewProps) {
   const head = (
-    <View style={styles.head}>
+    <View testID="month-head" style={styles.head}>
       <Txt variant="paragraphTitle" accessibilityRole="header">
         {formatMonth(`${shown}-01`)}
       </Txt>
@@ -174,19 +174,8 @@ export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetr
       </View>
     </View>
   );
-  if (state.status === 'loading')
-    return (
-      <View style={styles.root}>
-        <View>
-          {head}
-          <View style={styles.calendarTop}>
-            <SkeletonCard>
-              <Skeleton width="100%" height={L.skeleton.calendar} />
-            </SkeletonCard>
-          </View>
-        </View>
-      </View>
-    );
+  // 다른 달을 부르는 동안: 달 머리는 진짜로(‹ › 를 누를 수 있게), 그 아래는 다 그려진 배치를 본뜬 뼈대(결정 071)
+  if (state.status === 'loading') return <MonthSkeleton head={head} month={shown} />;
   if (state.status === 'failed')
     return (
       <View style={styles.root}>
@@ -231,10 +220,74 @@ export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetr
   );
 }
 
+/**
+ * 이번 달의 뼈대(결정 065 의 2 · 071): 다 그려진 이번 달과 같은 자리 · 같은 높이 — 달 머리(‹ ›) · 달력 카드(요일 · 그달의 칸 · 이번 달 내내 두 줄) ·
+ * 눈여겨볼 날 제목 · 줄 셋(서버가 주는 최대). head 를 주면 달 머리는 진짜(다른 달을 부르는 동안), 없으면 머리도 뼈대(처음 불러올 때).
+ */
+export function MonthSkeleton({ head, month }: { head?: ReactNode; month: string }) {
+  return (
+    <View style={styles.root}>
+      <View>
+        {head ?? (
+          <SkBlock of="month-head" style={styles.head}>
+            <SkLine width="36%" variant="paragraphTitle" />
+            <View style={styles.arrows}>
+              <Skeleton width={M.arrow} height={M.arrow} pill />
+              <Skeleton width={M.arrow} height={M.arrow} pill />
+            </View>
+          </SkBlock>
+        )}
+        <View style={styles.calendarTop}>
+          <SkBlock of="month-calendar" style={styles.calendar}>
+            <View style={styles.week}>
+              {T.weekdays.map((w) => (
+                <View key={w} style={[styles.cellBox, styles.centerBox]}>
+                  <SkLine width={M.weekBar} variant="label" />
+                </View>
+              ))}
+            </View>
+            <View style={styles.grid}>
+              {calendarCells(month).map((date, i) => (
+                <View key={i} testID={date ? 'sk-day' : undefined} style={styles.cell}>
+                  {date ? <Skeleton width={M.day} height={M.day} pill /> : null}
+                </View>
+              ))}
+            </View>
+            <View style={styles.legend}>
+              {[0, 1].map((i) => (
+                <View key={i} style={styles.legendRow}>
+                  <Skeleton width={M.swatch.width} height={M.swatch.height} pill />
+                  <SkLine width={i === 0 ? '58%' : '66%'} variant="label" style={styles.flex} />
+                </View>
+              ))}
+            </View>
+          </SkBlock>
+        </View>
+      </View>
+      <View style={styles.list}>
+        <SectionTitleSkeleton width="48%" />
+        {[0, 1, 2].map((i) => (
+          <SkBlock key={i} of="month-day" style={styles.dayRow}>
+            <View style={styles.date}>
+              <SkLine width={M.dateBar} variant="heading" style={styles.dateBox} />
+              <SkLine width={M.weekBar} variant="badge" />
+            </View>
+            <View style={styles.dayText}>
+              <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
+              <SkLine width={i === 1 ? '62%' : '72%'} variant="clause" />
+            </View>
+          </SkBlock>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { gap: L.sectionGap },
   flex: { flex: 1 },
   center: { textAlign: 'center' },
+  centerBox: { alignItems: 'center' },
   regular: { fontWeight: FontWeight.regular },
   medium: { fontWeight: FontWeight.medium },
   semibold: { fontWeight: FontWeight.semibold },
@@ -291,6 +344,7 @@ const styles = StyleSheet.create({
   },
   date: { width: M.dateWidth, alignItems: 'center' },
   dateNumber: { lineHeight: M.dateLine },
+  dateBox: { height: M.dateLine },
   dayText: { flex: 1, gap: M.dayTextGap },
   quiet: {
     paddingVertical: M.quietPadV,

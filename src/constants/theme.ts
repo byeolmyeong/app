@@ -44,6 +44,12 @@ export const Colors = {
   accentText: '#9AA3FF',
   /** 고른 칩의 옅은 푸른 보라 바탕 */
   primarySoft: '#1D2050',
+  /** 주색보다 한 단 밝은 푸른 보라: 풀이 문단 번호 · 가까워지는 모습의 가운데 점 · 일 방식 막대의 끝(보드 12-8~12-11) */
+  primaryBright: '#6E78FF',
+  /** 나 탭 영역 카드의 키워드 칩(보드 12-8): 옅은 푸른 보라 바탕 · 테두리 · 글씨 */
+  keyword: 'rgba(154,163,255,0.12)',
+  keywordLine: 'rgba(154,163,255,0.28)',
+  keywordText: '#C9CEFF',
   /** 오류 · 삭제. 대비 4.9, 그 위 ink 3.5 */
   danger: '#E5484D',
   /** 연결 끊김 아이콘의 빗금(보드 20) · 짧은 알림의 실패 아이콘(보드 23-1) */
@@ -93,6 +99,9 @@ export const BrandColors = {
   /** 홈 별명 카드 오른쪽 위의 빛 · 뒤에 깔린 별자리 선(결정 047, 보드 11) */
   cardGlow: '#232A8A',
   constellation: '#5A5D6B',
+  /** 나 탭 영역 그림의 옅은 보라 반짝임 · 일 그림의 계단 면(보드 12 · 12-8~12-12) */
+  sparkle: '#C9CEFF',
+  stepFill: '#2A2F8F',
 } as const;
 
 /**
@@ -212,7 +221,7 @@ export const IntroArtLayout = {
 } as const;
 
 /** 공통 상태 화면(결정 061, 보드 19 · 20-1 · 17-1 · 점검): 그림 아래 제목 · 그 아래 설명 · 가운데 덩이를 위로 올림 · 주 버튼 아래(탭 없음 · 탭 위) */
-export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, aboveTabs: 16, laterGap: 12 } as const;
+export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, aboveTabs: 16, laterGap: 8, later: 48 } as const;
 
 /** 가운데 창(결정 061 의 6, 보드 17): 화면 양옆에서 · 안 여백(위 · 나머지) · 모서리 · 제목과 설명 사이 · 설명과 버튼 사이 · 버튼 사이 · 버튼 높이 */
 export const DialogLayout = { inset: 28, paddingTop: 26, padding: 20, radius: 20, bodyTop: 8, actionsTop: 22, actionGap: 8, button: 50 } as const;
@@ -279,6 +288,111 @@ export const SkyMapLayout = {
  * 이름 옆의 작은 물음표와 그 위에 뜨는 말풍선(시안 13-2, 내 하늘 지도 · 나 탭): 물음표의 지름 · 테두리 · 이름과의 틈,
  * 말풍선의 최대 폭 · 안쪽 여백(가로 · 세로) · 줄 사이 · 꼬리 · 물음표와 말풍선 사이
  */
+/**
+ * 나 탭(보드 12 받기 전 · 12-8~12-12 · 24-1): 받은 뒤 맨 위 별명 카드 · 칩 다섯 · 영역 카드(빛 · 그림 · 키워드 · 쓰인 별) ·
+ * 영역마다의 칸(한눈에 보기 · 작은 실천 · 가까워지는 모습 · 일 방식 막대 · 마음이 흔들릴 때) · 번호 붙은 문단, 받기 전의 "자세한 풀이" 카드.
+ */
+export const MeLayout = {
+  cardTop: 4,
+  cardBottom: 14,
+  card: { padV: 12, padH: 14, radius: 16, avatar: 44, gap: 12, textGap: 2, chevron: 18 },
+  chips: { top: 4, bottom: 8, gap: 6, height: 36 },
+  contentTop: 20,
+  sectionGap: 36,
+  hero: {
+    radius: 24,
+    padTop: 22,
+    padX: 20,
+    padBottom: 20,
+    art: 92,
+    artInset: 14,
+    titleTop: 10,
+    titleRight: 100,
+    keywordsTop: 16,
+    keywordGap: 6,
+    keyword: 30,
+    keywordPadX: 12,
+    starsTop: 18,
+    starsPadTop: 14,
+    starsGap: 6,
+    starGapX: 14,
+    starIcon: 11,
+    glow: { x: 0.85, y: 0.14, extent: 0.58 },
+  },
+  block: { top: 12, radius: 16, pad: 14, gap: 10, innerGap: 8 },
+  practice: { pad: 16, gap: 12, badge: 24, textGap: 4, listGap: 10 },
+  closer: { padV: 18, padH: 8, dotBox: 24, dots: [14, 18, 22], line: 2, gap: 6, glow: [0, 8, 16] },
+  work: { padV: 18, padH: 14, gap: 16, label: 56, rowGap: 10, bar: 6, dot: 14 },
+  shaken: { gap: 8, arrow: 18, innerGap: 6 },
+  paragraph: { titleTop: 4, bodyTop: 10, numberTracking: 0.48 },
+  detail: {
+    top: 48,
+    radius: 24,
+    padTop: 22,
+    padX: 18,
+    padBottom: 18,
+    titleTop: 6,
+    bodyTop: 6,
+    iconsTop: 18,
+    icon: 44,
+    iconGap: 4,
+    buttonTop: 18,
+    glow: { x: 0.85, y: 0.1, extent: 0.58 },
+  },
+  /** 처음 불러올 때 뼈대(보드 24-1): 막대의 높이 · 칩의 폭 */
+  skeleton: { gap: 14, avatar: 56, rowGap: 12, namesGap: 8, lineTop: 8, chipsGap: 8, chip: 36, chips: [58, 58, 58, 48, 58], name: 18, sub: 12, title: 16, line: 14 },
+} as const;
+
+/** 카드 하나만 못 불러왔을 때 그 카드 자리(보드 19-1, 결정 061 의 3): 카드 · 이름표 아래 제목 · 설명 · 작은 "다시 보기" 단추 */
+export const CardFailLayout = { padding: 20, radius: 20, titleTop: 10, bodyTop: 4, buttonTop: 14, button: 40, buttonPadX: 16, buttonRadius: 10 } as const;
+
+/**
+ * 내 별명(보드 12): 머리 아래 한 줄 별명 · 별자리 카드 · 문단들 · 강점과 보완점의 간격.
+ * 별자리 카드는 내 별자리 그림 · 이름 · 셋(나의 중심 · 나의 마음 · 나의 첫인상) · "내 하늘 지도 보기" 줄.
+ */
+export const ReadingLayout = {
+  headlineTop: 20,
+  cardTop: 28,
+  sectionsTop: 48,
+  sectionsGap: 44,
+  bodyTop: 10,
+  listsTop: 48,
+  listsGap: 32,
+  listGap: 12,
+  itemGap: 8,
+  card: { radius: 20, padTop: 24, padX: 16, padBottom: 20, picture: 154, nameTop: 12, gridTop: 20, gridPadV: 20, gridGap: 8, cellGap: 4, mapRow: 52, chevron: 18 },
+} as const;
+
+/**
+ * "이렇게 풀이한 이유" 줄(보드 12 · 12-1, 결정 054): 접힌 상자(안쪽 여백 · 모서리 · 이름과 문장 사이 · 꺾쇠)와 펼친 안(작은 지도 · 용어 줄 · 하늘 지도 보기 단추).
+ * 작은 지도는 하늘 지도의 휠을 지름 120 으로 줄이고 그 근거의 별 · 칸만 빛낸다.
+ */
+export const ReasonLayout = {
+  top: 16,
+  padTop: 12,
+  padRight: 12,
+  padBottom: 12,
+  padBottomOpen: 14,
+  padLeft: 14,
+  radius: 12,
+  textGap: 4,
+  rowGap: 8,
+  chevron: 18,
+  wheel: 120,
+  wheelTop: 18,
+  wheelDot: 5,
+  wheelRing: 9,
+  wheelRingWidth: 1.5,
+  wheelRingOpacity: 0.45,
+  wheelSectorOpacity: 0.22,
+  termsTop: 18,
+  termsGap: 14,
+  termGap: 2,
+  button: 44,
+  buttonRadius: 10,
+  buttonTop: 18,
+} as const;
+
 export const TipLayout = {
   button: 20,
   border: 1.5,
@@ -347,6 +461,13 @@ export const Typography = {
   lead: type(15, 23, FontWeight.regular),
   /** 시트 안의 한 줄 뜻(내 하늘 지도 시트, 시안 13-1) */
   desc: type(14, 21, FontWeight.regular),
+  /** 이유 줄의 한 문장(보드 12 — 굵은 자리는 semibold) */
+  reason: type(14, 22, FontWeight.regular),
+  /** 풀이 문단의 제목과 본문(보드 12 · 12-8~12-12) */
+  paragraphTitle: type(19, 27, FontWeight.semibold),
+  paragraph: type(16, 26, FontWeight.regular),
+  /** 이유 펼침의 용어 이름 · 하늘 지도 보기 단추(보드 12-1) */
+  term: type(14, 20, FontWeight.semibold),
   /** 약관의 "모두 동의"(결정 042 시안) · 약관 글 화면의 머리 제목(결정 044 시안) */
   emphasis: type(17, 24, FontWeight.semibold),
   /** 약관 글의 조항 제목(결정 044 시안) */
@@ -466,6 +587,8 @@ export const Sizes = {
   handleHeight: 4,
   sheetTitleTop: 36,
   sheetBackIcon: 22,
+  /** 머리 오른쪽의 공유하기 아이콘(보드 12 · 12-8) */
+  navIcon: 22,
   /** 드럼 시트(태어난 시각 · 받는 시간)의 위 끝에서 드럼 위 끝까지(시안 8-1 · 16-3: 위 10 + 손잡이 4 + 28 + 16) */
   pickerSheetTop: 58,
   /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */

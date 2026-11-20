@@ -15,7 +15,7 @@ import { daysSince } from '@/features/home/days-since';
 import { MainTabs } from '@/features/home/main-tabs';
 import { MyCard } from '@/features/my/my-card';
 import { useMyAccount } from '@/features/my/use-my-account';
-import { useStoredReading } from '@/features/reading/use-reading';
+import { useStoredHeadline } from '@/features/reading/use-reading';
 
 const M = strings.my;
 const R = M.rows;
@@ -29,7 +29,8 @@ const R = M.rows;
 export default function MyScreen() {
   const { loaded, profile, chart } = useBirthProfile();
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
-  const { reading } = useStoredReading(input);
+  // 옛 모양으로 받아 둔 풀이도 한 줄 별명은 그대로(업데이트 직후 — 마이는 풀이를 부르지 않는다, 리뷰 #49)
+  const { stored: reading } = useStoredHeadline(input);
   const { account } = useMyAccount();
   // "별명을 받은 지 N일" 의 오늘 — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
   const [now] = useState(Date.now);

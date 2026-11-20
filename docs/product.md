@@ -34,10 +34,10 @@ last_reviewed: 2026-11-18
 
 ## 버전별 범위
 - 1.0.0 — 무료 핵심 기능(횟수 제한 없음, 광고 없음): 스플래시 직후 구글·애플·카카오 로그인(만 14세 이상), 출생 정보 입력, 차트, 요약 해석, 심층 리포트(외행성 통과 구간을 포함한 변곡점), 궁합(나 기준 점수·랭킹), 스토리 공유 카드. 웹과 스토어 앱 동시 출시. 기능 명세: docs/release-1.0.0.md
-  - 방향성 제시(F10)는 1.0.0 에 전체 무료로 주고 추후 같은 기능을 유료로 바꾼다. 심층 리포트와 궁합 리포트는 계속 무료다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
+  - 자세한 풀이 둘(나 탭 풀이 · 시기 풀이)은 1.0.0 에 무료로 주고 1.1.0 부터 같은 기능을 유료로 판다. 가입 때는 별명과 이번 달만 만든다. 방향성 제시의 이성 · 미래는 없앴다. 결정: docs/decisions/048-me-tab-and-me-report.md, docs/decisions/050-two-detailed-readings.md(결정 014 의 "방향성 유료 · 리포트 계속 무료" 를 대체)
 - 1.1.0 — 결제와 친구창:
-  - 인앱결제: 1.1.0 의 유료 상품은 방향성 제시와 990원 광고 제거다. 심층 리포트와 궁합 리포트는 유료로 바꾸지 않는다. [확인 필요] 방향성 제시를 유료로 바꾸는 시점과 가격. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
-  - 방향성 제시 유료화(1.0.0 과 같은 기능, 건당 구매), 990원 광고 제거 상품. 광고는 1.1.0 부터 결과를 보기 전에 15초 나오고, 같은 결과를 다시 열 때는 나오지 않는다. 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-ad-before-results-15s.md
+  - 인앱결제: 1.1.0 의 유료 상품은 자세한 풀이(나 탭 풀이 · 시기 풀이, 따로 · 묶음)와 990원 광고 제거다. 받을 수 있는지는 서버가 판정한다(402 `PURCHASE_REQUIRED`). [확인 필요] 가격 · 묶음 · 출생 정보를 고친 뒤 다시 받기. 결정: docs/decisions/050-two-detailed-readings.md
+  - 자세한 풀이 유료화(1.0.0 과 같은 기능), 990원 광고 제거 상품. 광고는 1.1.0 부터 결과를 보기 전에 15초 나오고, 같은 결과를 다시 열 때는 나오지 않는다. 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-ad-before-results-15s.md
   - 친구창: 친구 추가, 채팅, 같이 볼 수 있는 방. 결정: docs/decisions/007-friends-chat-shared-room.md
   - 투두·조각·레벨업: AI 가 방향성 제시에서 뽑은 투두를 완료하면 조각을 받고, 조각이 쌓이면 레벨이 오른다. 대표 문구 "조각을 모은다". 1.0.0 에서 옮겨 왔다. 결정: docs/decisions/014-todo-pieces-to-1.1.0-free-first.md
   - 그룹 궁합: 친구끼리 3~5명이 서로를 비교한다. 1.0.0 의 궁합은 나 기준으로 여러 명과 1:1 매칭하고 인원 제한이 없다.
@@ -48,9 +48,9 @@ last_reviewed: 2026-11-18
 - 코드 하나(Expo)로 웹·iOS·Android 를 만든다. 결정: docs/decisions/001-expo-single-codebase.md
 - 서버는 Spring Boot 로 직접 만든다. 결정: docs/decisions/004-spring-backend.md
 - 결제는 1.1.0 에서 붙인다. 스토어 인앱결제만 쓴다. 웹에서는 결제하지 않고 앱으로 유도한다. 결정: docs/decisions/002-iap-only-per-report.md
-- 상품은 건당(소모성) 방향성 제시와, 한 번 사면 계속 가는(비소모성) 990원 광고 제거다. 광고는 1.1.0 부터 결과를 보기 전에 15초 나온다(1.0.0 에는 광고가 없다). 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-ad-before-results-15s.md
+- 상품은 자세한 풀이(나 탭 풀이 · 시기 풀이)와, 한 번 사면 계속 가는(비소모성) 990원 광고 제거다(결정 050). 광고는 1.1.0 부터 결과를 보기 전에 15초 나온다(1.0.0 에는 광고가 없다). 결정: docs/decisions/008-ads-and-ad-removal.md, docs/decisions/014-todo-pieces-to-1.1.0-free-first.md, docs/decisions/015-ad-before-results-15s.md
 - 로그인은 구글·애플·카카오이고, 스플래시 직후 요구하며 만 14세 이상인지 확인한다. 결정: docs/decisions/009-signup-first-kakao-age14.md (005 를 대체)
-- 가격: 광고 제거 990원. [확인 필요] 방향성 제시의 건당 가격. 포스텔러 가격대를 확인한 뒤 정한다.
+- 가격: 광고 제거 990원. [확인 필요] 자세한 풀이의 가격. 포스텔러 가격대를 확인한 뒤 정한다.
 
 ## 성공 지표 (출시 후 4주)
 - 가입 완료율(스플래시 → 가입 완료): [확인 필요] 목표치. 가입이 첫 화면으로 왔으므로 가장 먼저 본다.

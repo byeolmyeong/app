@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -9,7 +9,7 @@ import { Txt } from '@/components/txt';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
-import { showsHouses } from '@/features/chart/chart-rows';
+import { showsHouses, skyDetail } from '@/features/chart/chart-rows';
 import { ChartWheel } from '@/features/chart/ChartWheel';
 import { SkyList } from '@/features/chart/sky-list';
 import { SkySheet } from '@/features/chart/sky-sheet';
@@ -21,11 +21,15 @@ const FIRST_SELECTED = 'SUN';
 
 /**
  * 내 하늘 지도(시안 13 · 13-1 · 13-2): 휠 + "별마다 있던 자리". 줄을 누르면 그 별이 휠에서 빛나고 시트가 열린다.
+ * 이유 줄의 "하늘 지도에서 보기"(결정 054 의 4)는 `/chart?selected=MOON` 처럼 고른 별을 실어 온다 — 고를 수 없는 값이면 해를 고른다.
  * 시각 "모름" 이면 하우스 · 첫인상 · 꿈의 자리를 보여 주지 않는다. 숫자 표는 맨 아래 "차트 자세히" 에 있다.
  */
 export default function ChartScreen() {
   const { loaded, chart } = useBirthProfile();
-  const [selected, setSelected] = useState(FIRST_SELECTED);
+  const { selected: asked } = useLocalSearchParams<{ selected?: string }>();
+  // 실어 온 별은 차트를 읽은 뒤에 가린다(시각 "모름" 이면 상승점 · 중천은 고를 수 없다). 줄을 누르기 전까지만 쓴다
+  const [picked, setPicked] = useState<string | null>(null);
+  const selected = picked ?? (asked && chart && skyDetail(chart, asked) ? asked : FIRST_SELECTED);
   const [sheetOpen, setSheetOpen] = useState(false);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
@@ -37,7 +41,7 @@ export default function ChartScreen() {
     );
 
   const select = (key: string) => {
-    setSelected(key);
+    setPicked(key);
     setSheetOpen(true);
   };
 

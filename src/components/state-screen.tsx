@@ -1,12 +1,11 @@
 import { useId, type ReactNode } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { GlowBackdrop, GlowOrb } from '@/components/glow';
 import { Screen } from '@/components/screen';
-import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
-import { BackdropShape, BrandColors, Colors, LineWidth, MakingTwinkles, ScreenPaddingX, Sizes, Spacing, StateLayout } from '@/constants/theme';
+import { BackdropShape, BrandColors, Colors, FontWeight, LineWidth, MakingTwinkles, ScreenPaddingX, Sizes, Spacing, StateLayout } from '@/constants/theme';
 
 /** 기본 얼굴의 별이(별명 짓는 중 · 스플래시 · 공유 카드와 같은 그림) */
 const BYEOLI = require('@/assets/images/share/byeoli-default.png');
@@ -61,7 +60,14 @@ export function StateScreen({ title, body, primary, later, nav, tabs }: StateScr
         </Txt>
       </View>
       <View testID="state-actions" style={[styles.actions, { paddingBottom: tabs ? StateLayout.aboveTabs : StateLayout.bottom }]}>
-        {later ? <TextLink label={later.label} onPress={later.onPress} /> : null}
+        {/* 가운데 회색 글자 단추(보드 11-9 — 높이 48, 주 버튼 위 8) */}
+        {later ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={later.label} onPress={later.onPress} style={styles.later}>
+            <Txt variant="kicker" color="gray" style={styles.laterText}>
+              {later.label}
+            </Txt>
+          </Pressable>
+        ) : null}
         {/* 버튼이 없어도(점검) 그 자리를 비워 두어 그림 · 글이 버튼이 있는 화면과 같은 높이에 온다(보드 18 · 17-1) */}
         {primary ? <Button label={primary.label} onPress={primary.onPress} /> : <View testID="state-primary-space" style={styles.primarySpace} />}
       </View>
@@ -122,4 +128,6 @@ const styles = StyleSheet.create({
   text: { marginTop: StateLayout.bodyTop, textAlign: 'center' },
   actions: { paddingHorizontal: ScreenPaddingX, gap: StateLayout.laterGap },
   primarySpace: { height: Sizes.buttonHeight },
+  later: { height: StateLayout.later, alignItems: 'center', justifyContent: 'center' },
+  laterText: { fontWeight: FontWeight.medium },
 });

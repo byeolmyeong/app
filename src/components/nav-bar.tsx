@@ -16,10 +16,12 @@ export type NavBarProps = {
   chevron?: boolean;
   /** 높이 56 머리(시안 11 홈) — 꺾쇠 머리는 늘 이 높이다 */
   tall?: boolean;
+  /** 오른쪽에 둘 것(내 별명의 공유하기 — 보드 12) */
+  right?: ReactNode;
 };
 
-/** 화면 머리. 왼쪽 뒤로 가기(또는 차트 표식), 가운데 제목. */
-export function NavBar({ title, onBack, left, chevron = false, tall = false }: NavBarProps) {
+/** 화면 머리. 왼쪽 뒤로 가기(또는 차트 표식), 가운데 제목, 오른쪽(있으면) 공유하기. */
+export function NavBar({ title, onBack, left, chevron = false, tall = false, right }: NavBarProps) {
   return (
     <View testID="nav-bar" style={[styles.bar, (chevron || tall) && styles.tall]}>
       <View style={styles.side}>
@@ -48,7 +50,7 @@ export function NavBar({ title, onBack, left, chevron = false, tall = false }: N
           {title}
         </Txt>
       ) : null}
-      <View style={styles.side} />
+      <View style={[styles.side, styles.right]}>{right}</View>
     </View>
   );
 }
@@ -66,6 +68,7 @@ const styles = StyleSheet.create({
   },
   tall: { height: Sizes.stepHeader },
   side: { width: Sizes.navSide, alignItems: 'flex-start' },
+  right: { alignItems: 'flex-end' },
   chevron: {
     width: StepLayout.back,
     height: StepLayout.back,

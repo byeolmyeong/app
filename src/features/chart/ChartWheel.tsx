@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Polygon, Text as SvgText } from 'react-native-svg';
 
-import { Colors, FontFamily, FontWeight, Sizes, SkyMapLayout } from '@/constants/theme';
+import { Colors, FontFamily, FontWeight, ReasonLayout, Sizes, SkyMapLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { wheelLayout } from '@/features/chart/wheel-layout';
@@ -203,6 +203,71 @@ export function ChartWheel({ chart, selected }: ChartWheelProps) {
     </View>
   );
 }
+
+export type MiniWheelProps = {
+  chart: Chart;
+  /** 빛낼 별(천체 · ASC · MC) */
+  bodies: string[];
+  /** 칠할 하우스 칸 */
+  houses: number[];
+  /** 화면 읽기 이름 */
+  label: string;
+};
+
+/**
+ * 이유 펼침의 작은 지도(보드 12-1, 결정 054 의 4): 하늘 지도의 휠을 지름 120 으로 줄여 고리 · 하우스 선(시각을 알 때만)과
+ * 그 근거의 별 · 칸만 그린다. 다른 별 · 글자는 그리지 않는다. 좌표는 하늘 지도와 같은 `wheelLayout`(서버의 황경 그대로)이다.
+ * 시각 "모름" 차트는 하우스 선 · 칸 · 축 없이 별자리 칸의 경계만 긋는다(golden-rules "프로젝트 규칙").
+ */
+export function MiniWheel({ chart, bodies, houses, label }: MiniWheelProps) {
+  const L = ReasonLayout;
+  const w = wheelLayout(chart, L.wheel);
+  const withHouses = w.axes.length > 0;
+  return (
+    <View testID="reason-wheel" style={miniStyles.box} accessibilityRole="image" accessibilityLabel={label}>
+      <Svg width={L.wheel} height={L.wheel} viewBox={`0 0 ${L.wheel} ${L.wheel}`}>
+        <Circle cx={w.center} cy={w.center} r={w.rOuter} fill="none" stroke={Colors.hair} strokeWidth={1.5} />
+        <Circle cx={w.center} cy={w.center} r={w.rSign} fill="none" stroke={Colors.hair} strokeWidth={1} />
+        <Circle cx={w.center} cy={w.center} r={w.rInner} fill="none" stroke={Colors.hair} strokeWidth={1} />
+        {withHouses
+          ? w.houseSectors
+              .filter((h) => houses.includes(h.n))
+              .map((h) => (
+                <Path key={`ms${h.n}`} testID="mini-wheel-sector" d={h.path} fill={Colors.primary} fillOpacity={L.wheelSectorOpacity} />
+              ))
+          : null}
+        {withHouses
+          ? w.houseLines.map((l, i) => <Line key={`mh${i}`} testID="mini-wheel-house-line" {...l} stroke={Colors.hair} strokeWidth={1} />)
+          : w.signs.map((sg) => <Line key={`msl${sg.sign}`} {...sg.line} stroke={Colors.hair} strokeWidth={1} />)}
+        {w.axes
+          .filter((a) => bodies.includes(a.key))
+          .map((a) => (
+            <Line key={`ma${a.key}`} testID="mini-wheel-axis" {...a.line} stroke={Colors.primary} strokeWidth={1.5} />
+          ))}
+        {w.bodies
+          .filter((b) => bodies.includes(b.body))
+          .map((b) => (
+            <G key={`md${b.body}`}>
+              <Circle
+                cx={b.dot.x}
+                cy={b.dot.y}
+                r={L.wheelRing}
+                fill="none"
+                stroke={Colors.primary}
+                strokeOpacity={L.wheelRingOpacity}
+                strokeWidth={L.wheelRingWidth}
+              />
+              <Circle testID="mini-wheel-dot" cx={b.dot.x} cy={b.dot.y} r={L.wheelDot} fill={Colors.primary} />
+            </G>
+          ))}
+      </Svg>
+    </View>
+  );
+}
+
+const miniStyles = StyleSheet.create({
+  box: { width: ReasonLayout.wheel, height: ReasonLayout.wheel, alignSelf: 'center', marginTop: ReasonLayout.wheelTop },
+});
 
 /** 고른 것의 이름: 천체는 용어 사전의 이름, 상승점 · 중천은 별명 */
 function selectedName(key: string): string | undefined {

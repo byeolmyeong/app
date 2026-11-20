@@ -6,11 +6,10 @@
  */
 import { strings } from '@/content/strings';
 import type { TimingInterval } from '@/lib/api';
+import { koreanToday } from '@/lib/korea-date';
 
 const D = strings.timing.date;
 
-/** 한국 시각(UTC+9) */
-const KOREA_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** "다가오는 시기" 의 앞쪽 한도와 개수(계획의 기본값 — 오늘 뒤 1년 안에 시작하는 구간 앞에서 셋) */
 const UPCOMING_YEARS = 1;
@@ -25,8 +24,8 @@ const monthText = (date: string) => `${monthNum(date)}${D.monthSuffix}`;
 /** 날짜 글자의 그날 0시(UTC 기준 날 수를 세는 데만 쓴다) */
 const utcDay = (date: string) => Date.UTC(Number(yearOf(date)), monthNum(date) - 1, dayNum(date));
 
-/** 기기의 오늘(한국 날짜). 달력의 "오늘" 표시 · 보관본이 오늘 것인지 견주는 데만 쓴다 */
-export const koreaToday = (now: number = Date.now()) => new Date(now + KOREA_OFFSET_MS).toISOString().slice(0, 10);
+/** 기기의 오늘(한국 날짜). 달력의 "오늘" 표시 · 보관본이 오늘 것인지 견주는 데만 쓴다(lib/korea-date.ts 하나 — 공유 카드와 같은 것) */
+export const koreaToday = koreanToday;
 
 /** "2026-11-20" → "2026-11" */
 export const monthOf = (date: string) => date.slice(0, 7);

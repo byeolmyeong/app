@@ -51,8 +51,7 @@ export default function MyScreen() {
           headline={reading?.headline ?? null}
           birthLine={profile ? formatBirthLine(profile) : null}
           onAccount={() => router.push('/my/account')}
-          // 새 출생 정보 바꾸기(`/my/birth`, 결정 056 의 6)는 서버 S⑨ 뒤 계획 A7-3 — 그 전에는 지금의 출생 정보 화면으로 간다
-          onBirth={() => router.push('/birth')}
+          onBirth={() => router.push('/my/birth')}
         />
         <View style={styles.listTop} />
         <ListCard>

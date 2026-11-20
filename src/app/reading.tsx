@@ -18,6 +18,7 @@ import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { MakingView } from '@/components/making-view';
 import { ReadingView } from '@/features/reading/reading-view';
+import { clearPendingReveal, pendingReveal } from '@/features/reading/reveal-once';
 import { RevealView } from '@/features/reading/reveal-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
 import { ShareEntry } from '@/features/share/share-entry';
@@ -37,8 +38,9 @@ export default function ReadingScreen() {
   const { ready } = useSession();
   // 가입을 마치고 바로 온 것인가(별명 짓는 중을 머리 없이, 보드 9). 홈 · 출생 정보 바꾸기에서 오면 뒤로 가기가 있다
   const { from } = useLocalSearchParams<{ from?: string }>();
-  // 별명 공개에 쓸 닉네임: 가입 직후에만 메모리에 있다(가입이 받은 값, 결정 044). 앱을 다시 켜거나 웹을 새로 고치면 없다
-  const [revealFor, setRevealFor] = useState(() => (from === 'signup' ? signedUpNickname() : null));
+  // 별명 공개에 쓸 닉네임: 가입 직후(가입이 받은 값, 결정 044)와 출생 정보를 바꾼 직후(소유자 2026-11-20)에만 메모리에 있다.
+  // 앱을 다시 켜거나 웹을 새로 고치면 없다
+  const [revealFor, setRevealFor] = useState(() => (from === 'signup' ? signedUpNickname() : from === 'birth' ? pendingReveal() : null));
   const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 먼저 기기에 받아 둔 글을 찾는다. 있으면 세션을 기다리지 않고 바로 보여 준다.
@@ -79,6 +81,7 @@ export default function ReadingScreen() {
         signs={chart ? keyThree(chart).map((k) => ({ label: k.label, value: k.value + strings.chart.signSuffix })) : []}
         onRead={() => {
           clearSignedUp();
+          clearPendingReveal();
           setRevealFor(null);
         }}
       />

@@ -1,0 +1,212 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { router } from 'expo-router';
+
+import BirthChangeScreen from '@/app/my/birth';
+import { strings } from '@/content/strings';
+import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
+import { clearPendingReveal, pendingReveal } from '@/features/reading/reveal-once';
+import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
+import { api, type MyAccount } from '@/lib/api';
+import { fixtures } from '@/lib/fixtures';
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+jest.mock('expo-router', () => ({
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => true), dismissAll: jest.fn() },
+  usePreventRemove: jest.fn(),
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
+}));
+jest.mock('@/features/auth/use-session', () => ({
+  ...jest.requireActual('@/features/auth/use-session'),
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 't', ready: true, lastError: null })),
+}));
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual('@/lib/api'),
+  api: { createChart: jest.fn(), saveProfile: jest.fn(), getProfile: jest.fn(), listPlaces: jest.fn(), getMyAccount: jest.fn() },
+}));
+
+const mockApi = api as jest.Mocked<typeof api>;
+const B = strings.my.birth;
+const H = strings.home;
+const profile = { date: '1999-03-08', time: null, place: null };
+const DEVICE_KEY = 'byeolmyeong-device.music.v1';
+/** 별명 짓는 중 → 새 별명 공개 → 풀이(소유자 2026-11-20) */
+const TO_READING = { pathname: '/reading', params: { from: 'birth' } };
+
+const date = () => screen.getByLabelText(H.dateLabel);
+const submit = () => screen.getByRole('button', { name: B.submit });
+
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  jest.clearAllMocks();
+  mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
+  // `as MyAccount`: 이용 정지 PR(#52)이 계정에 suspended 를 더해도 이 시험은 그대로 돈다
+  mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false } as MyAccount });
+  clearPendingReveal();
+  await saveBirth({ profile, chart: fixtures.chartTimeUnknown });
+  await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: 'old', reading: fixtures.reading }));
+  await AsyncStorage.setItem(DEVICE_KEY, '{"background":false}');
+});
+
+describe('출생 정보 바꾸기(/my/birth, 보드 16-4)', () => {
+  it('안내 · 넣어 둔 값으로 채운 세 칸 · 맨 아래 "바꾸기"', async () => {
+    await render(<BirthChangeScreen />);
+    expect(await screen.findByText(B.notice)).toBeTruthy();
+    expect(date().props.value).toBe('1999-03-08');
+    expect(submit()).toBeTruthy();
+  });
+
+  it('바뀐 것이 없으면 묻지 않고 돌아간다(서버를 부르지 않는다)', async () => {
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.press(submit());
+    expect(router.back).toHaveBeenCalled();
+    expect(screen.queryByText(B.confirm.title)).toBeNull();
+    expect(mockApi.createChart).not.toHaveBeenCalled();
+  });
+
+  it('바꾸면 가운데 창으로 묻고, 취소하면 아무것도 바꾸지 않는다', async () => {
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    expect(screen.getByText(B.confirm.title)).toBeTruthy();
+    expect(screen.getByText(B.confirm.body)).toBeTruthy();
+    await fireEvent.press(screen.getByText(B.confirm.cancel));
+    expect(screen.queryByText(B.confirm.title)).toBeNull();
+    expect(mockApi.createChart).not.toHaveBeenCalled();
+    expect((await loadBirth())?.profile).toEqual(profile);
+  });
+
+  it('"바꾸기" 면 차트를 받아 서버에 저장하고, 이 사람의 기기 보관을 지운 뒤 새 출생 정보만 두고 별명 짓는 중(/reading)으로', async () => {
+    mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
+    mockApi.saveProfile.mockResolvedValue({ ok: true, data: { date: '2000-06-15', time: null, placeId: null } });
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
+    expect(mockApi.createChart).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
+    expect(mockApi.saveProfile).toHaveBeenCalledWith({ date: '2000-06-15', time: null, placeId: null });
+    expect((await loadBirth())?.profile).toEqual({ date: '2000-06-15', time: null, place: null });
+    // 옛 출생 정보로 받은 별명은 지우고, 기기 값(음악 설정)은 남긴다
+    expect(await AsyncStorage.getItem(READING_STORAGE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(DEVICE_KEY)).toBe('{"background":false}');
+    expect(router.dismissAll).toHaveBeenCalled();
+    // 새 별명 공개에 쓸 닉네임을 넘겨 둔다
+    expect(pendingReveal()).toBe('새벽별');
+  });
+
+  it('만 14세 미만 날짜면(서버 403 UNDER_AGE) 생년월일 칸 아래에 알리고 기기의 것은 그대로', async () => {
+    mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'SERVER', status: 403, code: 'UNDER_AGE' });
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20140211');
+    await fireEvent.press(submit());
+    await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
+    expect(await screen.findByText(H.requestErrors.UNDER_AGE)).toBeTruthy();
+    expect((await loadBirth())?.profile).toEqual(profile);
+    expect(await AsyncStorage.getItem(READING_STORAGE_KEY)).not.toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('차트를 받지 못하면 짧은 알림, 서버 · 기기 모두 그대로', async () => {
+    mockApi.createChart.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
+    expect(await screen.findByText(H.requestErrors.NETWORK)).toBeTruthy();
+    expect(mockApi.saveProfile).not.toHaveBeenCalled();
+    expect((await loadBirth())?.profile).toEqual(profile);
+  });
+
+  it.each([
+    ['서버에 새 값이 있으면 마저 바꾼다', { date: '2000-06-15', time: null, placeId: null }, true],
+    ['서버가 옛 값이면 알림만, 기기는 그대로', { date: '1999-03-08', time: null, placeId: null }, false],
+  ])('저장의 응답을 잃었을 때(끊김) GET /profile 로 확인한다 — %s', async (_name, onServer, changed) => {
+    mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    mockApi.getProfile.mockResolvedValue({ ok: true, data: onServer });
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
+    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalledTimes(1));
+    if (changed) {
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
+      expect((await loadBirth())?.profile.date).toBe('2000-06-15');
+    } else {
+      expect(await screen.findByText(H.requestErrors.NETWORK)).toBeTruthy();
+      expect((await loadBirth())?.profile).toEqual(profile);
+      expect(router.replace).not.toHaveBeenCalled();
+    }
+  });
+
+  it('저장이 서버 오류(500)로 끝나고 서버에도 없으면 "바꾸지 못했어요" 알림', async () => {
+    mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chartTimeUnknown });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'SERVER', status: 500 });
+    mockApi.getProfile.mockResolvedValue({ ok: true, data: { date: '1999-03-08', time: null, placeId: null } });
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
+    expect(await screen.findByText(strings.my.account.saveFailed)).toBeTruthy();
+  });
+
+  it('바꾸는 동안에는 뒤로 갈 수 없다(머리 꺾쇠 · 손짓 · 기기 뒤로)', async () => {
+    const { usePreventRemove } = jest.requireMock('expo-router') as { usePreventRemove: jest.Mock };
+    let finish: (r: { ok: true; data: typeof fixtures.chartTimeUnknown }) => void = () => {};
+    mockApi.createChart.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    mockApi.saveProfile.mockResolvedValue({ ok: true, data: { date: '2000-06-15', time: null, placeId: null } });
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
+    expect(usePreventRemove).toHaveBeenLastCalledWith(true, expect.any(Function));
+    await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+    expect(router.back).not.toHaveBeenCalled();
+    await act(async () => finish({ ok: true, data: fixtures.chartTimeUnknown }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
+    expect(usePreventRemove).toHaveBeenLastCalledWith(false, expect.any(Function));
+  });
+
+  it('시각 "모름" 인 채 곳만 바꾸면(서버로 가는 값이 같다) 묻지 않고 기기의 곳만 바꾸고 돌아간다', async () => {
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.press(screen.getByTestId('place-field'));
+    await fireEvent.press(await screen.findByText('서울'));
+    await fireEvent.press(await screen.findByText('강남구'));
+    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
+    await fireEvent.press(submit());
+    await waitFor(() => expect(router.back).toHaveBeenCalled());
+    expect(screen.queryByText(B.confirm.title)).toBeNull();
+    expect(mockApi.createChart).not.toHaveBeenCalled();
+    expect((await loadBirth())?.profile).toMatchObject({ date: '1999-03-08', time: null, place: { name: '서울특별시 강남구' } });
+    // 별명 · 풀이는 같으니 지우지 않는다
+    expect(await AsyncStorage.getItem(READING_STORAGE_KEY)).not.toBeNull();
+  });
+
+  it('바꾸는 동안에는 버튼이 꺼진다', async () => {
+    let finish: (r: { ok: true; data: typeof fixtures.chartTimeUnknown }) => void = () => {};
+    mockApi.createChart.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    mockApi.saveProfile.mockResolvedValue({ ok: true, data: { date: '2000-06-15', time: null, placeId: null } });
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    await fireEvent.press(within(screen.getByTestId('dialog')).getByRole('button', { name: B.confirm.ok }));
+    expect(submit().props.accessibilityState?.disabled).toBe(true);
+    await act(async () => finish({ ok: true, data: fixtures.chartTimeUnknown }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(TO_READING));
+    expect(mockApi.createChart).toHaveBeenCalledTimes(1);
+  });
+});

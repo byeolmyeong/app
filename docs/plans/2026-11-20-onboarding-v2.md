@@ -6,7 +6,7 @@ last_reviewed: 2026-11-20
 ---
 # 확정 시안으로 온보딩 다시 맞추기 — 로그인 문구 · 최근 로그인 · 약관 보기 · 별명 공개
 
-> 상태: 승인(소유자 2026-11-20 "지금 시안 나온 거 확정이니까 온보딩부터 다시 시안 있는 대로 작업해") · 기준 develop `29f9b6c` · 브랜치 `feat/onboarding-v2`
+> 상태: 승인(소유자 2026-11-20 "지금 시안 나온 거 확정이니까 온보딩부터 다시 시안 있는 대로 작업해") · 기준 develop `29f9b6c` → `6414057`(다시 올림, 상위 계획 P3) · 브랜치 `feat/onboarding-v2`
 > 시안: 피그마 「별명」 › 디자인(https://www.figma.com/design/5fLCBAvxiPmAc7XsCR1zPb, 확정) · HTML 원본 캔버스 https://claude.ai/artifact/Rt33TzPSEe4PdxNRCej3xT (버전 1795141378). 피그마 보드는 이 캔버스를 옮긴 것이라 값은 HTML 원본에서 읽는다.
 
 ## 목표
@@ -83,3 +83,8 @@ last_reviewed: 2026-11-20
 - 태스크 8 글: 전 — 앱 `src/content/legal.ts` 에 글 셋(처리방침 · 이용약관 · 마케팅) → 후 — 랜딩 `privacyConsent`(cd7b2e4)를 그대로 옮겨 넷(끝 세미콜론만 앱 파일 꼴), 머리 주석에 `/settings/privacy-consent` · `/privacy-consent`. 확인: `legal.test`(네 글의 시행 문구 · 네 조항) 먼저 2 실패 → 3 통과, `compare-legal.cjs` "내보내는 이름: legalInfo, privacy, terms, marketing, privacyConsent … 결과: 모두 같다"(스크립트는 랜딩의 모든 이름을 비교한다 — privacyConsent 4조 · 블록 4 · JSON 851자), `npx tsc --noEmit` · `npx expo lint` exit 0. 커밋: 6a81b8d
 - 태스크 8 화면 · 흐름: 전 — 약관 단계의 "[필수] 개인정보 수집 · 이용 · 보기" 가 처리방침 전체를 열고 그 아래 동의하기가 이 항목을 켬 → 후 — `src/app/settings/privacy-consent.tsx`(6-2 모양 `TextPage`, `useSignupAgree('privacy')`), 약관 단계의 그 보기는 `/settings/privacy-consent`, 가드의 가입 중 열리는 화면에 `privacy-consent`(처리방침은 동의 글이 가리켜 읽기만 열어 둠), 처리방침 화면은 동의하기 없음(`from=signup` 처리 지움). `.expo/types/router.d.ts` 는 개발 서버를 잠깐 띄워 다시 만들고 끔. architecture.md 가드 · settings 줄. 확인: `legal-screens`(새 글 전부 그림 · 마이에서 동의하기 없음 · from=signup 이면 동의하기, 처리방침은 from=signup 이어도 없음) · `legal-back`(진짜 라우터: 개인정보 보기 → `/settings/privacy-consent` → 뒤로 · 동의하기 → 그 항목만 켜짐) · `terms-step`(보기 주소) · `guard`(가입 중 privacy-consent 열림) 먼저 4 묶음 실패 → 55 통과, `npx tsc --noEmit && npx expo lint && npm test` 3회 연속 exit 0 · 74 묶음 981 통과, `npx expo export --platform web --output-dir <scratchpad>/web-dist` exit 0(정적 `settings/privacy-consent.html` 에 제목 · 넷째 조항 · 시행일 줄). 약관 버전 그대로(`2026-11-19`). 커밋: 이 커밋
 - 2026-11-20 소유자 "넣자": 마이 "약관 · 정보"에 "개인정보 수집 · 이용 동의" 줄을 더함(처리방침과 이용약관 사이, `/settings/privacy-consent`, 마이에서 열면 동의하기 없음). 확인: my-screen 테스트 1 실패 → 통과.
+- 2026-11-20 상위 계획 `docs/plans/2026-11-20-sian-all-repos.md` P3(onboarding-v2-final): develop `6414057`(#38 문서) 위로 다시 올림 — 충돌 0. 시작: 74 묶음 979 통과.
+  - 소개 두 장(결정 055 의 5): 전 — 소개 3장(나 → 나의 사람들(궁합) → 시기, 점 1/3 ~ 3/3) → 후 — 2장(나 → 시기, 점 1/2 · 2/2, 둘째 장에서 "시작하기"). 별이 · 하트 카드 그림과 그 자리 값(`IntroArtLayout.card` · `pair`)을 지우고 달 카드 값만 `moonCard` 에, 빛 가운데 높이 `[0.5, 0.44]`. 확인: `intro-screen` 새 기대 3 먼저 실패(두 장 · 한 줄 제목 · 점 1/2 → 2/2) → 통과. 커밋: 0123389
+  - 태어난 시각 시트 제목 없음(결정 056 의 9 · 061 의 6): 전 — 손잡이 아래 가운데 제목 "태어난 시각" → 후 — 손잡이 · 드럼 · 확인만, 시트 위 끝에서 드럼까지 시안 8-1 · 16-3 의 58(`Sizes.pickerSheetTop`). 쓰지 않게 된 `strings.home.timeSheetTitle` 지움. 확인: `birth-step` 새 테스트 먼저 실패 → 통과. 커밋: d525402
+  - 화면 비교(웹 390, 모의 API, 개발 서버 8117 — 찍고 끔): 기준은 피그마 `PNrWFsXHhF8crQkLA3SYBn` 온보딩 페이지의 "2 소개 · 나"(179:2) · "4 소개 · 나의 타이밍"(178:2) · "8-1 시각 바텀시트"(219:2) 스크린샷(읽기만 — 캔버스의 Onboarding1 · Onboarding3 · BirthTime 과 같은 보드). 채널 차 > 24 픽셀: 소개 1 2.70% · 소개 2 2.85% · 8-1 1.90% — 소개는 본문 두 줄의 줄바꿈 자리(피그마 글자 폭, 앞 비교와 같은 차이)가 y 600~700 에 몰림, 8-1 은 손잡이 · 드럼 · 확인 버튼 자리가 같다. 가로 넘침 0.
+  - 확인: `npx tsc --noEmit && npx expo lint` exit 0 · `npm test` 74 묶음 982 통과 · `npx expo export --platform web` exit 0 · `npx expo-doctor` 20/20(이 워크트리의 node_modules 가 옛것이라 처음엔 19/20 — 같은 lock 의 다른 워크트리 것을 복제해 바꿈, package.json 은 develop 과 같음).

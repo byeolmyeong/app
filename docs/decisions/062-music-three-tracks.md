@@ -3,7 +3,7 @@ type: decision
 tags: [음악, 소리, 배경 음악, 스플래시, 쓰는 중, 마이, 설정, 오디오]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 069-music-to-1.1.0.md (시기만 — 1.0.0 에서 빼고 1.1.0 에 넣는다. 세 곡 · 스위치 · 규칙은 유효)
 ---
 # 062. 음악은 세 곡(앱 열 때 · 기다릴 때 · 배경)이고 마이 › 음악에서 따로 켜고 끈다
 

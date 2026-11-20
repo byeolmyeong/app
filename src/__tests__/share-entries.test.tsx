@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import MeScreen from '@/app/me';
@@ -135,5 +135,25 @@ describe('공유로 들어가는 곳', () => {
     await render(<SynastryRankingScreen />);
     expect(await screen.findByText(strings.synastry.ranking.empty)).toBeTruthy();
     expect(screen.queryByRole('button', { name: S.open })).toBeNull();
+  });
+
+  it('공유 시트가 뜨는 모든 자리에서 시트 맨 위에 "공유하기" 제목이 없다(같은 ShareEntry · 시트 — 결정 061 의 6 · 계획 A7-5)', async () => {
+    mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
+    const [first] = fixtures.synastryList;
+    mockParams.mockReturnValue({ id: first.id });
+    const entries: [string, () => React.ReactElement, () => Promise<unknown>][] = [
+      ['내 별명', () => <ReadingScreen />, () => screen.findByText(fixtures.reading.headline)],
+      ['나 탭(받은 뒤)', () => <MeScreen />, () => screen.findByTestId('me-chip-LOVE')],
+      ['궁합 결과(1.1.0 코드)', () => <SynastryResultScreen />, () => screen.findByRole('button', { name: S.open })],
+      ['궁합 랭킹(1.1.0 코드)', () => <SynastryRankingScreen />, () => screen.findAllByTestId('synastry-row')],
+    ];
+    for (const [name, Screen, ready] of entries) {
+      const view = await render(<Screen />);
+      await ready();
+      await fireEvent.press(await shareButton());
+      const panel = await screen.findByTestId('sheet-panel');
+      expect([name, within(panel).queryByText(S.open)]).toEqual([name, null]);
+      await view.unmount();
+    }
   });
 });

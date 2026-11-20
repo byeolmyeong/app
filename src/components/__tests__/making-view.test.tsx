@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react-native';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import { strings } from '@/content/strings';
-import { MakingView } from '@/features/reading/making-view';
+import { MakingView } from '@/components/making-view';
 
 const M = strings.making;
 

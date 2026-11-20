@@ -20,7 +20,7 @@ import { ChartPicture } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
-import { MakingView } from '@/features/reading/making-view';
+import { MakingView } from '@/components/making-view';
 import { ReadingView } from '@/features/reading/reading-view';
 import { RevealView } from '@/features/reading/reveal-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';

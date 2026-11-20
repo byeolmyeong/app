@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
-import { FontWeight, ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, ScreenPaddingX, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 export type NavBarProps = {
@@ -11,12 +12,14 @@ export type NavBarProps = {
   onBack?: () => void;
   /** 뒤로 가기 대신 왼쪽에 둘 것(홈의 차트 표식) */
   left?: ReactNode;
+  /** 꺾쇠 머리(시안 13 내 하늘 지도): 높이 56 · 뒤로 가기 꺾쇠(가입 단계와 같은 것) · 제목 17 */
+  chevron?: boolean;
 };
 
 /** 화면 머리. 왼쪽 뒤로 가기(또는 차트 표식), 가운데 제목. */
-export function NavBar({ title, onBack, left }: NavBarProps) {
+export function NavBar({ title, onBack, left, chevron = false }: NavBarProps) {
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, chevron && styles.tall]}>
       <View style={styles.side}>
         {onBack ? (
           <Pressable
@@ -24,18 +27,24 @@ export function NavBar({ title, onBack, left }: NavBarProps) {
             accessibilityLabel={strings.common.backLabel}
             hitSlop={Spacing.sm}
             onPress={onBack}
-            style={noOutline}
+            style={[noOutline, chevron && styles.chevron]}
           >
-            <Txt variant="body" color="gray">
-              {strings.common.back}
-            </Txt>
+            {chevron ? (
+              <Svg width={StepLayout.backIcon} height={StepLayout.backIcon} viewBox="0 0 24 24" fill="none">
+                <Path d="M15 5l-7 7 7 7" stroke={Colors.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            ) : (
+              <Txt variant="body" color="gray">
+                {strings.common.back}
+              </Txt>
+            )}
           </Pressable>
         ) : (
           left
         )}
       </View>
       {title ? (
-        <Txt variant="table" style={styles.title}>
+        <Txt variant={chevron ? 'emphasis' : 'table'} style={chevron ? null : styles.title}>
           {title}
         </Txt>
       ) : null}
@@ -55,6 +64,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: ScreenPaddingX,
   },
+  tall: { height: Sizes.stepHeader },
   side: { width: Sizes.navSide, alignItems: 'flex-start' },
+  chevron: {
+    width: StepLayout.back,
+    height: StepLayout.back,
+    marginLeft: StepLayout.backInset,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: { fontWeight: FontWeight.semibold },
 });

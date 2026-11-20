@@ -86,13 +86,13 @@ last_reviewed: 2026-11-20
 - 할 것: develop 위로 다시 올려(rebase) 충돌을 풀고 `/verify` → 푸시 → PR.
 - 검증: `npm test` · `npx tsc --noEmit && npx expo lint` 통과 · CI 통과 → 합침.
 
-#### P3. onboarding-v2-final · 상태: 진행(PR #37 — 실행 기록은 `docs/plans/2026-11-20-onboarding-v2.md`)
+#### P3. onboarding-v2-final · 상태: 완료(PR #37, develop `70c1a78` — 실행 기록은 `docs/plans/2026-11-20-onboarding-v2.md`)
 - 읽을 것: PR #37(`feat/onboarding-v2`, 결정 044 · 045), 결정 055 의 5, 시안 온보딩 1(점 1/2) · 3(점 2/2) · 8-1(시트 제목 없음)
 - 할 것: 소개를 두 장(나 → 시기)으로, 궁합 장을 뺀다. 태어난 시각 시트의 제목을 뺀다(결정 056 의 9). 보드와 나란히 웹 스크린샷.
 - 하지 말 것: 044 · 045 의 나머지 동작을 바꾸지 않는다.
 - 검증: 소개 점 1/2 · 2/2 렌더 테스트, 시트에 제목 없음 테스트, CI 통과 → 합침.
 
-#### P4. server-s1 · 상태: 대기 (Docker 필요)
+#### P4. server-s1 · 상태: 완료(서버 PR #26, develop `f49bc90` — 로컬 Docker 가 멈춰 있어 통합 테스트는 PR CI 의 `./gradlew build` 로 확인)
 - 읽을 것: 서버 로컬 `feat/structured-basis`(S① 근거 구조 · 요약 해석 v2 · "~기"), 서버 계획 S①
 - 할 것: Docker 를 띄워 `./gradlew build`(통합 테스트 포함)를 돌리고, 통과하면 푸시 → PR.
 - 검증: `./gradlew build` BUILD SUCCESSFUL · CI 통과 → 합침. Docker 가 안 뜨면 **차단**(소유자가 Docker Desktop 을 다시 켠다).

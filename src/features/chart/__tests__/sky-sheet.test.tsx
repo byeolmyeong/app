@@ -74,6 +74,12 @@ describe('skyDetail: 별을 눌렀을 때 시트에 적는 것(시안 13-1)', ()
 });
 
 describe('SkySheet: 별을 누르면 올라오는 시트(시안 13-1 · 13-2)', () => {
+  it('관계 줄은 따로 높이를 잘라 숨기지 않는다 — 많으면 시트 전체가 굴러간다(소유자 지적: 좁아 잘림)', async () => {
+    await render(<SkySheet chart={fixtures.chart} selected="SUN" visible onClose={jest.fn()} />);
+    expect(StyleSheet.flatten(screen.getByTestId('sky-relations').props.style)?.maxHeight).toBeUndefined();
+    expect(screen.getByTestId('sky-relations').props.scrollEnabled).toBeUndefined();
+  });
+
   const sheetClosed = () => waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
 
   it('해: 이름 · 별명과 뜻 · 별자리 · 하우스 · 다른 별과의 관계(각도의 말)', async () => {

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { InfoTip } from '@/components/info-tip';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, Sizes, SkyMapLayout as L, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, SkyMapLayout as L, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { skyDetail, type SkyRelation, type SkyTerm } from '@/features/chart/chart-rows';
 import type { Chart } from '@/lib/api';
@@ -80,7 +80,8 @@ function Relations({ relations, open, onToggle }: { relations: SkyRelation[]; op
           {S.noRelations}
         </Txt>
       ) : (
-        <ScrollView style={styles.relations} showsVerticalScrollIndicator={false}>
+        // 많아도 따로 잘라 굴리지 않는다 — 시트 전체가 화면 위 sheetTop 까지 늘고 그 안에서 굴린다
+        <View testID="sky-relations" style={styles.relations}>
           {relations.map((r) => (
             <View key={`${r.key}-${r.aspect}`} testID="sky-relation" style={styles.relation}>
               <View style={styles.side}>
@@ -101,7 +102,7 @@ function Relations({ relations, open, onToggle }: { relations: SkyRelation[]; op
               </View>
             </View>
           ))}
-        </ScrollView>
+        </View>
       )}
     </>
   );
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   term: { gap: Spacing.hairline },
   raised: { zIndex: 1 },
   relationsHead: { marginTop: L.relationsTop },
-  relations: { marginTop: Spacing.xs, maxHeight: Sizes.infoSheetHeight, flexGrow: 0 },
+  relations: { marginTop: Spacing.xs },
   none: { marginTop: Spacing.xs },
   relation: {
     minHeight: L.relationRow,

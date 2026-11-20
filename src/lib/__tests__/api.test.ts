@@ -320,6 +320,13 @@ describe('api: 요약 해석', () => {
     expect(await api.createReading()).toEqual({ ok: false, error: 'INVALID', status: 200 });
   });
 
+  it('요약 해석 v2 의 만든 때(createdAt, 홈의 "별명을 받은 지 N일")는 있으면 글자여야 하고, 없는 옛 응답도 받는다(서버 결정 030 · 031)', () => {
+    const r = fixtures.reading;
+    expect(isReading({ ...r, createdAt: '2026-11-08T03:00:00Z' })).toBe(true);
+    expect(isReading(r)).toBe(true);
+    expect(isReading({ ...r, createdAt: 1 })).toBe(false);
+  });
+
   it('가짜 서버를 켜면 fetch 없이 예시 글을 준다', async () => {
     const fetchFn = fakeFetch(500);
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });

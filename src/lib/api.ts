@@ -104,7 +104,12 @@ export type Reading = {
   sections: { title: string; body: string; basis: string[] }[];
   strengths: string[];
   cautions: string[];
+  /** 요약 해석 v2 의 만든 때(UTC ISO-8601, 서버 결정 030 · 031). 옛 응답에는 없다 — 홈의 "별명을 받은 지 N일"(결정 047) */
+  createdAt?: string;
 };
+
+/** `GET /account` 에서 앱이 쓰는 값: 닉네임 · 프로필 그림(계약은 1~8). 옛 계정은 둘 다 null(서버 결정 025 · 028) */
+export type Account = { nickname: string | null; avatar: number | null };
 
 /** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
 export const DIRECTION_TOPICS = ['LOVE', 'FUTURE', 'SYNASTRY'] as const;
@@ -400,7 +405,17 @@ export function isReading(v: unknown): v is Reading {
       (s) => isObject(s) && typeof s.title === 'string' && typeof s.body === 'string' && isStringList(s.basis),
     ) &&
     isStringList(v.strengths) &&
-    isStringList(v.cautions)
+    isStringList(v.cautions) &&
+    (v.createdAt === undefined || typeof v.createdAt === 'string')
+  );
+}
+
+export function isAccount(v: unknown): v is Account {
+  return (
+    isObject(v) &&
+    (v.nickname === null || typeof v.nickname === 'string') &&
+    // 계약은 1~8 이지만 모르는 번호여도 닉네임은 받는다 — 모르는 그림은 그리는 쪽이 숨긴다(isAvatarId)
+    (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar)))
   );
 }
 
@@ -1012,6 +1027,13 @@ export function createApi(config: ApiConfig) {
     async getReport(): Promise<ApiResult<ReportState>> {
       if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.report } };
       return request('GET', '/reports/me', { validate: isReportState });
+    },
+
+    /** `GET /account` 내 닉네임 · 프로필 그림(홈 별명 카드, 결정 047). 응답의 다른 칸(이메일 · 동의 …)은 앱이 쓰지 않아 버린다 */
+    async getAccount(): Promise<ApiResult<Account>> {
+      if (config.useFixtures) return { ok: true, data: { nickname: '새벽별', avatar: 3 } };
+      const res = await request('GET', '/account', { validate: isAccount });
+      return res.ok ? { ok: true, data: { nickname: res.data.nickname, avatar: res.data.avatar } } : res;
     },
 
     /** `DELETE /account` 계정과 그 사람의 모든 것(세션 · 출생 정보 · 글)을 서버에서 지운다. 성공은 204 이고 본문이 없다 */

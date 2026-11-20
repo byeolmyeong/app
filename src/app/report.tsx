@@ -13,6 +13,7 @@ import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { FutureDirection } from '@/features/direction/future-direction';
+import { MainTabs } from '@/features/home/main-tabs';
 import { ReportView, TIMING_TAB, type ReportTab } from '@/features/report/report-view';
 import { useReport } from '@/features/report/use-report';
 import { ShareEntry } from '@/features/share/share-entry';
@@ -41,17 +42,21 @@ export default function ReportScreen() {
   const [futureLoading, setFutureLoading] = useState(false);
   useUpdateBusy(futureLoading);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  // 시기 탭이 새 화면(/timing)이 되기 전까지 리포트가 시기 탭의 자리다(결정 046 의 4) — 모든 갈래에 아래 탭을 두고,
+  // 고른 칸은 지금 보는 영역을 따른다(시기면 시기, 아니면 나)
+  const [shownArea, setShownArea] = useState<string | undefined>(area);
+  const tabs = <MainTabs active={shownArea === 'TIMING' ? 'timing' : 'me'} />;
 
   if (loaded && !profile)
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <ChartEmpty />
       </Screen>
     );
 
   if (state.status === 'checking')
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <View style={styles.status}>
           <Txt variant="table" color="gray">
             {S.checking}
@@ -62,7 +67,7 @@ export default function ReportScreen() {
 
   if (state.status === 'none')
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <View style={styles.status}>
           <Txt variant="body">{S.intro}</Txt>
           <Button label={S.request} onPress={start} />
@@ -72,7 +77,7 @@ export default function ReportScreen() {
 
   if (state.status === 'writing')
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <View style={styles.status}>
           <Txt variant="heading">{S.writing}</Txt>
           <Txt variant="table" color="gray">
@@ -84,7 +89,7 @@ export default function ReportScreen() {
 
   if (state.status === 'failed')
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <View style={styles.status}>
           <Txt variant="body">
             {state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}
@@ -95,10 +100,11 @@ export default function ReportScreen() {
     );
 
   return (
-    <Screen nav={nav}>
+    <Screen nav={nav} footer={tabs}>
       <ReportView
         report={state.report}
         initialArea={TABS.find((a) => a === area)}
+        onAreaChange={setShownArea}
         // 다음 변곡점이 없으면(네 번을 모두 지났다) 공유할 것이 없어 버튼을 두지 않는다(결정 025)
         timingShare={
           state.report.timing.current.nextMilestone ? (

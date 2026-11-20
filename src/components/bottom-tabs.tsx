@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
 import { Colors, FontWeight, LineWidth, Sizes, Spacing } from '@/constants/theme';
+import { strings } from '@/content/strings';
 
 export type BottomTab<K extends string> = {
   key: K;
@@ -21,7 +22,7 @@ export type BottomTabsProps<K extends string> = {
 /** 화면 아래의 탭 줄. 아이콘과 이름이 한 벌이고 화면 폭을 탭 수로 똑같이 나눈다. */
 export function BottomTabs<K extends string>({ tabs, value, onChange }: BottomTabsProps<K>) {
   return (
-    <View style={styles.bar} accessibilityRole="tablist">
+    <View testID="bottom-tabs" style={styles.bar} accessibilityRole="tablist" accessibilityLabel={strings.common.bottomTabsLabel}>
       {tabs.map((tab) => {
         const on = tab.key === value;
         return (
@@ -36,7 +37,7 @@ export function BottomTabs<K extends string>({ tabs, value, onChange }: BottomTa
             style={styles.tab}
           >
             {tab.icon(on ? Colors.ink : Colors.hint)}
-            <Txt variant="label" color={on ? 'ink' : 'hint'} style={styles.label}>
+            <Txt variant="badge" color={on ? 'ink' : 'hint'} style={!on && styles.off}>
               {tab.label}
             </Txt>
           </Pressable>
@@ -54,5 +55,6 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.hair,
   },
   tab: { flex: 1, height: Sizes.tabBarHeight, alignItems: 'center', justifyContent: 'center', gap: Spacing.xxs / 2 },
-  label: { fontWeight: FontWeight.semibold },
+  /** 탭 이름은 11/15(시안 11) — 고른 탭은 600, 나머지는 500 */
+  off: { fontWeight: FontWeight.medium },
 });

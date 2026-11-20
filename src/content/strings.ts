@@ -11,8 +11,9 @@ export const strings = {
     arrow: '→',
     timeColon: ':',
     none: '—',
+    /** 앱의 아래 탭 줄을 화면 읽기가 부르는 이름(리포트의 영역 탭과 구분) */
+    bottomTabsLabel: '아래 탭',
   },
-  /** 홈(카테고리 화면). 구성은 docs/decisions/019-home-categories.md */
   /** 로그인(결정 034 · 042 · 044). 버튼 문구는 셋 다 영문 이름 + "로 로그인"(결정 044 — 카카오 · 구글은 공급자 가이드 문구와 다르다) */
   login: {
     /** 로고 아래 한 줄 */
@@ -123,8 +124,8 @@ export const strings = {
     nicknameSuffix: '님의 별명은',
     read: '풀이 읽기',
   },
-  /** 아래 탭(결정 019) */
-  tabs: { home: '홈', my: '마이' },
+  /** 아래 탭 넷, 이 순서(결정 055 의 2 — 궁합 탭은 1.1.0) */
+  tabs: { home: '홈', me: '나', timing: '시기', my: '마이' },
   /** 마이: 출생 정보와 설정의 줄을 한 화면에(결정 038) */
   my: {
     title: '마이',
@@ -240,47 +241,10 @@ export const strings = {
       back: '돌아가기',
     },
   },
+  /** 홈 별명 카드에서 받아 둔 풀이가 아직 없을 때(결정 047) */
   main: {
-    soon: '준비 중',
-    readingLabel: '나의 별명',
-    readingMore: '풀이 읽기',
     readingEmpty: '아직 별명을 짓지 않았어요.',
     readingCta: '내 별명 읽기',
-    categories: [
-      {
-        key: 'me',
-        title: '나',
-        items: [
-          { label: '요약 풀이', path: '/reading' },
-          { label: '내 차트', path: '/chart' },
-          { label: '심층 리포트', path: '/report' },
-        ],
-      },
-      {
-        key: 'relation',
-        title: '관계',
-        items: [
-          { label: '사람을 대하는 성향', path: '/report?area=RELATIONSHIP' },
-          { label: '연애에서 해 볼 만한 것', path: '/direction' },
-        ],
-      },
-      {
-        key: 'synastry',
-        title: '궁합',
-        items: [
-          { label: '상대와 궁합 보기', path: '/synastry' },
-          { label: '궁합 랭킹', path: '/synastry/ranking' },
-        ],
-      },
-      {
-        key: 'timing',
-        title: '시기',
-        items: [
-          { label: '지금 나의 구간', path: '/report?area=TIMING' },
-          { label: '다가오는 변곡점', path: '/report?area=TIMING' },
-        ],
-      },
-    ],
   },
   birth: {
     title: '출생 정보',
@@ -290,6 +254,14 @@ export const strings = {
     subtitle: '태어난 순간의 하늘을 계산해\n나를 설명하는 글로 풀어 드립니다.',
     /** 기기에 출생 정보가 없어 서버에 저장된 것을 확인하는 동안(결정 029) */
     restoring: '불러오는 중이에요',
+    /** 홈 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): "새벽별 님" · "물병자리 · 별명을 받은 지 12일" · 풀이 읽기 */
+    card: {
+      nicknameSuffix: ' 님',
+      separator: ' · ',
+      daysPrefix: '별명을 받은 지 ',
+      daysSuffix: '일',
+      read: '풀이 읽기',
+    },
     dateLabel: '생년월일',
     datePlaceholder: '2000-06-15',
     timeLabel: '태어난 시각',
@@ -349,7 +321,6 @@ export const strings = {
   },
   chart: {
     wheelLabel: '출생 차트 휠',
-    keyThreeHeading: '나를 이루는 세 가지',
     keySunCaption: '힘을 내는 방식',
     keyMoonCaption: '편안함을 느끼는 방식',
     keyAscCaption: '처음 보이는 모습',
@@ -457,6 +428,8 @@ export const strings = {
   },
   report: {
     title: '심층 리포트',
+    /** 영역 탭 줄을 화면 읽기가 부르는 이름(아래 탭과 구분) */
+    areasLabel: '리포트 영역',
     checking: '리포트를 확인하고 있어요',
     intro: '성격 · 관계 · 일 · 감정 · 시기, 다섯 가지로 나를 길게 풀어 드려요.',
     request: '리포트 받기',

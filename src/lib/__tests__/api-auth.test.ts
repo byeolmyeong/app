@@ -182,3 +182,43 @@ describe('api: 가짜 서버', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });
+
+// 홈 별명 카드의 프로필 그림 · 닉네임(결정 047 의 1-2, 서버 계약 `GET /account`)
+describe('api: 내 계정', () => {
+  const app = (fetchFn: jest.MockedFunction<typeof fetch>) => createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
+  const account = {
+    nickname: '새벽별',
+    email: null,
+    provider: 'KAKAO',
+    marketingConsent: false,
+    marketingConsentAt: null,
+    pushConsent: true,
+    pushConsentAt: '2026-11-20T00:00:00Z',
+    avatar: 3,
+  };
+
+  it('GET /account 의 닉네임 · 프로필 그림을 읽는다', async () => {
+    const fetchFn = fakeFetch(200, account);
+    const res = await app(fetchFn).getAccount();
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/account`);
+    expect(initOf(fetchFn).method).toBe('GET');
+    expect(res).toEqual({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
+  });
+
+  it('옛 계정은 닉네임 · 프로필이 null 이어도 받는다', async () => {
+    const res = await app(fakeFetch(200, { ...account, nickname: null, avatar: null })).getAccount();
+    expect(res).toEqual({ ok: true, data: { nickname: null, avatar: null } });
+  });
+
+  it('모르는 프로필 번호여도 닉네임은 받는다 — 모르는 그림은 그리는 쪽이 숨긴다(리뷰 PR #41)', async () => {
+    const res = await app(fakeFetch(200, { ...account, avatar: 9 })).getAccount();
+    expect(res).toEqual({ ok: true, data: { nickname: '새벽별', avatar: 9 } });
+  });
+
+  it('프로필이 정수가 아니거나 닉네임이 글자가 아니면 계약과 다른 응답이다', async () => {
+    for (const bad of [{ ...account, avatar: 1.5 }, { ...account, avatar: '3' }, { ...account, nickname: 3 }, { ...account, avatar: undefined }]) {
+      const res = await app(fakeFetch(200, bad)).getAccount();
+      expect(res).toMatchObject({ ok: false, error: 'INVALID' });
+    }
+  });
+});

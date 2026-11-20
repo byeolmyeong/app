@@ -35,6 +35,7 @@ jest.mock('@/lib/api', () => ({
     listPlaces: jest.fn(),
     saveProfile: jest.fn(),
     deleteAccount: jest.fn(),
+    getAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -54,7 +55,7 @@ const unknown: BirthInput = { date: '2000-06-15', time: null, placeId: null };
 const noProfile: ApiResult<BirthInput> = { ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' };
 
 const formShown = () => screen.findByPlaceholderText(H.datePlaceholder);
-const homeShown = () => screen.findAllByTestId('home-category');
+const homeShown = () => screen.findByTestId('nickname-card');
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -69,7 +70,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
   it('기기가 비어 있고 서버에 출생 정보가 있으면 차트와 곳 이름을 받아 기기에 두고 홈을 보여 준다', async () => {
     mockApi.getProfile.mockResolvedValue({ ok: true, data: known });
     await render(<HomeScreen />);
-    expect(await homeShown()).toHaveLength(4);
+    expect(await homeShown()).toBeTruthy();
     expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
 
     expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
@@ -135,7 +136,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
       mockApi.getProfile.mockResolvedValue(result);
       await render(<HomeScreen />);
       expect(await formShown()).toBeTruthy();
-      expect(screen.queryByTestId('home-category')).toBeNull();
+      expect(screen.queryByTestId('nickname-card')).toBeNull();
       expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
       expect(mockApi.createChart).not.toHaveBeenCalled();
       expect(await loadBirth()).toBeNull();

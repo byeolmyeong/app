@@ -83,10 +83,9 @@ export const BrandColors = {
   /** 소개의 기울어진 그림 카드와 그 둘레의 빛 */
   card: '#15161C',
   cardShadow: 'rgba(71,82,255,0.22)',
-  /** 홈 아이콘 카드 */
-  tileTop: '#17181F',
-  tileBottom: '#0E0F14',
-  tileLine: '#262833',
+  /** 홈 별명 카드 오른쪽 위의 빛 · 뒤에 깔린 별자리 선(결정 047, 보드 11) */
+  cardGlow: '#232A8A',
+  constellation: '#5A5D6B',
 } as const;
 
 /**
@@ -203,6 +202,19 @@ export const IntroArtLayout = {
   timeline: { width: 300, height: 14, line: 2, dot: 10, now: 14, gap: 10 },
 } as const;
 
+/** 홈 별명 카드(결정 047, 보드 11 · 11-1): 모서리 · 안 여백 · 프로필 그림 · 그림과 이름 사이 · 위와의 사이 · 빛 · 뒤의 별자리 그림 */
+export const NicknameCardLayout = {
+  radius: 24,
+  padding: 20,
+  avatar: 52,
+  rowGap: 12,
+  headlineTop: 18,
+  moreTop: 14,
+  chevron: 16,
+  glow: { x: 0.88, y: 0.08, extent: 0.58 },
+  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55 },
+} as const;
+
 /** 별명 짓는 중의 반짝임 셋의 자리(그림 칸 260 기준, 결정 042 시안 보드 9) */
 export const MakingTwinkles = [
   { left: 14, top: 40 },
@@ -286,6 +298,8 @@ export const Typography = {
   sheetTitle: type(20, 28, FontWeight.semibold),
   /** 시트 제목(옛 시트), 문단 제목 */
   heading: type(18, 26, FontWeight.semibold),
+  /** 홈 별명 카드의 한 줄 별명(결정 047, 보드 11) */
+  cardTitle: type(21, 30, FontWeight.semibold),
   /** 버튼 글씨 */
   button: type(16, 24, FontWeight.semibold),
   /** 입력칸의 값 · 자리 글자, 시트 목록의 한 줄(결정 042 시안). 값은 medium 으로 굵힌다 */
@@ -377,7 +391,6 @@ export const Sizes = {
   checkMarkInset: 6,
   /** 그 사람의 하늘 그림: 풀이 글 머리 · 홈 카드 */
   readingPicture: 200,
-  homePicture: 64,
   /** 차트 휠(궁합의 겹친 휠)의 최대 지름 */
   wheel: 300,
   /** 내 하늘 지도 휠의 최대 지름(시안 13) */
@@ -446,7 +459,6 @@ export const Sizes = {
   brandMarkHeight: 20,
   byeoli: 160,
   byeoliSmall: 72,
-  homeTile: 64,
   /** 소개 · 가입 단계 화면의 머리(건너뛰기 · 뒤로) 높이와 바닥 여백(결정 042 시안) */
   stepHeader: 56,
   stepBottom: 34,

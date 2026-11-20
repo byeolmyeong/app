@@ -82,32 +82,32 @@ last_reviewed: 2026-11-20
 
 ### A① 아래 탭 넷 + 홈 v2 (결정 055)
 
-#### 1. strings-tabs-home · 상태: 대기
+#### 1. strings-tabs-home · 상태: 완료
 - 읽을 것: 결정 046 · 047, 보드 11 · 11-1, `src/content/strings.ts` 의 `tabs` · `home`
 - 할 것: `strings.tabs` 넷(홈 · 나 · 시기 · 마이 — 결정 055), `strings.home` 의 별명 카드("○○ 님" · "별명을 받은 지 ○일" · 풀이 읽기). 쓰지 않게 되는 홈 카테고리 문구는 지운다.
 - 주는 것: 문구 키
 - 하지 말 것: 화면 파일에 문구를 쓰지 않는다.
 - 검증: `npm test -- strings` 통과, 새 키에 빈 값 없음(테스트)
 
-#### 2. bottom-tabs-five · 상태: 대기
+#### 2. bottom-tabs-five · 상태: 완료
 - 읽을 것: `src/features/home/main-tabs.tsx` · `src/components/bottom-tabs.tsx` · 그 테스트
 - 할 것: `MainTab = 'home' | 'me' | 'timing' | 'my'`, 네 칸 · 시안 아이콘, 누르면 `router.replace`. 나 → `/reading`, 시기 → `/report?area=TIMING`(임시 대상은 한 곳의 표). 아래 탭을 그리는 화면: 홈 · 마이 · `/reading` · `/report`. `/synastry` 로 들어오면 홈으로(결정 055 의 1).
 - 주는 것: 네 칸 탭
 - 하지 말 것: Expo Router `Tabs` 로 바꾸지 않는다. 이유: 결정 046 의 2.
 - 검증: 탭 넷이 보이고 누르면 그 경로로 바뀌며 뒤로 가기에 쌓이지 않는다(테스트)
 
-#### 3. home-v2 · 상태: 대기
+#### 3. home-v2 · 상태: 완료
 - 읽을 것: 결정 047, 보드 11 · 11-1, `home-categories.tsx` · `home-reading-card.tsx`, `src/app/index.tsx`
 - 할 것: 홈을 머리(로고) · 별명 카드(프로필 `GET /account` 의 `avatar` · 닉네임 · 해 별자리(차트 SUN 의 `sign`) · "별명을 받은 지 ○일"(`Reading.createdAt` 이 있을 때만 — 한국 날짜 차이, 받은 날 1일) · 한 줄 별명 · 풀이 읽기 → `/reading`)로. 관계 · 궁합 칸과 `home-categories.tsx` 를 지운다. 출생 정보가 없을 때의 흐름(결정 029)은 그대로.
 - 주는 것: 홈 v2 뼈대(A③ · A④ 가 칸을 더한다)
 - 하지 말 것: 해 별자리를 날짜로 셈하지 않는다. 이유: 골든 룰(서버 차트 값).
 - 검증: `createdAt` 있음/없음 · 시각 모름 각각의 홈 렌더 테스트, 지운 파일을 가리키는 import 없음(`npx tsc --noEmit`)
 
-#### 4. docs-a1 · 상태: 대기
+#### 4. docs-a1 · 상태: 완료
 - 할 것: docs/release-1.0.0.md "화면" 표(아래 탭 넷 · 홈), docs/architecture.md 디렉터리 설명(홈).
 - 검증: 지운 화면 이름이 문서에 남지 않음(`grep -n home-categories docs` 비어 있음)
 
-#### 5. verify-a1 · 상태: 대기
+#### 5. verify-a1 · 상태: 완료
 - 할 것: `/verify`, 웹에서 홈 → 탭 넷 → 홈 왕복, 보드 11-1 과 나란히 스크린샷.
 - 검증: 표 전부 통과
 
@@ -276,3 +276,12 @@ last_reviewed: 2026-11-20
 
 ## 실행 기록
 - 2026-11-20 계획 · 결정 046~054 작성(문서만). 처음 045 · 046 으로 쓴 결정을 온보딩 v2 의 045 때문에 046 · 047 로 옮김.
+- 2026-11-20 묶음 A①(세션 fa, 워크트리 `.wt-app-a1`, 브랜치 `feat/tabs-home-v2`, develop `70c1a78` 위). 상위 계획 `docs/plans/2026-11-20-sian-all-repos.md` 의 "바뀌는 줄"(탭 넷 · 궁합 없음)을 따름. 시작: 81 묶음 1030 통과.
+  - 태스크 1: `strings.tabs` 넷(홈 · 나 · 시기 · 마이) · `strings.home.card`(" 님" · "별명을 받은 지 N일" · 풀이 읽기). 확인: `home-strings.test` 2 먼저 실패 → 통과. 커밋 66fef9b
+  - 태스크 2: `MainTab` 넷 · 가는 곳 표(나 → `/reading`, 시기 → `/report?area=TIMING`, 결정 046 의 4) · 시안 아이콘(네 갈래 별 · 달). 아래 탭: 홈 · 마이 · 요약 해석 글 · 리포트 글(시기 영역이면 시기). `src/app/synastry/_layout.tsx` 가 `/synastry/**` 를 홈으로(궁합 코드는 남김, 결정 055 의 1 · 리뷰 초점 5). 리포트는 영역 탭(`Tabs`)과 아래 탭(`BottomTabs`)이 둘이라 고정 testID 로 가름. 확인: 새 테스트 4 먼저 실패(탭 넷 · 요약 해석 · 리포트 · 궁합 주소) → 통과. 커밋 7a7ed75
+  - 태스크 3: `api.getAccount`(닉네임 · 프로필만, 1~8 검사) · `Reading.createdAt`(있으면 글자). 홈 v2 = 머리 + `NicknameCard`(보드 11: 프로필 52 · "새벽별 님" 18/26 · "쌍둥이자리 · 별명을 받은 지 N일" 13/18 · 한 줄 별명 21/30 `cardTitle` · 풀이 읽기, 오른쪽 위 빛 `GlowBackdrop` 에 `centerX` · 별자리 장식). 해 별자리는 서버 차트 SUN, N일은 한국 날짜로 받은 날 1일(`days-since`). 계정을 못 받으면 이름 줄 없이, 만든 때가 없으면 해 별자리만, 풀이가 없으면 "아직 별명을 짓지 않았어요 · 내 별명 읽기". `home-categories` · `home-reading-card` 와 그 문구 · 값을 지움. 확인: api 4 · days-since 3 · 홈 7 먼저 실패 → 통과(옛 홈의 핵심 셋에도 "쌍둥이자리" 가 있어 카드 안에서만 찾게 좁힘). 커밋 20c5288 · 09c4cef. 탭 이름 11/15(600 · 500) 63591eb
+  - 태스크 4: release 화면 표(홈 v2 · 아래 탭 넷 · 궁합 시작 1.0.0 에서 안 열림) · architecture(home/ · synastry/_layout) · DESIGN.md(브랜드 자리 · 탭 아이콘), 상위 계획 P3 · P4 완료. 커밋 f6ef748
+  - 태스크 5: 웹 390(모의 API · 개발 서버 8118 — 찍고 끔)에서 보드 11-1(피그마 169:2)과 나란히. 고친 것 둘: ① 기기에 받아 둔 글을 그리는 갈래에 아래 탭이 없었다(단위 테스트는 서버 갈래만 쳤음 — 테스트에 받아 둔 글 갈래를 더해 먼저 실패 확인) a3c4be1 · ② 머리가 48 이라 카드가 20 위에 있었다 → `NavBar tall`(56) · 카드 위 12 437df25. 고친 뒤 카드 위 끝 y 69 로 보드와 같음, 머리 칸 채널 차 > 24 픽셀 0.98% · 카드 칸 11.74%(글자 테두리 · 의도한 차이 — 해 별자리 이름 · 프로필 그림 번호, 빛 · 장식 자리는 차이 없음). 탭 왕복: 홈 → 나 `/reading` → 시기 `/report?area=TIMING`(시기 탭 골라짐) → 마이 → 홈, 브라우저 기록 길이 2(쌓이지 않음), `/synastry` 를 열면 홈. 가로 넘침 0. 알림 종은 서버 S⑤ 뒤에 연다(결정 047 의 3).
+  - 확인: `npx tsc --noEmit && npx expo lint` exit 0 · `npm test` 82 묶음 1031 통과 · `npx expo export --platform web` exit 0 · `npx expo-doctor` 20/20.
+  - 독립 리뷰(깨끗한 맥락, `reviewer` 지침 · diff 와 기준만): 차단 1 · 수정 3 · 제안 5. 고침 — ① 홈이 세션 확인 전에 `GET /account` 를 불러, 앱에서 토큰을 읽기 전이면 401 → 세션 다시 받기가 보관 토큰을 지웠다(다음 실행에 로그아웃) → 로그인이 확인된 뒤에만 f74e59b · ② 탭이 replace 만 해 push 로 들어온 글에서 누르면 밑의 화면이 남았다(홈 둘 · 뒤로 가면 출생 정보) → `dismissAll` 뒤 replace, 실제 라우터 테스트 7c8b831 · ③ 리포트는 다 쓴 글에만, 요약 해석은 실패에 아래 탭이 없었다 → 시기 · 나 탭 자리의 모든 갈래에 · ④ 리포트의 두 탭 줄이 화면 읽기에서 구분되지 않고 영역을 바꿔도 아래 탭이 그대로 → "리포트 영역" · "아래 탭" 이름, 영역을 따라감 b1076e9 · ⑤ 궁합 주소 테스트를 실제 라우터로(하위 주소 다섯) 52ac731 · ⑦ 모르는 프로필 번호면 계정 전체를 버리던 것 → 닉네임은 받고 그림만 숨김 f63fcb8 · ⑧ 궁합 화면 표 네 행 · 없는 invite 경로 · 쓰지 않는 문구 481502e. 새 테스트는 고치기 전에 먼저 실패함을 봄(궁합 주소 다섯은 이미 맞는 동작이라 통과 — 약한 테스트를 바꾼 것). 그대로 둔 것 — ⑥ `GlowShape` · `ChartPicture named=false` 는 공용 부품 · 부품 테스트가 있어 남김 · ⑨ 홈을 띄운 채 자정을 넘기면 "N일" 이 하루 늦음(홈 탭을 다시 누르면 맞음).
+  - 확인(리뷰 고침 뒤): `npx tsc --noEmit && npx expo lint` exit 0 · `npm test` 84 묶음 1044 통과 · `npx expo export --platform web` exit 0.

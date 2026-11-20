@@ -26,13 +26,20 @@ export function ReportView({
   initialArea,
   timingShare,
   timingAfterNow,
+  onAreaChange,
 }: {
   report: Report;
   initialArea?: ReportTab;
   timingShare?: ReactNode;
   timingAfterNow?: ReactNode;
+  /** 영역을 바꿀 때(화면이 아래 탭의 고른 칸을 맞춘다 — 시기면 시기, 아니면 나) */
+  onAreaChange?: (area: ReportTab) => void;
 }) {
-  const [area, setArea] = useState<ReportTab>(initialArea ?? report.sections[0].area);
+  const [area, setAreaState] = useState<ReportTab>(initialArea ?? report.sections[0].area);
+  const setArea = (next: ReportTab) => {
+    setAreaState(next);
+    onAreaChange?.(next);
+  };
   const section = report.sections.find((s) => s.area === area) ?? report.sections[0];
   const tabs: { key: ReportTab; label: string }[] = [
     ...report.sections.map((s) => ({ key: s.area, label: S.areas[s.area] })),
@@ -40,7 +47,7 @@ export function ReportView({
   ];
   return (
     <View>
-      <Tabs tabs={tabs} value={area} onChange={setArea} />
+      <Tabs tabs={tabs} value={area} onChange={setArea} label={S.areasLabel} />
       {area === TIMING_TAB ? (
         <TimingView timing={report.timing} share={timingShare} afterNow={timingAfterNow} />
       ) : (

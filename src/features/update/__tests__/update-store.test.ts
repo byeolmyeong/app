@@ -351,6 +351,32 @@ describe('업데이트 권유 판정(결정 059)', () => {
     return { store, ...storage };
   }
 
+  it('첫 확인으로 권할지가 정해지면 getSettled 가 true — 권할 것이 있으면 물은 버전을 읽은 뒤에(알림 받기 권유가 기다린다, 결정 066)', async () => {
+    const plain = setupSuggest(ios, null, configOf({}));
+    const onSettled = jest.fn();
+    plain.store.subscribeSettled(onSettled);
+    expect(plain.store.getSettled()).toBe(false);
+    await plain.store.check();
+    await settle();
+    expect(plain.store.getSettled()).toBe(true);
+    // 한 번만 알린다 — 다시 확인해도 알리지 않는다
+    await plain.store.check();
+    expect(onSettled).toHaveBeenCalledTimes(1);
+    let release: (v: string | null) => void = () => {};
+    const waiting = setupSuggest(ios, null, newer);
+    waiting.loadAsked.mockReturnValueOnce(new Promise((r) => (release = r)));
+    await waiting.store.check();
+    expect(waiting.store.getSettled()).toBe(false);
+    release(null);
+    await settle();
+    expect(waiting.store.getSettled()).toBe(true);
+    expect(waiting.store.getSuggestion()).toBe('1.1.0');
+    // 받지 못해도 정해진 것으로 본다(권유는 없다)
+    const failed = setupSuggest(ios, null, { ok: false, error: 'NETWORK' });
+    await failed.store.check();
+    expect(failed.store.getSettled()).toBe(true);
+  });
+
   it('최신보다 낮고 최소 이상이면 물은 버전을 읽은 뒤 그 최신 버전을 권한다. 막지는 않는다', async () => {
     const { store, loadAsked } = setupSuggest(ios, null, newer);
     expect(store.getSuggestion()).toBeNull();

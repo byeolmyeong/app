@@ -836,6 +836,10 @@ export const strings = {
       SCORE: '이 궁합은 공유할 수 없어요.',
       RANKING: '이 사이로 본 궁합이 없어 공유할 랭킹이 없어요.',
       NEXT_TURN: '공유할 다음 변곡점이 없어요.',
+      NICKNAME: '공유할 별명이 아직 없어요.',
+      ME_AREA: '공유할 풀이가 아직 없어요.',
+      DAY_SKY: '공유할 그날의 하늘이 아직 없어요.',
+      NEXT_BIG: '공유할 다음 큰 변화가 없어요.',
     },
     failed: {
       NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',
@@ -862,9 +866,15 @@ export const strings = {
       shareLink: '링크 공유',
       saveImage: '이미지 저장',
       copyLink: '링크 복사',
+      /** 앱의 주 버튼(결정 053 의 1). Meta 앱 ID 가 없는 빌드 · 웹에는 없다 */
+      story: '인스타그램 스토리 공유',
     },
+    /** 시트의 짧은 알림(결정 065 의 1). 사진 접근을 막았으면 알림을 눌러 설정을 연다 */
     notices: {
-      saved: '이미지를 저장했어요.',
+      saved: '이미지를 저장했어요',
+      saveFailed: '이미지를 저장하지 못했어요',
+      photosDenied: '설정에서 사진 접근을 허용해 주세요',
+      storyFailed: '공유하지 못했어요. 잠시 뒤 다시 해 주세요',
       copied: '링크를 복사했어요.',
       imageFailed: '이미지를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.',
       linkFailed: '링크를 보내지 못했어요. 잠시 뒤 다시 눌러 주세요.',
@@ -881,6 +891,31 @@ export const strings = {
       nextTurnLead: '내 다음 변곡점은',
       yearSuffix: '년 ',
       seasons: { SPRING: '봄', SUMMER: '여름', AUTUMN: '가을', WINTER: '겨울' },
+    },
+    /**
+     * 공유 카드 v2(결정 053 의 2, 보드 12-7 · 12-14 · 11-7 · 14-6): 칩 · "새벽별 님의 …"(닉네임이 없으면 "나의 …") · 서버가 준 제목 · 한 줄 소개.
+     * 나 탭 영역의 이름은 strings.me.areas, 별자리 이름은 strings.signs + strings.chart.signSuffix 를 쓴다.
+     */
+    cards: {
+      of: ' 님의 ',
+      mine: '나의 ',
+      separator: ' · ',
+      nickname: '별명',
+      today: '오늘',
+      nextBig: '다음 큰 변화',
+      /** 날짜 "11월 19일"(서버가 준 YYYY-MM-DD 를 그대로 옮겨 적는다) */
+      date: { month: '월 ', day: '일' },
+      /** 오늘의 하늘 · 그날의 하늘 칩의 뒷말: "11월 19일 · 오늘의 하늘" */
+      daySky: { today: '오늘의 하늘', day: '그날의 하늘' },
+      /** 다음 큰 변화 칩: "2028년 · 만 29세 무렵"(해 · 나이는 서버 값) */
+      when: { year: '년', agePrefix: '만 ', ageSuffix: '세 무렵' },
+      taglines: {
+        me: '태어난 순간의 하늘로 읽는 나',
+        today: '하늘의 움직임으로 읽는 오늘',
+        /** 그날의 하늘(오늘이 아닌 날) — 시안에 없어 오늘의 말을 하루로 바꿨다 */
+        day: '하늘의 움직임으로 읽는 하루',
+        timing: '하늘의 움직임으로 읽는 나의 시기',
+      },
     },
     /** 공유 페이지(`/s/<공유 식별자>`). 로그인 없이 열린다 */
     page: {

@@ -107,15 +107,17 @@ describe('강제 업데이트(결정 027)', () => {
     expect(screen.queryByText(U.title)).toBeNull();
   });
 
-  it('내 버전이 최소 버전보다 낮으면 막는 화면만 보인다: 제목 · 기본 문구 · 스토어 버튼, 뒤로 가기는 없다', async () => {
+  it('내 버전이 최소 버전보다 낮으면 막는 화면만 보인다(보드 17-1): 별이 · 제목 · 두 줄 설명 · 주 버튼 "업데이트" 하나, 나중에 하기 · 뒤로 가기는 없다', async () => {
     mockApi.getAppConfig.mockResolvedValue(required);
     await render(<UpdateGate>{app}</UpdateGate>);
-    expect(screen.getByText(U.title)).toBe(screen.getByText('업데이트가 필요해요'));
-    expect(screen.getByText(U.body)).toBeTruthy();
+    expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByRole('header', { name: '새 버전이 나왔어요' })).toBeTruthy();
+    expect(screen.getByText('이 버전은 더 이상 쓸 수 없어요.\n업데이트한 뒤에 이어서 볼 수 있어요.')).toBe(screen.getByText(U.body));
     expect(screen.queryByText('앱의 화면들')).toBeNull();
     expect(screen.queryByLabelText(strings.common.backLabel)).toBeNull();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
     expect(screen.getAllByRole('button')).toHaveLength(1);
-    expect(screen.queryByText(U.noStore)).toBeNull();
+    expect(screen.getByRole('button', { name: '업데이트' })).toBeTruthy();
   });
 
   it('버튼을 누르면 설정의 storeUrl 을 연다', async () => {
@@ -131,15 +133,15 @@ describe('강제 업데이트(결정 027)', () => {
     mockOpenURL.mockRejectedValueOnce(new Error('no handler'));
     await render(<UpdateGate>{app}</UpdateGate>);
     await fireEvent.press(screen.getByRole('button', { name: U.open }));
-    expect(screen.getByText(U.openFailed)).toBeTruthy();
+    expect(screen.getByText(`${U.body}\n${U.openFailed}`)).toBeTruthy();
   });
 
-  it('storeUrl 이 null 이면 버튼을 숨기고 안내 한 줄을 보여 준다', async () => {
+  it('storeUrl 이 null 이면 버튼을 숨기고 설명 아래에 안내 한 줄을 보여 준다', async () => {
     mockApi.getAppConfig.mockResolvedValue(configOf({ minVersion: '1.2.0', storeUrl: null }));
     await render(<UpdateGate>{app}</UpdateGate>);
     expect(screen.getByText(U.title)).toBeTruthy();
     expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.getByText(U.noStore)).toBeTruthy();
+    expect(screen.getByText(`${U.body}\n${U.noStore}`)).toBeTruthy();
   });
 
   it('관리자가 적은 안내가 있으면 기본 문구 대신 그대로(줄바꿈 · 기호도 글자로) 보여 준다', async () => {
@@ -151,7 +153,7 @@ describe('강제 업데이트(결정 027)', () => {
   });
 
   it('안내가 빈 글이면 기본 문구를 보여 준다', async () => {
-    mockApi.getAppConfig.mockResolvedValue(configOf({ minVersion: '1.2.0', message: '  ' }));
+    mockApi.getAppConfig.mockResolvedValue(configOf({ minVersion: '1.2.0', storeUrl: STORE_URL, message: '  ' }));
     await render(<UpdateGate>{app}</UpdateGate>);
     expect(screen.getByText(U.body)).toBeTruthy();
   });
@@ -286,8 +288,7 @@ describe('강제 업데이트(결정 027)', () => {
     await render(<UpdateGate>{app}</UpdateGate>);
     await act(async () => (mockSetHandler.mock.calls[0][0] as () => void)());
     expect(screen.getByText(U.title)).toBeTruthy();
-    expect(screen.getByText(U.body)).toBeTruthy();
-    expect(screen.getByText(U.noStore)).toBeTruthy();
+    expect(screen.getByText(`${U.body}\n${U.noStore}`)).toBeTruthy();
   });
 
   it('바쁨 등록은 UpdateGate 밖(화면만 따로 그릴 때)에서도 아무 일 없이 지나간다', async () => {

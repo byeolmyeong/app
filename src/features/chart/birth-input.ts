@@ -3,6 +3,7 @@
  * 시각의 표준시 변환과 차트 계산은 서버가 한다.
  */
 import { strings } from '@/content/strings';
+import { placeLabel } from '@/features/chart/place-sheet';
 import type { BirthInput } from '@/lib/api';
 
 /**
@@ -127,4 +128,17 @@ export function formatBirthSummary(profile: BirthProfile): string {
   const day = `${y}. ${mo}. ${d}.`;
   if (profile.time === null) return `${day} · ${strings.home.timeLabel} ${strings.home.timeUnknownValue}`;
   return [`${day} ${formatTimeDisplay(profile.time)}`, profile.place?.name].filter(Boolean).join(' · ');
+}
+
+/**
+ * 마이 별명 카드의 출생 정보 한 줄(결정 056, 보드 16): "1999년 3월 8일 · 오후 2:10 · 서울 강남구"(시 · 도는 짧은 이름).
+ * 시각 "모름" 이면 곳 없이 "1999년 3월 8일 · 시각 모름". 곳 이름을 몰라 비어 있으면 곳 칸을 뺀다.
+ */
+export function formatBirthLine(profile: BirthProfile): string {
+  const B = strings.my.birthLine;
+  const [y, mo, d] = profile.date.split('-').map(Number);
+  const day = `${y}${B.year}${mo}${B.month}${d}${B.day}`;
+  if (profile.time === null) return [day, B.timeUnknown].join(strings.my.card.separator);
+  const place = profile.place?.name ? placeLabel(profile.place.name) : null;
+  return [day, formatTimeDisplay(profile.time), place].filter(Boolean).join(strings.my.card.separator);
 }

@@ -1,10 +1,11 @@
 /**
- * 계정 삭제. 서버가 지운 뒤에만 이 앱이 기기에 둔 것(출생 정보 · 차트 · 받은 글 · 세션 토큰)을 비운다.
+ * 계정 삭제. 서버가 지운 뒤에만 이 앱이 기기에 둔 것(출생 정보 · 차트 · 받은 글)을 비운다.
  * 서버가 지우지 못했으면 기기의 것은 건드리지 않는다. 지운 값과 토큰은 로그에 남기지 않는다.
+ * 세션(토큰)은 "계정을 지웠어요"(보드 16-10)의 확인을 누를 때 화면이 `clearSession` 으로 비운다 — 여기서 비우면 루트 가드가 그 화면을
+ * 곧바로 로그인으로 바꾼다. 그 사이 서버의 세션은 이미 없어서 무엇을 불러도 401 이다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { clearSession } from '@/features/auth/use-session';
 import { api, type ApiResult } from '@/lib/api';
 
 /**
@@ -24,6 +25,5 @@ export async function deleteAccount(): Promise<ApiResult<null>> {
   const r = await api.deleteAccount();
   if (!r.ok) return r;
   await clearDeviceData();
-  await clearSession();
   return r;
 }

@@ -1,6 +1,7 @@
 import { strings } from '@/content/strings';
 import {
   birthInputOf,
+  formatBirthLine,
   formatBirthSummary,
   formatDateTyping,
   formatTimeDisplay,
@@ -117,6 +118,26 @@ describe('formatBirthSummary', () => {
     expect(formatBirthSummary({ date: '2000-06-15', time: null, place: null })).toBe('2000. 6. 15. · 태어난 시각 모름');
     // 예전에 보관된 값(시각 모름 + 곳)도 곳을 적지 않는다
     expect(formatBirthSummary({ date: '2000-06-15', time: null, place })).toBe('2000. 6. 15. · 태어난 시각 모름');
+  });
+});
+
+describe('formatBirthLine — 마이 별명 카드의 출생 정보 한 줄(결정 056, 보드 16)', () => {
+  it('"1999년 3월 8일 · 오후 2:10 · 서울 강남구" 꼴로 적는다(시 · 도는 짧은 이름)', () => {
+    expect(formatBirthLine({ date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } })).toBe(
+      '1999년 3월 8일 · 오후 2:10 · 서울 강남구',
+    );
+    expect(formatBirthLine({ date: '2000-12-01', time: '00:05', place: { id: 2, name: '세종특별자치시' } })).toBe(
+      '2000년 12월 1일 · 오전 12:05 · 세종',
+    );
+  });
+
+  it('시각 "모름" 이면 곳 없이 "시각 모름" 을 적는다(예전에 보관된 곳도 적지 않는다)', () => {
+    expect(formatBirthLine({ date: '1999-03-08', time: null, place: null })).toBe('1999년 3월 8일 · 시각 모름');
+    expect(formatBirthLine({ date: '1999-03-08', time: null, place })).toBe('1999년 3월 8일 · 시각 모름');
+  });
+
+  it('곳 이름을 찾지 못해 비어 있으면 곳 칸을 빼고 적는다', () => {
+    expect(formatBirthLine({ date: '1999-03-08', time: '14:10', place: { id: 1, name: '' } })).toBe('1999년 3월 8일 · 오후 2:10');
   });
 });
 

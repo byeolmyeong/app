@@ -86,6 +86,8 @@ type Run = {
   busy: boolean;
   /** 쓰는 중을 본 뒤의 확인인가(그때의 FAILED 는 "끝내 못 씀", 처음 확인의 FAILED 는 받기 전) */
   polling: boolean;
+  /** 쓰는 중이면 5초마다 다시 묻는가. 상태만 보는 곳(홈의 시기 칸)은 한 번만 묻는다 */
+  poll: boolean;
   /** 쓰는 중을 처음 본 때(기다리는 한도를 잰다). 쓰는 중이 아니면 null */
   writingSince: number | null;
   timer: ReturnType<typeof setTimeout> | null;
@@ -109,6 +111,8 @@ async function check(run: Run): Promise<void> {
     await saveReport(run.key, data.report);
     if (run.alive) settle(run, { status: 'done', report: data.report });
   } else if (data.status === 'WRITING') {
+    // 상태만 보는 곳은 쓰는 중이라는 것만 알고 더 묻지 않는다(다른 화면에 덮여도 묻거나 3분 뒤 실패로 굳지 않게 — 리뷰 #63)
+    if (!run.poll) return settle(run, { status: 'writing' });
     run.busy = true;
     run.polling = true;
     run.writingSince ??= Date.now();
@@ -161,8 +165,9 @@ async function request(run: Run): Promise<void> {
 /**
  * 시기 풀이. input 이 null 이면(출생 정보 · 세션을 아직 읽는 중) 서버를 부르지 않고 확인 중으로 둔다.
  * start: 받기 · 다시 쓰기, recheck: 상태만 다시 묻기(연결 복귀 · 다시 보기), dismiss: 실패 화면의 "나중에 하기"(받기 전으로).
+ * poll: false 면 쓰는 중이어도 5초마다 묻지 않는다 — 홈의 시기 칸처럼 상태만 보는 곳(홈은 열릴 때마다 새로 묻는다).
  */
-export function useTimingReport(input: BirthInput | null) {
+export function useTimingReport(input: BirthInput | null, { poll = true }: { poll?: boolean } = {}) {
   const date = input?.date;
   const time = input?.time;
   const placeId = input?.placeId;
@@ -178,6 +183,7 @@ export function useTimingReport(input: BirthInput | null) {
       alive: true,
       busy: false,
       polling: false,
+      poll,
       writingSince: null,
       timer: null,
       set: (state) => setSettled({ key, state }),
@@ -197,7 +203,7 @@ export function useTimingReport(input: BirthInput | null) {
       if (run.timer) clearTimeout(run.timer);
       if (current.current === run) current.current = null;
     };
-  }, [date, time, placeId, key]);
+  }, [date, time, placeId, key, poll]);
 
   const start = useCallback(() => {
     if (current.current) void request(current.current);

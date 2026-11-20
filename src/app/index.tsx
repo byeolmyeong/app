@@ -66,7 +66,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
   }, [firstData, phase]);
   // 시기 칸(결정 047 의 1-4 · 1-5): 로그인이 확인된 뒤에만 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41)
   const asking = session.ready && session.status === 'signedIn' ? input : null;
-  const timing = useTimingReport(asking);
+  // 홈은 상태만 본다 — 쓰는 중이어도 5초마다 묻지 않는다(홈을 열 때마다 새로 묻는다, 리뷰 #63)
+  const timing = useTimingReport(asking, { poll: false });
   const timingPhase = useLoadingPhase(asking !== null && timing.state.status === 'checking');
   useOnReconnect(online, () => {
     if (timing.state.status === 'done') timing.refresh();

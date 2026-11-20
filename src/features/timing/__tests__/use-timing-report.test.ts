@@ -168,4 +168,13 @@ describe('useTimingReport(결정 049 의 7 · 9)', () => {
     await act(async () => void (await jest.advanceTimersByTimeAsync(TIMING_REPORT_MAX_WRITING_MS + TIMING_REPORT_POLL_MS)));
     expect(result.current.state).toEqual({ status: 'failed', error: 'SERVER', stage: 'poll' });
   });
+
+  it('홈처럼 상태만 볼 때(poll: false)는 쓰는 중이어도 한 번만 묻고, 3분이 지나도 실패로 굳지 않는다(#63 리뷰 제안 5)', async () => {
+    mockApi.getTimingReport.mockResolvedValue(got('WRITING'));
+    const { result } = await renderHook(() => useTimingReport(input, { poll: false }));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'writing' }));
+    await act(async () => void (await jest.advanceTimersByTimeAsync(TIMING_REPORT_MAX_WRITING_MS + TIMING_REPORT_POLL_MS)));
+    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toEqual({ status: 'writing' });
+  });
 });

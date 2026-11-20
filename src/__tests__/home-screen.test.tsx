@@ -303,13 +303,17 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     expect(screen.queryByTestId('home-timing-card')).toBeNull();
   });
 
-  it('쓰는 중이면 칸이 없다(보드 11-2)', async () => {
+  it('쓰는 중이면 칸이 없다(보드 11-2) — 홈은 상태를 한 번만 묻는다(5초마다 묻지 않는다, #63 리뷰 제안 5)', async () => {
+    jest.useFakeTimers();
     mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
     await render(<HomeScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
     await screen.findByTestId('nickname-card');
-    await act(async () => {});
+    await act(async () => void (await jest.advanceTimersByTimeAsync(20_000)));
     expect(screen.queryByTestId('home-timing-card')).toBeNull();
     expect(screen.queryByTestId('home-timing-empty')).toBeNull();
+    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
   });
 
   it('상태를 못 물었으면 그 자리에 안내(19-1) · 다시 보기, 서버에 경로가 없으면(404) 칸을 숨긴다', async () => {

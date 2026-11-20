@@ -27,6 +27,9 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
     }),
     setApiToken: jest.fn(),
     saveLastProvider: jest.fn(async () => {}),
+    loadSignup: jest.fn(async (): Promise<{ signupToken: string; provider: 'KAKAO' | 'APPLE' | 'GOOGLE' } | null> => null),
+    saveSignup: jest.fn(async () => {}),
+    clearSignup: jest.fn(async () => {}),
     ...overrides,
   } satisfies SessionStoreDeps;
   return { deps, store: createSessionStore(deps), kept: () => kept };
@@ -357,5 +360,62 @@ describe('마지막에 쓴 공급자 적기', () => {
     await dev.store.start();
     await dev.store.devSignIn();
     expect(dev.deps.saveLastProvider).not.toHaveBeenCalled();
+  });
+});
+
+// 가입 이어 하기(결정 068 의 1): 가입권은 보관 · 이어 하기 · 지우기를 deps 에 맡긴다
+describe('가입 이어 하기', () => {
+  const signupRequired = async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket-1' });
+
+  it('처음 온 사람이면 가입권과 공급자를 보관한다', async () => {
+    const { deps, store } = setup({ login: jest.fn(signupRequired) });
+    await store.start();
+    await store.signIn(google);
+    expect(deps.saveSignup).toHaveBeenCalledWith('ticket-1', 'GOOGLE');
+  });
+
+  it('켤 때 보관한 가입권이 있으면 서버에 묻지 않고 가입 중으로 시작하고, 그 가입권으로 가입을 마친다', async () => {
+    const { deps, store } = setup({ loadSignup: jest.fn(async () => ({ signupToken: 'kept-ticket', provider: 'KAKAO' as const })) });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signingUp');
+    expect(deps.getSession).not.toHaveBeenCalled();
+    await store.completeSignup(signupInput);
+    expect(deps.signup).toHaveBeenCalledWith('kept-ticket', birth, values);
+    expect(deps.saveLastProvider).toHaveBeenCalledWith('KAKAO');
+    expect(deps.clearSignup).toHaveBeenCalled();
+  });
+
+  it('로그인 · 로그아웃 · 가입 그만둠 · 가입 시간 지남 · 만 14세 미만이면 보관한 것을 지운다', async () => {
+    const signIn = setup();
+    await signIn.store.start();
+    await signIn.store.signIn(google);
+    expect(signIn.deps.clearSignup).toHaveBeenCalled();
+
+    const out = setup({ stored: 'kept' });
+    await out.store.start();
+    (out.deps.clearSignup as jest.Mock).mockClear();
+    await out.store.signOut();
+    expect(out.deps.clearSignup).toHaveBeenCalled();
+
+    const cancel = setup({ login: jest.fn(signupRequired) });
+    await cancel.store.start();
+    await cancel.store.signIn(google);
+    (cancel.deps.clearSignup as jest.Mock).mockClear();
+    await cancel.store.cancelSignup();
+    expect(cancel.deps.clearSignup).toHaveBeenCalled();
+
+    const expired = setup({ login: jest.fn(signupRequired), checkNickname: jest.fn(async () => fail('LOGIN_REQUIRED', 401, 'SIGNUP_EXPIRED')) });
+    await expired.store.start();
+    await expired.store.signIn(google);
+    (expired.deps.clearSignup as jest.Mock).mockClear();
+    await expired.store.checkNickname('새벽별');
+    expect(expired.deps.clearSignup).toHaveBeenCalled();
+
+    const young = setup({ login: jest.fn(signupRequired), signup: jest.fn(async () => fail('SERVER', 403, 'UNDER_AGE')) });
+    await young.store.start();
+    await young.store.signIn(google);
+    (young.deps.clearSignup as jest.Mock).mockClear();
+    await young.store.completeSignup(signupInput);
+    expect(young.deps.clearSignup).toHaveBeenCalled();
   });
 });

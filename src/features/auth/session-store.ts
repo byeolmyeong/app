@@ -45,6 +45,10 @@ export type SessionStoreDeps = {
   setApiToken: (token: string | null) => void;
   /** 로그인에 성공한(처음 온 사람은 가입을 마친) 공급자를 기기에 적는다 — 로그인 화면의 "최근 로그인"(결정 044) */
   saveLastProvider: (provider: ProviderCredential['provider']) => Promise<void>;
+  /** 가입 이어 하기(결정 068 의 1): 기기에 둔 가입권(수명 안의 것만, 가입 초안도 되돌린다) · 두기 · 지우기 */
+  loadSignup: () => Promise<{ signupToken: string; provider: ProviderCredential['provider'] } | null>;
+  saveSignup: (signupToken: string, provider: ProviderCredential['provider']) => Promise<void>;
+  clearSignup: () => Promise<void>;
 };
 
 /** 로그인 한 번의 결과 */
@@ -82,10 +86,11 @@ export function createSessionStore(deps: SessionStoreDeps) {
     return { ok: false, error: 'LOGIN_REQUIRED', code: 'SIGNUP_EXPIRED' };
   }
 
-  /** 서버가 준 세션으로 로그인 상태가 된다. 앱은 토큰을 보관한다(웹은 토큰이 없다) */
+  /** 서버가 준 세션으로 로그인 상태가 된다. 앱은 토큰을 보관한다(웹은 토큰이 없다). 이어 하던 가입은 지운다 */
   async function signedIn(token: string | null) {
     signupToken = null;
     signupProvider = null;
+    await deps.clearSignup();
     if (token && !deps.cookieSession) await deps.saveToken(token);
     set('signedIn', deps.cookieSession ? null : token);
   }
@@ -93,6 +98,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
   async function signedOut(lastError: string | null = null) {
     signupToken = null;
     signupProvider = null;
+    await deps.clearSignup();
     if (!deps.cookieSession) await deps.deleteToken();
     set('signedOut', null, lastError);
   }
@@ -126,6 +132,13 @@ export function createSessionStore(deps: SessionStoreDeps) {
      */
     start(): Promise<void> {
       starting ??= (async () => {
+        // 가입 중간에 나갔다 돌아왔다(결정 068): 가입권이 살아 있으면 서버에 묻지 않고 가입 중으로 잇는다
+        const ticket = deps.devSession ? null : await deps.loadSignup();
+        if (ticket) {
+          signupToken = ticket.signupToken;
+          signupProvider = ticket.provider;
+          return set('signingUp', null);
+        }
         if (deps.devSession) {
           const kept = deps.cookieSession ? null : await deps.loadToken();
           if (kept) set('signedIn', kept);
@@ -156,6 +169,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       if (r.data.status === 'SIGNUP_REQUIRED') {
         signupToken = r.data.signupToken;
         signupProvider = credential.provider;
+        await deps.saveSignup(r.data.signupToken, credential.provider);
         set('signingUp', null);
         return 'signingUp';
       }
@@ -185,6 +199,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
         if (r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));
         else if (r.code === 'UNDER_AGE') {
           signupToken = null;
+          await deps.clearSignup();
           set('signingUp', null, 'UNDER_AGE');
         } else set('signingUp', null, reasonOf(r));
         return r;

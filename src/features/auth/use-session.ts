@@ -7,6 +7,8 @@ import { Platform } from 'react-native';
 
 import { setLastProvider } from '@/features/auth/last-provider';
 import { createSessionStore, type Session } from '@/features/auth/session-store';
+import { restoreDraft } from '@/features/auth/signup-draft';
+import { clearResume, loadResume, startResume } from '@/features/auth/signup-resume';
 import { deleteToken, loadToken, saveToken } from '@/features/auth/token-storage';
 import { api, setSessionRefresher, setSessionToken } from '@/lib/api';
 
@@ -24,6 +26,15 @@ const store = createSessionStore({
   deleteToken,
   setApiToken: setSessionToken,
   saveLastProvider: setLastProvider,
+  // 가입 이어 하기(결정 068): 되돌릴 때 적던 초안도 메모리로
+  loadSignup: async () => {
+    const resume = await loadResume();
+    if (!resume) return null;
+    restoreDraft(resume.draft);
+    return resume;
+  },
+  saveSignup: (signupToken, provider) => startResume(signupToken, provider),
+  clearSignup: clearResume,
 });
 
 // 서버가 401 을 주면 api 가 이 방법을 부른다. 개발용이면 세션을 한 번 다시 받고, 아니면 로그인 전이 된다.

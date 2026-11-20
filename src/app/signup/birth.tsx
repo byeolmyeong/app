@@ -8,8 +8,8 @@
  * 닉네임 단계를 건너뛰고 들어오면 닉네임 단계로 돌려보낸다. 보내는 동안은 뒤로 가지 않고(두 번 누르기도 막는다),
  * 가입을 마치면 스택을 비우고 간다 — 남은 약관 · 닉네임 단계로 뒤로 가 가입 단계를 다시 밟지 않게.
  */
-import { Redirect, router, usePreventRemove, type Href } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Redirect, router, useFocusEffect, usePreventRemove, type Href } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -18,6 +18,7 @@ import { Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { finishDraft, getDraft, rejectNickname, rejectTerms } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
+import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -49,6 +50,13 @@ export default function BirthStep() {
     if (router.canDismiss()) router.dismissAll();
     router.replace(leave.href);
   }, [leave]);
+
+  // 이어 하기(결정 068): 이 단계에 있다고 적는다. 출생 정보는 적지 않는다 — 다시 오면 빈 칸부터
+  useFocusEffect(
+    useCallback(() => {
+      if (status === 'signingUp' && draft?.nickname) markSignupStep('birth');
+    }, [status, draft]),
+  );
 
   // 가입을 마치는 순간 로그인 상태가 되지만, 이 화면은 차트를 받아 풀이 글로 갈 때까지 머문다.
   if (status === 'signedIn' && !busy && !leave) return <Redirect href="/" />;

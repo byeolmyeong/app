@@ -6,6 +6,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { clearResume } from '@/features/auth/signup-resume';
 import { api, type ApiResult } from '@/lib/api';
 
 /**
@@ -19,6 +20,8 @@ export async function clearDeviceData(): Promise<void> {
   // 키를 하나씩 적지 않고 머리로 찾아 지운다. 기능이 새 키를 더해도 빠지지 않는다.
   const keys = await AsyncStorage.getAllKeys();
   await AsyncStorage.multiRemove(keys.filter((key) => key.startsWith(DEVICE_STORAGE_PREFIX)));
+  // 가입 이어 하기의 보관(보안 저장소 · sessionStorage, 결정 068)은 이 머리 밖이라 따로 지운다
+  await clearResume();
 }
 
 export async function deleteAccount(): Promise<ApiResult<null>> {

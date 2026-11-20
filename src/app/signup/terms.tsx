@@ -18,6 +18,7 @@ import { strings } from '@/content/strings';
 import { FROM_SIGNUP } from '@/features/auth/signup-agree';
 import { clearDraft, draftAgreements, takeTermsRejection, writeAgreements, type Agreements } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
+import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 
 const T = strings.terms;
@@ -51,6 +52,13 @@ export default function TermsStep() {
         // 약관 보기의 동의하기가 켠 항목을 다시 읽는다(체크를 바꿀 때마다 초안에 쓰므로 그 밖에는 같은 값이다)
       } else setAgreed(draftAgreements());
     }, []),
+  );
+
+  // 이어 하기(결정 068): 이 단계에 있다고 적는다(닉네임 단계에서 뒤로 돌아와도)
+  useFocusEffect(
+    useCallback(() => {
+      if (status === 'signingUp') markSignupStep('terms');
+    }, [status]),
   );
 
   // 가입을 마친 사람이 뒤로 가기로 돌아오면 홈으로(여기서 누른 뒤로가 로그아웃시키지 않게)

@@ -19,6 +19,7 @@ import { AvatarSheet } from '@/features/auth/avatar-sheet';
 import { NICKNAME_MAX, checkNickname, isComposingOnly, nicknameLength } from '@/features/auth/nickname-rule';
 import { getDraft, setDraft, takeNicknameRejection } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
+import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 
 const N = strings.nickname;
@@ -59,6 +60,13 @@ export default function NicknameStep() {
       const rejected = takeNicknameRejection();
       if (rejected) setServerError(rejected === 'NICKNAME_TAKEN' ? 'TAKEN' : 'INVALID');
     }, []),
+  );
+
+  // 이어 하기(결정 068): 이 단계에 있다고 적는다(출생 정보 단계에서 뒤로 돌아와도)
+  useFocusEffect(
+    useCallback(() => {
+      if (status === 'signingUp' && draft) markSignupStep('nickname');
+    }, [status, draft]),
   );
 
   // 가입을 마친 사람이 뒤로 가기로 돌아오면 홈으로(여기서 누른 "다음" 이 로그아웃시키지 않게)

@@ -126,7 +126,8 @@ describe('닉네임 단계', () => {
     await fireEvent.press(next());
     expect(await screen.findByText(N.taken)).toBeTruthy();
     expect(router.push).not.toHaveBeenCalled();
-    expect(getDraft()?.nickname).toBeUndefined();
+    // 적던 닉네임은 이어 하기에 남는다(결정 068) — 다음 단계로는 가지 않는다
+    expect(getDraft()?.nickname).toBe('새벽별');
   });
 
   it('쓸 수 있으면 앞뒤 공백을 뗀 닉네임을 초안에 두고 출생 정보 단계로', async () => {
@@ -244,4 +245,11 @@ describe('닉네임 단계: 새로 고침 직후(세션 확인 중)', () => {
     await view.rerender(<NicknameStep />);
     expect(screen.getByDisplayValue('새벽별')).toBeTruthy();
   });
+});
+
+// 결정 068 의 1: 적던 닉네임도 이어 하기에 남는다 — 치는 대로 초안에 쓴다(다음을 누르기 전에 나가도)
+it('치는 닉네임을 초안에 따라 쓴다', async () => {
+  await render(<NicknameStep />);
+  await fireEvent.changeText(input(), '새벽');
+  expect(getDraft()?.nickname).toBe('새벽');
 });

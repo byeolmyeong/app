@@ -119,6 +119,8 @@ function NicknameStepScreen() {
     setRaw(text);
     setServerError(null);
     setAvailable(null);
+    // 이어 하기(결정 068): 다음을 누르기 전에 나가도 적던 닉네임이 남게 초안에 따라 쓴다(판정은 다음 · 가입 때 서버)
+    setDraft({ nickname: text });
   }
 
   /** 서버에 묻는다. 그사이 칸이 바뀌었으면 답을 버린다. 쓸 수 있으면 true */

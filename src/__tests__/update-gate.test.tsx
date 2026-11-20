@@ -31,7 +31,11 @@ jest.mock('@/lib/app-client', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { getAppConfig: jest.fn() },
+  // 로그인했으면 루트의 이용 정지 문(결정 065 의 5)이 계정을 한 번 본다 — 정지 아닌 계정으로 답한다
+  api: {
+    getAppConfig: jest.fn(),
+    getMyAccount: jest.fn(async () => ({ ok: true, data: { nickname: '새벽별', avatar: 1, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } })),
+  },
   setUpdateRequiredHandler: jest.fn(),
 }));
 jest.mock('expo-linking', () => ({ openURL: jest.fn(async () => true) }));

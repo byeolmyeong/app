@@ -1,12 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { AppState } from 'react-native';
+import { AppState, View } from 'react-native';
 
 import NewInquiryScreen from '@/app/my/inquiries/new';
 import SuspendedScreen from '@/app/suspended';
 import { strings } from '@/content/strings';
 import { clearSuspended, isSuspended, markSuspended } from '@/features/auth/suspension';
-import { SuspensionGate } from '@/features/auth/suspension-gate';
+import { useSuspensionGate } from '@/features/auth/suspension-gate';
 import { signOutSession } from '@/features/auth/use-session';
 import { api, type MyAccount } from '@/lib/api';
 
@@ -33,6 +33,10 @@ jest.mock('@/lib/api', () => ({
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
+/** 루트가 하는 대로: 문의 답이 참이면 가린다(화면들은 그려져 있다) */
+function Gate({ signedIn }: { signedIn: boolean }) {
+  return useSuspensionGate(signedIn, true) ? <View testID="suspension-cover" /> : null;
+}
 const T = strings.suspended;
 const account: MyAccount = { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false };
 /** 진짜 lib/api 처럼: 계정이 정지면 정지 알림을 부르고 돌려준다 */
@@ -58,7 +62,7 @@ afterEach(() => jest.restoreAllMocks());
 describe('이용 정지 문(결정 065 의 5)', () => {
   it('로그인이 확인되면 계정을 한 번 묻고, 정지면 쌓인 화면을 걷고 정지 화면으로 바꾼다', async () => {
     answerAccount(true);
-    await render(<SuspensionGate />);
+    await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/suspended'));
     expect(router.dismissAll).toHaveBeenCalled();
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
@@ -67,7 +71,7 @@ describe('이용 정지 문(결정 065 의 5)', () => {
 
   it('정지가 아니면 아무 데로도 보내지 않는다', async () => {
     answerAccount(false);
-    await render(<SuspensionGate />);
+    await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(mockApi.getMyAccount).toHaveBeenCalled());
     expect(router.replace).not.toHaveBeenCalled();
   });
@@ -75,7 +79,7 @@ describe('이용 정지 문(결정 065 의 5)', () => {
   it('어느 요청이든 403 ACCOUNT_SUSPENDED 가 오면(lib/api 의 알림) 정지 화면으로', async () => {
     answerAccount(false);
     mockSegments.value = ['my', 'account'];
-    await render(<SuspensionGate />);
+    await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(mockHandler.current).not.toBeNull());
     await act(async () => mockHandler.current?.());
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/suspended'));
@@ -84,7 +88,7 @@ describe('이용 정지 문(결정 065 의 5)', () => {
   it('정지 중에도 새 문의 · 문의 내역에는 머문다(서버가 열어 둔다)', async () => {
     answerAccount(true);
     mockSegments.value = ['my', 'inquiries', 'new'];
-    await render(<SuspensionGate />);
+    await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(isSuspended()).toBe(true));
     expect(router.replace).not.toHaveBeenCalled();
   });
@@ -92,23 +96,23 @@ describe('이용 정지 문(결정 065 의 5)', () => {
   it('정지 중에 앱이 앞으로 돌아와 풀렸으면 표시를 끄고 홈으로', async () => {
     answerAccount(true);
     mockSegments.value = ['suspended'];
-    const view = await render(<SuspensionGate />);
+    const view = await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(isSuspended()).toBe(true));
     answerAccount(false);
     await act(async () => appStateHandler('active'));
     await waitFor(() => expect(isSuspended()).toBe(false));
-    await view.rerender(<SuspensionGate />);
+    await view.rerender(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
   });
 
   it('로그아웃 뒤 늦게 온 403 은 받지 않는다 — 다음 사람이 로그인해도 정지 화면으로 가지 않는다', async () => {
     mockSession.status = 'signedOut';
     answerAccount(false);
-    const view = await render(<SuspensionGate />);
+    const view = await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await act(async () => mockHandler.current?.());
     expect(isSuspended()).toBe(false);
     mockSession.status = 'signedIn';
-    await view.rerender(<SuspensionGate />);
+    await view.rerender(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(mockApi.getMyAccount).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByTestId('suspension-cover')).toBeNull());
     expect(router.replace).not.toHaveBeenCalledWith('/suspended');
@@ -117,7 +121,7 @@ describe('이용 정지 문(결정 065 의 5)', () => {
   it('로그인하면 남아 있던 표시를 지우고 계정의 답으로 다시 맞춘다(정지 아님이면 그대로)', async () => {
     markSuspended();
     answerAccount(false);
-    await render(<SuspensionGate />);
+    await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(screen.queryByTestId('suspension-cover')).toBeNull());
     expect(isSuspended()).toBe(false);
     expect(router.replace).not.toHaveBeenCalledWith('/suspended');
@@ -133,7 +137,7 @@ describe('이용 정지 문(결정 065 의 5)', () => {
         };
       }),
     );
-    await render(<SuspensionGate />);
+    await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     expect(screen.getByTestId('suspension-cover')).toBeTruthy();
     expect(router.replace).not.toHaveBeenCalled();
     await act(async () => answer());
@@ -144,19 +148,19 @@ describe('이용 정지 문(결정 065 의 5)', () => {
   it('다른 문(로그인 가드)이 뒤이어 다른 곳으로 보내 경로가 바뀌면 다시 정지 화면으로', async () => {
     answerAccount(true);
     mockSegments.value = ['login'];
-    const view = await render(<SuspensionGate />);
+    const view = await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/suspended'));
     (router.replace as jest.Mock).mockClear();
     // 가드가 홈('/')으로 보냈다
     mockSegments.value = [];
-    await view.rerender(<SuspensionGate />);
+    await view.rerender(<Gate signedIn={mockSession.status === 'signedIn'} />);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/suspended'));
   });
 
   it('로그인 전이 되면(로그아웃 · 탈퇴) 표시를 끄고 묻지 않는다', async () => {
     markSuspended();
     mockSession.status = 'signedOut';
-    await render(<SuspensionGate />);
+    await render(<Gate signedIn={mockSession.status === 'signedIn'} />);
     expect(isSuspended()).toBe(false);
     expect(mockApi.getMyAccount).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();

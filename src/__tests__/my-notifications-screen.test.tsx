@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
 import { IosAuthorizationStatus } from 'expo-notifications';
-import { Linking, StyleSheet } from 'react-native';
+import { Linking, Platform, StyleSheet } from 'react-native';
 
 import NotificationsScreen from '@/app/my/notifications';
 import { strings } from '@/content/strings';
@@ -232,6 +232,50 @@ describe('휴대폰 설정에서 꺼졌을 때(보드 16-2-1, 결정 066 의 3)'
     await act(async () => {});
     expect(screen.queryByText(O.title)).toBeNull();
     expect(StyleSheet.flatten(screen.getByTestId('settings').props.style).opacity).toBeUndefined();
+  });
+
+  it('끌 때 · 저장하지 못했을 때는 묻지 않는다', async () => {
+    N2.getPermissionsAsync.mockResolvedValue(ios(IosAuthorizationStatus.NOT_DETERMINED));
+    mockApi.updateAccount.mockResolvedValueOnce({ ok: true, data: { ...full, pushConsent: false } });
+    await render(<NotificationsScreen />);
+    await screen.findByText(N.push.label);
+    await act(async () => {});
+    await fireEvent.press(sw(N.push.label));
+    await act(async () => {});
+    expect(N2.requestPermissionsAsync).not.toHaveBeenCalled();
+    mockApi.updateAccount.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await fireEvent.press(sw(N.push.label));
+    expect(await screen.findByText(N.saveFailed)).toBeTruthy();
+    expect(N2.requestPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it('안드로이드 13+ 에서 아직 묻지 않은 사람(denied · 다시 물을 수 있음)은 꺼짐 줄이 없고, 켤 때 묻는다(#65 리뷰)', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      N2.getPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain: true, expires: 'never' } as never);
+      mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...full, pushConsent: false } });
+      mockApi.updateAccount.mockResolvedValue({ ok: true, data: full });
+      await render(<NotificationsScreen />);
+      await screen.findByText(N.push.label);
+      await act(async () => {});
+      expect(screen.queryByText(O.title)).toBeNull();
+      await fireEvent.press(sw(N.push.label));
+      await waitFor(() => expect(N2.requestPermissionsAsync).toHaveBeenCalled());
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it('꺼짐 흐림과 푸시 끔(16-2-2)이 겹쳐도 오늘의 하늘은 한 번만 흐리다(0.16 이 되지 않게)', async () => {
+    N2.getPermissionsAsync.mockResolvedValue(ios(IosAuthorizationStatus.DENIED));
+    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...full, pushConsent: false } });
+    await render(<NotificationsScreen />);
+    await screen.findByText(O.title);
+    expect(StyleSheet.flatten(screen.getByTestId('settings').props.style).opacity).toBe(0.4);
+    expect(StyleSheet.flatten(screen.getByTestId('today-sky').props.style)?.opacity).toBeUndefined();
+    // 누름은 여전히 막는다
+    expect(screen.getByTestId('today-sky').props.pointerEvents).toBe('none');
   });
 
   it('휴대폰 권한을 아직 묻지 않았으면(홈 권유에서 "나중에") 푸시를 켤 때 묻는다', async () => {

@@ -121,6 +121,37 @@ describe('휴대폰 알림 권한(결정 066)', () => {
     open.mockRestore();
   });
 
+  it.each([
+    [true, 'undetermined'],
+    [false, 'denied'],
+  ])('안드로이드 13+ 는 아직 묻지 않아도 denied 로 온다 — 다시 물을 수 있으면(%s) %s(#65 리뷰)', async (canAskAgain, expected) => {
+    const os = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      N.getPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain, expires: 'never' } as never);
+      expect(await getPushPermission()).toBe(expected);
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it('권한을 물은 뒤에는 화면의 권한을 바로 다시 읽는다(앱이 비활성이 되지 않아도)', async () => {
+    let seen: string | null = null;
+    function Probe() {
+      seen = usePushPermission();
+      return null;
+    }
+    await render(<Probe />);
+    await act(async () => {});
+    expect(seen).toBe('undetermined');
+    N.requestPermissionsAsync.mockResolvedValue(perm(S.DENIED));
+    N.getPermissionsAsync.mockResolvedValueOnce(perm(S.NOT_DETERMINED)).mockResolvedValue(perm(S.DENIED));
+    await act(async () => {
+      await requestPushPermission();
+    });
+    expect(seen).toBe('denied');
+  });
+
   it('안드로이드는 채널을 먼저 만든 뒤 묻는다(13 이상은 채널이 없으면 창이 뜨지 않는다)', async () => {
     const os = Platform.OS;
     Platform.OS = 'android';

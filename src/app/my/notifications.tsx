@@ -55,7 +55,12 @@ function SkeletonRow({ descLines = 0, trailing }: { descLines?: number; trailing
 function OsOffRow() {
   const O = N.osOff;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${O.title}. ${O.action}`} onPress={() => void openPushSettings()} style={styles.osOff}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${O.title}. ${O.action}`}
+      accessibilityHint={O.description}
+      onPress={() => void openPushSettings().catch(() => {})}
+      style={styles.osOff}>
       <View aria-hidden importantForAccessibility="no-hide-descendants" style={styles.osOffIcon}>
         <Svg width={NL.osOff.glyph} height={NL.osOff.glyph} viewBox="0 0 24 24" fill="none" stroke={Colors.accentText} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
           <Path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2h-15" />
@@ -167,11 +172,12 @@ export default function NotificationsScreen() {
               description={N.push.description}
               toggle={{
                 value: s.pushConsent,
-                onChange: (on) => {
-                  save({ pushConsent: on });
-                  // 홈의 권유에서 "나중에" 를 골라 휴대폰 권한을 아직 묻지 않았으면 켤 때 묻는다(묻지 않으면 켜도 오지 않는다)
-                  if (on && permission === 'undetermined') void requestPushPermission();
-                },
+                onChange: (on) =>
+                  void change({ pushConsent: on }).then((ok) => {
+                    if (!ok) show('error', N.saveFailed);
+                    // 홈의 권유에서 "나중에" 를 골라 휴대폰 권한을 아직 묻지 않았으면, 켜서 저장한 뒤에 묻는다(묻지 않으면 켜도 오지 않는다)
+                    else if (on && permission === 'undetermined') void requestPushPermission().catch(() => {});
+                  }),
               }}
             />
           </ListCard>
@@ -181,7 +187,8 @@ export default function NotificationsScreen() {
                 testID="today-sky"
                 pointerEvents={s.pushConsent ? 'auto' : 'none'}
                 accessibilityState={{ disabled: !s.pushConsent }}
-                style={!s.pushConsent && styles.dim}>
+                // 휴대폰 설정에서 꺼져 바깥이 이미 흐리면 다시 흐리게 하지 않는다(겹쳐 0.16 이 되지 않게, #65 리뷰)
+                style={!s.pushConsent && !osOff && styles.dim}>
                 <ListCard>
                   <ListCardRow
                     label={N.todaySky.label}

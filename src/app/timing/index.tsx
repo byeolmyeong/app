@@ -50,6 +50,7 @@ const ST = strings.states;
  * - 받기 → 쓰는 중(14-7, 머리 · 아래 탭 없음) → 다 쓰면 올해 칩. 끝까지 못 쓰면 14-8(다시 쓰기 · 나중에 하기).
  * - 받은 뒤: 맨 위 "지금 나의 시기"(대표 구간 — 누르면 시기 자세히) · 처음 고른 칩은 올해(`/timing?tab=month|year|life` 로 고를 수 있다).
  * 처음 불러올 때 0.3초가 넘으면 뼈대, 10초면 보드 19, 볼 게 없는데 끊기면 20-1. 받은 시기 풀이는 기기의 것을 먼저 보인다.
+ * 받기 전 · 쓰는 중인 것도 기기가 기억하면 뼈대 없이 곧바로 그 화면 — 이번 달이 늦으면 달력 자리만 기다린다(소유자 지적 2026-11-21).
  * 탭의 첫 화면이라 뒤로 가기가 없고 아래 탭이 있다(결정 046 의 2). 면책 문구는 두지 않는다(결정 064 의 3 — 시안 14 대로).
  */
 export default function TimingScreen() {
@@ -90,10 +91,12 @@ export default function TimingScreen() {
     if (month.state.status === 'failed') month.retry();
   });
 
-  // 처음 불러올 때: 시기 풀이의 상태를 처음 묻는 중이거나(기기에 받아 둔 것이 없다), 받기 전인데 이번 달을 아직 받지 못했다
+  // 처음 불러올 때: 시기 풀이의 상태를 처음 묻는 중이거나(기기에 기억한 것이 없다), 받기 전인데 이번 달을 아직 받지 못했다
   const monthPending = month.base === null && month.state.status === 'loading';
   const loading = loaded && profile !== null && (s.status === 'checking' || (!done && monthPending));
   const phase = useLoadingPhase(loading);
+  // 이번 달 자리만 기다릴 때의 0.3초(시기 풀이의 상태는 안다 — 화면은 곧바로, 달력 자리만 비웠다가 뼈대)
+  const monthPhase = useLoadingPhase(loaded && profile !== null && monthPending);
 
   const nav = <NavBar title={T.title} chevron />;
   const tabs = <MainTabs active="timing" />;
@@ -150,7 +153,8 @@ export default function TimingScreen() {
       <StateScreen nav={nav} tabs={tabs} title={T.loadFail.title} body={ST.loadFail.body} primary={{ label: ST.loadFail.retry, onPress: reload }} />
     );
 
-  if (s.status === 'checking' || (!done && monthPending))
+  // 화면 전체의 뼈대는 시기 풀이의 상태를 모를 때만(기억이 없다) — 상태를 알면 그 화면을 곧바로 그리고 달력 자리만 기다린다
+  if (s.status === 'checking')
     return (
       <Screen nav={nav} footer={tabs}>
         {phase === 'skeleton' ? <TimingTabSkeleton chip={TIMING_CHIPS.find((c) => c === tab) ?? 'month'} month={today.slice(0, 7)} /> : null}
@@ -163,12 +167,13 @@ export default function TimingScreen() {
   const timeKnown = report ? report.timeKnown : month.state.status === 'done' ? month.state.sky.timeKnown : true;
   const blocked = s.status === 'none' && s.blocked === true;
 
-  const locked = !report && chip !== 'month';
   let content: React.ReactNode;
   if (chip === 'month')
     content = (
       <>
-        {month.base && month.shown ? (
+        {monthPending ? (
+          <MonthPending month={today.slice(0, 7)} visible={monthPhase !== 'blank'} />
+        ) : month.base && month.shown ? (
           <MonthView
             base={month.base}
             shown={month.shown}
@@ -197,7 +202,7 @@ export default function TimingScreen() {
         )}
       </>
     );
-  else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} ghost={chip === 'year' ? <YearSkeleton /> : <LifeSkeleton />} />;
+  else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} />;
   else if (chip === 'year') content = <YearView report={report} onPeriod={(id) => router.push(`/timing/period?id=${id}`)} />;
   else content = <LifeView report={report} share={<ShareEntry target={{ kind: 'NEXT_BIG' }} trigger="cardIcon" label={strings.share.openNextBig} />} />;
 
@@ -212,11 +217,11 @@ export default function TimingScreen() {
             {T.timeUnknown}
           </Txt>
         )}
-        <View style={main ? styles.chips : locked ? styles.chipsLocked : styles.chipsBare}>
+        {/* 칩 줄은 세 칩에서 같은 자리 — 잠긴 칩을 골라도 이번 달의 자리 그대로(소유자 지적 2026-11-21) */}
+        <View testID="timing-chips-slot" style={main ? styles.chips : styles.chipsBare}>
           <ChipRow value={chip} locked={!report} onChange={setPicked} />
         </View>
-        {/* 잠긴 자리는 칩 바로 아래부터(보드 14 잠긴 칩 — 흐린 미리보기가 제 여백을 갖는다) */}
-        <View style={locked ? null : styles.content}>{content}</View>
+        <View style={styles.content}>{content}</View>
       </View>
     </Screen>
   );
@@ -250,10 +255,26 @@ function TimingTabSkeleton({ chip, month }: { chip: TimingChip; month: string })
   );
 }
 
+/**
+ * 이번 달이 아직 오지 않은 달력 자리(소유자 지적 3): 0.3초 전에는 같은 크기로 비워 두고(달이 빨리 와도 아래 카드가 밀려 내려가지 않게),
+ * 넘으면 이번 달의 뼈대(결정 065 의 2 · 071).
+ */
+function MonthPending({ month, visible }: { month: string; visible: boolean }) {
+  return visible ? (
+    <SkeletonGroup testID="timing-month-skeleton">
+      <MonthSkeleton month={month} />
+    </SkeletonGroup>
+  ) : (
+    <View testID="timing-month-pending" aria-hidden importantForAccessibility="no-hide-descendants" style={styles.reserved}>
+      <MonthSkeleton month={month} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   timeUnknown: { marginTop: L.timeUnknownTop },
   chips: { marginTop: L.chips.top },
   chipsBare: { marginTop: L.chips.topBare },
-  chipsLocked: { marginTop: L.chips.topLocked },
   content: { paddingTop: L.contentTop, gap: L.sectionGap },
+  reserved: { opacity: 0 },
 });

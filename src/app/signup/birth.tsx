@@ -115,7 +115,10 @@ function BirthStepScreen() {
     <SignupStep
       step={3}
       onBack={() => {
-        if (!sending.current) router.back();
+        if (sending.current) return;
+        // 이어 한 단계는 쌓기에 이 화면 하나라 앞 단계로 바꿔 간다(결정 068)
+        if (router.canGoBack()) router.back();
+        else router.replace('/signup/nickname');
       }}
       title={S.signupTitle}
       footer={

@@ -12,7 +12,7 @@ jest.mock('expo-router', () => ({
   // 가입 단계는 웹에서 오른쪽에서 밀려 들어온다 — 이 시험들은 앱(움직이지 않음)
   useCanGoBack: () => false,
   useIsFocused: () => true,
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
   // 화면에 들어올 때 한 번(이 테스트에서는 그리는 때)
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   Redirect: ({ href }: { href: string }) => {

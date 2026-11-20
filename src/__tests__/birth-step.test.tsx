@@ -17,7 +17,7 @@ jest.mock('expo-router', () => ({
   useIsFocused: () => true,
   usePreventRemove: jest.fn(),
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
-  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => true) },
+  router: { replace: jest.fn(), back: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => true), canGoBack: jest.fn(() => true) },
   Redirect: ({ href }: { href: string }) => {
     const { Text } = jest.requireActual('react-native');
     return <Text>{`redirect:${href}`}</Text>;

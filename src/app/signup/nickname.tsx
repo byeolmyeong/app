@@ -165,7 +165,8 @@ function NicknameStepScreen() {
   return (
     <SignupStep
       step={2}
-      onBack={() => router.back()}
+      // 이어 한 단계(가드가 바꿔 보냄 · 주소로 바로 엶)는 쌓기에 이 화면 하나라 앞 단계로 바꿔 간다(결정 068)
+      onBack={() => (router.canGoBack() ? router.back() : router.replace('/signup/terms'))}
       title={N.title}
       guide={N.guide}
       footer={<Button label={N.next} onPress={() => void next()} disabled={!canNext} />}>

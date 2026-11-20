@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
 import RootLayout from '@/app/_layout';
@@ -56,9 +56,18 @@ async function openApp(step: 'nickname' | 'birth', issuedAt = Date.now()) {
   );
 }
 
-it('출생 정보 단계에서 나갔으면 출생 정보 단계로, 칸은 비어 있다(출생 정보는 두지 않는다)', async () => {
+it('출생 정보 단계에서 나갔으면 출생 정보 단계로, 칸은 비어 있다(출생 정보는 두지 않는다). 뒤로는 앞 단계로', async () => {
   await openApp('birth');
   const date = await screen.findByLabelText(strings.home.dateLabel);
   expect(screen).toHavePathname('/signup/birth');
   expect(date.props.value ?? '').toBe('');
+
+  // 리뷰 PR #57 차단 1: 이어 한 단계는 쌓기에 그 화면 하나라 뒤로가 갈 곳이 없었다 — 앞 단계로 바꿔 간다(출생 정보 → 닉네임 → 약관)
+  await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+  expect(await screen.findByDisplayValue('새벽별')).toBeTruthy();
+  expect(screen).toHavePathname('/signup/nickname');
+  await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+  expect(await screen.findByText(strings.terms.title)).toBeTruthy();
+  expect(screen).toHavePathname('/signup/terms');
 });
+

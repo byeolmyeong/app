@@ -298,7 +298,6 @@ export const strings = {
     timeUnknown: '태어난 시각을 몰라요',
     /** 시각 "모름" 을 켰을 때 시각 칸 아래(결정 042) */
     timeUnknownNote: '태어난 시각을 몰라 하우스와 상승점은 보여 드리지 않아요.',
-    timeSheetTitle: '태어난 시각',
     timeConfirm: '확인',
     placeLabel: '태어난 곳',
     placePlaceholder: '시·도, 시·군·구 선택',

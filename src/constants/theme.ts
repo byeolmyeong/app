@@ -417,6 +417,8 @@ export const Sizes = {
   sheetTitleTop: 36,
   sheetBackIcon: 22,
   /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
+  /** 드럼 시트(태어난 시각 · 받는 시간)의 위 끝에서 드럼 위 끝까지(시안 8-1 · 16-3: 위 10 + 손잡이 4 + 28 + 16) */
+  pickerSheetTop: 58,
   pickerRow: 44,
   pickerRows: 5,
   pickerWidth: 76,

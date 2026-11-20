@@ -36,11 +36,11 @@ app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇
   index.tsx          홈(출생 정보가 없으면 입력 · 서버의 것으로 되살리기)
   intro.tsx · login.tsx · auth/kakao.tsx   소개 3장(이 기기에서 처음 한 번) · 로그인(공급자 버튼) · 카카오 웹 로그인에서 돌아오는 화면(결정 034 · 042)
   signup/            단계식 가입(결정 042): terms.tsx(약관 동의) → nickname.tsx(닉네임 · 프로필) → birth.tsx(출생 정보, 여기서 POST /auth/signup 한 번)
-  reading.tsx · report.tsx · direction.tsx · chart/ · synastry/ · invite/[id].tsx · s/[shareId].tsx · my.tsx(마이: 출생 정보 · 도움 · 약관 · 정보 · 로그아웃 · 계정 삭제, 결정 038) · settings/(자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 마케팅 수신 동의 약관 — 목록 화면은 없다. 약관 글은 결정 043)
+  reading.tsx · report.tsx · direction.tsx · chart/(index 내 하늘 지도 · detail 차트 자세히 표) · synastry/ · invite/[id].tsx · s/[shareId].tsx · my.tsx(마이: 출생 정보 · 도움 · 약관 · 정보 · 로그아웃 · 계정 삭제, 결정 038) · settings/(자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 마케팅 수신 동의 약관 — 목록 화면은 없다. 약관 글은 결정 043)
 features/            기능별 로직과 기능 전용 부품
   auth/              세션(session-store · use-session 의 useAuth — 소셜 로그인 · 가입 · 닉네임 확인 · 가입 그만두기 · 로그아웃, 개발용 세션), 공급자 버튼(providers/ — `google`·`apple`·`kakao` 의 기본(앱) · `.ios` · `.web` 파일, 같은 이름의 버튼, 모양은 social-button.tsx 하나 — 웹 구글만 GIS), 세션 토큰 보관, 로그인 전 가드(guard.ts), 가입 단계 뼈대(signup-step.tsx) · 초안(signup-draft.ts, 메모리만) · 닉네임 규칙(nickname-rule.ts) · 프로필 고르기 시트(avatar-sheet.tsx), 로그아웃(sign-out.ts — 기기 저장도 비움), 계정 삭제(확인 시트 · 기기 저장 비움)
   onboarding/        소개 3장의 그림(intro-art.tsx)과 이 기기에서 봤는지(intro-seen.ts — AsyncStorage `byeolmyeong-device.introSeen.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 042)
-  chart/             차트 휠·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) · 태어난 곳 시트(place-sheet.tsx — 검색 · 시 · 도 칩 → 시 · 군 · 구, 결정 042) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
+  chart/             내 하늘 지도(휠 · "별마다 있던 자리" · 별 시트, 용어는 `strings.glossary`)·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) · 태어난 곳 시트(place-sheet.tsx — 검색 · 시 · 도 칩 → 시 · 군 · 구, 결정 042) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
   reading/           요약 해석 요청 상태·문단 부품 · 별명 짓는 중(making-view.tsx, 결정 042)
   report/            심층 리포트·변곡점 타임라인
   synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts). 궁합 지우기(delete-synastry.ts · 확인 시트 synastry-delete-sheet.tsx)

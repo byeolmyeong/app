@@ -240,6 +240,19 @@ describe('심층 리포트 화면', () => {
     expect(mockApi.requestReport).not.toHaveBeenCalled();
   });
 
+  it('"다시 보기" 를 연달아 눌러도 상태 확인(GET)은 하나다(리뷰 PR #44)', async () => {
+    mockApi.getReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502 });
+    await render(<ReportScreen />);
+    const again = await screen.findByText(strings.states.loadFail.retry);
+    let resolve: (r: ApiResult<ReportState>) => void = () => {};
+    mockApi.getReport.mockReturnValue(new Promise((r) => (resolve = r)));
+    await fireEvent.press(again);
+    await fireEvent.press(again);
+    expect(mockApi.getReport).toHaveBeenCalledTimes(2);
+    await act(async () => resolve(done));
+    expect(await screen.findByText(personality.title)).toBeTruthy();
+  });
+
   it('서버가 끝내 못 쓴 리포트(FAILED)는 "리포트를 쓰지 못했어요" · 다시 쓰기(결정 061 의 1, 리뷰 PR #44)', async () => {
     mockApi.getReport.mockResolvedValueOnce(got('FAILED'));
     await render(<ReportScreen />);

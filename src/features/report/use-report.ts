@@ -161,7 +161,10 @@ export function useReport(input: BirthInput | null) {
   /** 상태만 다시 확인한다(GET) — 연결이 돌아왔을 때 · 불러오지 못해 "다시 보기" 를 눌렀을 때. 만들기(POST)는 사람이 누를 때만이다 */
   const recheck = useCallback(() => {
     const run = current.current;
-    if (run && !run.busy) void check(run);
+    if (!run || run.busy) return;
+    // 확인을 기다리는 동안 또 누르거나 연결 복귀가 겹쳐도 GET 은 하나 — settle · 쓰는 중 갈래가 다시 맞춘다(리뷰 PR #44)
+    run.busy = true;
+    void check(run);
   }, []);
 
   const state: ReportViewState = settled && settled.key === key ? settled.state : { status: 'checking' };

@@ -336,3 +336,27 @@ describe('스플래시를 붙잡는 문', () => {
     expect(screen.queryByTestId('splash')).toBeNull();
   });
 });
+
+// 리뷰 PR #46 의 9: 웹에서 스플래시 · 가드 가림막이 덮은 동안 아래 화면들은 누름 · 포커스 · 화면 읽기를 받지 않는다
+describe('덮인 동안 아래 화면', () => {
+  const original = Platform.OS;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    mockSegments.mockReturnValue(['login']);
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    Platform.OS = original;
+  });
+
+  it('웹: 덮은 동안 화면들을 화면 읽기에서 숨기고, 걷히면 돌려놓는다', async () => {
+    Platform.OS = 'web';
+    mockUseSession.mockReturnValue(session('checking'));
+    const view = await render(<RootLayout />);
+    expect(screen.getByTestId('screens', { includeHiddenElements: true }).props['aria-hidden']).toBe(true);
+    mockUseSession.mockReturnValue(session('signedOut'));
+    await view.rerender(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(1000));
+    expect(screen.getByTestId('screens').props['aria-hidden']).toBe(false);
+  });
+});

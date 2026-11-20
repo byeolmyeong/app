@@ -6,6 +6,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 
 import { slideInScreenOptions, useSlideUpScreenOptions } from '@/components/slide-up';
 import { useSplashHeld } from '@/components/splash-hold';
+import { useInert } from '@/components/use-inert';
 import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
@@ -89,8 +90,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (splashDone) SplashScreen.hideAsync();
   }, [splashDone]);
+  // 웹에서 스플래시 · 가드 가림막이 덮은 동안 아래 화면들은 누름 · 포커스 · 화면 읽기를 받지 않는다
+  const screensHidden = Platform.OS === 'web' && (covered || !splashDone);
+  const screensRef = useInert(screensHidden);
 
-  // ── 화면들: 문(UpdateGate) 안에 화면 쌓기 · 루트에 걸리는 문(예: 이용 정지 확인 — Stack 뒤, 위에 덮이게) · 가드 가림막.
+  // ── 화면들: 문(UpdateGate) 안에 화면 쌓기(덮인 동안 inert 인 칸) · 루트에 걸리는 문(예: 이용 정지 확인 — 그 칸 뒤, 위에 덮이게) · 가드 가림막.
   // 최소 버전보다 낮은 앱은 화면들 대신 막는 화면만 본다(결정 027). 세션과 상관없다.
   // 최신 버전보다 낮으면 로그인한 홈에서만 한 번 권한다 — 로그인 전 · 가입 중에는 묻지 않는다(결정 059).
   // 웹 스플래시는 글꼴을 받는 동안과 받은 뒤 같은 자리(맨 위)에 둬 다시 그려지지 않게 한다.
@@ -98,14 +102,16 @@ export default function RootLayout() {
     <>
       {fontsDone ? (
         <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined} onBlockedChange={setGateBlocked}>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
-            {SLIDE_UP_ROUTES.map((name) => (
-              <Stack.Screen key={name} name={name} options={slideUp} />
-            ))}
-            {SLIDE_IN_ROUTES.map((name) => (
-              <Stack.Screen key={name} name={name} options={SLIDE_IN_OPTIONS} />
-            ))}
-          </Stack>
+          <View testID="screens" ref={screensRef} aria-hidden={screensHidden} style={styles.screens}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
+              {SLIDE_UP_ROUTES.map((name) => (
+                <Stack.Screen key={name} name={name} options={slideUp} />
+              ))}
+              {SLIDE_IN_ROUTES.map((name) => (
+                <Stack.Screen key={name} name={name} options={SLIDE_IN_OPTIONS} />
+              ))}
+            </Stack>
+          </View>
           {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
         </UpdateGate>
       ) : null}
@@ -120,4 +126,5 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   cover: { ...StyleSheet.absoluteFill, backgroundColor: Colors.paper },
+  screens: { flex: 1 },
 });

@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, type ComponentRef, type RefObject } from '
 import { Animated, Easing, Platform, type View, type ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '@/components/byeoli';
+import { useInert } from '@/components/use-inert';
 import { Colors, Motion } from '@/constants/theme';
 
 /** 아래 시트(Sheet)와 같은 빠르기 · 곡선(theme.ts Motion) */
@@ -50,12 +51,8 @@ export function useSlideUp(from: 'bottom' | 'right' = 'bottom'): {
 } {
   const reduce = useReduceMotion();
   const focused = useIsFocused();
-  const ref = useRef<ComponentRef<typeof View>>(null);
   const hidden = Platform.OS === 'web' && !focused;
-  useEffect(() => {
-    const el = ref.current as unknown as HTMLElement | null;
-    if (Platform.OS === 'web' && el) el.inert = hidden;
-  }, [hidden]);
+  const ref = useInert(hidden);
   // 그리는 중에는 router.canGoBack() 이 이 화면을 넣기 전 쌓기를 볼 수 있어(낡은 값) 그리는 중에 읽어도 되는 훅을 쓴다
   const canGoBack = useCanGoBack();
   const [moves] = useState(() => Platform.OS === 'web' && !reduce && canGoBack);

@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 
 import RootLayout from '@/app/_layout';
 import { useSession } from '@/features/auth/use-session';
+import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 
 // Stack.Screen 은 받은 화면 옵션을 mockScreen 에 남긴다(약관 글이 아래에서 올라오는지 본다)
@@ -195,6 +196,18 @@ describe('스플래시', () => {
     } finally {
       mockFontsLoaded = true;
     }
+  });
+
+  // 결정 068 의 2(소유자 "스플래시 → 바로 홈"): 로그인한 홈은 홈의 첫 데이터까지 스플래시를 둔다
+  it('웹: 로그인한 홈은 홈의 첫 데이터(기기 읽기 · 되살리기)가 끝날 때까지 스플래시를 둔다', async () => {
+    Platform.OS = 'web';
+    resetHomeReady();
+    mockUseSession.mockReturnValue(session('signedIn'));
+    await render(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(2000));
+    expect(screen.getByTestId('splash')).toBeTruthy();
+    await act(async () => markHomeReady());
+    expect(screen.queryByTestId('splash')).toBeNull();
   });
 
   // 결정 068 의 3(소유자 "안 보이게 해"): 공유 링크는 첫 프레임부터 공유 화면

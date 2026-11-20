@@ -10,6 +10,7 @@ import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { resumeStep } from '@/features/auth/signup-resume';
 import { useSession } from '@/features/auth/use-session';
+import { useHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { UpdateGate } from '@/features/update/update-gate';
 
@@ -51,8 +52,14 @@ export default function RootLayout() {
   // 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지(최대 5초) 둔다.
   const [gateBlocked, setGateBlocked] = useState(false);
   const fontsDone = loaded || !!error;
+  // 로그인한 홈으로 가면 홈의 첫 데이터(기기 읽기 · 되살리기)까지 둔다(결정 068 의 2 — 스플래시에서 바로 홈)
+  const homeReady = useHomeReady();
+  const waitHome = first === undefined && session.status === 'signedIn' && !homeReady;
   // 공유 페이지(/s/…)에는 스플래시가 아예 없다(결정 068 의 3) — 첫 프레임부터 공유 화면
-  const splashDone = useSplashDone(fontsDone && (gateBlocked || (!covered && (first === 's' || session.ready))), first === 's');
+  const splashDone = useSplashDone(
+    fontsDone && (gateBlocked || (!covered && !waitHome && (first === 's' || session.ready))),
+    first === 's',
+  );
   useEffect(() => {
     if (splashDone) SplashScreen.hideAsync();
   }, [splashDone]);

@@ -122,7 +122,7 @@ export const strings = {
     writeFail: { title: { report: '리포트를 쓰지 못했어요' }, body: '잠깐 문제가 생겼어요.\n다시 쓰기를 누르면 처음부터 다시 써요.', retry: '다시 쓰기' },
     /** 화면 전체를 못 불러왔을 때(보드 19) — 제목은 화면마다 */
     loadFail: {
-      title: { reading: '내 별명을 불러오지 못했어요', report: '리포트를 불러오지 못했어요' },
+      title: { reading: '내 별명을 불러오지 못했어요', report: '리포트를 불러오지 못했어요', home: '홈을 불러오지 못했어요' },
       body: '잠깐 문제가 생겼어요.\n다시 보기를 누르면 다시 불러와요.',
       retry: '다시 보기',
     },

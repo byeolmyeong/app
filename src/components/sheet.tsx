@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, DimColor, ScreenPaddingX, SheetRadius, Sizes, Spacing } from '@/constants/theme';
+import { Colors, DimColor, Motion, ScreenPaddingX, SheetRadius, Sizes, Spacing } from '@/constants/theme';
 
 export type SheetProps = {
   visible: boolean;
@@ -29,8 +29,8 @@ export type SheetProps = {
   children: ReactNode;
 };
 
-const OPEN_MS = 300;
-const CLOSE_MS = 220;
+const OPEN_MS = Motion.openMs;
+const CLOSE_MS = Motion.closeMs;
 /** 시트가 숨어 있을 때 아래로 내려가 있는 거리. 어떤 시트보다도 길면 된다 */
 const HIDDEN_OFFSET = 720;
 /** 이만큼 넘게 끌어내리고 놓으면 닫는다. 덜 끌면 제자리로 돌아간다 */
@@ -63,7 +63,7 @@ export function Sheet({ visible, onClose, title, gap, height, flush = false, chi
       Animated.timing(progress, {
         toValue: 1,
         duration: OPEN_MS,
-        easing: Easing.bezier(0.32, 0.72, 0, 1),
+        easing: Easing.bezier(...Motion.openCurve),
         useNativeDriver,
       }).start();
       return;

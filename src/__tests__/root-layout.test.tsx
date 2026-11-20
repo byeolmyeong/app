@@ -5,8 +5,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import type { ReactNode } from 'react';
 import { Platform } from 'react-native';
 
-import RootLayout from '@/app/_layout';
-import { useSession } from '@/features/auth/use-session';
+import RootLayout, { ErrorBoundary } from '@/app/_layout';
+import { strings } from '@/content/strings';
+import { recheckSession, useSession } from '@/features/auth/use-session';
+import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { api } from '@/lib/api';
 
@@ -45,7 +47,7 @@ jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAs
 jest.mock('@/features/auth/use-session', () => {
   const current = jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null }));
   // 정지 알림이 왔을 때 문이 지금 로그인 상태인지 보는 곳(getSession) — 화면이 받는 세션과 같다
-  return { useSession: current, getSession: () => current() };
+  return { useSession: current, getSession: () => current(), recheckSession: jest.fn(async () => {}) };
 });
 // 이용 정지 문(결정 065 의 5)이 로그인 뒤 계정을 묻는다. lib/api 가 403 · suspended 를 받으면 부르는 알림은 문이 건 것을 잡아 둔다
 const mockSuspendedHandler: { current: (() => void) | null } = { current: null };
@@ -89,7 +91,7 @@ describe('루트 레이아웃의 세션', () => {
 });
 
 const mockUseSession = useSession as jest.Mock;
-const session = (status: 'checking' | 'signedOut' | 'signingUp' | 'signedIn') => ({ status, token: null, ready: status !== 'checking', lastError: null });
+const session = (status: 'checking' | 'signedOut' | 'signingUp' | 'signedIn' | 'offline') => ({ status, token: null, ready: status !== 'checking', lastError: null });
 
 describe('로그인 전 가드(결정 034)', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -150,6 +152,14 @@ describe('약관 글 화면의 열림', () => {
       for (const name of ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing']) {
         expect(options[name]).toMatchObject({ animation: 'slide_from_bottom', contentStyle: { backgroundColor: '#0D0E12' } });
       }
+    });
+  });
+
+  it('가입 닉네임 · 출생 정보 단계는 오른쪽에서 밀려 들어오는 화면 옵션으로 연다(앱은 기본 그대로)', async () => {
+    await render(<RootLayout />);
+    await waitFor(() => {
+      const names = mockScreen.mock.calls.map(([p]) => p.name);
+      expect(names).toEqual(expect.arrayContaining(['signup/nickname', 'signup/birth']));
     });
   });
 });
@@ -223,13 +233,45 @@ describe('스플래시', () => {
     }
   });
 
-  it('웹: 공유 페이지는 세션을 확인하지 않으므로 0.8초만 보인다', async () => {
+  // 결정 068 의 2(소유자 "스플래시 → 바로 홈"): 로그인한 홈은 홈의 첫 데이터까지 스플래시를 둔다
+  it('웹: 로그인한 홈은 홈의 첫 데이터(기기 읽기 · 되살리기)가 끝날 때까지 스플래시를 둔다', async () => {
+    Platform.OS = 'web';
+    resetHomeReady();
+    mockUseSession.mockReturnValue(session('signedIn'));
+    await render(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(2000));
+    expect(screen.getByTestId('splash')).toBeTruthy();
+    await act(async () => markHomeReady());
+    expect(screen.queryByTestId('splash')).toBeNull();
+  });
+
+  // 결정 068 의 3(소유자 "안 보이게 해"): 공유 링크는 첫 프레임부터 공유 화면
+  it('웹: 공유 페이지에는 스플래시가 아예 없고, 거기서 홈으로 가도 다시 그리지 않는다', async () => {
     Platform.OS = 'web';
     mockSegments.mockReturnValue(['s', '[shareId]']);
     mockUseSession.mockReturnValue(session('checking'));
+    const view = await render(<RootLayout />);
+    expect(screen.queryByTestId('splash')).toBeNull();
+    mockSegments.mockReturnValue([]);
+    await view.rerender(<RootLayout />);
+    expect(screen.queryByTestId('splash')).toBeNull();
+  });
+
+  it('앱: 공유 페이지로 열면 글꼴만 받고 네이티브 스플래시를 걷는다', async () => {
+    mockSegments.mockReturnValue(['s', '[shareId]']);
+    mockUseSession.mockReturnValue(session('checking'));
     await render(<RootLayout />);
+    expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  });
+
+  // 리뷰 PR #57 제안 5: 웹 스플래시에도 상한(문이 붙잡아도)
+  it('웹: 세션 확인이나 문이 10초 넘게 끝나지 않아도 스플래시를 걷는다(최대 대기)', async () => {
+    Platform.OS = 'web';
+    mockUseSession.mockReturnValue(session('checking'));
+    await render(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(9_999));
     expect(screen.getByTestId('splash')).toBeTruthy();
-    await act(async () => jest.advanceTimersByTime(800));
+    await act(async () => jest.advanceTimersByTime(1));
     expect(screen.queryByTestId('splash')).toBeNull();
   });
 
@@ -255,10 +297,75 @@ describe('스플래시', () => {
   });
 });
 
+// 결정 068 의 4: 확인하지 못한 세션(offline)은 30초마다 다시 확인한다(서버가 돌아오면 401 이면 로그인으로)
+describe('확인하지 못한 세션', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockSegments.mockReturnValue([]);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('offline 이면 가리지 않고 30초마다 다시 확인한다. 아니면 다시 확인하지 않는다', async () => {
+    mockUseSession.mockReturnValue(session('offline'));
+    const view = await render(<RootLayout />);
+    expect(screen.queryByTestId('guard-cover')).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+    await act(async () => jest.advanceTimersByTime(30_000));
+    expect(recheckSession).toHaveBeenCalledTimes(1);
+    mockUseSession.mockReturnValue(session('signedIn'));
+    await view.rerender(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(60_000));
+    expect(recheckSession).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 조각 불러오기 실패(배포가 바뀐 뒤 열려 있던 탭): 루트의 오류 경계가 받는다 — 웹은 한 번 새로 고치고, 고칠 수 없으면 20-1
+describe('루트의 오류 경계', () => {
+  const original = Platform.OS;
+  afterEach(() => {
+    Platform.OS = original;
+  });
+
+  it('웹의 조각 실패를 받는다(새로 고칠 저장소가 없으면 20-1)', async () => {
+    Platform.OS = 'web';
+    const error = Object.assign(new Error('Loading module /_expo/static/js/web/terms-1.js failed.'), { name: 'AsyncRequireError' });
+    await render(<ErrorBoundary error={error} retry={jest.fn(async () => {})} />);
+    expect(screen.getByText(strings.states.offlineEmpty.title)).toBeTruthy();
+  });
+});
+
+
+// 리뷰 PR #46 의 9: 웹에서 스플래시 · 가드 가림막이 덮은 동안 아래 화면들은 누름 · 포커스 · 화면 읽기를 받지 않는다
+describe('덮인 동안 아래 화면', () => {
+  const original = Platform.OS;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    mockSegments.mockReturnValue(['login']);
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    Platform.OS = original;
+  });
+
+  it('웹: 덮은 동안 화면들을 화면 읽기에서 숨기고, 걷히면 돌려놓는다', async () => {
+    Platform.OS = 'web';
+    mockUseSession.mockReturnValue(session('checking'));
+    const view = await render(<RootLayout />);
+    expect(screen.getByTestId('screens', { includeHiddenElements: true }).props['aria-hidden']).toBe(true);
+    mockUseSession.mockReturnValue(session('signedOut'));
+    await view.rerender(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(1000));
+    expect(screen.getByTestId('screens').props['aria-hidden']).toBe(false);
+  });
+});
+
 describe('루트 레이아웃의 이용 정지 문(결정 065 의 5)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSegments.mockReturnValue([]);
+    // 로그인한 홈의 첫 데이터(결정 068 의 2)는 이 묶음 밖 — 끝난 것으로 두고 정지 문만 본다
+    markHomeReady();
   });
   afterEach(() => {
     jest.requireActual<typeof import('@/features/auth/suspension')>('@/features/auth/suspension').clearSuspended();

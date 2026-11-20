@@ -8,8 +8,8 @@
  * 닉네임 단계를 건너뛰고 들어오면 닉네임 단계로 돌려보낸다. 보내는 동안은 뒤로 가지 않고(두 번 누르기도 막는다),
  * 가입을 마치면 스택을 비우고 간다 — 남은 약관 · 닉네임 단계로 뒤로 가 가입 단계를 다시 밟지 않게.
  */
-import { Redirect, router, usePreventRemove, type Href } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Redirect, router, useFocusEffect, usePreventRemove, type Href } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -17,7 +17,8 @@ import { Txt } from '@/components/txt';
 import { Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { finishDraft, getDraft, rejectNickname, rejectTerms } from '@/features/auth/signup-draft';
-import { SignupStep } from '@/features/auth/signup-step';
+import { SignupOffline, SignupStep } from '@/features/auth/signup-step';
+import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -29,7 +30,19 @@ const H = strings.home;
 /** 다 끝나 떠날 곳. clear 면 스택을 비우고 간다(가입을 마침) */
 type Leave = { href: Href; clear: boolean };
 
+/**
+ * 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 가입(초안)을 되돌리기 전에 화면이 먼저 뜬다(결정 068) —
+ * 확인 중에는 그리지 않고(가드 가림막 · 스플래시가 가린다) 되돌린 초안으로 처음 그린다.
+ */
 export default function BirthStep() {
+  const { status } = useAuth();
+  if (status === 'checking') return null;
+  // 세션을 확인하지 못했으면(offline) 가입은 나아갈 수 없다 — 20-1(결정 068 의 4)
+  if (status === 'offline') return <SignupOffline />;
+  return <BirthStepScreen />;
+}
+
+function BirthStepScreen() {
   const { status, completeSignup } = useAuth();
   const [draft] = useState(getDraft);
   const fields = useBirthFields();
@@ -49,6 +62,13 @@ export default function BirthStep() {
     if (router.canDismiss()) router.dismissAll();
     router.replace(leave.href);
   }, [leave]);
+
+  // 이어 하기(결정 068): 이 단계에 있다고 적는다. 출생 정보는 적지 않는다 — 다시 오면 빈 칸부터
+  useFocusEffect(
+    useCallback(() => {
+      if (status === 'signingUp' && draft?.nickname) markSignupStep('birth');
+    }, [status, draft]),
+  );
 
   // 가입을 마치는 순간 로그인 상태가 되지만, 이 화면은 차트를 받아 풀이 글로 갈 때까지 머문다.
   if (status === 'signedIn' && !busy && !leave) return <Redirect href="/" />;
@@ -98,7 +118,10 @@ export default function BirthStep() {
     <SignupStep
       step={3}
       onBack={() => {
-        if (!sending.current) router.back();
+        if (sending.current) return;
+        // 이어 한 단계는 쌓기에 이 화면 하나라 앞 단계로 바꿔 간다(결정 068)
+        if (router.canGoBack()) router.back();
+        else router.replace('/signup/nickname');
       }}
       title={S.signupTitle}
       footer={

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { deleteAccount } from '@/features/auth/delete-account';
+import { clearDeviceData, deleteAccount } from '@/features/auth/delete-account';
+import { clearResume } from '@/features/auth/signup-resume';
 import { clearSession } from '@/features/auth/use-session';
 import { api } from '@/lib/api';
 
@@ -12,6 +13,7 @@ jest.mock('@/lib/api', () => ({
   api: { deleteAccount: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({ clearSession: jest.fn(async () => {}) }));
+jest.mock('@/features/auth/signup-resume', () => ({ clearResume: jest.fn(async () => {}) }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 
@@ -41,5 +43,13 @@ describe('계정 삭제', () => {
     expect(await deleteAccount()).toEqual({ ok: false, error: 'NETWORK' });
     expect((await AsyncStorage.getAllKeys()).length).toBe(3);
     expect(clearSession).not.toHaveBeenCalled();
+  });
+});
+
+// 결정 068: 가입 이어 하기 보관(보안 저장소 · sessionStorage)은 기기 저장소의 머리 밖이라 따로 지운다(로그아웃 · 계정 삭제)
+describe('기기 비우기', () => {
+  it('이어 하던 가입의 보관도 지운다', async () => {
+    await clearDeviceData();
+    expect(clearResume).toHaveBeenCalledTimes(1);
   });
 });

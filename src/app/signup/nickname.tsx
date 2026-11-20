@@ -18,7 +18,8 @@ import { strings } from '@/content/strings';
 import { AvatarSheet } from '@/features/auth/avatar-sheet';
 import { NICKNAME_MAX, checkNickname, isComposingOnly, nicknameLength } from '@/features/auth/nickname-rule';
 import { getDraft, setDraft, takeNicknameRejection } from '@/features/auth/signup-draft';
-import { SignupStep } from '@/features/auth/signup-step';
+import { SignupOffline, SignupStep } from '@/features/auth/signup-step';
+import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 
 const N = strings.nickname;
@@ -32,12 +33,29 @@ const SERVER_MESSAGE: Record<ServerError, string> = {
   OTHER: N.checkFailed,
 };
 
+/** 치기를 멈추고 이만큼 지나면 중복을 묻는다 */
+const CHECK_AFTER_MS = 500;
+
 const randomAvatar = (): AvatarId => AVATAR_IDS[Math.min(AVATAR_IDS.length - 1, Math.floor(Math.random() * AVATAR_IDS.length))];
 
+/**
+ * 웹에서 이 단계 주소로 새로 고치면 세션이 보관한 가입(초안)을 되돌리기 전에 화면이 먼저 뜬다(결정 068) —
+ * 확인 중에는 그리지 않고(가드 가림막 · 스플래시가 가린다) 되돌린 초안으로 처음 그린다.
+ */
 export default function NicknameStep() {
+  const { status } = useAuth();
+  if (status === 'checking') return null;
+  // 세션을 확인하지 못했으면(offline) 가입은 나아갈 수 없다 — 20-1(결정 068 의 4)
+  if (status === 'offline') return <SignupOffline />;
+  return <NicknameStepScreen />;
+}
+
+function NicknameStepScreen() {
   const { status, checkNickname: askServer } = useAuth();
-  /** 서버에 묻는 중(두 번 누르기 · 엔터가 겹쳐도 한 번만 묻는다) */
+  /** 다음을 눌러 넘어가는 중(두 번 누르기 · 엔터가 겹쳐도 한 번만) */
   const asking = useRef(false);
+  /** 서버에 물은 차례(늦게 온 옛 답을 가린다) */
+  const asked = useRef(0);
   const [draft] = useState(getDraft);
   const [avatar, setAvatar] = useState<AvatarId>(() => draft?.avatar ?? randomAvatar());
   const [raw, setRaw] = useState(draft?.nickname ?? '');
@@ -45,6 +63,10 @@ export default function NicknameStep() {
   const [sheet, setSheet] = useState(false);
   const [checking, setChecking] = useState(false);
   const [serverError, setServerError] = useState<ServerError | null>(null);
+  /** 서버가 쓸 수 있다고 답한 닉네임(지금 칸의 값과 같을 때만 안내하고, 다음에서 다시 묻지 않는다) */
+  const [available, setAvailable] = useState<string | null>(null);
+  /** 지금 칸의 값(늦게 온 답이 바뀐 칸에 쓰이지 않게) */
+  const latest = useRef(raw);
 
   // 처음 들어오면 무작위로 고른 그림을 초안에 둔다
   useEffect(() => {
@@ -61,6 +83,27 @@ export default function NicknameStep() {
     }, []),
   );
 
+  // 이어 하기(결정 068): 이 단계에 있다고 적는다(출생 정보 단계에서 뒤로 돌아와도)
+  useFocusEffect(
+    useCallback(() => {
+      if (status === 'signingUp' && draft) markSignupStep('nickname');
+    }, [status, draft]),
+  );
+
+  // 중복 안내(결정 068 의 6): 규칙에 맞는 닉네임을 치고 0.5초 멈추면 서버에 한 번 묻는다(칠 때마다는 묻지 않는다)
+  const candidate = checkNickname(raw);
+  const candidateValue = candidate.ok ? candidate.value : null;
+  useEffect(() => {
+    latest.current = raw;
+  }, [raw]);
+  useEffect(() => {
+    if (!candidateValue || status !== 'signingUp') return;
+    const timer = setTimeout(() => void ask(candidateValue), CHECK_AFTER_MS);
+    return () => clearTimeout(timer);
+    // ask 는 그리는 때마다 새로 만들어진다 — 값이 바뀔 때만 다시 건다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidateValue, status]);
+
   // 가입을 마친 사람이 뒤로 가기로 돌아오면 홈으로(여기서 누른 "다음" 이 로그아웃시키지 않게)
   if (status === 'signedIn') return <Redirect href="/" />;
   if (!draft) return <Redirect href="/signup/terms" />;
@@ -75,10 +118,39 @@ export default function NicknameStep() {
         : null;
   const error = serverError ? SERVER_MESSAGE[serverError] : localError;
   const canNext = check.ok && !checking && serverError !== 'TAKEN';
+  const confirmed = check.ok && available === check.value;
 
   function onChange(text: string) {
+    // 다듬은 값이 같으면(뒤 공백만 더함) 받은 안내(초록 · 빨강)를 그대로 둔다 — 초록은 다듬은 값으로 비교한다(confirmed)
+    const before = checkNickname(raw);
+    const after = checkNickname(text);
+    const same = before.ok && after.ok && before.value === after.value;
     setRaw(text);
-    setServerError(null);
+    if (!same) setServerError(null);
+    // 이어 하기(결정 068): 다음을 누르기 전에 나가도 적던 닉네임이 남게 초안에 따라 쓴다(판정은 다음 · 가입 때 서버)
+    setDraft({ nickname: text });
+  }
+
+  /** 서버에 묻는다. 늦게 온 옛 답(뒤에 새로 물었거나 그사이 칸이 바뀜)은 버린다. 쓸 수 있으면 true */
+  async function ask(value: string): Promise<boolean> {
+    const mine = ++asked.current;
+    setChecking(true);
+    const r = await askServer(value);
+    if (mine !== asked.current) return false;
+    setChecking(false);
+    const current = checkNickname(latest.current);
+    if (!current.ok || current.value !== value) return false;
+    if (r.ok && r.data.available) {
+      setAvailable(value);
+      return true;
+    }
+    if (r.ok) {
+      setServerError('TAKEN');
+      return false;
+    }
+    // 가입권이 없거나 만료면 세션이 로그인 전이 되고 가드가 로그인 화면으로 보낸다
+    if (r.code !== 'SIGNUP_EXPIRED') setServerError(r.code === 'INVALID_NICKNAME' ? 'INVALID' : r.error === 'NETWORK' ? 'NETWORK' : 'OTHER');
+    return false;
   }
 
   function pickAvatar(id: AvatarId) {
@@ -88,28 +160,23 @@ export default function NicknameStep() {
   }
 
   async function next() {
-    // "이미 있는 닉네임" 이 떠 있거나 묻는 중이면 다시 묻지 않는다(엔터 포함)
+    // "이미 있는 닉네임" 이 떠 있거나 묻는 중이면 다시 묻지 않는다(엔터 포함). 쓸 수 있다고 확인한 이름이면 묻지 않고 넘어간다
     if (!check.ok || !canNext || asking.current) return;
+    const value = check.value;
     asking.current = true;
-    setChecking(true);
-    const r = await askServer(check.value);
+    const ok = confirmed || (await ask(value));
     asking.current = false;
-    setChecking(false);
-    if (r.ok && r.data.available) {
-      setDraft({ nickname: check.value, avatar });
+    if (ok) {
+      setDraft({ nickname: value, avatar });
       router.push('/signup/birth');
-      return;
     }
-    if (r.ok) return setServerError('TAKEN');
-    // 가입권이 없거나 만료면 세션이 로그인 전이 되고 가드가 로그인 화면으로 보낸다
-    if (r.code === 'SIGNUP_EXPIRED') return;
-    setServerError(r.code === 'INVALID_NICKNAME' ? 'INVALID' : r.error === 'NETWORK' ? 'NETWORK' : 'OTHER');
   }
 
   return (
     <SignupStep
       step={2}
-      onBack={() => router.back()}
+      // 이어 한 단계(가드가 바꿔 보냄 · 주소로 바로 엶)는 쌓기에 이 화면 하나라 앞 단계로 바꿔 간다(결정 068)
+      onBack={() => (router.canGoBack() ? router.back() : router.replace('/signup/terms'))}
       title={N.title}
       guide={N.guide}
       footer={<Button label={N.next} onPress={() => void next()} disabled={!canNext} />}>
@@ -127,7 +194,7 @@ export default function NicknameStep() {
         </View>
       </Pressable>
       <View style={styles.field}>
-        <Field label={N.label} hint={N.rule} error={error ?? undefined}>
+        <Field label={N.label} hint={N.rule} error={error ?? undefined} success={confirmed && !error ? N.available : undefined}>
           <FieldInput
             boxTestID="nickname-box"
             accessibilityLabel={N.label}

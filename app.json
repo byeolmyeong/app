@@ -32,7 +32,10 @@
       [
         "expo-router",
         {
-          "sitemap": false
+          "sitemap": false,
+          "asyncRoutes": {
+            "web": "development"
+          }
         }
       ],
       [

@@ -26,7 +26,7 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     requestMeReport: jest.fn(),
     getMeReport: jest.fn(),
-    getAccount: jest.fn(),
+    getMyAccount: jest.fn(),
     createShare: jest.fn(() => new Promise(() => {})),
   },
 }));
@@ -59,7 +59,7 @@ beforeEach(async () => {
   mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
   mockApi.getMeReport.mockResolvedValue(got('NONE'));
   mockApi.requestMeReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
-  mockApi.getAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
+  mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   await saveBirth({ profile, chart: fixtures.chart });
   netListener = null;
   (NetInfo.addEventListener as jest.Mock).mockImplementation((cb: NetListener) => {

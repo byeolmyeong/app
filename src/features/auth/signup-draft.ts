@@ -1,9 +1,11 @@
 /**
  * 단계식 가입의 초안(결정 042): 약관 동의 → 닉네임 · 프로필 → 출생 정보의 앞 단계 값. 마지막 "내 별명 읽기" 에서 `POST /auth/signup` 한 번으로 보낸다.
- * **메모리에만** 둔다 — 기기 저장소 · 로그 · 분석에 두지 않는다(닉네임은 개인정보). 앱을 껐다 켜면 비어 있고, 가입을 그만두거나 마치면 지운다.
+ * 메모리에 두고, 가입권이 살아 있는 동안만 이어 하기용으로 기기에도 따라 적는다(signup-resume.ts, 결정 068 — 로그 · 분석에는 두지 않는다).
+ * 출생 정보는 초안에 없다. 가입을 그만두거나 마치면 지운다.
  */
-import type { AvatarId } from '@/components/avatar';
+import { isAvatarId, type AvatarId } from '@/components/avatar';
 import { LEGAL_VERSIONS } from '@/content/legal-versions';
+import { saveResumeDraft, type ResumeDraft } from '@/features/auth/signup-resume';
 
 export type SignupDraft = {
   termsVersion: string;
@@ -17,9 +19,15 @@ export type SignupDraft = {
 
 let draft: Partial<SignupDraft> = {};
 
-/** 받은 값만 덮어쓴다 */
+/** 받은 값만 덮어쓴다. 이어 하는 가입이면 기기에도 따라 적는다 */
 export function setDraft(patch: Partial<SignupDraft>): void {
   draft = { ...draft, ...patch };
+  saveResumeDraft(draft);
+}
+
+/** 이어 하기(결정 068): 기기에 둔 초안을 메모리로 되돌린다 */
+export function restoreDraft(saved: ResumeDraft): void {
+  draft = { ...saved, avatar: isAvatarId(saved.avatar) ? saved.avatar : undefined };
 }
 
 /** 약관 단계를 거친 초안. 버전이 없으면(약관 단계 전) null — 앞 단계를 건너뛰고 들어온 것이다 */
@@ -111,6 +119,7 @@ let termsRejected = false;
 export function rejectTerms(): void {
   const { nickname, avatar } = draft;
   draft = { nickname, avatar };
+  saveResumeDraft(draft);
   termsRejected = true;
 }
 

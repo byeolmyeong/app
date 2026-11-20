@@ -188,6 +188,9 @@ export type MyAccount = {
   todaySkyTime?: string;
 };
 
+/** `POST /push/devices` 의 몸통(서버 S10-2): Expo 푸시 토큰 · 기기 종류 */
+export type PushDevice = { expoToken: string; platform: 'IOS' | 'ANDROID' };
+
 /** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028, S10-2). 동의 · 오늘의 하늘은 알림 화면(계획 A8-2)과 홈의 알림 받기 권유가 보낸다 */
 export type AccountPatch = {
   nickname?: string;
@@ -1363,6 +1366,21 @@ export function createApi(config: ApiConfig) {
       if (config.useFixtures) return { ok: true, data: { ...FIXTURE_MY_ACCOUNT, ...patch } };
       const res = await request('PATCH', '/account', { body: patch, validate: isMyAccount });
       return res.ok ? { ok: true, data: myAccountOf(res.data) } : res;
+    },
+
+    /**
+     * `POST /push/devices` 이 기기의 Expo 푸시 토큰을 내 계정에 등록한다(서버 S10-2). 같은 토큰이면 계정 · 시각만 갱신. 성공은 204.
+     * 400 `INVALID_PUSH_TOKEN` · `INVALID_PLATFORM` 은 code 로 온다.
+     */
+    async registerPushDevice(device: PushDevice): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('POST', '/push/devices', { body: device, validate: (v): v is null => v === null });
+    },
+
+    /** `DELETE /push/devices/{토큰}` 로그아웃 때 이 기기 등록을 지운다(정지 중에도 된다). 성공은 204, 남의 것 · 없는 것은 404 */
+    async deletePushDevice(expoToken: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', `/push/devices/${encodeURIComponent(expoToken)}`, { validate: (v): v is null => v === null });
     },
 
     /** `DELETE /account` 계정과 그 사람의 모든 것(세션 · 출생 정보 · 글)을 서버에서 지운다. 성공은 204 이고 본문이 없다 */

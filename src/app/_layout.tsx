@@ -36,7 +36,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 }
 
 export default function RootLayout() {
-  // ── 루트 훅: 세션 · 소개 기록 · 가드 · 글꼴 · 조각 실패 표시. 루트에서 한 번만 도는 훅(예: 음악 루트 훅)은 이 묶음 끝에 둔다.
+  // ── 루트 훅: 세션 · 소개 기록 · 가드 · 글꼴 · 조각 실패 표시 · 확인하지 못한 세션 다시 확인.
   // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
   // 공유 페이지(/s/…)는 로그인 없이 열리는 화면이라 그 안에서는 시작하지 않는다(결정 025).
   const segments: string[] = useSegments();
@@ -74,7 +74,7 @@ export default function RootLayout() {
     return () => clearInterval(timer);
   }, [unreachable]);
 
-  // ── 스플래시: 걷는 때는 splashDone 한 곳에서 정한다(결정 067 의 3 · 068). 스플래시에 붙는 일(예: 여는 소리)은 이 묶음에 둔다.
+  // ── 스플래시: 걷는 때는 splashDone 한 곳에서 정한다(결정 067 의 3 · 068).
   // 처음 열 때 글꼴 · 세션 확인 · (로그인 전이면) 소개 기록 확인이 끝나 보낼 곳에 간 뒤에 걷는다.
   // 로그인한 홈이면 홈의 첫 데이터까지(home-ready), 루트에 걸린 문이 붙잡으면 놓을 때까지(splash-hold) 둔다.
   // 문이 막는 화면을 띄우면 화면들이 빠져 보낼 수 없으니 바로 걷는다. 공유 페이지(/s/…)에는 스플래시가 아예 없다.

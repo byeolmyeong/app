@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { ListCard, ListCardRow } from '@/components/list-card';
 import { NavBar } from '@/components/nav-bar';
@@ -13,9 +14,10 @@ import { Toast, useToast } from '@/components/toast';
 import { Txt } from '@/components/txt';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
-import { MyLayout, Typography } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, MyLayout, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useNotificationSettings } from '@/features/my/use-notification-settings';
+import { openPushSettings, requestPushPermission, usePushPermission } from '@/features/push/push';
 import type { AccountPatch } from '@/lib/api';
 
 const N = strings.my.notifications;
@@ -46,6 +48,43 @@ function SkeletonRow({ descLines = 0, trailing }: { descLines?: number; trailing
         <Skeleton width={L.switch.width} height={NL.skeleton.desc} />
       )}
     </View>
+  );
+}
+
+/** 휴대폰 설정에서 이 앱 알림이 꺼져 있을 때 맨 위 줄(16-2-1): 종 끈 그림 · 두 줄 글 · 오른쪽 "설정 열기 ›". 줄 어디를 눌러도 휴대폰 설정으로 */
+function OsOffRow() {
+  const O = N.osOff;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${O.title}. ${O.action}`}
+      accessibilityHint={O.description}
+      onPress={() => void openPushSettings().catch(() => {})}
+      style={styles.osOff}>
+      <View aria-hidden importantForAccessibility="no-hide-descendants" style={styles.osOffIcon}>
+        <Svg width={NL.osOff.glyph} height={NL.osOff.glyph} viewBox="0 0 24 24" fill="none" stroke={Colors.accentText} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2h-15" />
+          <Path d="M10 20a2 2 0 0 0 4 0" />
+          <Path d="M4 4l16 16" />
+        </Svg>
+      </View>
+      <View style={styles.osOffText}>
+        <Txt variant="item" style={styles.osOffTitle}>
+          {O.title}
+        </Txt>
+        <Txt variant="caption" color="hint" keepAll>
+          {O.description}
+        </Txt>
+      </View>
+      <View style={styles.osOffAction}>
+        <Txt variant="term" color="accentText">
+          {O.action}
+        </Txt>
+        <Svg width={NL.osOff.chevron} height={NL.osOff.chevron} viewBox="0 0 24 24" fill="none" stroke={Colors.accentText} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M9 5l7 7-7 7" />
+        </Svg>
+      </View>
+    </Pressable>
   );
 }
 
@@ -86,6 +125,9 @@ export default function NotificationsScreen() {
     if (state.status === 'failed' && state.error === 'NETWORK') retry();
   });
   const phase = useLoadingPhase(state.status === 'loading');
+  // 휴대폰 설정에서 꺼져 있으면 맨 위에 "설정 열기" 줄, 아래 설정은 흐리게(값은 그대로, 결정 066 의 3). 앱으로 돌아오면 다시 읽는다
+  const permission = usePushPermission();
+  const osOff = permission === 'denied';
   const nav = <NavBar chevron title={N.title} onBack={back} />;
 
   if (state.status === 'failed' && state.error === 'NETWORK' && !online)
@@ -122,11 +164,21 @@ export default function NotificationsScreen() {
     <Screen nav={nav} footer={footer}>
       {s ? (
         <View style={styles.column}>
+          {osOff ? <OsOffRow /> : null}
+          <View testID="settings" style={[styles.stack, osOff && styles.dim]}>
           <ListCard>
             <ListCardRow
               label={N.push.label}
               description={N.push.description}
-              toggle={{ value: s.pushConsent, onChange: (on) => save({ pushConsent: on }) }}
+              toggle={{
+                value: s.pushConsent,
+                onChange: (on) =>
+                  void change({ pushConsent: on }).then((ok) => {
+                    if (!ok) show('error', N.saveFailed);
+                    // 홈의 권유에서 "나중에" 를 골라 휴대폰 권한을 아직 묻지 않았으면, 켜서 저장한 뒤에 묻는다(묻지 않으면 켜도 오지 않는다)
+                    else if (on && permission === 'undetermined') void requestPushPermission().catch(() => {});
+                  }),
+              }}
             />
           </ListCard>
           {s.todaySky ? (
@@ -135,7 +187,8 @@ export default function NotificationsScreen() {
                 testID="today-sky"
                 pointerEvents={s.pushConsent ? 'auto' : 'none'}
                 accessibilityState={{ disabled: !s.pushConsent }}
-                style={!s.pushConsent && styles.dim}>
+                // 휴대폰 설정에서 꺼져 바깥이 이미 흐리면 다시 흐리게 하지 않는다(겹쳐 0.16 이 되지 않게, #65 리뷰)
+                style={!s.pushConsent && !osOff && styles.dim}>
                 <ListCard>
                   <ListCardRow
                     label={N.todaySky.label}
@@ -160,6 +213,7 @@ export default function NotificationsScreen() {
               toggle={{ value: s.marketingConsent, onChange: (on) => save({ marketingConsent: on }) }}
             />
           </ListCard>
+          </View>
         </View>
       ) : phase === 'skeleton' ? (
         <NotificationsSkeleton />
@@ -184,6 +238,30 @@ const styles = StyleSheet.create({
   /** 머리 아래 12, 카드끼리 12(보드 16-2) */
   column: { gap: MyLayout.gap, paddingTop: MyLayout.gap },
   dim: { opacity: NL.dim },
+  /** 설정 카드들(휴대폰 설정에서 꺼지면 함께 흐리게) — 카드끼리 12 */
+  stack: { gap: MyLayout.gap },
+  osOff: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: L.gap,
+    paddingVertical: NL.osOff.padV,
+    paddingHorizontal: NL.osOff.padH,
+    borderRadius: L.radius,
+    borderWidth: LineWidth,
+    borderColor: Colors.hair,
+    backgroundColor: Colors.raised,
+  },
+  osOffIcon: {
+    width: NL.osOff.icon,
+    height: NL.osOff.icon,
+    borderRadius: NL.osOff.icon / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: NL.osOff.iconFill,
+  },
+  osOffText: { flex: 1, gap: L.descGap },
+  osOffTitle: { fontWeight: FontWeight.medium },
+  osOffAction: { flexDirection: 'row', alignItems: 'center', gap: NL.osOff.actionGap },
   hint: { paddingHorizontal: NL.hintPadH },
   skeletonRow: {
     minHeight: L.row,

@@ -19,7 +19,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { getMonth: jest.fn(), getTimingReport: jest.fn(), requestTimingReport: jest.fn(), saveProfile: jest.fn() },
+  api: { getMonth: jest.fn(), getTimingReport: jest.fn(), requestTimingReport: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
@@ -237,6 +237,23 @@ describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)',
     expect(router.push).toHaveBeenCalledWith('/timing/day?date=2026-11-21');
     await fireEvent.press(chip('life'));
     expect(screen.getByText(T.life.title)).toBeTruthy();
+  });
+
+  it('인생 칩: 다음 큰 변화 카드 오른쪽 위 공유 아이콘 → 다음 큰 변화 카드 시트(제목 없음), 열 때 한 번 만든다(결정 053 — 보드 14 인생 · 14-5)', async () => {
+    mockParams.mockReturnValue({ tab: 'life' });
+    await storeReport();
+    mockApi.getTimingReport.mockResolvedValue(done);
+    mockApi.createShare.mockResolvedValue({ ok: true, data: { shareId: 's1', card: fixtures.shareCards.nextBig } });
+    await render(<TimingScreen />);
+    const icon = await screen.findByRole('button', { name: strings.share.openNextBig });
+    expect(within(screen.getByTestId('life-share-spot')).getByRole('button', { name: strings.share.openNextBig })).toBeTruthy();
+    expect(mockApi.createShare).not.toHaveBeenCalled();
+    await fireEvent.press(icon);
+    const panel = await screen.findByTestId('sheet-panel');
+    expect(await within(panel).findByTestId('share-card')).toBeTruthy();
+    expect(within(panel).queryByText(strings.share.open)).toBeNull();
+    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NEXT_BIG' });
   });
 
   it('시각 "모름" 이면 위에 안내 한 줄(결정 049 의 8)', async () => {

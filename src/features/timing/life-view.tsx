@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -35,10 +35,10 @@ function CardFill() {
 }
 
 /**
- * 인생(결정 049 의 4, 캔버스 14-2): "인생의 큰 변화" 안내 · 다음 큰 변화 카드(서버의 해 · 만 나이 · 제목 · 본문 — 공유 아이콘 자리는 A⑤ 가 채운다) ·
+ * 인생(결정 049 의 4, 캔버스 14-2): "인생의 큰 변화" 안내 · 다음 큰 변화 카드(서버의 해 · 만 나이 · 제목 · 본문 — 오른쪽 위 공유 아이콘은 share 로 화면이 넣는다) ·
  * 큰 변화 네 줄의 길(지난 것은 흐리게, 다음 큰 변화는 빛나는 점) · 이 시기의 작은 실천. 해 · 나이는 서버 값 그대로 — 셈하지 않는다.
  */
-export function LifeView({ report: received }: { report: TimingReport }) {
+export function LifeView({ report: received, share }: { report: TimingReport; share?: ReactNode }) {
   const report = shownTiming(received);
   const next = report.current.nextMilestone ?? null;
   const nextIndex = next ? report.milestones.findIndex((m) => m.kind === next.kind) : report.milestones.length;
@@ -51,8 +51,10 @@ export function LifeView({ report: received }: { report: TimingReport }) {
         {next ? (
           <View testID="life-next" style={styles.next}>
             <CardFill />
-            {/* 공유 아이콘 자리(보드 14-2 오른쪽 위) — 공유 v2(계획 A⑤)가 ShareEntry 를 꽂는다 */}
-            <View testID="life-share-spot" style={styles.shareSpot} />
+            {/* 공유 아이콘 자리(보드 14-2 오른쪽 위) — 화면이 공유 아이콘을 넣는다(기능끼리는 import 하지 않는다) */}
+            <View testID="life-share-spot" style={styles.shareSpot}>
+              {share}
+            </View>
             <Txt variant="captionStrong" color="accentText">
               {T.life.next}
             </Txt>

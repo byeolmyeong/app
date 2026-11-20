@@ -41,9 +41,10 @@ let lastMyName = '';
  * "공유하기" 와 그것이 여는 시트(결정 053 의 1, 보드 12-4 · 12-5 · 12-13 · 11-6 · 14-5): 제목 없이 카드 미리보기와 아래 버튼.
  * 공유는 시트를 열 때 만든다 — 화면을 여는 것만으로는 `POST /shares` 를 부르지 않는다(서버 결정 012 "공유하는 순간만 저장", 결정 053 의 3).
  * 전에 받은 카드(share-cache.ts)가 있으면 먼저 보이고 뒤에서 확인한다. 열 때마다 처음 상태로 시작한다.
- * trigger="icon" 이면 보조 버튼 대신 머리 오른쪽의 공유 아이콘으로 연다(내 별명 · 나 탭 · 오늘의/그날의 하늘 — 보드 12 · 12-8 · 11-6).
+ * trigger="icon" 이면 보조 버튼 대신 머리 오른쪽의 공유 아이콘으로 연다(내 별명 · 나 탭 · 오늘의/그날의 하늘 — 보드 12 · 12-8 · 11-6),
+ * "cardIcon" 이면 카드 안 오른쪽 위의 작은 아이콘(그 자리를 채우는 누르는 칸, 시기 · 인생의 다음 큰 변화 — 보드 14 인생).
  */
-export function ShareEntry({ target, label = S.open, trigger = 'button' }: { target: ShareTarget; label?: string; trigger?: 'button' | 'icon' }) {
+export function ShareEntry({ target, label = S.open, trigger = 'button' }: { target: ShareTarget; label?: string; trigger?: 'button' | 'icon' | 'cardIcon' }) {
   const [visible, setVisible] = useState(false);
   /** 연 횟수. 열 때마다 시트의 내용을 새로 만든다 */
   const [opened, setOpened] = useState(0);
@@ -53,9 +54,18 @@ export function ShareEntry({ target, label = S.open, trigger = 'button' }: { tar
   };
   return (
     <>
-      {trigger === 'icon' ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={Spacing.xxs} onPress={open} style={styles.icon}>
-          <Svg width={Sizes.navIcon} height={Sizes.navIcon} viewBox="0 0 24 24" fill="none">
+      {trigger !== 'button' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          hitSlop={trigger === 'icon' ? Spacing.xxs : undefined}
+          onPress={open}
+          style={trigger === 'icon' ? styles.icon : styles.cardIcon}>
+          <Svg
+            width={trigger === 'icon' ? Sizes.navIcon : Sizes.cardShareIcon}
+            height={trigger === 'icon' ? Sizes.navIcon : Sizes.cardShareIcon}
+            viewBox="0 0 24 24"
+            fill="none">
             <Path
               d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"
               stroke={Colors.ink}
@@ -227,6 +237,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /** 카드 안 공유 아이콘: 감싼 자리(누르는 칸)를 꽉 채운다 */
+  cardIcon: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { gap: Spacing.lg },
   preview: { alignItems: 'center' },
   actions: { gap: Spacing.xs },

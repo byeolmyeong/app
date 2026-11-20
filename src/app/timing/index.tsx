@@ -19,6 +19,7 @@ import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
+import { ShareEntry } from '@/features/share/share-entry';
 import { koreaToday } from '@/features/timing/dates';
 import { LifeSkeleton, LifeView } from '@/features/timing/life-view';
 import { MonthSkeleton, MonthView } from '@/features/timing/month-view';
@@ -197,7 +198,7 @@ export default function TimingScreen() {
     );
   else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} ghost={chip === 'year' ? <YearSkeleton /> : <LifeSkeleton />} />;
   else if (chip === 'year') content = <YearView report={report} onPeriod={(id) => router.push(`/timing/period?id=${id}`)} />;
-  else content = <LifeView report={report} />;
+  else content = <LifeView report={report} share={<ShareEntry target={{ kind: 'NEXT_BIG' }} trigger="cardIcon" label={strings.share.openNextBig} />} />;
 
   return (
     <Screen nav={nav} footer={tabs}>

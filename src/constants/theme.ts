@@ -774,8 +774,8 @@ export const Sizes = {
   /** 설명(물음표) 버튼의 지름 · 설명 시트에서 글이 굴러가는 영역의 최대 높이 */
   infoButton: 20,
   infoSheetHeight: 360,
-  /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
-  shareCardWidth: 220,
+  /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기(보드 12-4 의 209 — 360 카드의 0.58) · 공유 페이지 */
+  shareCardWidth: 209,
   sharePageCardWidth: 280,
   /** 시트 위의 손잡이 줄(결정 042 시안) · 제목이 있는 시트의 위 여백(손잡이 위 10 + 4 + 제목까지 22) · 제목 줄의 뒤로 화살표 */
   handleWidth: 40,
@@ -784,6 +784,8 @@ export const Sizes = {
   sheetBackIcon: 22,
   /** 머리 오른쪽의 공유하기 아이콘(보드 12 · 12-8) */
   navIcon: 22,
+  /** 카드 안 오른쪽 위의 공유 아이콘(시기 · 인생의 다음 큰 변화 카드, 보드 14 인생 — 누르는 칸은 TimingLayout 의 shareSpot) */
+  cardShareIcon: 20,
   /** 드럼 시트(태어난 시각 · 받는 시간)의 위 끝에서 드럼 위 끝까지(시안 8-1 · 16-3: 위 10 + 손잡이 4 + 28 + 16) */
   pickerSheetTop: 58,
   /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
@@ -888,4 +890,30 @@ export const InquiryLayout = {
    */
   skeleton: { rows: 3, line: 16, meta: 12, chip: 56, date: 64, bodyLines: 3 },
   sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
+} as const;
+
+/**
+ * 공유 카드 v2(결정 053, 보드 12-7 · 12-14 · 11-7 · 14-6)의 값 — 시안의 360×640 카드 기준이다. 미리보기 · 공유 페이지 · 저장 이미지는
+ * 이 값에 (카드 너비 / base)를 곱해 같은 모양으로 그린다. 위 · 옆 · 아래 여백, 해 별자리 그림(260×228), 영역 · 달 · 계단 그림(200, 위 14),
+ * 칩(위 16 · 안 여백 · 13/18), 이름표(위 28 · 14/20), 제목(위 10 · 23/34), 아래 줄(위 16 · 로고 높이 19 · 한 줄 소개 12/17), 바탕의 작은 별 셋.
+ */
+export const ShareCardLayout = {
+  base: 360,
+  padTop: 48,
+  padX: 28,
+  padBottom: 36,
+  sign: { width: 260, height: 228 },
+  art: 200,
+  artTop: 14,
+  chip: { top: 16, padV: 6, padH: 14, text: type(13, 18, FontWeight.medium) },
+  label: { top: 28, text: type(14, 20, FontWeight.medium) },
+  title: { top: 10, text: type(23, 34, FontWeight.semibold) },
+  foot: { padTop: 16, mark: 19, text: type(12, 17, FontWeight.regular) },
+  dots: [
+    { left: 28, top: 60, size: 2, opacity: 0.5 },
+    { right: 40, top: 300, size: 2, opacity: 0.4 },
+    { left: 60, top: 330, size: 3, opacity: 0.35 },
+  ],
+  /** 기다리는 동안의 뼈대(결정 071): 칩 · 이름표 · 제목 두 줄 · 한 줄 소개 막대의 폭(360 기준). 그림 · 로고는 카드와 같은 크기 */
+  skeleton: { chip: 90, label: 140, title: [260, 180], tagline: 150 },
 } as const;

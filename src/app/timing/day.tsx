@@ -1,6 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
 import { MakingView } from '@/components/making-view';
 import { NavBar } from '@/components/nav-bar';
@@ -9,12 +8,12 @@ import { Screen } from '@/components/screen';
 import { StateScreen } from '@/components/state-screen';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
-import { Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
+import { ShareEntry } from '@/features/share/share-entry';
 import { formatMonthDay, koreaToday } from '@/features/timing/dates';
 import { DaySkeleton, DayView } from '@/features/timing/day-view';
 import { useDaySky } from '@/features/timing/use-day-sky';
@@ -37,7 +36,7 @@ const back = () => (router.canGoBack() ? router.back() : router.replace('/timing
  * 그날의 하늘 `/timing/day?date=YYYY-MM-DD`(결정 049 의 6 · 061 의 2, 캔버스 14-4 · 쓰는 중 · 못 썼을 때).
  * 열 때 `POST /day-sky { date }` — 0.3초가 넘으면 뼈대, 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리(뒤로)만 · 아래 탭 없음), 다 오면 글과 아래 탭.
  * 못 썼으면 다시 쓰기 · 나중에 하기(뒤로), 생성 한도(429)면 한 줄 안내, 범위 밖(400)이면 돌아가기. 오늘 날짜도 이 화면이다(계획 A④ 전까지).
- * 머리 오른쪽의 공유 아이콘 자리는 공유 v2(계획 A⑤)가 채운다.
+ * 다 쓰면 머리 오른쪽에 공유 아이콘(그날의 하늘 카드 — 결정 053, 시트를 열 때 만든다).
  */
 export default function TimingDayScreen() {
   const { date: param } = useLocalSearchParams<{ date?: string }>();
@@ -98,17 +97,13 @@ export default function TimingDayScreen() {
     );
   }
 
-  // 공유 아이콘 자리(보드 14-4 머리 오른쪽) — 공유 v2(계획 A⑤)가 ShareEntry 를 꽂는다
-  const shareSpot = <View testID="day-share-spot" style={styles.shareSpot} />;
+  // 머리 오른쪽의 공유 아이콘(보드 14-4) — 그날의 하늘 카드(결정 053 의 2)
+  const share = <ShareEntry target={{ kind: 'DAY_SKY', date: state.sky.date }} trigger="icon" />;
   return (
-    <Screen nav={nav(shareSpot)} footer={<MainTabs active="timing" nested />}>
+    <Screen nav={nav(share)} footer={<MainTabs active="timing" nested />}>
       {/* 연결 끊김(결정 061 의 4): 받은 글은 그대로 두고 머리 아래 띠 */}
       {online ? null : <OfflineBanner />}
       <DayView sky={state.sky} chart={chart} today={today} />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  shareSpot: { width: Sizes.navIcon, height: Sizes.navIcon },
-});

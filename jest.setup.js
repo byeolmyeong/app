@@ -52,3 +52,18 @@ jest.mock('expo-notifications', () => ({
   dismissAllNotificationsAsync: jest.fn(async () => {}),
   setBadgeCountAsync: jest.fn(async () => true),
 }));
+
+// 인스타그램 스토리 공유(react-native-share, 결정 053)는 TurboModule 이라 jest 에서는 읽어 들이는 순간 던진다.
+// 공유 시트가 있는 화면 시험이 깨지지 않게 "아무것도 하지 않는" 가짜를 깐다. 스토리 열기 자체의 시험(features/share/story)은 그 파일에서 다시 깐다.
+jest.mock('react-native-share', () => {
+  const Social = { InstagramStories: 'instagramstories' };
+  return {
+    __esModule: true,
+    Social,
+    default: {
+      Social: { INSTAGRAM_STORIES: Social.InstagramStories },
+      shareSingle: jest.fn(async () => ({ success: true, message: '' })),
+      isPackageInstalled: jest.fn(async () => ({ isInstalled: true, message: '' })),
+    },
+  };
+});

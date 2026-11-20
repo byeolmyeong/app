@@ -1,7 +1,8 @@
+import { useId } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, G, Line, Path, Polygon, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Line, Path, Polygon, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 
-import { Colors, FontFamily, FontWeight, ReasonLayout, Sizes, SkyMapLayout } from '@/constants/theme';
+import { BrandColors, Colors, FontFamily, FontWeight, ReasonLayout, Sizes, SkyMapLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { wheelLayout } from '@/features/chart/wheel-layout';
@@ -87,6 +88,53 @@ export function ChartPicture({ chart, size, named = true }: ChartPictureProps) {
             {signName}
           </SvgText>
         ) : null}
+      </Svg>
+    </View>
+  );
+}
+
+/** 별자리 그림(SignArt)의 칸: 시안 12-7 의 160×140. 별 모양(0~100)을 1.5 배로 키워 칸 가운데에 놓는다 */
+const SIGN_VIEW = { w: 160, h: 140, scale: 1.5 } as const;
+/** 네 갈래 별(-1~1 좌표) */
+const FOUR_STAR = 'M0,-1 Q0.18,-0.18 1,0 Q0.18,0.18 0,1 Q-0.18,0.18 -1,0 Q-0.18,-0.18 0,-1Z';
+
+/**
+ * 공유 카드의 해 별자리 그림(결정 053 의 2, 보드 12-7): 별 모양의 선(흐린 색) · 별(흰 점) · 가장 밝은 별 자리의 빛무리와 네 갈래 별.
+ * 서버가 준 해 별자리(`sunSign`)로 별 모양만 고른다(계산하지 않는다). 브랜드 자리의 장식이라 화면 읽기에서 숨긴다(이름은 카드의 칩이 말한다).
+ */
+export function SignArt({ sign, width, height }: { sign: string; width: number; height: number }) {
+  const id = `sign${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  const shape = CONSTELLATIONS[sign];
+  if (!shape) return null;
+  const xs = shape.stars.map((star) => star.x);
+  const ys = shape.stars.map((star) => star.y);
+  // 별 모양의 둘레 상자를 칸 가운데에 둔다
+  const dx = SIGN_VIEW.w / 2 - ((Math.min(...xs) + Math.max(...xs)) / 2) * SIGN_VIEW.scale;
+  const dy = SIGN_VIEW.h / 2 - ((Math.min(...ys) + Math.max(...ys)) / 2) * SIGN_VIEW.scale;
+  const at = (star: { x: number; y: number }) => ({ x: dx + star.x * SIGN_VIEW.scale, y: dy + star.y * SIGN_VIEW.scale });
+  const bright = shape.stars.find((star) => star.bright) ?? shape.stars[0];
+  const glow = at(bright);
+  return (
+    <View testID={`share-art-sign-${sign}`} aria-hidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={{ width, height }}>
+      <Svg width={width} height={height} viewBox={`0 0 ${SIGN_VIEW.w} ${SIGN_VIEW.h}`}>
+        <Defs>
+          <RadialGradient id={id}>
+            <Stop offset="0" stopColor={BrandColors.haloCenter} stopOpacity={0.6} />
+            <Stop offset="1" stopColor={BrandColors.glow} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={glow.x} cy={glow.y} r={34} fill={`url(#${id})`} />
+        {shape.lines.map(([a, b], i) => {
+          const from = at(shape.stars[a]);
+          const to = at(shape.stars[b]);
+          return <Line key={`l${i}`} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={Colors.muted} strokeWidth={0.8} />;
+        })}
+        {shape.stars.map((star, i) => {
+          if (star === bright) return null;
+          const p = at(star);
+          return <Circle key={`s${i}`} cx={p.x} cy={p.y} r={2.2} fill={Colors.ink} />;
+        })}
+        <Path transform={`translate(${glow.x} ${glow.y}) scale(9)`} d={FOUR_STAR} fill={BrandColors.core} />
       </Svg>
     </View>
   );

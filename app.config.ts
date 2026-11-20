@@ -3,6 +3,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 // 정적 설정(app.json) 위에 소셜 로그인 공급자 값을 얹는다(결정 034).
 // 값은 비밀이 아니고(앱에 들어간다) .env 의 EXPO_PUBLIC_* 에서 온다. 값이 없으면 그 공급자의 플러그인은 넣지 않는다
 // (구글 플러그인은 값 없이 넣으면 설정 읽기부터 실패한다) — 그 빌드에서는 그 공급자로 로그인할 수 없다.
+// Meta 앱 ID(EXPO_PUBLIC_META_APP_ID, 결정 053)가 있으면 인스타그램 스토리 공유에 필요한 앱 조회 목록(iOS instagram-stories · 안드로이드 com.instagram.android)을
+// react-native-share 플러그인으로 넣는다. 없으면 넣지 않는다 — 그 빌드에서는 스토리 버튼이 숨는다.
 // APP_VARIANT=test 이면 테스트앱(스테이징 서버, TestFlight 전용)의 이름 · 번들 ID · scheme · 아이콘으로 바꾼다(결정 041).
 
 const TEST_APP_ID = 'com.byeolmyeong.app.test';
@@ -24,6 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const testVariant = isTestVariant();
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
   const kakaoNativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY?.trim();
+  const metaAppId = process.env.EXPO_PUBLIC_META_APP_ID?.trim();
   const plugins: NonNullable<ExpoConfig['plugins']> = [...(config.plugins ?? [])];
   if (googleIosClientId) {
     plugins.push(['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme(googleIosClientId) }]);
@@ -32,6 +35,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins.push(['@react-native-seoul/kakao-login', { kakaoAppKey: kakaoNativeAppKey }]);
     // 카카오 안드로이드 SDK 는 카카오의 Maven 저장소에 있다(라이브러리 문서의 Expo 설정).
     plugins.push(['expo-build-properties', { android: { extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'] } }]);
+  }
+  if (metaAppId) {
+    plugins.push(['react-native-share', { ios: ['instagram-stories'], android: ['com.instagram.android'] }]);
   }
   // 안드로이드 푸시는 FCM 설정 파일이 있어야 토큰을 받는다(결정 057). 파일은 저장소에 두지 않고 EAS 파일 환경 변수 GOOGLE_SERVICES_JSON 이
   // 빌드 때 경로를 준다(운영 · 테스트 두 패키지가 들어 있는 파일). 없으면 안드로이드 빌드는 푸시 없이 만들어진다.

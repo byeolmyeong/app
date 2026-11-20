@@ -21,7 +21,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { getTimingReport: jest.fn(), postDaySky: jest.fn(), saveProfile: jest.fn() },
+  api: { getTimingReport: jest.fn(), postDaySky: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn() },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
@@ -137,9 +137,22 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     expect(screen.getByText(/그날 말을 맡은 별\(수성\)이 내 나의 중심\(해\)과 잘 어울리는 자리를 지나요/)).toBeTruthy();
     expect(screen.getAllByTestId('timing-todo')).toHaveLength(3);
     expect(tabs()).toHaveLength(4);
-    // 공유는 A⑤ — 아이콘 자리만 있다
-    expect(screen.getByTestId('day-share-spot')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: strings.share.open })).toBeNull();
+    // 머리 오른쪽의 공유 아이콘(그날의 하늘 카드, 결정 053 — 보드 14-4) — 여는 것만으로는 공유를 만들지 않는다
+    expect(screen.getByRole('button', { name: strings.share.open })).toBeTruthy();
+    expect(mockApi.createShare).not.toHaveBeenCalled();
+  });
+
+  it('공유 아이콘을 누르면 그날의 하늘 카드 시트(제목 없음) — 열 때 그 날짜로 한 번 만든다(결정 053 · A7-5)', async () => {
+    mockParams.mockReturnValue({ date: '2026-11-21' });
+    mockApi.postDaySky.mockResolvedValue({ ok: true, data: day });
+    mockApi.createShare.mockResolvedValue({ ok: true, data: { shareId: 's1', card: { ...fixtures.shareCards.daySky, date: '2026-11-21' } } });
+    await render(<TimingDayScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: strings.share.open }));
+    const panel = await screen.findByTestId('sheet-panel');
+    expect(await within(panel).findByTestId('share-card')).toBeTruthy();
+    expect(within(panel).queryByText(strings.share.open)).toBeNull();
+    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'DAY_SKY', date: '2026-11-21' });
   });
 
   it('오늘 날짜면 이유가 "오늘" 로 시작한다', async () => {

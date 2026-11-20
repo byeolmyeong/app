@@ -93,10 +93,10 @@ export function SkeletonText({ variant, widths, center = false, style }: Skeleto
   );
 }
 
-/** 화면 하나의 뼈대를 묶는다(결정 071): 화면 읽기에는 "불러오는 중이에요" 를 한 번 읽고 막대는 숨긴다 */
-export function SkeletonGroup({ testID, children }: { testID: string; children: ReactNode }) {
+/** 화면 하나의 뼈대를 묶는다(결정 071): 화면 읽기에는 "불러오는 중이에요" 를 한 번 읽고 막대는 숨긴다. style 은 묶음의 자리(공유 카드 뼈대처럼 틀을 채울 때) */
+export function SkeletonGroup({ testID, style, children }: { testID: string; style?: StyleProp<ViewStyle>; children: ReactNode }) {
   return (
-    <View testID={testID} accessible accessibilityLabel={strings.states.loading}>
+    <View testID={testID} accessible accessibilityLabel={strings.states.loading} style={style}>
       {children}
     </View>
   );

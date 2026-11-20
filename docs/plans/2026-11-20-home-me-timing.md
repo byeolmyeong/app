@@ -231,16 +231,16 @@ last_reviewed: 2026-11-20
 
 ### A⑤ 공유 v2 (서버 S⑥ · Meta 앱 ID · 새 개발 빌드 뒤)
 
-#### 30. bring-story-plan · 상태: 대기
+#### 30. bring-story-plan · 상태: 완료(대응표는 실행 기록 A⑤)
 - 할 것: `origin/docs/instagram-story-share` 의 계획 태스크 2~8(strings-share · story-module-spike · share-card · share-sheet-app · save-to-photos · share-sheet-web · verify)을 이 묶음으로 가져온다. 그 계획의 태스크 1(결정)은 053 이 맡으므로 하지 않는다. 그 브랜치 계획 파일 앞머리에 "053 이 결정, 실행은 home-me-timing A⑤" 한 줄.
 - 검증: 가져온 태스크가 이 계획 실행 기록에 대응표로 있음
 
-#### 31. api-share-kinds · share-cards-v2 · 상태: 대기
+#### 31. api-share-kinds · share-cards-v2 · 상태: 완료(오늘의 하늘 아이콘은 A④)
 - 할 것: `ShareCard` · `ShareRequest` 에 `NICKNAME` · `ME_AREA` · `DAY_SKY` · `NEXT_BIG`, 카드 넷(9:16, 결정 053 의 2 — 해 별자리 · 영역 · 달 그림은 `card` 값에 맞춰 브랜드 그림에서), 공유 아이콘 자리(내 별명 · 칩 다섯 · 오늘의/그날의 하늘 · 다음 큰 변화)에서 시트를 열 때 `POST /shares` 한 번.
 - 하지 말 것: 출생 정보 · 근거 · 본문 · 하우스를 카드에 넣지 않는다. 이유: 053 의 4.
 - 검증: 카드 넷 렌더 테스트, 시트가 서버를 한 번만 부름
 
-#### 32. verify-a5 · 상태: 대기
+#### 32. verify-a5 · 상태: 진행(코드 · 시험 · 웹 끝 — 기기 표는 새 테스트앱에서)
 - 할 것: `/verify` + 실제 기기 표(iPhone · Android × 인스타그램 있음/없음 × 저장 권한 허용/거절, 웹 — iPhone 사파리 · Android 크롬 · 컴퓨터 크롬), 시안 12-4~12-7 · 12-13 · 12-14 · 11-6 · 11-7 · 14-5 · 14-6 과 나란히.
 
 ## 검증 (묶음마다)
@@ -335,3 +335,23 @@ last_reviewed: 2026-11-20
     - 12(옛 NEXT_TURN 공유 진입 정리)는 A⑤ 담당.
     - develop `949d2c6`(#64 휴대폰 푸시) 위로 다시 올림(충돌은 CLAUDE.md 기능 폴더 한 줄 — push 를 살리고 report → timing). 확인: `npx tsc --noEmit && npx expo lint` exit 0(로컬 eslint 캐시가 새 패키지 expo-notifications 를 못 찾아 `--no-cache` 로 — 캐시 없는 CI 와 같음) · `npm test` 122 묶음 1511 통과 · `npx expo export --platform web` exit 0 · `npx expo-doctor` 20/20.
   - 계획과 다르게 한 것: 잠긴 칩은 시안 14 잠긴 칩대로(굴리지 않음) · 흐림 대신 뼈대 · 눈여겨볼 날 0개 문구는 시안 14-1 · 065 의 3("흘러가요" · 설명) · 이번 달의 점 색 · 딱지 글자 색은 칩마다(보드) · 다가오는 시기는 오늘 뒤 1년 안 셋(기본값 그대로) · 시기 풀이 훅은 나 탭 풀이 훅을 본뜬 사본(공용으로 합치는 일은 A② 코드를 건드려 따로) · 그날의 하늘의 쓰는 중은 3초 뒤.
+- 2026-11-20 묶음 A⑤(워크트리 `.wt-app-a5`, 브랜치 `feat/share-v2`, develop `5b9b229` 위). 서버 계약은 S⑥(서버 PR #43 `feat/share-v2`, 아직 develop 아님 — 이 PR 은 S⑥ 가 develop 에 들어간 뒤 합친다). 상위 계획의 "바뀌는 줄"(궁합 카드 없음 055 의 6 · 공유 시트 제목 없음 A7-5)을 따름.
+  - 태스크 30: `origin/docs/instagram-story-share`(PR #34)의 계획 파일을 이 브랜치로 가져와 앞머리에 "053 이 결정, 실행은 home-me-timing A⑤" 한 줄. 그 계획의 태스크 대응표:
+
+    | 그 계획 | 이 계획 | 넓힌 것 · 바꾼 것 |
+    |---|---|---|
+    | 1 adr-share-card-story | (하지 않음) | 결정 053 이 맡음 |
+    | 2 strings-share | 31 | 카드 넷의 글(이름표 · 칩 · 한 줄 소개) · 시트 버튼 · 짧은 알림 문구 |
+    | 3 story-module-spike | 31 | 실제 기기 비교는 새 개발 빌드 뒤(32 의 기기 표) — 고른 쪽과 이유는 아래 실행 기록 |
+    | 4 share-card-sky | 31 | "나의 별자리" 한 장 → 카드 넷(내 별명 · 나 탭 영역 · 오늘의/그날의 하늘 · 다음 큰 변화, 결정 053 의 2) |
+    | 5 share-sheet-app | 31 | 시트를 여는 자리를 넷으로(내 별명 · 칩 다섯 · 오늘의/그날의 하늘 · 다음 큰 변화) |
+    | 6 save-to-photos | 31 | 그대로 |
+    | 7 share-sheet-web | 31 | 그대로 |
+    | 8 verify | 32 | 시안 보드 10장(12-4~12-7 · 12-13 · 12-14 · 11-6 · 11-7 · 14-5 · 14-6)과 나란히 |
+  - 태스크 31(그 계획의 2~7): 문구 → api(카드 넷 타입 · 검사 · 본문 · 예시) → 카드 넷(360 카드 값 `ShareCardLayout` 을 너비로 줄임, 해 별자리 `SignArt` 는 공용 ChartWheel.tsx, 영역 그림은 `me/area-art.tsx` 를 SHARED 에) → 의존성(`expo-media-library` · `react-native-share`, 플러그인은 Meta 앱 ID 가 있을 때만) → `openStory` → 저장 · 스토리(없으면 기기 공유 창) → 시트 v2(제목 없음 · 보조 저장 위 / 주 스토리 아래 · 결과는 Toast) → 내 별명 · 나 탭 아이콘 → 옛 것 지움(share-url · sendLink · READING/NEXT_TURN 요청 · 옛 시기 화면 공유 버튼 · 문구 · `EXPO_PUBLIC_WEB_URL` · `expo-clipboard`) → 카드 모양 뼈대(071) → 웹 저장 정확히 1080×1920 → 카드 기억(소유자 지적). 새 동작마다 시험을 먼저 실패로 봄.
+  - 그 계획 태스크 3(스토리 모듈 고르기): 실제 기기 비교는 새 개발 빌드 뒤. 고른 것 `react-native-share`(12.3.1, TurboModule · 자체 Expo 플러그인 · iOS 붙여넣기 보드 5분 + `instagram-stories://share` · 안드로이드 ADD_TO_STORY 인텐트 — Meta 문서와 같음). Expo 모듈에는 스토리가 없고, 직접 만든 모듈은 기기 시험 없이 넣기에 위험이 커서. 사진 저장은 Expo 권장 `expo-media-library`(SDK 58 의 새 API `requestPermissionsAsync(true)` · `Asset.create` — 옛 API 는 기본 입구에서 던진다).
+  - 서버 계약 대조: S⑥(서버 PR #43)가 develop(c31395c)에 들어간 뒤 서버 develop 의 share 패키지 · architecture.md 를 이 브랜치가 맞춘 판과 비교 — 차이 0줄.
+  - 화면(웹 390 · 1280, 모의 서버 · 개발 서버 8125 — 찍고 끔, 보드는 캔버스 HTML 을 로컬 글꼴로 헤드리스 크롬에서 찍음): 12-5 휴대폰 웹 시트 · 12-6 컴퓨터 웹 시트 · 12-7 내 별명 카드(웹 "이미지 저장" 이 내려받은 1080×1920 을 줄여 비교) · 12-13 나 탭 시트 · 12-14 영역 카드 다섯 · 11-6/11-7 오늘의 하늘(임시 미리보기 화면 — 커밋 안 함) · 14-5/14-6 다음 큰 변화 · 기다리는 동안 뼈대. 가로 넘침 0, 콘솔 오류는 이름 풀이 실패 하나(모의 환경의 바깥 주소). 앱 시트(12-4 · 12-13 · 11-6 · 14-5)의 스토리 버튼은 웹에 없어 버튼 칸만 다르다(일부러).
+  - 계획과 다르게 한 것: 그날의 하늘(오늘이 아닌 날)의 한 줄 소개 "하늘의 움직임으로 읽는 하루"(시안 없음) · 칩 "11월 21일 · 그날의 하늘" · 이름표 "새벽별 님의 11월 21일"(053 의 2 그대로). 닉네임이 없으면 "나의 …". 오늘인지는 한국 날짜로 가린다. 받은 카드 기억(소유자 지적 — 다시 열면 바로, 뒤에서 확인). 궁합 SCORE · RANKING 대상 · 내 이름 칸은 남김(055 의 1).
+  - 독립 리뷰(#61, 69acd7b — 차단 1 · 수정 1 · 제안 9, develop `82f48dc` 위로 다시 올림): 차단 — 화면에 들어올 때 미리 받기가 공유하지 않은 사람의 공개 스냅샷 · `SHARE_CREATED` 를 만들었다(서버 결정 012 · 053 의 3) → 뺌(코디네이터 결정, 미리 받기는 서버의 저장하지 않는 미리보기 길이 생기면 — 소유자 결정 대기). 수정 2 — 진행 중 요청이 기기 지우기 뒤에 끝나면 앞사람 카드를 다시 썼다 → 세대 표식(리뷰 재현 R1 을 반대로 지키는 시험). 제안 3 키마다 따로(R2) · 4 안드로이드 11 이상은 권한을 묻지 않음 · 5 한국 날짜의 오늘을 `lib/korea-date.ts` 하나로(시기 보관본도) · 6 한 줄 소개 굵기 400 · 7 뼈대 값은 `ShareCardLayout.skeleton` + 공용 `Skeleton`/`SkeletonGroup`, 10초면 실패 안내, 뼈대 ↔ 카드 크기 시험 · 8 app.config 플러그인 분기 시험 · 9 카드만 보관 · 지난 그날의 하늘 정리 · 11 두 번 눌림 막기를 ref 로. 진행 중 요청 같이 쓰기는 미리 받기가 없어져 뺐다(멈춘 요청이 다시 시도를 막지 않게). 10(product 지표)은 소유자 문서라 손대지 않음.
+  - A③(#63, develop `ec0a796`) 뒤 다시 올림: 옛 시기 화면(`app/timing.tsx` · `timing-view.tsx` · `use-report.ts`)은 지우는 쪽을 따름, 시기 탭의 `koreaToday` 도 `lib/korea-date.ts` 하나로. 그날의 하늘 머리 오른쪽 `ShareEntry DAY_SKY`(그날 날짜) · 인생 칩의 다음 큰 변화 카드 오른쪽 위 `ShareEntry NEXT_BIG`(카드 안 작은 아이콘 `cardIcon` — 누르는 칸 40 · 아이콘 20, 보드 14 인생 · 14-5). 시험: 아이콘 → 시트(제목 없음) · 열 때 createShare 1회.

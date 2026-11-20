@@ -81,5 +81,9 @@ export const fixtures = {
     ranking: Extract<ShareCard, { kind: 'RANKING' }>;
     rankingNames: Extract<ShareCard, { kind: 'RANKING' }>;
     nextTurn: Extract<ShareCard, { kind: 'NEXT_TURN' }>;
+    nickname: Extract<ShareCard, { kind: 'NICKNAME' }>;
+    meArea: Extract<ShareCard, { kind: 'ME_AREA' }>;
+    daySky: Extract<ShareCard, { kind: 'DAY_SKY' }>;
+    nextBig: Extract<ShareCard, { kind: 'NEXT_BIG' }>;
   },
 };

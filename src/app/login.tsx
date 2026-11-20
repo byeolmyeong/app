@@ -3,7 +3,7 @@
  * 카카오 · 애플 · 구글 순서로(안드로이드는 애플 없음). 아래 안내 문구는 없다. 이 기기에서 마지막에 쓴 공급자 버튼에 "최근 로그인" 배지(결정 044, 보드 5-2).
  * 로그인하면 어디로 갈지는 루트 레이아웃의 가드가 정한다(계정이 있으면 홈, 처음 온 사람은 가입). 로그인 여부는 서버 응답만 따른다.
  */
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Platform, StyleSheet, View } from 'react-native';
 
@@ -46,8 +46,7 @@ export default function LoginScreen() {
   const { failed: returnedFailed } = useLocalSearchParams<{ failed?: string }>();
   /** 자격 증명을 받아 서버를 기다리는 공급자. 그 버튼은 돌기, 나머지는 막는다(결정 067 의 2) */
   const [pending, setPending] = useState<LoginProvider | null>(null);
-  // 이메일이 없어 막힌 것(EMAIL_REQUIRED)은 아래 알림 창만 알린다
-  const [failed, setFailed] = useState(() => returnedFailed === '1' && lastError !== EMAIL_REQUIRED);
+  const [failed, setFailed] = useState(false);
   const [recent, setRecent] = useState<LoginProvider | null>(null);
   const alerted = useRef(false);
 
@@ -64,6 +63,16 @@ export default function LoginScreen() {
       alive = false;
     };
   }, []);
+
+  // 웹 구글에서 실패하고 돌아왔다. 정적 HTML 은 검색값을 모르므로 첫 그림은 안내 없이 그리고(하이드레이션이 같게) 그린 뒤 켠다.
+  // 새로 고침에 반복되지 않게 주소에서 지운다. 이메일이 없어 막힌 것(EMAIL_REQUIRED)은 아래 알림 창만 알린다.
+  useEffect(() => {
+    if (returnedFailed !== '1') return;
+    router.setParams({ failed: undefined });
+    if (lastError !== EMAIL_REQUIRED) setFailed(true);
+    // 돌아온 값이 있을 때 한 번만 본다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returnedFailed]);
 
   // 카카오 · 구글 웹은 다른 화면(/auth/kakao · /auth/google)에서 로그인하고 여기로 돌아온다 — 그 실패도 뜰 때 한 번 알린다.
   useEffect(() => {

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, StyleSheet } from 'react-native';
 
 import LoginScreen from '@/app/login';
@@ -17,7 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn(), getSession: jest.fn(() => ({ lastError: null })) }));
 // 주소의 검색 값(웹 구글에서 실패하고 돌아오면 `?failed=1`, 결정 070)
-jest.mock('expo-router', () => ({ useLocalSearchParams: jest.fn(() => ({})) }));
+jest.mock('expo-router', () => ({ useLocalSearchParams: jest.fn(() => ({})), router: { setParams: jest.fn() } }));
 type FakeProps = { onCredential: (c: unknown) => void; onError: () => void; recent?: boolean; loading?: boolean; disabled?: boolean };
 // 공급자 버튼은 누르면 자격 증명을 넘기는 가짜로 바꾼다(진짜는 providers 테스트가 본다). 최근 로그인(recent)을 받으면 "recent:이름" 을 함께 그린다.
 jest.mock('@/features/auth/providers/google', () => {
@@ -161,6 +161,8 @@ describe('로그인 화면', () => {
     (useLocalSearchParams as jest.Mock).mockReturnValue({ failed: '1' });
     await render(<LoginScreen />);
     expect(screen.getByText(S.failed)).toBeTruthy();
+    // 정적 HTML(주소의 검색값을 모른다)과 첫 그림이 같아야 하므로(하이드레이션 #418) 그린 뒤에 읽고, 새로 고침에 반복되지 않게 주소에서 지운다
+    expect(router.setParams).toHaveBeenCalledWith({ failed: undefined });
 
     (useLocalSearchParams as jest.Mock).mockReturnValue({});
     await render(<LoginScreen />);

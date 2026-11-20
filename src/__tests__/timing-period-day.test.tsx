@@ -105,6 +105,8 @@ describe('시기 자세히 /timing/period(결정 049 의 5, 캔버스 14-3)', ()
 describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 14-4)', () => {
   it('0.3초가 넘으면 다 그려질 배치의 뼈대(아래 탭과 함께), 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리 · 뒤로만, 아래 탭 없음) → 글(날짜 · 요일 · 제목 · 흐름 셋 · 이유 · 실천 셋)과 아래 탭', async () => {
     jest.useFakeTimers();
+    // 그날(11월 21일)이 기기의 오늘이 아니게 — 오늘이면 이유가 "오늘" 로 시작한다(아래 시험)
+    jest.setSystemTime(new Date('2026-11-19T12:00:00+09:00'));
     mockParams.mockReturnValue({ date: '2026-11-21' });
     let resolve: (r: ApiResult<DaySky>) => void = () => {};
     mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (resolve = r)));

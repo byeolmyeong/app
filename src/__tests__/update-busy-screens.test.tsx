@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 import { AppState, Text, type AppStateStatus } from 'react-native';
 
 import ReadingScreen from '@/app/reading';
+import MeScreen from '@/app/me';
 import TimingScreen from '@/app/timing';
 import NewInquiryScreen from '@/app/my/inquiries/new';
 import SynastryDirectionScreen from '@/app/synastry/[id]/direction';
@@ -13,9 +14,11 @@ import SynastryReportScreen from '@/app/synastry/[id]/report';
 import SynastryEntryScreen from '@/app/synastry/index';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
+import { ME_REPORT_POLL_MS, ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
+import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { forgetFresh, rememberFresh } from '@/features/synastry/fresh-synastry';
 import { UpdateGate } from '@/features/update/update-gate';
-import { api, type ApiResult, type AppConfig, type PlatformConfig } from '@/lib/api';
+import { api, type ApiResult, type AppConfig, type MeReportState, type PlatformConfig } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -33,6 +36,9 @@ jest.mock('@/lib/api', () => ({
     listPlaces: jest.fn(),
     saveProfile: jest.fn(),
     createReading: jest.fn(),
+    requestMeReport: jest.fn(),
+    getMeReport: jest.fn(),
+    getAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
     createSynastryDirection: jest.fn(),
     getReport: jest.fn(),
     requestReport: jest.fn(),
@@ -121,6 +127,39 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     await render(gate(<ReadingScreen />));
     expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
     expect(mockApi.createReading).toHaveBeenCalledTimes(1);
+    await comeBackToUpdateRequired();
+    expect(blocked()).toBe(true);
+  });
+
+  it('나 탭: 자세한 풀이를 쓰는 중과 방금 다 쓴 풀이가 떠 있는 동안 미루고, 화면에서 나오면 막는다(리뷰 #49)', async () => {
+    await AsyncStorage.setItem(
+      READING_STORAGE_KEY,
+      JSON.stringify({ key: JSON.stringify([profile.date, profile.time, profile.place.id]), reading: fixtures.reading }),
+    );
+    let resolve: (r: ApiResult<MeReportState>) => void = () => {};
+    mockApi.getMeReport.mockResolvedValueOnce({ ok: true, data: { status: 'WRITING' } }).mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    jest.useFakeTimers();
+    const view = await render(gate(<MeScreen />));
+    await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
+    expect(screen.getByText(strings.me.making.title)).toBeTruthy();
+    await comeBackToUpdateRequired();
+    expect(blocked()).toBe(false);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_POLL_MS)));
+    await act(async () => resolve({ ok: true, data: { status: 'DONE', report: fixtures.meReport } }));
+    expect(await screen.findByTestId('me-nickname-card')).toBeTruthy();
+    expect(blocked()).toBe(false);
+    await view.rerender(home);
+    expect(blocked()).toBe(true);
+    jest.useRealTimers();
+  });
+
+  it('나 탭: 기기에 받아 둔 풀이를 다시 연 것은 미루지 않는다', async () => {
+    const key = JSON.stringify([profile.date, profile.time, profile.place.id]);
+    await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key, reading: fixtures.reading }));
+    await AsyncStorage.setItem(ME_REPORT_STORAGE_KEY, JSON.stringify({ key, report: fixtures.meReport }));
+    mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
+    await render(gate(<MeScreen />));
+    expect(await screen.findByTestId('me-nickname-card')).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(true);
   });

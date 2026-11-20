@@ -17,7 +17,7 @@
 - "왜 이렇게 됐나"가 궁금할 때 → docs/decisions/ ADR 번호순. 바뀌면 새 번호로 대체. 종합된 답은 docs/synthesis/.
 
 ## 디렉터리 (이름이 곧 지시)
-- `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 화면 로직(chart·auth·home·me·reason·reading·report·synastry·direction·support·update·share·my·audio·push) · `src/components/` 공용 부품 · `src/content/` 문구 · `src/lib/` 서버 호출
+- `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 화면 로직(chart·auth·home·me·reason·reading·timing·synastry·direction·support·update·share·my·audio·push) · `src/components/` 공용 부품 · `src/content/` 문구 · `src/lib/` 서버 호출
 - 서버(Spring Boot)는 별도 저장소다. 앱과는 HTTP API 로만 만난다. 근거: docs/decisions/004-spring-backend.md
 - `docs/` agent가 참고할 문서 · `docs/raw/` 원본(던지는 곳, 고치지 않음) · `.claude/` 설정·규칙·스킬·에이전트·훅
 - `assets/brand/` 브랜드 그림 원본(SVG) · `scripts/` 개발 도구(`render-brand.mjs`: SVG → `assets/images/` PNG). 결정 035 · `assets/audio/` 음악 세 곡(바꿔 끼우는 법은 그 README, 결정 062 — 1.0.0 에서는 꺼 둠, 결정 069)

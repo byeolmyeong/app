@@ -52,5 +52,15 @@ const TABS: BottomTab<MainTab>[] = [
 
 /** 앱의 아래 탭: 홈 · 나 · 시기 · 마이(결정 055 의 2, 아이콘은 시안 11). 다른 탭을 누르면 그 화면으로 바꾼다(뒤로 가기에 쌓지 않는다, 결정 046 의 2). */
 export function MainTabs({ active }: { active: MainTab }) {
-  return <BottomTabs tabs={TABS} value={active} onChange={(key) => router.replace(PATHS[key])} />;
+  return (
+    <BottomTabs
+      tabs={TABS}
+      value={active}
+      onChange={(key) => {
+        // push 로 들어온 화면(홈 카드 → 글 등)에서 눌러도 밑의 화면이 남지 않게 먼저 치운다(리뷰 PR #41)
+        if (router.canDismiss()) router.dismissAll();
+        router.replace(PATHS[key]);
+      }}
+    />
+  );
 }

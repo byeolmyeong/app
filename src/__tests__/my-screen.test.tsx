@@ -79,6 +79,16 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.queryByText(/별명을 받은 지/)).toBeNull();
   });
 
+  it('업데이트 직후: 기기에 옛 모양(근거 구조 없음 · 보완점 3)으로 받아 둔 풀이도 한 줄 별명은 그대로 보인다(리뷰 #49)', async () => {
+    const unknown = { date: '1999-03-08', time: null, place: null };
+    await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });
+    const old = { headline: '옛 요약 해석의 한 줄 별명', sections: [{ title: 't', body: 'b', basis: ['태양'] }], strengths: ['a', 'b', 'c'], cautions: ['a', 'b', 'c'] };
+    await storeReading(old, unknown);
+    await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    expect(await card.findByText(old.headline)).toBeTruthy();
+  });
+
   it('출생 정보 · 풀이가 기기에 없으면 카드는 닉네임과 버튼만, 줄들과 아래 탭은 그대로 보인다', async () => {
     await render(<MyScreen />);
     const card = within(await screen.findByTestId('my-card'));

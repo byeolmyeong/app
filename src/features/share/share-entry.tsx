@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, View, type TextStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { Button } from '@/components/button';
 import { Checkbox } from '@/components/checkbox';
 import { Field, FieldInput } from '@/components/field';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/txt';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { sendImage, sendLink, type CardRef } from '@/features/share/share-actions';
 import { ShareCardView } from '@/features/share/share-card';
@@ -32,21 +33,33 @@ let lastMyName = '';
 /**
  * "공유하기" 버튼과 그것이 여는 시트(결정 025): 카드 미리보기와 공유 버튼.
  * 공유는 시트를 열 때 만든다(화면을 여는 것만으로는 `POST /shares` 를 부르지 않는다). 열 때마다 처음 상태로 시작한다.
+ * trigger="icon" 이면 보조 버튼 대신 머리 오른쪽의 공유 아이콘으로 연다(내 별명 — 보드 12).
  */
-export function ShareEntry({ target, label = S.open }: { target: ShareTarget; label?: string }) {
+export function ShareEntry({ target, label = S.open, trigger = 'button' }: { target: ShareTarget; label?: string; trigger?: 'button' | 'icon' }) {
   const [visible, setVisible] = useState(false);
   /** 연 횟수. 열 때마다 시트의 내용을 새로 만든다 */
   const [opened, setOpened] = useState(0);
+  const open = () => {
+    setOpened((n) => n + 1);
+    setVisible(true);
+  };
   return (
     <>
-      <Button
-        variant="line"
-        label={label}
-        onPress={() => {
-          setOpened((n) => n + 1);
-          setVisible(true);
-        }}
-      />
+      {trigger === 'icon' ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={Spacing.xxs} onPress={open} style={styles.icon}>
+          <Svg width={Sizes.navIcon} height={Sizes.navIcon} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"
+              stroke={Colors.ink}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </Pressable>
+      ) : (
+        <Button variant="line" label={label} onPress={open} />
+      )}
       <Sheet visible={visible} onClose={() => setVisible(false)} title={S.sheetTitle}>
         {opened > 0 ? <ShareBody key={opened} target={target} /> : null}
       </Sheet>
@@ -174,6 +187,13 @@ function MyNameForm({ onSubmit }: { onSubmit: (name: string) => void }) {
 }
 
 const styles = StyleSheet.create({
+  icon: {
+    width: StepLayout.back,
+    height: StepLayout.back,
+    marginRight: StepLayout.backInset,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   body: { gap: Spacing.md },
   preview: { alignItems: 'center' },
   center: { textAlign: 'center' },

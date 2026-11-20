@@ -5,12 +5,12 @@ import { Text, View } from 'react-native';
 
 import { MainTabs, type MainTab } from '@/features/home/main-tabs';
 
-const page = (name: string, active: MainTab) =>
+const page = (name: string, active: MainTab, nested = false) =>
   function Page() {
     return (
       <View>
         <Text>{name}</Text>
-        <MainTabs active={active} />
+        <MainTabs active={active} nested={nested} />
       </View>
     );
   };
@@ -23,8 +23,9 @@ const routes = {
     },
   },
   index: page('home', 'home'),
-  reading: page('reading', 'me'),
-  report: page('report', 'timing'),
+  me: page('me', 'me'),
+  reading: page('reading', 'me', true),
+  timing: page('timing', 'timing'),
   my: page('my', 'my'),
   birth: () => <Text>birth</Text>,
 };
@@ -37,6 +38,16 @@ describe('아래 탭과 뒤로 가기', () => {
     await act(async () => router.push('/reading'));
     await fireEvent.press(screen.getByLabelText('홈'));
     expect(screen).toHavePathname('/');
+    expect(router.canGoBack()).toBe(false);
+  });
+
+  it('나 탭은 /me(결정 048 의 1) — 나 → 내 별명(push) 에서 나 탭을 누르면 /me 하나만 남는다', async () => {
+    await renderRouter(routes, { initialUrl: '/' });
+    await fireEvent.press(screen.getByLabelText('나'));
+    expect(screen).toHavePathname('/me');
+    await act(async () => router.push('/reading'));
+    await fireEvent.press(screen.getByLabelText('나'));
+    expect(screen).toHavePathname('/me');
     expect(router.canGoBack()).toBe(false);
   });
 

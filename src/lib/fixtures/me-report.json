@@ -1,0 +1,142 @@
+{
+  "areas": [
+    {
+      "area": "PERSONALITY",
+      "title": "틀에 얽매이지 않는 생각, 끝까지 다듬는 끈기",
+      "keywords": ["독창적인", "끈기 있는", "균형 잡힌"],
+      "stars": [{ "body": "SUN", "sign": "GEMINI" }, { "body": "ASC", "sign": "CAPRICORN" }, { "house": 6, "count": 3 }],
+      "paragraphs": [
+        {
+          "title": "틀에 얽매이지 않는 생각",
+          "body": "남들이 당연하게 여기는 방식에도 '왜 그래야 하지?'를 먼저 떠올리는 편이에요. 새로운 생각을 내놓을 때 가장 생기가 돌고, 그 생각을 끝까지 다듬는 끈기도 함께 있어요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "SUN", "sign": "GEMINI", "house": 6 }] }
+        },
+        {
+          "title": "부드럽게 균형을 잡는 첫인상",
+          "body": "처음 만난 자리에서는 분위기를 읽고 모두가 편한 쪽을 찾아 주는 사람으로 보이기 쉬워요. 속으로는 자기 생각이 분명해서, 친해질수록 의외라는 말을 듣기도 해요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "ASC", "sign": "CAPRICORN" }] }
+        },
+        {
+          "title": "즐길 때 드러나는 진짜 나",
+          "body": "무언가를 만들고 놀 때 가장 나다워지는 편이에요. 재미를 느끼는 순간 집중력이 크게 올라가고, 그 즐거움이 주변 사람에게도 옮겨 가요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "CLUSTER", "house": 6, "bodies": ["SUN", "VENUS", "MARS"] }] }
+        },
+        {
+          "title": "높은 기준과 친해지기",
+          "body": "스스로에게 거는 기대가 커서 시작 전에 오래 망설일 때가 있어요. 완벽하게 준비되기를 기다리기보다 작게 먼저 해 보는 쪽이 잘 맞아요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "ASPECT", "a": "URANUS", "b": "SATURN", "type": "SQUARE" }] }
+        }
+      ],
+      "glance": {
+        "shining": ["새로운 생각을 내놓을 때", "좋아하는 일에 푹 빠졌을 때"],
+        "tiring": ["틀에 맞추라는 말을 들을 때", "기준을 너무 높게 잡을 때"]
+      }
+    },
+    {
+      "area": "LOVE",
+      "title": "함께 처음 해 보는 일이 마음을 가깝게 해요",
+      "keywords": ["새로운 경험", "대화가 통하는", "서로 존중하는"],
+      "stars": [{ "body": "VENUS", "sign": "GEMINI" }, { "body": "MARS" }],
+      "paragraphs": [],
+      "practices": [
+        { "title": "좋아하는 마음을 작은 표현으로 자주 전하기", "body": "말하지 않아도 알 거라 믿기 쉬운 편이라, 짧은 한마디가 큰 힘이 돼요." },
+        { "title": "혼자만의 시간이 필요할 땐 미리 말해 두기", "body": "각자의 공간이 있어야 편한 만큼, 미리 알려 주면 오해가 줄어요." },
+        { "title": "함께 처음 가 보는 곳에 가 보기", "body": "새로운 경험을 같이할 때 설렘이 오래가요." }
+      ],
+      "reason": {
+        "when": "BIRTH",
+        "items": [
+          { "kind": "PLACEMENT", "body": "VENUS", "sign": "GEMINI", "house": 6 },
+          { "kind": "ASPECT", "a": "MARS", "b": "VENUS", "type": "CONJUNCTION" }
+        ]
+      }
+    },
+    {
+      "area": "RELATIONSHIP",
+      "title": "가까워질수록 깊어지는, 오래 곁에 있는 사람",
+      "keywords": ["신중한", "의리 있는", "배려하는"],
+      "stars": [{ "body": "MOON", "sign": "SAGITTARIUS" }, { "body": "MERCURY", "sign": "CANCER" }, { "body": "ASC", "sign": "CAPRICORN" }],
+      "paragraphs": [
+        {
+          "title": "가까워질수록 깊어지는 사람",
+          "body": "처음에는 한 발 떨어져 상대를 살피지만, 마음을 연 사람에게는 오래 곁을 내주는 편이에요. 함께 웃고 노는 시간이 쌓일수록 관계가 단단해져요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "MOON", "sign": "SAGITTARIUS", "house": 11 }] }
+        },
+        {
+          "title": "자유와 약속 사이에서",
+          "body": "서로의 시간을 존중하는 관계에서 가장 편안해요. 정해진 틀이 많으면 답답해지기 쉬워서, 각자의 공간을 지켜 주는 사람에게 끌려요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "MERCURY", "sign": "CANCER", "house": 7 }] }
+        },
+        {
+          "title": "모두가 편한 자리를 만드는 사람",
+          "body": "여럿이 모이면 분위기를 살피고 소외되는 사람이 없도록 챙기는 편이에요. 그래서 모임에서 자연스럽게 이어 주는 역할을 맡기 쉬워요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "ASC", "sign": "CAPRICORN" }] }
+        },
+        {
+          "title": "서운함은 늦게 말하는 편",
+          "body": "속상한 일이 있어도 바로 말하기보다 혼자 정리한 뒤에 꺼내는 편이에요. 작은 서운함일 때 가볍게 말해 보면 오해가 줄어요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "RULER", "body": "MOON", "ruler": "JUPITER" }] }
+        }
+      ],
+      "closer": { "first": "한 발 떨어져 살펴요", "close": "곁을 오래 내줘요", "longtime": "공간을 지켜 줘요" }
+    },
+    {
+      "area": "WORK",
+      "title": "재미가 붙으면 멀리 가고, 맡으면 끝까지",
+      "keywords": ["몰입하는", "책임감 있는", "새 방식을 찾는"],
+      "stars": [{ "house": 6, "count": 3 }, { "body": "URANUS" }, { "body": "SUN", "sign": "GEMINI" }],
+      "paragraphs": [
+        {
+          "title": "재미가 붙으면 멀리 가요",
+          "body": "좋아하는 일에 몰입할 때 집중력이 크게 올라가는 편이에요. 해야 하는 일에도 작은 재미를 붙여 두면 오래 이어 가기 쉬워요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "CLUSTER", "house": 6, "bodies": ["SUN", "VENUS", "MARS"] }] }
+        },
+        {
+          "title": "맡으면 끝까지",
+          "body": "시작은 신중해도 한번 맡은 일은 끝까지 해내는 힘이 있어요. 기준을 너무 높게 잡으면 지칠 수 있으니 중간 점검을 자주 두면 좋아요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "ASPECT", "a": "URANUS", "b": "SATURN", "type": "SQUARE" }] }
+        },
+        {
+          "title": "더 나은 방식을 제안하는 사람",
+          "body": "하던 방식을 그대로 따르기보다 더 나은 길을 찾아 제안하는 편이에요. 새로운 시도를 반기는 곳에서 힘을 더 잘 발휘해요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "SUN", "sign": "GEMINI", "house": 6 }] }
+        },
+        {
+          "title": "꾸준함이 무기",
+          "body": "눈에 띄지 않아도 차근차근 쌓아 가는 힘이 있어요. 오래 걸리는 일일수록 진가가 드러나요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "SATURN", "sign": "TAURUS", "house": 4 }] }
+        }
+      ],
+      "workStyle": { "together": 32, "flexible": 30, "fast": 38 }
+    },
+    {
+      "area": "EMOTION",
+      "title": "흔들려도 정리하며 다시 중심을 찾는 마음",
+      "keywords": ["차분한", "속 깊은", "혼자 정리하는"],
+      "stars": [{ "body": "MOON", "sign": "SAGITTARIUS" }, { "house": 6, "count": 3 }],
+      "paragraphs": [
+        {
+          "title": "정리하며 중심을 찾아요",
+          "body": "마음이 흔들릴 때 감정을 쏟아내기보다 할 일을 정리하며 중심을 찾는 편이에요. 익숙한 공간에 있을 때 가장 빨리 편안해져요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "PLACEMENT", "body": "MOON", "sign": "SAGITTARIUS", "house": 11 }] }
+        },
+        {
+          "title": "쉬어도 된다고 말해 주기",
+          "body": "스스로에게 엄격한 만큼 지친 줄 모르고 지나칠 때가 있어요. 하루에 한 번은 쉬어도 된다고 스스로 말해 주는 연습이 도움이 돼요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "RULER", "body": "MOON", "ruler": "JUPITER" }] }
+        },
+        {
+          "title": "기쁨은 나눌 때 커져요",
+          "body": "좋은 일이 생기면 가까운 사람과 나눌 때 기쁨이 더 오래가요. 함께 웃는 시간이 마음을 채워 줘요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "CLUSTER", "house": 6, "bodies": ["SUN", "VENUS", "MARS"] }] }
+        },
+        {
+          "title": "말보다 행동으로 전하는 마음",
+          "body": "마음을 말로 꺼내기보다 챙겨 주는 행동으로 보여 주는 편이에요. 가끔은 짧게 말로도 전해 주면 상대가 더 잘 알아채요.",
+          "reason": { "when": "BIRTH", "items": [{ "kind": "ASPECT", "a": "PLUTO", "b": "MOON", "type": "CONJUNCTION" }] }
+        }
+      ],
+      "shaken": { "when": "쏟아내기보다 할 일을 정리해요", "comfort": "익숙한 공간, 오래 본 사람 곁" }
+    }
+  ]
+}

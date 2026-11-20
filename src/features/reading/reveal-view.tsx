@@ -140,7 +140,7 @@ export function RevealView({ nickname, headline, signs, onRead }: RevealViewProp
             <Txt variant="kicker" color="gray">{`${nickname} ${R.nicknameSuffix}`}</Txt>
           </Animated.View>
           <Animated.View testID="reveal-up-1" style={[styles.headline, up(1)]}>
-            <Txt variant="hero" accessibilityRole="header" style={styles.center}>
+            <Txt variant="hero" accessibilityRole="header" keepAll style={styles.center}>
               {headline}
             </Txt>
           </Animated.View>

@@ -35,7 +35,7 @@ export function TextPage({ doc, onBack, onAgree }: TextPageProps) {
           <Txt variant="caption" color="hint">
             {`${L.effectiveLabel} ${legalInfo.effective}`}
           </Txt>
-          <Txt variant="legal" color="gray" style={styles.intro}>
+          <Txt variant="legal" color="gray" keepAll style={styles.intro}>
             {doc.intro}
           </Txt>
           {doc.sections.map((section) => (
@@ -92,7 +92,7 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 function Block({ block }: { block: LegalBlock }) {
   if ('p' in block) {
     return (
-      <Txt variant="legal" color="gray" style={styles.block}>
+      <Txt variant="legal" color="gray" keepAll style={styles.block}>
         {block.p}
       </Txt>
     );
@@ -106,7 +106,7 @@ function Block({ block }: { block: LegalBlock }) {
             <Txt variant="legal" color="hint" style={styles.marker}>
               {'ul' in block ? L.bullet : `${i + 1}${L.numberSuffix}`}
             </Txt>
-            <Txt variant="legal" color="gray" style={styles.itemText}>
+            <Txt variant="legal" color="gray" keepAll style={styles.itemText}>
               {item}
             </Txt>
           </View>
@@ -124,7 +124,7 @@ function Block({ block }: { block: LegalBlock }) {
               <Txt variant="legal" color="hint">
                 {head[c]}
               </Txt>
-              <Txt variant="legal" color={c === 0 ? 'ink' : 'gray'}>
+              <Txt variant="legal" color={c === 0 ? 'ink' : 'gray'} keepAll>
                 {cell}
               </Txt>
             </View>

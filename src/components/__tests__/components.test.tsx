@@ -84,6 +84,16 @@ describe('테마', () => {
   });
 });
 
+// 시안의 word-break: keep-all(결정 044 보드 6-2 문단 · 보드 10 별명): 한국어 낱말 중간에서 줄을 바꾸지 않는다
+describe('Txt keepAll', () => {
+  it('켜면 iOS 는 hangul-word 줄바꿈(웹은 CSS word-break: keep-all), 끄면 그대로', async () => {
+    await render(<Txt keepAll>낱말 단위로 줄을 바꾼다</Txt>);
+    expect(screen.getByText('낱말 단위로 줄을 바꾼다').props.lineBreakStrategyIOS).toBe('hangul-word');
+    await render(<Txt>보통 글</Txt>);
+    expect(screen.getByText('보통 글').props.lineBreakStrategyIOS).toBeUndefined();
+  });
+});
+
 describe('Button', () => {
   it('글씨를 그리고 누르면 onPress 를 부른다', async () => {
     const onPress = jest.fn();

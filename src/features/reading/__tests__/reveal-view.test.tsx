@@ -32,6 +32,8 @@ describe('RevealView', () => {
     expect(`새벽별 ${R.nicknameSuffix}`).toBe('새벽별 님의 별명은');
     expect(flat(screen.getByText('새벽별 님의 별명은'))).toMatchObject({ fontSize: 15, lineHeight: 22, fontWeight: '500', color: '#A9ABB7' });
     expect(flat(screen.getByRole('header', { name: headline }))).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600', textAlign: 'center' });
+    // 시안의 word-break: keep-all — 별명이 낱말 중간에서 줄이 바뀌지 않는다
+    expect(screen.getByRole('header', { name: headline }).props.lineBreakStrategyIOS).toBe('hangul-word');
     const read = screen.getByRole('button', { name: R.read });
     expect(R.read).toBe('풀이 읽기');
     expect(flat(read)).toMatchObject({ height: 56, backgroundColor: '#4752FF' });

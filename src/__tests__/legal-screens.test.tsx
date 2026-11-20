@@ -37,6 +37,8 @@ describe('약관 글 화면의 모양(보드 6-2)', () => {
     expect(flat(screen.getByRole('header', { name: first.title }))).toMatchObject({ fontSize: 15, lineHeight: 22, fontWeight: '600' });
     const p = first.blocks.find((b) => 'p' in b) as { p: string };
     expect(flat(screen.getByText(p.p))).toMatchObject({ fontSize: 14, lineHeight: 22, color: '#A9ABB7' });
+    // 시안 문단의 word-break: keep-all — 낱말 중간에서 줄을 바꾸지 않는다
+    expect(screen.getByText(p.p).props.lineBreakStrategyIOS).toBe('hangul-word');
     const ul = first.blocks.find((b) => 'ul' in b) as { ul: string[] };
     expect(flat(screen.getByText(ul.ul[0]))).toMatchObject({ fontSize: 14, lineHeight: 22 });
     const table = privacy.sections.flatMap((s) => s.blocks).find((b) => 'table' in b) as { table: { head: string[]; rows: string[][] } };

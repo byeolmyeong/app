@@ -332,9 +332,9 @@ describe('요약 해석 화면', () => {
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     await fireEvent.press(retry);
-    // 생성 중에는 "다시 시도" 가 사라져 또 누를 수 없다
+    // 생성 중에는 "다시 시도" 가 사라져 또 누를 수 없고, 0.3초 뒤 뼈대가 보인다(결정 071)
     expect(screen.queryByText(ST.offlineEmpty.retry)).toBeNull();
-    expect(screen.queryByText(reading.headline)).toBeNull();
+    expect(await screen.findByTestId('reading-skeleton')).toBeTruthy();
     await act(async () => resolve({ ok: true, data: reading }));
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     expect(mockApi.createReading).toHaveBeenCalledTimes(2);

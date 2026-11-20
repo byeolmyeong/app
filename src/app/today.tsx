@@ -51,7 +51,8 @@ export default function TodayScreen() {
     ) : (
       // 뼈대는 다 그려진 화면처럼 아래 탭과 함께(결정 065 의 2 · 071) — 쓰는 중 · 못 썼을 때만 탭이 없다(결정 061 의 2)
       <Screen nav={nav()} footer={<MainTabs active="home" nested />}>
-        {phase === 'blank' ? null : <DaySkeleton />}
+        {/* 오늘의 하늘의 제목은 시안 11-4 처럼 세 줄 — 다 그려진 머리 카드와 같은 높이(결정 071) */}
+        {phase === 'blank' ? null : <DaySkeleton titleLines={3} />}
       </Screen>
     );
 

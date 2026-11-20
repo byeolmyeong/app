@@ -106,7 +106,8 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
     await render(<TodayScreen />);
     await act(async () => jest.advanceTimersByTime(300));
-    expect(screen.getByTestId('sk-day-hero')).toBeTruthy();
+    // 머리 카드: 날짜 한 줄 + 제목 세 줄(보드 11-4) — 다 그려진 카드와 같은 높이
+    expect(within(screen.getByTestId('sk-day-hero')).getAllByTestId('skeleton-line')).toHaveLength(4);
     expect(screen.getAllByTestId('sk-day-flow')).toHaveLength(3);
     expect(screen.getAllByRole('tab')).toHaveLength(4);
     await act(async () => jest.advanceTimersByTime(3000));

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Polygon, Text as SvgText } from 'react-native-svg';
 
-import { Colors, FontFamily, FontWeight, Sizes } from '@/constants/theme';
+import { Colors, FontFamily, FontWeight, Sizes, SkyMapLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { wheelLayout } from '@/features/chart/wheel-layout';
@@ -92,10 +92,6 @@ export function ChartPicture({ chart, size, named = true }: ChartPictureProps) {
   );
 }
 
-/** 고른 별의 빛무리 · 고른 별이 있던 하우스 칸을 칠하는 주색의 진하기(시안 13) */
-const HALO_OPACITY = 0.25;
-const SECTOR_OPACITY = 0.16;
-
 /**
  * 내 하늘 지도의 휠(시안 13). 서버가 준 `Chart` 만 그린다.
  * 별자리 고리 · 하우스 선과 번호 · 첫인상(상승점)과 꿈(중천)의 축 · 별 점과 짧은 이름. 각도 선은 긋지 않는다.
@@ -121,7 +117,7 @@ export function ChartWheel({ chart, selected }: ChartWheelProps) {
         <Circle cx={w.center} cy={w.center} r={w.rSign} fill={Colors.paper} stroke={Colors.hair} strokeWidth={1} />
         <Circle cx={w.center} cy={w.center} r={w.rInner} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1} />
         {sector ? (
-          <Path testID="wheel-house-sector" d={sector.path} fill={Colors.primary} fillOpacity={SECTOR_OPACITY} />
+          <Path testID="wheel-house-sector" d={sector.path} fill={Colors.primary} fillOpacity={SkyMapLayout.sectorOpacity} />
         ) : null}
         {w.signs.map((s) => (
           <Line key={`sl${s.sign}`} {...s.line} stroke={Colors.hair} strokeWidth={1} />
@@ -180,7 +176,7 @@ export function ChartWheel({ chart, selected }: ChartWheelProps) {
                 cy={b.dot.y}
                 r={w.haloRadius}
                 fill={Colors.primary}
-                fillOpacity={HALO_OPACITY}
+                fillOpacity={SkyMapLayout.haloOpacity}
               />
               <Circle testID="wheel-selected-dot" cx={b.dot.x} cy={b.dot.y} r={w.selectedDotRadius} fill={Colors.primary} />
             </G>

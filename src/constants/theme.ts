@@ -20,6 +20,8 @@ export const Colors = {
   canvas: Platform.OS === 'web' ? '#08090B' : paper,
   /** 본문 글씨, 주색·빨강 위의 글씨. 대비 17.4 */
   ink: '#F2F3F7',
+  /** 본문보다 한 단 옅은 글씨: 말풍선의 설명 · 관계의 각도 말(시안 13-1 · 13-2) */
+  inkSoft: '#DADCE3',
   /** 보조 글씨. 대비 8.5 */
   gray: '#A9ABB7',
   /** 도움말, 입력 전 안내 글씨. 대비 4.8 */
@@ -168,6 +170,22 @@ export const MakingTwinkles = [
   { right: 8, top: 170 },
   { left: 60, bottom: 6 },
 ] as const;
+
+/** 내 하늘 지도(시안 13 · 13-1): 목록 줄 · 별 점 · 시트 안의 자리, 고른 별을 빛내는 주색의 진하기 */
+export const SkyMapLayout = {
+  /** 목록 한 줄의 최소 높이 · 별 점 · 빈 점(상승점 · 중천)의 테두리 */
+  row: 60,
+  dot: 8,
+  dotBorder: 1.5,
+  /** 시트: 이름 줄에서 별자리까지 · 별자리와 하우스 사이 · 관계 제목까지 · 관계 한 줄의 최소 높이 */
+  termsTop: 20,
+  termsGap: 14,
+  relationsTop: 28,
+  relationRow: 52,
+  /** 고른 별의 빛무리(휠 · 목록의 점) · 고른 별의 하우스 칸에 쓰는 주색의 진하기 */
+  haloOpacity: 0.25,
+  sectorOpacity: 0.16,
+} as const;
 
 /** 시트 뒤를 가리는 막. 밤색 66%(결정 042 시안. 어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(4,5,8,0.66)';

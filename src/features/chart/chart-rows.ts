@@ -77,6 +77,54 @@ export function aspectRows(chart: Chart): DataTableRow[] {
   }));
 }
 
+type GlossaryBody = { name: string; nickname: string; topic: string; meaning: string };
+type GlossaryHouse = { nickname: string; topic: string; meaning: string };
+
+/** 용어 사전의 천체 · 하우스. 사전에 없는 식별자(추가 지점)는 undefined */
+export const glossaryBody = (key: string) => (strings.glossary.bodies as Record<string, GlossaryBody | undefined>)[key];
+export const glossaryHouse = (n: number) => (strings.glossary.houses as Record<number, GlossaryHouse | undefined>)[n];
+
+/** 물병 → 물병자리 */
+export const signFullName = (sign: string) => signName(sign) + strings.chart.signSuffix;
+
+/** "별마다 있던 자리" 의 한 줄. place 는 "5하우스 · 즐거움" · "1하우스가 시작되는 곳", 시각 "모름" 이면 null */
+export type SkyRow = { key: string; title: string; subtitle: string; sign: string; place: string | null; angle: boolean };
+
+/**
+ * 내 하늘 지도의 목록(시안 13): 별 10(서버가 준 순서) + 시각을 알 때만 첫인상의 자리(상승점) · 꿈의 자리(중천).
+ * 별자리 · 하우스는 서버 값 그대로 적는다.
+ */
+export function skyRows(chart: Chart): SkyRow[] {
+  const S = strings.skyMap;
+  const known = showsHouses(chart);
+  const rows: SkyRow[] = [];
+  for (const p of chart.positions) {
+    const g = glossaryBody(p.body);
+    if (!g) continue;
+    const house = known && p.house !== undefined ? glossaryHouse(p.house) : undefined;
+    rows.push({
+      key: p.body,
+      title: g.name,
+      subtitle: g.topic,
+      sign: signFullName(p.sign),
+      place: house ? `${p.house}${S.houseSuffix}${S.separator}${house.topic}` : null,
+      angle: false,
+    });
+  }
+  if (known && chart.angles) {
+    const angle = (key: 'ASC' | 'MC', p: SignPosition, house: number): SkyRow => ({
+      key,
+      title: strings.glossary.angles[key].nickname,
+      subtitle: strings.glossary.angles[key].name,
+      sign: signFullName(p.sign),
+      place: `${house}${S.houseStartSuffix}`,
+      angle: true,
+    });
+    rows.push(angle('ASC', chart.angles.asc, 1), angle('MC', chart.angles.mc, 10));
+  }
+  return rows;
+}
+
 /** 핵심 3요소: 태양·달의 별자리와 (시각을 알 때만) 상승궁 */
 export function keyThree(chart: Chart): { label: string; value: string; caption: string }[] {
   const signOf = (body: string) => chart.positions.find((p) => p.body === body)?.sign;

@@ -619,6 +619,8 @@ export const Typography = {
   kicker: type(15, 22, FontWeight.medium),
   stat: type(16, 24, FontWeight.semibold),
   statLabel: type(12, 17, FontWeight.regular),
+  /** 시기 · 인생의 "다음 큰 변화" 해(보드 14-2) */
+  yearBig: type(40, 46, FontWeight.semibold),
   /** 별명 짓는 중의 제목(결정 042 시안) */
   headline: type(22, 32, FontWeight.semibold),
   /** 하단 시트의 가운데 제목(결정 042 시안) */

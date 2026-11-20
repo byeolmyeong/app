@@ -612,9 +612,6 @@ export const strings = {
       upcoming: '다가오는 시기',
       /** "~ 2027년 1월" */
       untilPrefix: '~ ',
-      /** 띠의 읽기 이름: "일, 9월부터 12월까지" */
-      barFrom: '부터 ',
-      barTo: '까지',
     },
     life: {
       title: '인생의 큰 변화',

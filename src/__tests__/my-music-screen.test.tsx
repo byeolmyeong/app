@@ -1,14 +1,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
-import MusicScreen from '@/app/my/music';
+import MusicRoute from '@/app/my/music';
+import { MusicSettingsScreen as MusicScreen } from '@/features/audio/music-screen';
 import { strings } from '@/content/strings';
 import { MUSIC_STORAGE_KEY, loadMusicSettings, resetMusicSettingsForTest } from '@/features/audio/music-settings';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-jest.mock('expo-router', () => ({ router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() } }));
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
+  Redirect: ({ href }: { href: string }) => {
+    const { Text } = jest.requireActual('react-native');
+    return <Text testID="redirect">{href}</Text>;
+  },
+}));
 
 const MU = strings.my.music;
 const sw = (label: string) => screen.getByRole('switch', { name: label });
@@ -18,7 +25,15 @@ beforeEach(async () => {
   resetMusicSettingsForTest();
 });
 
-describe('음악(/my/music, 보드 16-11)', () => {
+describe('1.0.0 의 /my/music(결정 069)', () => {
+  it('음악을 꺼 두어 주소로 들어와도 마이로 보낸다(스위치를 보이지 않는다)', async () => {
+    await render(<MusicRoute />);
+    expect(screen.getByTestId('redirect').props.children).toBe('/my');
+    expect(screen.queryByRole('switch')).toBeNull();
+  });
+});
+
+describe('음악 화면(1.1.0 에서 열림, 보드 16-11)', () => {
   it('배경 음악 · 앱 열 때 음악 · 기다릴 때 음악 세 스위치, 처음엔 모두 켬', async () => {
     await render(<MusicScreen />);
     await waitFor(() => expect(sw(MU.background)).toBeTruthy());

@@ -46,7 +46,7 @@ last_reviewed: 2026-11-20
 - (어드민 v2) 감사 기록 보관 1년(시안 머리의 "보관 기간 1년"을 따른다 — 지금은 무기한).
 
 ## 범위 밖
-- 1.1.0: 궁합 새 화면(063) · 결제 · 광고 · 유료 자리. 효과음. 대화형 문의. 운영(main) 배포 · 스토어 제출(사람이 확인). 음원 제작 · 사용권.
+- 1.1.0: 궁합 새 화면(063) · 결제 · 광고 · 유료 자리. 음악(A⑨ — 결정 069, 코드는 develop 에 꺼진 채 있음). 효과음. 대화형 문의. 운영(main) 배포 · 스토어 제출(사람이 확인). 음원 제작 · 사용권.
 
 ## 전역 제약 (모든 태스크에 암묵 적용)
 - 앱: Node 22 · Expo SDK 58 · 패키지는 `npx expo install` 만 · 문구 `src/content/strings.ts` · 색 · 간격 `src/constants/theme.ts` · 앱에서 점성 계산 금지 · 기능끼리 import 금지(`SHARED_FEATURE_FILES` 예외) · 외부 응답은 검사 함수로 막는다.
@@ -307,6 +307,8 @@ last_reviewed: 2026-11-20
 
 ### A⑧ 푸시 · A⑨ 음악 (앱 `feat/push-music`, 새 개발 빌드 하나로)
 
+> **A⑨ 음악은 1.1.0 묶음으로 옮겼다(결정 069, 소유자 2026-11-20 "1.0.0 에는 음악을 넣지 않는다" · "1.1.0 에 넣는다").** A9-1 · A9-2 의 코드(PR #48)는 develop 에 꺼진 채 있고 `/my/music` 은 마이로 보낸다. 1.1.0 때 할 일은 결정 069 의 4 목록. A⑧ 푸시는 1.0.0 그대로.
+
 #### A8-1. push-register · 상태: 대기
 - 읽을 것: 결정 057, S10-2 계약, Expo SDK 58 `expo-notifications` 문서(https://docs.expo.dev/versions/v58.0.0/sdk/notifications/)
 - 할 것: `npx expo install expo-notifications expo-device`, `src/features/push/`(권한 요청 · 토큰 받아 `POST /push/devices` · 로그아웃 때 `DELETE`). 권한은 앱 결정 066 대로 — 별명을 받은 뒤 처음 홈에서 우리 시트(11-10: "매일 오늘의 하늘을 보내 드릴까요?" · "받는 시간 · 오전 8:00 ›" 줄 · 알림 받기/나중에)를 한 번, "알림 받기" 를 누를 때만 휴대폰 권한 창(11-11). 나중에 → 다시 묻지 않음. 휴대폰 설정에서 꺼져 있으면 마이 › 알림 맨 위 줄(16-2-1). 푸시 문구는 066 의 표. 알림을 누르면 종류별 화면(알림함 표와 같은 곳). 웹에서는 아무것도 하지 않는다.
@@ -316,16 +318,16 @@ last_reviewed: 2026-11-20
 - 할 것: `/my/notifications`(오늘의 하늘 알림 · 받는 시간 → 시트(8-1 모양, 5분 단위) · 이벤트 · 혜택 알림 = `marketingConsent`) → `PATCH /account`. 마이 첫 줄 오른쪽에 받는 시간(끄면 숨김).
 - 검증: 화면 테스트(켜기/끄기 · 시간 저장 · 실패 시 되돌림).
 
-#### A9-1. audio · 상태: 진행(`feat/audio` — 음악 줄 · 파일 · 설정 · 별명 짓는 중의 waiting 끝. 남음: 루트 `useSoundtrackRoot()` · 스플래시 opening 과 마이 › 음악 줄 — 길 A 의 스플래시 PR 뒤 작은 PR)
+#### A9-1. audio · 상태: 1.1.0 으로 옮김(결정 069 — 음악 줄 · 파일 · 설정 · 별명 짓는 중의 waiting 은 develop 에 있음, 루트 · 스플래시 줄은 1.1.0 때)
 - 읽을 것: 결정 062, Expo SDK 58 `expo-audio` 문서
 - 할 것: `npx expo install expo-audio`, `assets/audio/` 에 무음 자리표시 셋(`opening.wav` · `waiting.wav` · `background.wav`, 파이썬 `wave` 로 1초) + 바꿔 끼우는 법을 `assets/audio/README.md` 에. `src/features/audio/`(`useSoundtrack(track: 'opening' | 'waiting' | 'background')` · 설정 `byeolmyeong.music.v1 { background, opening, waiting }` 기본 모두 켬 · 무음 모드 존중 · 다른 소리와 섞기(끼어들지 않음) · 뒤로 가면 멈춤 · 넘어갈 때 짧게 줄였다 키움). 쓰는 중 화면들은 `waiting`, 스플래시는 `opening`, 나머지는 `background`. 웹은 처음 누른 뒤부터 배경만.
 - 검증: 단위 테스트(설정 끔 → 안 틂 · 화면 전환 표 · 웹 첫 누름 전 무음).
 
-#### A9-2. my-music · verify-a8-a9 · 상태: 진행(`/my/music` 화면 끝 — 마이의 줄은 루트 PR 에서, 기기 확인은 새 개발 빌드 때)
+#### A9-2. my-music · verify-a8-a9 · 상태: 1.1.0 으로 옮김(결정 069 — 화면은 develop 에 있고 1.0.0 은 `/my/music` 을 마이로 보냄. 푸시 기기 확인(A8)은 1.0.0 그대로)
 - 할 것: `/my/music` 스위치 셋. `/verify` · 새 개발 빌드(`npx eas-cli@latest build --profile development`)로 기기에서 푸시 한 번 · 음악 전환 확인 → PR → CI → 합침.
 - 검증: 기기 확인은 **차단 가능**(APNs · FCM 이 EAS 에 없으면 소유자).
 
-#### A9-3. real-tracks · 상태: 대기(음원이 오면 — 소유자 2026-11-20 "음원은 오늘 못 해")
+#### A9-3. real-tracks · 상태: 1.1.0 으로 옮김(결정 069 — 음원이 오면)
 - 할 것: 받은 파일 셋을 `assets/audio/` 에 같은 이름으로 바꿔 끼운다(형식이 다르면 이름표만 바꿈). 크기 확인.
 
 ### L① 랜딩 (랜딩 `feat/landing-v2`) — 시안 정함(소유자 2026-11-20 "A 로 가자", "하자 옮겨줘")

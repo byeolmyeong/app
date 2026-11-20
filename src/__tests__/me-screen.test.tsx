@@ -155,7 +155,7 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     expect(screen.getByTestId('me-detail-card')).toBeTruthy();
   });
 
-  it('처음 불러올 때 0.3초가 넘으면 뼈대(24-1), 머리 · 아래 탭은 그대로 보인다', async () => {
+  it('처음 불러올 때 0.3초가 넘으면 뼈대(받기 전 배치, 결정 071), 머리 · 아래 탭은 그대로 보인다', async () => {
     jest.useFakeTimers();
     mockApi.createReading.mockReturnValue(new Promise(() => {}));
     await render(<MeScreen />);

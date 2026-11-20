@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { GlowBackdrop } from '@/components/glow';
+import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, MeLayout as L, ReasonLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -61,7 +62,7 @@ function Hero({ area, nickname, timeKnown }: { area: MeAreaReport; nickname: str
   const H = L.hero;
   const stars = starLabels(area.stars, timeKnown);
   return (
-    <View style={styles.hero}>
+    <View testID="me-hero" style={styles.hero}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={H.glow.extent} centerX={H.glow.x} centerY={H.glow.y} />
       <View style={styles.art}>
         <AreaArt area={area.area} size={H.art} variant="hero" />
@@ -288,6 +289,42 @@ function Shaken({ shaken }: { shaken: NonNullable<MeAreaReport['shaken']> }) {
 const H = L.hero;
 const C = L.closer;
 const W = L.work;
+const K = L.skeleton.hero;
+
+/**
+ * 받은 뒤 영역 카드의 뼈대(결정 071, 보드 12-8): 같은 틀 · 같은 자리에 그림 자리(동그라미) · 이름표 · 제목 세 줄 · 키워드 셋 · 쓰인 별.
+ * 영역 카드 아래 칸은 영역마다 달라(한눈에 보기 · 작은 실천 · …) 뼈대는 영역 카드까지만 그린다.
+ */
+export function AreaViewSkeleton() {
+  return (
+    <View style={styles.root}>
+      <View testID="me-hero-skeleton" style={styles.hero}>
+        <View style={styles.art}>
+          <Skeleton width={H.art} height={H.art} pill />
+        </View>
+        <SkeletonText variant="captionStrong" widths={[K.kicker]} />
+        <SkeletonText variant="title" widths={K.title} style={styles.heroTitle} />
+        <View style={styles.keywords}>
+          {K.keywords.map((width, i) => (
+            <View key={i} testID="me-keyword-skeleton">
+              <Skeleton width={width} height={H.keyword} pill />
+            </View>
+          ))}
+        </View>
+        <View style={styles.stars}>
+          <SkeletonText variant="statLabel" widths={[K.stars]} />
+          <View style={styles.starList}>
+            {K.star.map((width, i) => (
+              <View key={i} testID="me-star-skeleton">
+                <SkeletonText variant="statLabel" widths={[width]} />
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   root: { gap: L.sectionGap, paddingTop: L.contentTop },

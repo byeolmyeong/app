@@ -51,7 +51,8 @@ export default function RootLayout() {
   // 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지(최대 5초) 둔다.
   const [gateBlocked, setGateBlocked] = useState(false);
   const fontsDone = loaded || !!error;
-  const splashDone = useSplashDone(fontsDone && (gateBlocked || (!covered && (first === 's' || session.ready))));
+  // 공유 페이지(/s/…)에는 스플래시가 아예 없다(결정 068 의 3) — 첫 프레임부터 공유 화면
+  const splashDone = useSplashDone(fontsDone && (gateBlocked || (!covered && (first === 's' || session.ready))), first === 's');
   useEffect(() => {
     if (splashDone) SplashScreen.hideAsync();
   }, [splashDone]);

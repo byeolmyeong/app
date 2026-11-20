@@ -36,9 +36,9 @@ const styles = StyleSheet.create({
 /**
  * 스플래시를 걷어도 되는가. ready(처음 확인할 것이 다 끝났다)이고 웹이면 처음 그린 뒤 0.8초가 지났을 때 true 가 되고, 한 번 true 면 그대로다
  * (나중에 다시 확인 중이 되어도 스플래시를 다시 그리지 않는다). 앱은 네이티브 스플래시가 앱이 켜질 때부터 보였으므로 최소 시간이 없고,
- * 확인이 끝나지 않아도 5초 뒤에는 걷는다.
+ * 확인이 끝나지 않아도 5초 뒤에는 걷는다. skip 이면 처음부터 걷힌 것이다(공유 페이지 — 그 뒤 홈으로 가도 다시 그리지 않는다).
  */
-export function useSplashDone(ready: boolean): boolean {
+export function useSplashDone(ready: boolean, skip = false): boolean {
   const web = Platform.OS === 'web';
   const [minPassed, setMinPassed] = useState(!web);
   const [maxPassed, setMaxPassed] = useState(false);
@@ -47,7 +47,8 @@ export function useSplashDone(ready: boolean): boolean {
     const timer = web ? setTimeout(() => setMinPassed(true), MIN_MS) : setTimeout(() => setMaxPassed(true), NATIVE_MAX_MS);
     return () => clearTimeout(timer);
   }, [web]);
-  const now = (ready && minPassed) || maxPassed;
+  // skip: 스플래시를 아예 보이지 않는 곳(공유 페이지, 결정 068 의 3) — 처음부터 걷힌 것으로 둔다
+  const now = skip || (ready && minPassed) || maxPassed;
   if (!done && now) setDone(true);
   return done || now;
 }

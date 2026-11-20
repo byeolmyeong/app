@@ -197,14 +197,23 @@ describe('스플래시', () => {
     }
   });
 
-  it('웹: 공유 페이지는 세션을 확인하지 않으므로 0.8초만 보인다', async () => {
+  // 결정 068 의 3(소유자 "안 보이게 해"): 공유 링크는 첫 프레임부터 공유 화면
+  it('웹: 공유 페이지에는 스플래시가 아예 없고, 거기서 홈으로 가도 다시 그리지 않는다', async () => {
     Platform.OS = 'web';
     mockSegments.mockReturnValue(['s', '[shareId]']);
     mockUseSession.mockReturnValue(session('checking'));
-    await render(<RootLayout />);
-    expect(screen.getByTestId('splash')).toBeTruthy();
-    await act(async () => jest.advanceTimersByTime(800));
+    const view = await render(<RootLayout />);
     expect(screen.queryByTestId('splash')).toBeNull();
+    mockSegments.mockReturnValue([]);
+    await view.rerender(<RootLayout />);
+    expect(screen.queryByTestId('splash')).toBeNull();
+  });
+
+  it('앱: 공유 페이지로 열면 글꼴만 받고 네이티브 스플래시를 걷는다', async () => {
+    mockSegments.mockReturnValue(['s', '[shareId]']);
+    mockUseSession.mockReturnValue(session('checking'));
+    await render(<RootLayout />);
+    expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
   });
 
   it('앱: 세션 확인이 5초 넘게 끝나지 않아도 네이티브 스플래시를 걷는다(최대 대기)', async () => {

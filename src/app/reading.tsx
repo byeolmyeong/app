@@ -105,8 +105,9 @@ export default function ReadingScreen() {
   // 기기를 찾아보는 동안에는 아무것도 그리지 않는다("짓는 중" 이 잠깐 비치지 않게).
   if (!stored.checked) return <Screen nav={nav}>{null}</Screen>;
 
-  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
-  if (making) return <MakingView nav={from === 'signup' ? undefined : nav} />;
+  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다. 받아 오다 10초가 넘은 것이면
+  // 머리 · 아래 탭이 있는 틀에 보여 그동안 다른 탭으로 갈 수 있게 한다(나 탭과 같다, 결정 061 · 065 의 2)
+  if (making) return <MakingView nav={from === 'signup' ? undefined : nav} tabs={fresh ? undefined : tabs} />;
   // 받아 오는 동안은 글과 같은 배치의 뼈대(결정 071) — 머리 · 아래 탭은 진짜
   if (state.status === 'loading')
     return (

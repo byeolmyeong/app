@@ -82,6 +82,8 @@ describe('요약 해석 화면', () => {
     expect(screen.getByText(R.generating)).toBeTruthy();
     expect(screen.queryByTestId('reading-skeleton')).toBeNull();
     expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    // 아래 탭도 그대로 — 그동안 다른 탭으로 갈 수 있다(나 탭과 같다, 결정 061 · 065 의 2)
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
     await act(async () => resolve({ ok: true, data: reading }));
     expect(screen.getByText(reading.headline)).toBeTruthy();
     jest.useRealTimers();

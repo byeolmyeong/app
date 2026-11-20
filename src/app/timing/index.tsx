@@ -34,6 +34,7 @@ import {
   type TimingChip,
 } from '@/features/timing/timing-parts';
 import { useMonth } from '@/features/timing/use-month';
+import { shownTiming } from '@/features/timing/time-known';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 import { YearSkeleton, YearView, mainInterval } from '@/features/timing/year-view';
 import { useGenerationBusy } from '@/features/update/update-gate';
@@ -145,7 +146,8 @@ export default function TimingScreen() {
       </Screen>
     );
 
-  const report = done ? s.report : null;
+  // 시각 "모름" 이면 받았더라도 돈 · 운명적 만남 구간은 맨 위 카드 · 작은 실천에도 없다(이중 안전)
+  const report = done ? shownTiming(s.report) : null;
   const main = report ? mainInterval(report) : null;
   const timeKnown = report ? report.timeKnown : month.state.status === 'done' ? month.state.sky.timeKnown : true;
   const blocked = s.status === 'none' && s.blocked === true;

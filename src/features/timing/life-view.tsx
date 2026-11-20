@@ -7,6 +7,7 @@ import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@
 import { strings } from '@/content/strings';
 import { Skeleton } from '@/components/skeleton';
 import { PracticeCards, PracticeCardsSkeleton, SectionTitle, SectionTitleSkeleton, SkBlock, SkLine } from '@/features/timing/timing-parts';
+import { shownTiming } from '@/features/timing/time-known';
 import { mainInterval } from '@/features/timing/year-view';
 import type { TimingMilestone, TimingReport } from '@/lib/api';
 
@@ -37,7 +38,8 @@ function CardFill() {
  * 인생(결정 049 의 4, 캔버스 14-2): "인생의 큰 변화" 안내 · 다음 큰 변화 카드(서버의 해 · 만 나이 · 제목 · 본문 — 공유 아이콘 자리는 A⑤ 가 채운다) ·
  * 큰 변화 네 줄의 길(지난 것은 흐리게, 다음 큰 변화는 빛나는 점) · 이 시기의 작은 실천. 해 · 나이는 서버 값 그대로 — 셈하지 않는다.
  */
-export function LifeView({ report }: { report: TimingReport }) {
+export function LifeView({ report: received }: { report: TimingReport }) {
+  const report = shownTiming(received);
   const next = report.current.nextMilestone ?? null;
   const nextIndex = next ? report.milestones.findIndex((m) => m.kind === next.kind) : report.milestones.length;
   const main = mainInterval(report);

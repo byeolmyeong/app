@@ -9,6 +9,7 @@ import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@
 import { strings } from '@/content/strings';
 import { calendarCells, formatMonth, formatMonthDay, inCalendarRange, weekdayOf } from '@/features/timing/dates';
 import { CATEGORY_DOT, CATEGORY_TEXT, SectionTitle, SectionTitleSkeleton, SkBlock, SkLine, Tag, areaLabel, categoryLabel } from '@/features/timing/timing-parts';
+import { shownMonth } from '@/features/timing/time-known';
 import type { MonthState } from '@/features/timing/use-month';
 import type { MonthDay, MonthSky } from '@/lib/api';
 
@@ -192,13 +193,15 @@ export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetr
         </View>
       </View>
     );
-  const days = knownDays(state.sky);
+  // 시각 "모름" 이면 받았더라도 돈 줄 · 상승점 · 중천 · 하우스가 근거인 날을 그리지 않는다(이중 안전)
+  const sky = shownMonth(state.sky);
+  const days = knownDays(sky);
   return (
     <View style={styles.root}>
       <View>
         {head}
         <View style={styles.calendarTop}>
-          <Calendar sky={state.sky} base={base} today={today} onDay={onDay} />
+          <Calendar sky={sky} base={base} today={today} onDay={onDay} />
         </View>
       </View>
       <View style={styles.list}>

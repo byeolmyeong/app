@@ -13,6 +13,7 @@ import { birthInputOf } from '@/features/chart/birth-input';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { PeriodSkeleton, PeriodView } from '@/features/timing/period-view';
+import { shownTiming } from '@/features/timing/time-known';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 
 const T = strings.timing;
@@ -53,7 +54,8 @@ export default function TimingPeriodScreen() {
       <StateScreen nav={nav} tabs={tabs} title={ST.offlineEmpty.title} body={ST.offlineEmpty.body} primary={{ label: ST.offlineEmpty.retry, onPress: timing.recheck }} />
     );
 
-  const interval = s.status === 'done' ? s.report.intervals.find((i) => i.id === id) : undefined;
+  // 시각 "모름" 이면 받았더라도 돈 · 운명적 만남 구간은 열지 않는다(이중 안전)
+  const interval = s.status === 'done' ? shownTiming(s.report).intervals.find((i) => i.id === id) : undefined;
   if (s.status !== 'done' || !interval?.detail)
     return (
       <StateScreen

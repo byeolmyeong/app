@@ -16,6 +16,7 @@ import {
   SkBlock,
   SkLine,
 } from '@/features/timing/timing-parts';
+import { shownTiming } from '@/features/timing/time-known';
 import type { LifeArea, TimingInterval, TimingReport } from '@/lib/api';
 
 const T = strings.timing;
@@ -58,7 +59,9 @@ function Band({ left, right, past }: { left: number; right: number; past: boolea
  * 달 눈금) · 지금 지나는 중(대표 구간 먼저) · 다가오는 시기(1년 안 · 셋) · 이 시기의 작은 실천. 해 · 오늘은 서버의 current.date 다.
  * 시각 "모름" 이면 돈 줄이 없다. 줄은 자세한 글이 있는 구간만 누를 수 있다.
  */
-export function YearView({ report, onPeriod }: { report: TimingReport; onPeriod: (id: string) => void }) {
+export function YearView({ report: received, onPeriod }: { report: TimingReport; onPeriod: (id: string) => void }) {
+  // 시각 "모름" 이면 받았더라도 돈 · 운명적 만남 구간을 그리지 않는다(이중 안전)
+  const report = shownTiming(received);
   const today = report.current.date;
   const year = today.slice(0, 4);
   const rows = ROWS.filter((area) => area !== 'MONEY' || report.timeKnown);

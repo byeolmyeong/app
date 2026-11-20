@@ -10,6 +10,7 @@ import { formatMonth } from '@/features/timing/dates';
 import { Skeleton } from '@/components/skeleton';
 import { ChevronRight, SkBlock, SkLine, TodoList } from '@/features/timing/timing-parts';
 import type { TimingReportView } from '@/features/timing/use-timing-report';
+import { shownTiming } from '@/features/timing/time-known';
 import { mainInterval } from '@/features/timing/year-view';
 
 const T = strings.timing;
@@ -110,13 +111,14 @@ export function HomeTimingCards({
       <CardFail kicker={T.now} title={T.loadFail.report} body={T.loadFail.body} retry={{ label: strings.states.loadFail.retry, onPress: onRetry }} />
     );
   if (state.status !== 'done') return null;
-  const main = mainInterval(state.report);
+  const report = shownTiming(state.report);
+  const main = mainInterval(report);
   if (!main) return null;
   return (
     <>
       <Pressable testID="home-timing-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
         <Head label={T.now} />
-        <NowLine nextYear={state.report.current.nextMilestone?.year ?? null} />
+        <NowLine nextYear={report.current.nextMilestone?.year ?? null} />
         <Txt variant="emphasis" keepAll style={styles.title}>
           {main.title}
         </Txt>

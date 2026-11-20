@@ -94,7 +94,7 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
     await open();
     await screen.findByTestId('share-card');
-    expect(screen.queryByText(S.sheetTitle)).toBeNull();
+    expect(screen.queryByText(S.open)).toBeNull();
   });
 
   it('앱: 보조 "이미지 저장" 이 위, 주 "인스타그램 스토리 공유" 가 맨 아래다(링크 버튼 없음)', async () => {
@@ -104,7 +104,8 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     expect(actionLabels()).toEqual([S.actions.saveImage, S.actions.story]);
     expect(fillOf(S.actions.saveImage)).toBe(Colors.fill);
     expect(fillOf(S.actions.story)).toBe(Colors.primary);
-    for (const old of [S.actions.shareLink, S.actions.copyLink, S.actions.shareImage]) expect(screen.queryByText(old)).toBeNull();
+    // 누를 수 있는 것은 여는 아이콘과 두 버튼뿐이다(링크 복사 · 기기 공유 창 버튼 없음)
+    expect(screen.getAllByRole('button')).toHaveLength(3);
   });
 
   it('Meta 앱 ID 가 없는 빌드에서는 스토리 버튼이 없고 "이미지 저장" 하나다', async () => {

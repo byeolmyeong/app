@@ -483,12 +483,13 @@ export type ShareCard =
 
 export type ShareKind = ShareCard['kind'];
 
-/** `POST /shares` 의 요청. myName 은 공유하는 사람을 부를 이름(1~20자), showNames 가 없으면 이니셜이다 */
+/**
+ * `POST /shares` 의 요청. myName 은 공유하는 사람을 부를 이름(1~20자), showNames 가 없으면 이니셜이다.
+ * 옛 READING · NEXT_TURN 은 앱이 더 만들지 않는다(결정 053 의 6 — 옛 링크의 카드는 ShareCard 로 계속 읽는다).
+ */
 export type ShareRequest =
-  | { kind: 'READING' }
   | { kind: 'SCORE'; synastryId: string; myName: string }
   | { kind: 'RANKING'; relation: Relation; showNames?: boolean }
-  | { kind: 'NEXT_TURN' }
   | { kind: 'NICKNAME' }
   | { kind: 'ME_AREA'; area: MeArea }
   | { kind: 'DAY_SKY'; date: string }
@@ -1015,8 +1016,6 @@ const FIXTURE_SHARE_PREFIX = 'fixture-share-';
 function fixtureShare(input: ShareRequest): ShareCreated {
   const C = fixtures.shareCards;
   switch (input.kind) {
-    case 'READING':
-      return { shareId: `${FIXTURE_SHARE_PREFIX}reading`, card: C.reading };
     case 'SCORE':
       return {
         shareId: `${FIXTURE_SHARE_PREFIX}score`,
@@ -1026,8 +1025,6 @@ function fixtureShare(input: ShareRequest): ShareCreated {
       const key = input.showNames ? 'rankingNames' : 'ranking';
       return { shareId: `${FIXTURE_SHARE_PREFIX}${key}`, card: { ...C[key], relation: input.relation } };
     }
-    case 'NEXT_TURN':
-      return { shareId: `${FIXTURE_SHARE_PREFIX}nextTurn`, card: C.nextTurn };
     case 'NICKNAME':
       return { shareId: `${FIXTURE_SHARE_PREFIX}nickname`, card: C.nickname };
     case 'ME_AREA': {

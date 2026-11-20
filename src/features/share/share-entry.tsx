@@ -30,10 +30,8 @@ export type ShareTarget =
   | { kind: 'ME_AREA'; area: MeArea }
   | { kind: 'DAY_SKY'; date: string }
   | { kind: 'NEXT_BIG' }
-  | { kind: 'READING' }
   | { kind: 'SCORE'; synastryId: string }
-  | { kind: 'RANKING'; relation: Relation }
-  | { kind: 'NEXT_TURN' };
+  | { kind: 'RANKING'; relation: Relation };
 
 /** 마지막에 적은 내 이름. 앱이 켜져 있는 동안 메모리에만 둔다(기기 저장소에 두지 않는다. 결정 025) */
 let lastMyName = '';

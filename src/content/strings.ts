@@ -827,15 +827,11 @@ export const strings = {
     /** 카드 아래와 공유 페이지에 적는 한 줄 소개 */
     tagline: '태어난 순간의 하늘로 읽는 나',
     open: '공유하기',
-    openNextTurn: '다음 변곡점 공유하기',
-    sheetTitle: '공유하기',
     making: '카드를 만들고 있어요',
     /** 공유할 것이 없을 때(서버의 404) */
     nothing: {
-      READING: '공유할 풀이가 아직 없어요.',
       SCORE: '이 궁합은 공유할 수 없어요.',
       RANKING: '이 사이로 본 궁합이 없어 공유할 랭킹이 없어요.',
-      NEXT_TURN: '공유할 다음 변곡점이 없어요.',
       NICKNAME: '공유할 별명이 아직 없어요.',
       ME_AREA: '공유할 풀이가 아직 없어요.',
       DAY_SKY: '공유할 그날의 하늘이 아직 없어요.',
@@ -860,12 +856,9 @@ export const strings = {
     },
     /** 랭킹 카드. 꺼져 있으면 서버가 이름을 이니셜로 줄여 준다 */
     showNames: '이름 그대로 보이기',
-    /** 앱은 시스템 공유 시트, 웹은 저장 · 복사 */
+    /** 시트 아래 버튼(결정 053 의 1): 앱은 보조 "이미지 저장" + 주 "인스타그램 스토리 공유", 웹은 "이미지 저장" 하나. 링크 버튼은 없다 */
     actions: {
-      shareImage: '이미지 공유',
-      shareLink: '링크 공유',
       saveImage: '이미지 저장',
-      copyLink: '링크 복사',
       /** 앱의 주 버튼(결정 053 의 1). Meta 앱 ID 가 없는 빌드 · 웹에는 없다 */
       story: '인스타그램 스토리 공유',
     },
@@ -875,9 +868,6 @@ export const strings = {
       saveFailed: '이미지를 저장하지 못했어요',
       photosDenied: '설정에서 사진 접근을 허용해 주세요',
       storyFailed: '공유하지 못했어요. 잠시 뒤 다시 해 주세요',
-      copied: '링크를 복사했어요.',
-      imageFailed: '이미지를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.',
-      linkFailed: '링크를 보내지 못했어요. 잠시 뒤 다시 눌러 주세요.',
     },
     card: {
       readingLabel: '내 별명',

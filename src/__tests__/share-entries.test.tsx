@@ -56,13 +56,9 @@ beforeEach(async () => {
           ? C.nickname
           : request.kind === 'ME_AREA'
             ? { ...C.meArea, area: request.area }
-            : request.kind === 'READING'
-          ? C.reading
-          : request.kind === 'SCORE'
-            ? C.score
-            : request.kind === 'RANKING'
-              ? C.ranking
-              : C.nextTurn,
+            : request.kind === 'SCORE'
+              ? C.score
+              : C.ranking,
     },
   }));
   mockApi.createReading.mockResolvedValue({ ok: true, data: fixtures.reading });

@@ -6,7 +6,7 @@
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import type { RefObject } from 'react';
-import { PixelRatio, Share, type View } from 'react-native';
+import { PixelRatio, type View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { SHARE_IMAGE } from '@/features/share/share-card';
@@ -57,24 +57,5 @@ export async function shareStory(card: CardRef, appId: string | null): Promise<S
     return (await shareFile(uri)) ? 'SHARED' : 'FAILED';
   } catch {
     return 'FAILED';
-  }
-}
-
-/** 카드 뷰를 스토리 크기의 PNG 파일로 만들어 공유 시트로 보낸다 */
-export async function sendImage(card: CardRef): Promise<boolean> {
-  try {
-    return await shareFile(await captureCard(card));
-  } catch {
-    return false;
-  }
-}
-
-/** 공유 주소를 공유 시트로 보낸다 */
-export async function sendLink(url: string): Promise<boolean> {
-  try {
-    await Share.share({ message: url });
-    return true;
-  } catch {
-    return false;
   }
 }

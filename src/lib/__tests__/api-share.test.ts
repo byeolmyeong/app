@@ -18,7 +18,6 @@ const headersOf = (fetchFn: jest.MockedFunction<typeof fetch>) =>
 
 describe('api: 공유 만들기(POST /shares)', () => {
   const cases: [ShareRequest, unknown, ShareCard][] = [
-    [{ kind: 'READING' }, { kind: 'READING' }, C.reading],
     [
       { kind: 'SCORE', synastryId: 'syn-1', myName: '동환' },
       { kind: 'SCORE', synastryId: 'syn-1', myName: '동환' },
@@ -30,7 +29,6 @@ describe('api: 공유 만들기(POST /shares)', () => {
       { kind: 'RANKING', relation: 'FRIEND', showNames: true },
       C.rankingNames,
     ],
-    [{ kind: 'NEXT_TURN' }, { kind: 'NEXT_TURN' }, C.nextTurn],
     // 공유 v2(서버 결정 036, S⑥)
     [{ kind: 'NICKNAME' }, { kind: 'NICKNAME' }, C.nickname],
     [{ kind: 'ME_AREA', area: 'LOVE' }, { kind: 'ME_AREA', area: 'LOVE' }, C.meArea],
@@ -49,10 +47,10 @@ describe('api: 공유 만들기(POST /shares)', () => {
   });
 
   it('그 종류가 쓰지 않는 값은 보내지 않는다(더 쓰지 않는 shareId 도)', async () => {
-    const fetchFn = fakeFetch(200, { shareId: 's', card: C.reading });
+    const fetchFn = fakeFetch(200, { shareId: 's', card: C.nickname });
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => 'tok' });
-    await api.createShare({ kind: 'READING', synastryId: 'x', myName: 'y', shareId: 'z' } as unknown as ShareRequest);
-    expect(bodyOf(fetchFn)).toEqual({ kind: 'READING' });
+    await api.createShare({ kind: 'NICKNAME', synastryId: 'x', myName: 'y', shareId: 'z' } as unknown as ShareRequest);
+    expect(bodyOf(fetchFn)).toEqual({ kind: 'NICKNAME' });
   });
 
   it('공유 v2: 영역 · 날짜 말고는 싣지 않는다(출생 정보 · 닉네임은 보내지 않는다)', async () => {
@@ -70,17 +68,18 @@ describe('api: 공유 만들기(POST /shares)', () => {
 
   it('응답의 모양이 다르거나 요청한 종류의 카드가 아니면 INVALID 다', async () => {
     const call = (body: unknown) =>
-      createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => 't' }).createShare({ kind: 'READING' });
+      createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, body), getToken: () => 't' }).createShare({ kind: 'NICKNAME' });
     const invalid = { ok: false, error: 'INVALID', status: 200 };
-    expect(await call({ card: C.reading })).toEqual(invalid);
-    expect(await call({ shareId: '', card: C.reading })).toEqual(invalid);
-    expect(await call({ shareId: 's', card: { kind: 'READING' } })).toEqual(invalid);
-    expect(await call({ shareId: 's', card: C.nextTurn })).toEqual(invalid);
+    expect(await call({ card: C.nickname })).toEqual(invalid);
+    expect(await call({ shareId: '', card: C.nickname })).toEqual(invalid);
+    expect(await call({ shareId: 's', card: { kind: 'NICKNAME' } })).toEqual(invalid);
+    expect(await call({ shareId: 's', card: C.reading })).toEqual(invalid);
+    expect(await call({ shareId: 's', card: C.nextBig })).toEqual(invalid);
   });
 
   it('공유할 것이 없으면 404 NOT_FOUND 가 code 로 온다', async () => {
     const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(404, { error: 'NOT_FOUND' }), getToken: () => 't' });
-    expect(await api.createShare({ kind: 'NEXT_TURN' })).toEqual({
+    expect(await api.createShare({ kind: 'NEXT_BIG' })).toEqual({
       ok: false,
       error: 'SERVER',
       status: 404,
@@ -201,13 +200,11 @@ describe('isShareCard: kind 로 가리는 여덟 모양', () => {
 describe('공유의 개발용 가짜 서버', () => {
   const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(500), getToken: () => null, useFixtures: true });
 
-  it('네 종류의 카드를 만들고, 받은 shareId 로 같은 카드를 다시 볼 수 있다', async () => {
+  it('만들 수 있는 종류의 카드를 만들고, 받은 shareId 로 같은 카드를 다시 볼 수 있다', async () => {
     const requests: ShareRequest[] = [
-      { kind: 'READING' },
       { kind: 'SCORE', synastryId: fixtures.synastryList[0].id, myName: '동환' },
       { kind: 'RANKING', relation: 'LOVE' },
       { kind: 'RANKING', relation: 'LOVE', showNames: true },
-      { kind: 'NEXT_TURN' },
       { kind: 'NICKNAME' },
       { kind: 'ME_AREA', area: 'PERSONALITY' },
       { kind: 'DAY_SKY', date: '2026-11-21' },

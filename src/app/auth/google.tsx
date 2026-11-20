@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { SplashView } from '@/components/splash-view';
 import { strings } from '@/content/strings';
 import { readGoogleReturn, takeGoogleRequest, takeUrlFragment } from '@/features/auth/providers/web-redirect';
-import { useAuth } from '@/features/auth/use-session';
+import { useAuth, whenSessionChecked } from '@/features/auth/use-session';
 
 /** 로그인 화면이 실패 안내를 띄우는 주소(로그인 화면의 `failed`) */
 const FAILED = '/login?failed=1';
@@ -36,9 +36,11 @@ export default function GoogleReturnScreen() {
       router.replace(FAILED);
       return;
     }
-    void signIn({ provider: 'GOOGLE', idToken: result.idToken }).then((outcome) =>
-      router.replace(outcome === 'signedIn' ? '/' : outcome === 'signingUp' ? '/signup/terms' : FAILED),
-    );
+    // 켤 때의 세션 확인이 끝난 뒤에 로그인한다(그 401 이 늦게 와 로그인을 덮지 않게)
+    const idToken = result.idToken;
+    void whenSessionChecked()
+      .then(() => signIn({ provider: 'GOOGLE', idToken }))
+      .then((outcome) => router.replace(outcome === 'signedIn' ? '/' : outcome === 'signingUp' ? '/signup/terms' : FAILED));
     // 조각은 처음 그릴 때 한 번 읽은 값이다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fragment]);

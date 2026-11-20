@@ -6,7 +6,7 @@
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import type { RefObject } from 'react';
-import { PixelRatio, type View } from 'react-native';
+import { PixelRatio, Platform, type View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { SHARE_IMAGE } from '@/features/share/share-card';
@@ -38,10 +38,13 @@ async function shareFile(uri: string): Promise<boolean> {
   return true;
 }
 
-/** 카드를 사진 앱에 저장한다. 쓰기 권한만 묻는다(읽기 권한은 받지 않는다). 한 번 막았으면 다시 묻지 않고 DENIED */
+/** 안드로이드 11(API 30) 이상은 앱이 만든 그림을 권한 없이 사진 앱(MediaStore)에 넣는다 — expo-media-library 의 새 저장 길이 권한을 보지 않는다 */
+const savesWithoutPermission = () => Platform.OS === 'android' && Number(Platform.Version) >= 30;
+
+/** 카드를 사진 앱에 저장한다. 쓰기 권한만 묻는다(읽기 권한은 받지 않는다, 안드로이드 11 이상은 묻지 않는다). 한 번 막았으면 다시 묻지 않고 DENIED */
 export async function saveImage(card: CardRef): Promise<SaveResult> {
   try {
-    if (!(await requestPermissionsAsync(true)).granted) return 'DENIED';
+    if (!savesWithoutPermission() && !(await requestPermissionsAsync(true)).granted) return 'DENIED';
     await Asset.create(await captureCard(card));
     return 'SAVED';
   } catch {

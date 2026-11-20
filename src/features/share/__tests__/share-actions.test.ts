@@ -1,6 +1,6 @@
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { PixelRatio } from 'react-native';
+import { PixelRatio, Platform } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { saveImage, shareStory } from '@/features/share/share-actions';
@@ -47,6 +47,19 @@ describe('앱의 이미지 저장 · 스토리(결정 053 의 1 · 5)', () => {
     expect(await saveImage(view)).toBe('FAILED');
     (requestPermissionsAsync as jest.Mock).mockRejectedValueOnce(new Error('x'));
     expect(await saveImage(view)).toBe('FAILED');
+  });
+
+  it('저장: 안드로이드 11(API 30) 이상은 권한 없이 사진 앱에 넣을 수 있어 묻지 않는다(쓸데없는 권한 창 · "설정에서 허용" 오안내 없음)', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    const version = jest.spyOn(Platform, 'Version', 'get').mockReturnValue(30);
+    expect(await saveImage(view)).toBe('SAVED');
+    expect(requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(Asset.create).toHaveBeenCalledWith('file:///tmp/card.png');
+    // 그 아래(API 29)는 쓰기 권한을 묻는다
+    version.mockReturnValue(29);
+    (requestPermissionsAsync as jest.Mock).mockResolvedValueOnce(denied);
+    expect(await saveImage(view)).toBe('DENIED');
+    expect(requestPermissionsAsync).toHaveBeenCalledWith(true);
   });
 
   it('스토리: 카드 PNG 를 인스타그램 스토리로 연다', async () => {

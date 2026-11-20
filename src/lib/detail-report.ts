@@ -4,7 +4,7 @@
  * 확인을 멈추고 "다시 보기" 는 상태만). 만들기(POST)는 사람이 누를 때만 — 연결 복귀 · "다시 보기" 는 상태만 묻는다. 서버에 출생 정보가 없으면
  * 저장하고 한 번만 더, 받을 수 없으면(402 PURCHASE_REQUIRED, 1.1.0 예약) 받기 전 + 막힘. 다 쓴 풀이는 출생 정보별로 그 풀이의 보관 키에 두고
  * 다시 열 때 먼저 보여 준 뒤 뒤에서 새로 묻는다(결정 065 의 2). 풀이마다 다른 것(경로 쌍 · 보관 키 · 검사 함수)은 config 로 받는다.
- * 지금 쓰는 곳: 시기 풀이(features/timing/use-timing-report). 나 탭 풀이는 다음 PR 에서 옮긴다. 출생 정보와 글은 로그에 남기지 않는다.
+ * 쓰는 곳: 나 탭 풀이(features/me/use-me-report) · 시기 풀이(features/timing/use-timing-report). 출생 정보와 글은 로그에 남기지 않는다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';

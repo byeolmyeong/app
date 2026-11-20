@@ -14,8 +14,11 @@ import type {
   SignupResult,
 } from '@/lib/api';
 
-/** checking 시작할 때 확인 중 · signedOut 로그인 전 · signingUp 처음 온 사람이 가입 단계(약관 · 닉네임 · 출생 정보)를 밟는 중 · signedIn 로그인 상태 */
-export type SessionStatus = 'checking' | 'signedOut' | 'signingUp' | 'signedIn';
+/**
+ * checking 시작할 때 확인 중 · signedOut 로그인 전 · signingUp 처음 온 사람이 가입 단계(약관 · 닉네임 · 출생 정보)를 밟는 중 · signedIn 로그인 상태 ·
+ * offline 웹이 시작할 때 서버에 닿지 못해 확인하지 못함(결정 068 의 4 — 로그인했다고도 안 했다고도 정하지 않는다. 다시 확인이 정한다)
+ */
+export type SessionStatus = 'checking' | 'signedOut' | 'signingUp' | 'signedIn' | 'offline';
 
 export type Session = {
   status: SessionStatus;
@@ -147,7 +150,9 @@ export function createSessionStore(deps: SessionStoreDeps) {
         }
         if (deps.cookieSession) {
           const r = await deps.getSession();
-          return r.ok ? set('signedIn', null) : set('signedOut', null);
+          if (r.ok) return set('signedIn', null);
+          // 401 이 아니라 닿지 못했거나 서버 오류면 로그인 전으로 정하지 않는다(결정 068 의 4)
+          return set(r.error === 'LOGIN_REQUIRED' ? 'signedOut' : 'offline', null);
         }
         const kept = await deps.loadToken();
         if (!kept) return set('signedOut', null);
@@ -157,6 +162,15 @@ export function createSessionStore(deps: SessionStoreDeps) {
         set('signedIn', kept);
       })();
       return starting;
+    },
+
+    /** 확인하지 못한(offline) 세션을 다시 확인한다(연결이 돌아옴 · 다시 시도). 살아 있으면 로그인 상태, 401 이면 로그인 전, 또 닿지 못하면 그대로 */
+    async recheck(): Promise<void> {
+      if (state.status !== 'offline') return;
+      const r = await deps.getSession();
+      if (state.status !== 'offline') return;
+      if (r.ok) set('signedIn', null);
+      else if (r.error === 'LOGIN_REQUIRED') await signedOut();
     },
 
     /** 공급자 자격 증명으로 로그인한다. 처음 온 사람은 가입권을 메모리에 두고 가입 중이 된다 */

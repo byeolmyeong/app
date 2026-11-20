@@ -9,7 +9,7 @@ import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { resumeStep } from '@/features/auth/signup-resume';
-import { useSession } from '@/features/auth/use-session';
+import { recheckSession, useSession } from '@/features/auth/use-session';
 import { useHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { UpdateGate } from '@/features/update/update-gate';
@@ -18,6 +18,8 @@ SplashScreen.preventAutoHideAsync();
 
 /** 아래에서 올라오는 창으로 여는 약관 글(결정 067 의 1). 가입 약관 단계의 "보기" 와 마이가 같은 화면을 연다 */
 const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];
+/** 확인하지 못한 세션을 다시 확인하는 간격 */
+const RECHECK_MS = 30_000;
 
 export default function RootLayout() {
   // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
@@ -54,7 +56,14 @@ export default function RootLayout() {
   const fontsDone = loaded || !!error;
   // 로그인한 홈으로 가면 홈의 첫 데이터(기기 읽기 · 되살리기)까지 둔다(결정 068 의 2 — 스플래시에서 바로 홈)
   const homeReady = useHomeReady();
-  const waitHome = first === undefined && session.status === 'signedIn' && !homeReady;
+  const waitHome = first === undefined && (session.status === 'signedIn' || session.status === 'offline') && !homeReady;
+  // 웹이 시작할 때 서버에 닿지 못했으면(결정 068 의 4) 30초마다 다시 확인한다 — 살아 있으면 로그인, 401 이면 로그인 화면
+  const unreachable = session.status === 'offline';
+  useEffect(() => {
+    if (!unreachable) return;
+    const timer = setInterval(() => void recheckSession(), RECHECK_MS);
+    return () => clearInterval(timer);
+  }, [unreachable]);
   // 공유 페이지(/s/…)에는 스플래시가 아예 없다(결정 068 의 3) — 첫 프레임부터 공유 화면
   const splashDone = useSplashDone(
     fontsDone && (gateBlocked || (!covered && !waitHome && (first === 's' || session.ready))),

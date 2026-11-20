@@ -88,3 +88,13 @@ describe('guardRedirect: 하던 가입 단계', () => {
     expect(guardRedirect('signingUp', 'signup', true, 'nickname', 'birth')).toBeNull();
   });
 });
+
+// 결정 068 의 4: 확인하지 못함(offline)이면 보내지도 가리지도 않는다 — 화면이 받아 둔 것 · 끊김 화면을 보인다
+describe('guard: offline', () => {
+  it('어디서든 그대로 두고 가리지 않는다', () => {
+    for (const first of [undefined, 'reading', 'login']) {
+      expect(guardRedirect('offline', first)).toBeNull();
+      expect(guardCovers('offline', first)).toBe(false);
+    }
+  });
+});

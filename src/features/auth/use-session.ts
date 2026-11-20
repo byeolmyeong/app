@@ -46,6 +46,9 @@ export const getSession = (): Session => store.getSnapshot();
 /** 세션을 비운다(계정을 지웠을 때). 보관된 토큰도 지운다 */
 export const clearSession = (): Promise<void> => store.clear();
 
+/** 웹이 시작할 때 서버에 닿지 못한 세션을 다시 확인한다(연결이 돌아옴 · 다시 시도, 결정 068 의 4) */
+export const recheckSession = (): Promise<void> => store.recheck();
+
 /** 로그아웃(서버 세션 · 보관된 토큰). 기기에 둔 출생 정보 · 글은 `sign-out.ts` 가 함께 비운다 */
 export const signOutSession = (): Promise<void> => store.signOut();
 

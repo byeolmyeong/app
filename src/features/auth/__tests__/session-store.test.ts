@@ -419,3 +419,38 @@ describe('가입 이어 하기', () => {
     expect(young.deps.clearSignup).toHaveBeenCalled();
   });
 });
+
+// 결정 068 의 4: 웹이 시작할 때 서버에 닿지 못하면(401 이 아니면) 로그인 전으로 정하지 않는다 — 확인하지 못함(offline)
+describe('웹: 시작할 때 서버에 닿지 못함', () => {
+  it('닿지 못하거나 서버 오류면 offline(가드는 보내지 않는다), 401 이면 지금처럼 로그인 전', async () => {
+    for (const r of [fail('NETWORK'), fail('SERVER', 503)]) {
+      const { store } = setup({ cookieSession: true, getSession: jest.fn(async () => r) });
+      await store.start();
+      expect(store.getSnapshot()).toMatchObject({ status: 'offline', ready: true, token: null });
+    }
+  });
+
+  it('다시 확인: 살아 있으면 로그인 상태, 401 이면 로그인 전, 또 닿지 못하면 그대로', async () => {
+    const getSession = jest.fn(async (): Promise<ApiResult<null>> => fail('NETWORK'));
+    const { store } = setup({ cookieSession: true, getSession });
+    await store.start();
+    await store.recheck();
+    expect(store.getSnapshot().status).toBe('offline');
+    getSession.mockResolvedValueOnce(ok(null));
+    await store.recheck();
+    expect(store.getSnapshot().status).toBe('signedIn');
+
+    const gone = setup({ cookieSession: true, getSession: jest.fn(async (): Promise<ApiResult<null>> => fail('NETWORK')) });
+    await gone.store.start();
+    (gone.deps.getSession as jest.Mock).mockResolvedValueOnce(fail('LOGIN_REQUIRED', 401));
+    await gone.store.recheck();
+    expect(gone.store.getSnapshot().status).toBe('signedOut');
+  });
+
+  it('offline 이 아니면 다시 확인하지 않는다', async () => {
+    const { deps, store } = setup({ cookieSession: true });
+    await store.start();
+    await store.recheck();
+    expect(deps.getSession).toHaveBeenCalledTimes(1);
+  });
+});

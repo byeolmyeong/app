@@ -7,6 +7,7 @@ import MyScreen from '@/app/my';
 import DeleteAccountScreen from '@/app/my/delete';
 import { strings } from '@/content/strings';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
+import { recheckSession } from '@/features/auth/use-session';
 import { getHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import type { Session } from '@/features/auth/session-store';
 import { api, createApi, type ApiResult, type BirthInput } from '@/lib/api';
@@ -50,6 +51,7 @@ jest.mock('@/features/auth/use-session', () => ({
   clearSession: jest.fn(async () => {
     mockSession.current = { status: 'signedOut' as const, token: null, ready: true, lastError: null };
   }),
+  recheckSession: jest.fn(async () => {}),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -281,5 +283,30 @@ describe('홈의 첫 데이터', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+// 결정 068 의 4: 웹이 시작할 때 서버에 닿지 못했으면(offline) 로그인으로 보내지 않고 받아 둔 홈 + 띠(20), 없으면 20-1
+describe('홈: 서버에 닿지 못하고 시작함', () => {
+  const offline = { status: 'offline' as const, token: null, ready: true, lastError: null };
+
+  it('받아 둔 출생 정보가 있으면 홈과 연결 끊김 띠. 서버에 묻지 않는다', async () => {
+    await saveBirth({ profile: { date: known.date, time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    mockSession.current = offline;
+    await render(<HomeScreen />);
+    await homeShown();
+    expect(screen.getByText(strings.states.offline.title)).toBeTruthy();
+    expect(mockApi.getProfile).not.toHaveBeenCalled();
+    expect(getHomeReady()).toBe(true);
+  });
+
+  it('받아 둔 것이 없으면 볼 게 없는 화면(20-1). 다시 시도는 세션을 다시 확인한다', async () => {
+    mockSession.current = offline;
+    await render(<HomeScreen />);
+    expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
+    expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
+    expect(getHomeReady()).toBe(true);
+    await fireEvent.press(screen.getByRole('button', { name: strings.states.offlineEmpty.retry }));
+    expect(recheckSession).toHaveBeenCalledTimes(1);
   });
 });

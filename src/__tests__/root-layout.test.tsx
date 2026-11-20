@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { Platform } from 'react-native';
 
 import RootLayout from '@/app/_layout';
-import { useSession } from '@/features/auth/use-session';
+import { recheckSession, useSession } from '@/features/auth/use-session';
 import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 
@@ -41,7 +41,10 @@ jest.mock('@/components/splash-view', () => {
   };
 });
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() }));
-jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null })) }));
+jest.mock('@/features/auth/use-session', () => ({
+  useSession: jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null })),
+  recheckSession: jest.fn(async () => {}),
+}));
 jest.mock('@/features/onboarding/intro-seen', () => ({ useIntroSeen: jest.fn(() => true) }));
 
 const mockSegments = useSegments as jest.Mock;
@@ -64,7 +67,7 @@ describe('루트 레이아웃의 세션', () => {
 });
 
 const mockUseSession = useSession as jest.Mock;
-const session = (status: 'checking' | 'signedOut' | 'signingUp' | 'signedIn') => ({ status, token: null, ready: status !== 'checking', lastError: null });
+const session = (status: 'checking' | 'signedOut' | 'signingUp' | 'signedIn' | 'offline') => ({ status, token: null, ready: status !== 'checking', lastError: null });
 
 describe('로그인 전 가드(결정 034)', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -248,5 +251,28 @@ describe('스플래시', () => {
     mockUseSession.mockReturnValue(session('signedOut'));
     await view.rerender(<RootLayout />);
     expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 결정 068 의 4: 확인하지 못한 세션(offline)은 30초마다 다시 확인한다(서버가 돌아오면 401 이면 로그인으로)
+describe('확인하지 못한 세션', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockSegments.mockReturnValue([]);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('offline 이면 가리지 않고 30초마다 다시 확인한다. 아니면 다시 확인하지 않는다', async () => {
+    mockUseSession.mockReturnValue(session('offline'));
+    const view = await render(<RootLayout />);
+    expect(screen.queryByTestId('guard-cover')).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+    await act(async () => jest.advanceTimersByTime(30_000));
+    expect(recheckSession).toHaveBeenCalledTimes(1);
+    mockUseSession.mockReturnValue(session('signedIn'));
+    await view.rerender(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(60_000));
+    expect(recheckSession).toHaveBeenCalledTimes(1);
   });
 });

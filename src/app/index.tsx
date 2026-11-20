@@ -12,7 +12,7 @@ import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnline } from '@/components/use-online';
 import { Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { useSession } from '@/features/auth/use-session';
+import { recheckSession, useSession } from '@/features/auth/use-session';
 import { BirthForm } from '@/features/chart/birth-form';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { signName } from '@/features/chart/chart-rows';
@@ -51,6 +51,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
   const [now] = useState(Date.now);
   // 연결 끊김(결정 061 의 4): 받아 둔 것은 그대로 보이고 머리 아래에 띠(보드 20)
   const online = useOnline();
+  // 웹이 시작할 때 서버에 닿지 못해 세션을 확인하지 못했다(결정 068 의 4) — 받아 둔 것을 보이고 띠를 둔다
+  const unreachable = session.status === 'offline';
   const account = useAccount(online);
   // 홈의 첫 데이터(결정 068 의 2): 기기를 읽고, 없으면 되살려 그릴 것이 정해질 때까지 루트가 스플래시를 둔다.
   // 10초가 넘으면 스플래시를 걷고 불러오지 못한 화면(19, 결정 065)
@@ -71,6 +73,16 @@ function Home({ onRetry }: { onRetry: () => void }) {
       />
     );
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
+  // 웹이 시작할 때 서버에 닿지 못했다(결정 068 의 4): 받아 둔 홈이 없으면 볼 게 없는 화면(20-1) — 다시 시도는 세션을 다시 확인한다
+  if (unreachable && empty)
+    return (
+      <StateScreen
+        nav={nav}
+        title={strings.states.offlineEmpty.title}
+        body={strings.states.offlineEmpty.body}
+        primary={{ label: strings.states.offlineEmpty.retry, onPress: () => void recheckSession() }}
+      />
+    );
   if (empty && (!session.ready || (canRestore && !restoreSettled)))
     return (
       <Screen nav={nav}>
@@ -87,7 +99,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
     return (
       <Screen nav={nav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>
-          {online ? null : <OfflineBanner />}
+          {online && !unreachable ? null : <OfflineBanner />}
           <NicknameCard
             nickname={account?.nickname ?? null}
             avatar={account?.avatar ?? null}

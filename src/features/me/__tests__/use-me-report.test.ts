@@ -226,6 +226,28 @@ describe('useMeReport(결정 048 의 4 · 8)', () => {
     expect(mockApi.requestMeReport).not.toHaveBeenCalled();
   });
 
+  it('다 받은 풀이를 보던 중 새로 받기(refresh)는 조용히 — 못 받아도 풀이는 그대로, 겹쳐 부르지 않는다(결정 061 의 4, 리뷰 #49)', async () => {
+    await AsyncStorage.setItem(ME_REPORT_STORAGE_KEY, JSON.stringify({ key: storedKey, report }));
+    const { result } = await renderHook(() => useMeReport(input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', report }));
+    await waitFor(() => expect(mockApi.getMeReport).toHaveBeenCalledTimes(1));
+    mockApi.getMeReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await act(async () => result.current.refresh());
+    expect(result.current.state).toEqual({ status: 'done', report });
+    mockApi.getMeReport.mockResolvedValueOnce(got('NONE'));
+    await act(async () => result.current.refresh());
+    expect(result.current.state).toEqual({ status: 'done', report });
+    let resolve: (r: ApiResult<MeReportState>) => void = () => {};
+    mockApi.getMeReport.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    await act(async () => {
+      result.current.refresh();
+      result.current.refresh();
+    });
+    expect(mockApi.getMeReport).toHaveBeenCalledTimes(4);
+    await act(async () => resolve(done));
+    expect(result.current.state).toEqual({ status: 'done', report });
+  });
+
   it('다른 출생 정보의 보관본은 쓰지 않는다', async () => {
     await AsyncStorage.setItem(ME_REPORT_STORAGE_KEY, JSON.stringify({ key: JSON.stringify(['1999-01-01', null, null]), report }));
     const { result } = await renderHook(() => useMeReport(input));

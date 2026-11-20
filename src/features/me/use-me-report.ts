@@ -124,8 +124,8 @@ function waitAndCheck(run: Run) {
   }, ME_REPORT_POLL_MS);
 }
 
-/** 보관본을 보여 준 뒤 뒤에서 새로 묻는다. 다 쓴 풀이가 아니면(받지 못했어도) 보관본을 그대로 둔다 */
-async function refresh(run: Run): Promise<void> {
+/** 보관본(또는 보던 풀이)을 둔 채 뒤에서 새로 묻는다. 다 쓴 풀이가 아니면(받지 못했어도) 보던 것을 그대로 둔다 */
+async function refreshQuietly(run: Run): Promise<void> {
   const r = await withTimeout(api.getMeReport());
   if (!run.alive || !r.ok || r.data.status !== 'DONE') return;
   await saveReport(run.key, r.data.report);
@@ -186,7 +186,7 @@ export function useMeReport(input: BirthInput | null) {
         return void check(run);
       }
       run.set({ status: 'done', report: stored });
-      void refresh(run);
+      void refreshQuietly(run);
     });
     return () => {
       run.alive = false;
@@ -207,6 +207,19 @@ export function useMeReport(input: BirthInput | null) {
     void check(run);
   }, []);
 
+  /**
+   * 다 받은 풀이를 보던 중 연결이 돌아왔을 때 조용히 새로 받는다(결정 061 의 4). 못 받거나 다 쓴 풀이가 아니면 보던 것을 그대로 둔다
+   * — 상태 확인(recheck)과 달리 화면을 실패로 바꾸지 않는다. 겹쳐 부르지 않는다.
+   */
+  const refresh = useCallback(() => {
+    const run = current.current;
+    if (!run || run.busy) return;
+    run.busy = true;
+    void refreshQuietly(run).finally(() => {
+      run.busy = false;
+    });
+  }, []);
+
   const dismiss = useCallback(() => {
     const run = current.current;
     if (!run || run.busy) return;
@@ -215,5 +228,5 @@ export function useMeReport(input: BirthInput | null) {
   }, []);
 
   const state: MeReportView = settled && settled.key === key ? settled.state : { status: 'checking' };
-  return { state, start, recheck, dismiss };
+  return { state, start, recheck, refresh, dismiss };
 }

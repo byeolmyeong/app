@@ -304,6 +304,19 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     expect(screen.getAllByTestId('me-paragraph')).toHaveLength(4);
   });
 
+  it('다 받은 풀이를 보던 중 끊겼다가 연결이 돌아와도, 새로 받지 못하면 풀이는 그대로(결정 061 의 4, 리뷰 #49)', async () => {
+    await render(<MeScreen />);
+    expect(await screen.findByTestId('me-nickname-card')).toBeTruthy();
+    await waitFor(() => expect(mockApi.getMeReport).toHaveBeenCalledTimes(1));
+    await act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
+    mockApi.getMeReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await act(async () => netListener?.({ isConnected: true, isInternetReachable: true }));
+    await waitFor(() => expect(mockApi.getMeReport).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('me-nickname-card')).toBeTruthy();
+    expect(screen.queryByTestId('card-fail')).toBeNull();
+    expect(mockApi.requestMeReport).not.toHaveBeenCalled();
+  });
+
   it('/me?area=WORK 처럼 칩을 골라 열 수 있다', async () => {
     (useLocalSearchParams as jest.Mock).mockReturnValue({ area: 'WORK' });
     await render(<MeScreen />);

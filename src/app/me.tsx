@@ -58,8 +58,9 @@ export default function MeScreen() {
   // 연결이 돌아오면 상태만 다시 묻는다(GET) — 만들기(POST)는 사람이 누를 때만(결정 061 의 4)
   useOnReconnect(online, () => {
     const s = me.state;
-    // 다 쓴 풀이를 보던 중이면 새로 받고, 못 물었거나 쓰는 중 확인이 끊겼으면 다시 묻는다
-    if (s.status === 'done' || s.status === 'unknown' || (s.status === 'failed' && s.stage === 'poll' && s.error === 'NETWORK')) me.recheck();
+    // 다 쓴 풀이를 보던 중이면 조용히 새로 받고(못 받아도 그대로), 못 물었거나 쓰는 중 확인이 끊겼으면 상태를 다시 묻는다
+    if (s.status === 'done') me.refresh();
+    else if (s.status === 'unknown' || (s.status === 'failed' && s.stage === 'poll' && s.error === 'NETWORK')) me.recheck();
     if (!reading && readingState.status === 'failed' && readingState.error === 'NETWORK') retryReading();
   });
   // 처음 불러올 때: 내 별명이 아직 없거나 나 탭 풀이의 상태를 처음 묻는 중(기기에 받아 둔 것이 없다)

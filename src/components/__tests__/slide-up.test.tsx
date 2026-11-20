@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { useCanGoBack } from 'expo-router';
 import { Animated, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { slideUpScreenOptions, useSlideUp } from '@/components/slide-up';
@@ -8,7 +8,7 @@ import { Colors } from '@/constants/theme';
 import { terms } from '@/content/legal';
 import { strings } from '@/content/strings';
 
-jest.mock('expo-router', () => ({ router: { canGoBack: jest.fn(() => true) } }));
+jest.mock('expo-router', () => ({ useCanGoBack: jest.fn(() => true) }));
 
 // 아래에서 올라오는 창(결정 067 의 1): 약관 글 네 화면을 이 옵션으로 연다
 describe('아래에서 올라오는 창: 화면 옵션', () => {
@@ -72,7 +72,7 @@ describe('아래에서 올라오는 창: 웹', () => {
 
   beforeEach(() => {
     jest.restoreAllMocks();
-    (router.canGoBack as jest.Mock).mockReturnValue(true);
+    (useCanGoBack as jest.Mock).mockReturnValue(true);
     Platform.OS = 'web';
     setReduce(false);
   });
@@ -103,7 +103,7 @@ describe('아래에서 올라오는 창: 웹', () => {
   });
 
   it('주소로 바로 열어 돌아갈 앞 화면이 없으면 움직이지 않는다', async () => {
-    (router.canGoBack as jest.Mock).mockReturnValue(false);
+    (useCanGoBack as jest.Mock).mockReturnValue(false);
     const runs = fakeTiming();
     const onClosed = jest.fn();
     await render(<Probe onClosed={onClosed} />);

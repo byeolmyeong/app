@@ -4,7 +4,7 @@
  * 웹의 화면 쌓기는 움직이지 않아(Expo Router SDK 58) 앞 화면을 남겨 두고(`transparentModal`) 화면이 스스로 올라오고 내려간다(`useSlideUp`).
  * 기기의 동작 줄이기가 켜져 있으면 움직이지 않는다.
  */
-import { router } from 'expo-router';
+import { useCanGoBack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, type ViewStyle } from 'react-native';
 
@@ -38,7 +38,9 @@ export function useSlideUpScreenOptions(): SlideUpScreenOptions {
  */
 export function useSlideUp(): { style: Animated.WithAnimatedValue<ViewStyle>; close: (after: () => void) => void } {
   const reduce = useReduceMotion();
-  const [moves] = useState(() => Platform.OS === 'web' && !reduce && router.canGoBack());
+  // 그리는 중에는 router.canGoBack() 이 이 화면을 넣기 전 쌓기를 볼 수 있어(낡은 값) 그리는 중에 읽어도 되는 훅을 쓴다
+  const canGoBack = useCanGoBack();
+  const [moves] = useState(() => Platform.OS === 'web' && !reduce && canGoBack);
   const [progress] = useState(() => new Animated.Value(moves ? 0 : 1));
   const closing = useRef(false);
 

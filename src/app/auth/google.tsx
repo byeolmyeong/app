@@ -14,7 +14,12 @@ import { useAuth, whenSessionChecked } from '@/features/auth/use-session';
 /** 로그인 화면이 실패 안내를 띄우는 주소(로그인 화면의 `failed`) */
 const FAILED = '/login?failed=1';
 
-/** 같은 돌아옴을 두 번 처리하지 않는다(요청은 한 번만 쓸 수 있다. 개발 모드는 효과를 두 번 돌린다) */
+/**
+ * 이 페이지에서 처리한 돌아옴(조각). 서버는 같은 구글 토큰을 한 번만 받으므로(서버 결정 047 — 두 번째는 401 이 성공한 로그인을 덮는다)
+ * 같은 조각(개발 모드는 효과를 두 번 돌린다)이나, 처리한 뒤 다시 그려진 화면(다시 마운트 · 점검 화면 뒤 다시 올림 — 조각은 이미 꺼내 지워져 빈 글자)은
+ * 다시 처리하지 않는다. 토큰을 보내는 길은 요청(state · nonce)을 꺼내며 지우는 takeGoogleRequest 를 지나야 해서 두 번째 화면은 보낼 수 없고,
+ * 여기서 건너뛰어 그 화면이 실패 안내로 가 먼저 화면의 로그인을 가리지도 않는다.
+ */
 let handled: string | null = null;
 
 export default function GoogleReturnScreen() {
@@ -23,7 +28,7 @@ export default function GoogleReturnScreen() {
   const [fragment] = useState(takeUrlFragment);
 
   useEffect(() => {
-    if (handled === fragment) return;
+    if (handled !== null && (fragment === handled || fragment === '')) return;
     handled = fragment;
     // 라우터도 조각을 경로 값('#')으로 들고 있다가 주소를 다시 쓰므로 그 값도 지운다
     router.setParams({ '#': undefined });

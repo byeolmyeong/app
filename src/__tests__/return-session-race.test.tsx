@@ -97,4 +97,24 @@ describe('돌아오는 화면 · 세션 시작 확인 경합', () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
     expect(mockStore().getSnapshot().status).toBe('signedIn');
   });
+
+  // 서버는 웹 구글 토큰의 jti 를 한 번만 받는다(서버 결정 047) — 두 번째로 보내면 401 이 성공한 로그인을 덮는다
+  it('구글: 처리한 뒤 다시 마운트돼도(조각은 이미 지워짐) 토큰은 한 번만 보내고 실패 안내로 가지 않는다', async () => {
+    mockServer.getSession.mockResolvedValue({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
+    mockServer.login
+      .mockResolvedValueOnce({ ok: true, data: { status: 'SIGNED_IN', token: null } })
+      .mockResolvedValue({ ok: false, error: 'LOGIN_REQUIRED', status: 401, code: 'INVALID_ID_TOKEN' });
+    (takeUrlFragment as jest.Mock).mockReturnValueOnce(`#id_token=${idToken('n-1')}&state=st-1&again=1`).mockReturnValue('');
+    (takeGoogleRequest as jest.Mock).mockReturnValueOnce({ state: 'st-1', nonce: 'n-1' }).mockReturnValue(null);
+
+    void mockStore().start();
+    const first = await render(<GoogleReturn />);
+    await first.unmount();
+    await render(<GoogleReturn />);
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    expect(mockServer.login).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalledWith('/login?failed=1');
+    expect(mockStore().getSnapshot().status).toBe('signedIn');
+  });
 });

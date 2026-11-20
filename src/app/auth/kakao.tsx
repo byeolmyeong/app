@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 
 import { SplashView } from '@/components/splash-view';
+import { strings } from '@/content/strings';
 import { KAKAO_RETURN_PATH, readKakaoReturn, takeKakaoState, webOrigin } from '@/features/auth/providers/web-redirect';
 import { useAuth } from '@/features/auth/use-session';
 
@@ -32,6 +33,6 @@ export default function KakaoReturnScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  // 서버를 기다리는 동안은 스플래시 모양(결정 067 의 2 · 3)
-  return <SplashView />;
+  // 서버를 기다리는 동안은 스플래시 모양(결정 067 의 2 · 3). 화면 읽기에는 기다리는 중임을 알린다
+  return <SplashView busyLabel={strings.login.signingIn} />;
 }

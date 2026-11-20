@@ -74,4 +74,13 @@ describe('/auth/kakao: 기다리는 동안', () => {
     expect(screen.getByTestId('splash')).toBeTruthy();
     expect(screen.queryByText('로그인하는 중이에요')).toBeNull();
   });
+
+  // 리뷰 PR #46 의 7: 글이 없는 화면이라 화면 읽기에는 기다리는 중임을 이름과 busy 로 알린다
+  it('화면 읽기에는 "로그인하는 중이에요" 와 기다리는 중(busy)을 알린다', async () => {
+    mockParams.mockReturnValue({ code: 'c-a11y', state: 'st-1' });
+    mockSignIn.mockImplementation(() => new Promise(() => {}));
+    await render(<KakaoReturn />);
+    const splash = screen.getByLabelText('로그인하는 중이에요');
+    expect(splash.props.accessibilityState).toMatchObject({ busy: true });
+  });
 });

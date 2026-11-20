@@ -12,11 +12,17 @@ const NATIVE_MAX_MS = 5000;
 /**
  * 스플래시(보드 1, 결정 067 의 3): 밤색 바탕 · 가운데 위쪽의 옅은 빛 · 가운데 별이와 로고 그림.
  * 웹에는 네이티브 스플래시가 없어 앱이 처음 열릴 때 이것을 그린다. 카카오 웹에서 돌아오는 화면처럼 서버를 기다리는 동안 화면이 따로 있어야 하는 곳도 이 모양이다.
+ * busyLabel 을 주면 화면 읽기에 그 이름과 기다리는 중(busy)을 알린다(글이 없는 화면이라).
  */
-export function SplashView() {
+export function SplashView({ busyLabel }: { busyLabel?: string } = {}) {
   return (
     <Screen scroll={false}>
-      <View testID="splash" style={styles.center}>
+      <View
+        testID="splash"
+        accessible={busyLabel !== undefined}
+        accessibilityLabel={busyLabel}
+        accessibilityState={busyLabel !== undefined ? { busy: true } : undefined}
+        style={styles.center}>
         <SplashArt />
       </View>
     </Screen>

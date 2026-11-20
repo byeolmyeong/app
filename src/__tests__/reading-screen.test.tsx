@@ -116,6 +116,13 @@ describe('요약 해석 화면', () => {
     expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
   });
 
+  it('글을 받지 못한 화면에도 아래 탭이 있다(리뷰 PR #41)', async () => {
+    mockApi.createReading.mockResolvedValue({ ok: false, error: 'SERVER', status: 502 });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.retry)).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+  });
+
   it('"내 차트 보기" 는 /chart 로 간다', async () => {
     await render(<ReadingScreen />);
     await fireEvent.press(await screen.findByText(R.seeChart));

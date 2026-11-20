@@ -71,7 +71,8 @@ describe('심층 리포트 화면', () => {
     mockApi.getReport.mockResolvedValueOnce(got('NONE')).mockResolvedValueOnce(got('WRITING'));
     await render(<ReportScreen />);
     expect(await screen.findByText(R.intro)).toBeTruthy();
-    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    // 영역 탭은 글이 생긴 뒤에만 있다(아래 탭 넷은 늘 있다)
+    expect(screen.queryByTestId('tabs')).toBeNull();
     expect(mockApi.requestReport).not.toHaveBeenCalled();
 
     await fireEvent.press(screen.getByText(R.request));
@@ -160,6 +161,32 @@ describe('심층 리포트 화면', () => {
     await render(<ReportScreen />);
     await screen.findByTestId('timing-view');
     expect(bottom().map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false]);
+  });
+
+  it('시기 탭의 자리인 동안 리포트가 없거나 · 쓰는 중이거나 · 실패해도 아래 탭이 있다(리뷰 PR #41)', async () => {
+    mockParams.mockReturnValue({ area: 'TIMING' });
+    for (const state of [got('NONE'), got('WRITING'), got('FAILED')]) {
+      mockApi.getReport.mockResolvedValueOnce(state);
+      const view = await render(<ReportScreen />);
+      await waitFor(() => expect(mockApi.getReport).toHaveBeenCalled());
+      const bottom = await screen.findByTestId('bottom-tabs');
+      expect(within(bottom).getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false]);
+      await view.unmount();
+      mockApi.getReport.mockClear();
+    }
+  });
+
+  it('위의 영역을 바꾸면 아래 탭도 따라간다(시기 ↔ 나), 두 탭 줄은 이름으로 구분된다(리뷰 PR #41)', async () => {
+    await render(<ReportScreen />);
+    await screen.findByText(personality.title);
+    const bottom = () => within(screen.getByTestId('bottom-tabs')).getAllByRole('tab').map((t) => t.props.accessibilityState.selected);
+    expect(bottom()).toEqual([false, true, false, false]);
+    await fireEvent.press(areas().getByText('시기'));
+    expect(bottom()).toEqual([false, false, true, false]);
+    await fireEvent.press(areas().getByText('성격'));
+    expect(bottom()).toEqual([false, true, false, false]);
+    expect(screen.getByTestId('tabs').props.accessibilityLabel).toBe(strings.report.areasLabel);
+    expect(screen.getByTestId('bottom-tabs').props.accessibilityLabel).toBe(strings.common.bottomTabsLabel);
   });
 
   it('글 영역에서 누를 수 있는 것은 뒤로 가기와 탭 다섯뿐이다(공유·다시 생성 없음)', async () => {

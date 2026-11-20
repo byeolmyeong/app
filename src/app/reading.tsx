@@ -55,7 +55,7 @@ export default function ReadingScreen() {
 
   if (loaded && !profile)
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <ChartEmpty />
       </Screen>
     );
@@ -90,7 +90,7 @@ export default function ReadingScreen() {
 
   if (state.status === 'failed')
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <StatusView state="error" title={state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}>
           <Button label={S.retry} onPress={retry} />
         </StatusView>

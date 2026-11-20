@@ -138,6 +138,9 @@ export const LegalLayout = {
   agreeFadeSolid: 0.32,
 } as const;
 
+/** 아래 시트(Sheet)와 아래 · 오른쪽에서 들어오는 화면(slide-up.ts)의 움직임: 열기 · 닫기 시간(ms)과 여는 곡선(cubic-bezier) */
+export const Motion = { openMs: 300, closeMs: 220, openCurve: [0.32, 0.72, 0, 1] } as const;
+
 /** 가입 단계 화면(결정 042 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
 export const StepLayout = {
   progressHeight: 3,

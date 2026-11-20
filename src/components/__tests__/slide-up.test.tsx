@@ -4,7 +4,7 @@ import { Animated, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { slideInScreenOptions, slideUpScreenOptions, useSlideUp } from '@/components/slide-up';
 import { TextPage } from '@/components/text-page';
-import { Colors } from '@/constants/theme';
+import { Colors, Motion } from '@/constants/theme';
 import { terms } from '@/content/legal';
 import { strings } from '@/content/strings';
 
@@ -199,5 +199,12 @@ describe('오른쪽에서 밀려 들어오는 화면', () => {
       delete (window as unknown as { matchMedia?: unknown }).matchMedia;
       jest.restoreAllMocks();
     }
+  });
+});
+
+// 아래 시트(Sheet)와 아래에서 올라오는 창은 같은 움직임 값을 theme.ts 하나(Motion)에서 쓴다
+describe('움직임 값', () => {
+  it('열기 300 · 닫기 220 · 여는 곡선 bezier(0.32, 0.72, 0, 1)', () => {
+    expect(Motion).toEqual({ openMs: 300, closeMs: 220, openCurve: [0.32, 0.72, 0, 1] });
   });
 });

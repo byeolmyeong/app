@@ -9,11 +9,11 @@ import { useEffect, useRef, useState, type ComponentRef, type RefObject } from '
 import { Animated, Easing, Platform, type View, type ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '@/components/byeoli';
-import { Colors } from '@/constants/theme';
+import { Colors, Motion } from '@/constants/theme';
 
-/** 아래 시트(Sheet)와 같은 빠르기 · 곡선 */
-const OPEN_MS = 300;
-const CLOSE_MS = 220;
+/** 아래 시트(Sheet)와 같은 빠르기 · 곡선(theme.ts Motion) */
+const OPEN_MS = Motion.openMs;
+const CLOSE_MS = Motion.closeMs;
 
 /** Stack.Screen 의 options 로 넘기는 값 */
 export type SlideUpScreenOptions =
@@ -64,7 +64,7 @@ export function useSlideUp(from: 'bottom' | 'right' = 'bottom'): {
 
   useEffect(() => {
     if (!moves) return;
-    Animated.timing(progress, { toValue: 1, duration: OPEN_MS, easing: Easing.bezier(0.32, 0.72, 0, 1), useNativeDriver: false }).start();
+    Animated.timing(progress, { toValue: 1, duration: OPEN_MS, easing: Easing.bezier(...Motion.openCurve), useNativeDriver: false }).start();
   }, [moves, progress]);
 
   function close(after: () => void) {

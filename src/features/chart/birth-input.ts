@@ -2,6 +2,7 @@
  * 출생 정보 입력의 검사와 표시. 달력상 맞는 날짜인지와 받는 범위(1900-01-01 ~ 오늘)만 본다.
  * 시각의 표준시 변환과 차트 계산은 서버가 한다.
  */
+import { formatWheelTime, wheelToClock, type WheelTime } from '@/components/time-wheel';
 import { strings } from '@/content/strings';
 import { placeLabel } from '@/features/chart/place-sheet';
 import type { BirthInput } from '@/lib/api';
@@ -58,8 +59,8 @@ export function formatDateTyping(text: string): string {
   return [year, month, day.slice(0, 2)].filter(Boolean).join('-');
 }
 
-/** 시각 고르기(오전/오후 · 시 · 분)의 값 */
-export type TimePick = { period: 'AM' | 'PM'; hour: number; minute: number };
+/** 시각 고르기(오전/오후 · 시 · 분)의 값 — 시각 드럼(`components/time-wheel`)과 같은 모양 */
+export type TimePick = WheelTime;
 
 /** HH:mm 을 고르기 값으로. 꼴이 틀리면 null */
 export function toTimePick(time: string): TimePick | null {
@@ -71,15 +72,13 @@ export function toTimePick(time: string): TimePick | null {
 
 /** 고르기 값을 HH:mm 으로. 오전 12시는 00, 오후 12시는 12 */
 export function fromTimePick(pick: TimePick): string {
-  const h = (pick.hour % 12) + (pick.period === 'PM' ? 12 : 0);
-  return `${pad(h)}:${pad(pick.minute)}`;
+  return wheelToClock(pick);
 }
 
 /** 예: "오후 9:00". 꼴이 틀리면 빈 글자 */
 export function formatTimeDisplay(time: string): string {
   const pick = toTimePick(time);
-  if (!pick) return '';
-  return `${pick.period === 'AM' ? strings.detail.am : strings.detail.pm} ${pick.hour}:${pad(pick.minute)}`;
+  return pick ? formatWheelTime(pick) : '';
 }
 
 export type BirthForm = {

@@ -103,7 +103,7 @@ describe('시기 자세히 /timing/period(결정 049 의 5, 캔버스 14-3)', ()
 });
 
 describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 14-4)', () => {
-  it('0.3초가 넘으면 다 그려질 배치의 뼈대, 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리 · 뒤로만, 아래 탭 없음) → 글(날짜 · 요일 · 제목 · 흐름 셋 · 이유 · 실천 셋)과 아래 탭', async () => {
+  it('0.3초가 넘으면 다 그려질 배치의 뼈대(아래 탭과 함께), 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리 · 뒤로만, 아래 탭 없음) → 글(날짜 · 요일 · 제목 · 흐름 셋 · 이유 · 실천 셋)과 아래 탭', async () => {
     jest.useFakeTimers();
     mockParams.mockReturnValue({ date: '2026-11-21' });
     let resolve: (r: ApiResult<DaySky>) => void = () => {};
@@ -113,7 +113,7 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     expect(screen.getByTestId('sk-day-hero')).toBeTruthy();
     expect(screen.getAllByTestId('sk-day-flow')).toHaveLength(3);
     expect(screen.queryByText(T.day.making.title)).toBeNull();
-    expect(tabs()).toHaveLength(0);
+    expect(tabs()).toHaveLength(4);
     await tick(3000);
     expect(screen.getByText(T.day.making.title)).toBeTruthy();
     expect(screen.getByText('11월 21일의 하늘')).toBeTruthy();

@@ -6,7 +6,6 @@ import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth, formatPeriod, upcoming, yearNow, yearSpan } from '@/features/timing/dates';
-import { Skeleton } from '@/components/skeleton';
 import {
   IntervalRow,
   IntervalRowSkeleton,
@@ -144,7 +143,7 @@ export function YearSkeleton() {
           ))}
           <View style={styles.ticks}>
             {T.year.ticks.map((t) => (
-              <Skeleton key={t} width={Y.tickBar} height={Y.tickBarHeight} />
+              <SkLine key={t} width={Y.tickBar} variant="badge" />
             ))}
           </View>
         </SkBlock>

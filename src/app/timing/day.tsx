@@ -74,7 +74,10 @@ export default function TimingDayScreen() {
     return making ? (
       <MakingView nav={nav()} title={T.day.making.title} lines={T.day.making.lines} />
     ) : (
-      <Screen nav={nav()}>{phase === 'blank' ? null : <DaySkeleton />}</Screen>
+      // 뼈대는 다 그려진 화면처럼 아래 탭과 함께(결정 065 의 2 · 071) — 쓰는 중 · 못 썼을 때만 탭이 없다(결정 061 의 2)
+      <Screen nav={nav()} footer={<MainTabs active="timing" nested />}>
+        {phase === 'blank' ? null : <DaySkeleton />}
+      </Screen>
     );
 
   if (state.status === 'failed') {

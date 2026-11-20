@@ -85,9 +85,11 @@ export function DaySkeleton() {
           {[0, 1, 2].map((i) => (
             <SkBlock key={i} of="day-flow" style={[styles.row, i > 0 && styles.rowLine]}>
               <SkLine width={D.labelBar} variant="item" style={styles.rowLabel} />
+              {/* 줄 수는 시안 14-4 의 글(세 줄 · 두 줄 · 두 줄) */}
               <View style={styles.rowText}>
                 <SkLine width="100%" variant="paragraph" />
-                <SkLine width={i === 0 ? '90%' : '48%'} variant="paragraph" />
+                {i === 0 ? <SkLine width="96%" variant="paragraph" /> : null}
+                <SkLine width="48%" variant="paragraph" />
               </View>
             </SkBlock>
           ))}
@@ -95,8 +97,11 @@ export function DaySkeleton() {
       </View>
       <SkBlock of="day-reason" style={[styles.reason, styles.reasonBox]}>
         <SkLine width="28%" variant="label" />
-        <SkLine width="96%" variant="reason" />
-        <SkLine width="40%" variant="reason" />
+        {/* 이유 문장은 한 글 안의 두 줄 — 줄 사이 틈 없이 */}
+        <View>
+          <SkLine width="96%" variant="reason" />
+          <SkLine width="40%" variant="reason" />
+        </View>
       </SkBlock>
       <View style={styles.section}>
         <SkBlock of="day-section-title">

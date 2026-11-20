@@ -129,17 +129,21 @@ export function PeriodSkeleton() {
         </SkBlock>
         <SkBlock of="period-reason" style={styles.reasonBox}>
           <SkLine width="28%" variant="label" />
-          <SkLine width="96%" variant="reason" />
-          <SkLine width="40%" variant="reason" />
+          {/* 이유 문장은 한 글 안의 두 줄 — 줄 사이 틈 없이 */}
+          <View>
+            <SkLine width="96%" variant="reason" />
+            <SkLine width="40%" variant="reason" />
+          </View>
         </SkBlock>
       </View>
-      {SECTIONS.map((key) => (
+      {/* 줄 수는 시안 14-3 의 글(세 줄 · 두 줄 · 두 줄) */}
+      {SECTIONS.map((key, n) => (
         <SkBlock key={key} of="period-section">
           <SkLine width={P.numberBar} variant="label" />
           <SkLine width="44%" variant="paragraphTitle" style={styles.sectionTitle} />
           <View style={styles.sectionBody}>
             <SkLine width="100%" variant="paragraph" />
-            <SkLine width="96%" variant="paragraph" />
+            {n === 0 ? <SkLine width="96%" variant="paragraph" /> : null}
             <SkLine width="38%" variant="paragraph" />
           </View>
         </SkBlock>

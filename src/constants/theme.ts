@@ -445,7 +445,6 @@ export const TimingLayout = {
     /** 뼈대: 영역 이름 · 달 눈금 막대 */
     labelBar: 40,
     tickBar: 20,
-    tickBarHeight: 9,
   },
   life: {
     noteGap: 4,

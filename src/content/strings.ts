@@ -21,6 +21,9 @@ export const strings = {
     google: 'Google로 로그인',
     apple: 'Apple로 로그인',
     kakao: 'Kakao로 로그인',
+    /** 이 기기에서 마지막에 쓴 공급자 버튼의 배지(결정 044). 화면 읽기에서는 버튼 이름 뒤에 ", 최근 로그인" 으로 붙는다 */
+    recent: '최근 로그인',
+    recentSeparator: ', ',
     /** 새 사람인데 공급자가 이메일을 주지 않았다(서버 `EMAIL_REQUIRED`, 결정 039). 시스템 알림 창 한 번 */
     emailRequired: {
       title: '이메일 제공에 동의해야 가입할 수 있어요',

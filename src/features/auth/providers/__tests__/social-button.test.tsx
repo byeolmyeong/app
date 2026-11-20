@@ -55,3 +55,32 @@ describe('공급자 버튼', () => {
     expect(screen.getByRole('button').props.accessibilityState).toMatchObject({ disabled: true });
   });
 });
+
+// 최근 로그인 배지(결정 044, 보드 5-2): 위 −10 · 오른쪽 12, 안쪽 3/9, 모서리 999, 주색 바탕, 바깥 2px 바탕색 고리, 글자 11/15 · 600
+describe('최근 로그인 배지', () => {
+  it('recent 면 버튼 오른쪽 위에 배지를 얹고 화면 읽기 이름에 "최근 로그인" 을 덧붙인다', async () => {
+    await render(<SocialButton provider="KAKAO" label="Kakao로 로그인" onPress={jest.fn()} recent />);
+    const badge = flat('recent-badge');
+    expect(badge).toMatchObject({
+      position: 'absolute',
+      top: -10,
+      right: 12,
+      paddingVertical: 3,
+      paddingHorizontal: 9,
+      borderRadius: 999,
+      backgroundColor: '#4752FF',
+      boxShadow: '0 0 0 2px #0D0E12',
+    });
+    const text = screen.getByText(strings.login.recent);
+    expect(strings.login.recent).toBe('최근 로그인');
+    expect(StyleSheet.flatten(text.props.style)).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '600', color: '#F2F3F7' });
+    expect(screen.getByRole('button').props.accessibilityLabel).toBe(`Kakao로 로그인, ${strings.login.recent}`);
+  });
+
+  it('recent 가 아니면 배지가 없고 화면 읽기 이름은 문구 그대로', async () => {
+    await render(<SocialButton provider="GOOGLE" label="Google로 로그인" onPress={jest.fn()} />);
+    expect(screen.queryByTestId('recent-badge')).toBeNull();
+    expect(screen.queryByText(strings.login.recent)).toBeNull();
+    expect(screen.getByRole('button').props.accessibilityLabel).toBe('Google로 로그인');
+  });
+});

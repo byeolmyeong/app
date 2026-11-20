@@ -1,5 +1,6 @@
 import { render, waitFor } from '@testing-library/react-native';
 
+import { strings } from '@/content/strings';
 import { GoogleLoginButton } from '@/features/auth/providers/google.web';
 
 jest.mock('@/features/auth/providers/load-script', () => ({ loadScript: jest.fn(async () => {}) }));
@@ -25,5 +26,18 @@ describe('구글(웹)', () => {
     await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} />);
     await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
     expect(renderButton.mock.calls[0][1]).toMatchObject({ theme: 'filled_black', logo_alignment: 'left', locale: 'ko', text: 'signin_with' });
+  });
+});
+
+describe('구글(웹): 최근 로그인', () => {
+  it('recent 면 GIS 버튼을 감싼 칸 위에 배지를 얹는다, 아니면 없다', async () => {
+    const view = await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} recent />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalled());
+    expect(view.getByTestId('recent-badge')).toBeTruthy();
+    expect(view.getByText(strings.login.recent)).toBeTruthy();
+    await view.unmount();
+
+    const plain = await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} />);
+    expect(plain.queryByTestId('recent-badge')).toBeNull();
   });
 });

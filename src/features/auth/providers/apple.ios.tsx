@@ -11,7 +11,7 @@ import { strings } from '@/content/strings';
 import { SocialButton } from '@/features/auth/providers/social-button';
 import type { LoginButtonProps } from '@/features/auth/providers/types';
 
-export function AppleLoginButton({ onCredential, onError, disabled }: LoginButtonProps) {
+export function AppleLoginButton({ onCredential, onError, disabled, recent }: LoginButtonProps) {
   const [available, setAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -39,5 +39,5 @@ export function AppleLoginButton({ onCredential, onError, disabled }: LoginButto
     }
   }
 
-  return <SocialButton provider="APPLE" label={strings.login.apple} onPress={() => void press()} disabled={disabled || busy} />;
+  return <SocialButton provider="APPLE" label={strings.login.apple} onPress={() => void press()} disabled={disabled || busy} recent={recent} />;
 }

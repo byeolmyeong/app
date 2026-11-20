@@ -26,7 +26,7 @@ const neverChanges = () => () => {};
 const browserProtocol = () => (typeof window !== 'undefined' && window.location ? window.location.protocol : '');
 const noProtocol = () => '';
 
-export function AppleLoginButton({ onCredential, onError, disabled }: LoginButtonProps) {
+export function AppleLoginButton({ onCredential, onError, disabled, recent }: LoginButtonProps) {
   const servicesId = process.env.EXPO_PUBLIC_APPLE_SERVICES_ID?.trim();
   const [busy, setBusy] = useState(false);
   const protocol = useSyncExternalStore(neverChanges, browserProtocol, noProtocol);
@@ -52,5 +52,5 @@ export function AppleLoginButton({ onCredential, onError, disabled }: LoginButto
     }
   }
 
-  return <SocialButton provider="APPLE" label={strings.login.apple} onPress={() => void press()} disabled={disabled || busy} />;
+  return <SocialButton provider="APPLE" label={strings.login.apple} onPress={() => void press()} disabled={disabled || busy} recent={recent} />;
 }

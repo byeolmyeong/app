@@ -112,6 +112,16 @@ export const SocialButtonStyle = {
   },
 } as const;
 
+/** 로그인 버튼의 "최근 로그인" 배지(결정 044 시안 보드 5-2): 버튼 오른쪽 위에 걸치고, 바깥에 바탕색 고리를 둘러 버튼과 떼어 보인다 */
+export const RecentBadgeStyle = {
+  top: -10,
+  right: 12,
+  paddingVertical: 3,
+  paddingHorizontal: 9,
+  radius: 999,
+  ring: 2,
+} as const;
+
 /** 가입 단계 화면(결정 042 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
 export const StepLayout = {
   progressHeight: 3,
@@ -261,6 +271,8 @@ export const Typography = {
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
   /** 입력칸 아래 도움말 · 오류, "보기"(결정 042 시안) */
   caption: type(13, 18, FontWeight.regular),
+  /** 로그인 버튼의 "최근 로그인" 배지(결정 044 시안) */
+  badge: type(11, 15, FontWeight.semibold),
   /** 입력칸 이름 · "모름"(결정 042 시안) */
   captionStrong: type(13, 18, FontWeight.medium),
   /** 약관의 마케팅 설명처럼 두 줄이 되는 작은 안내 */

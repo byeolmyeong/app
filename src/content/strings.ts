@@ -18,7 +18,7 @@ export const strings = {
   login: {
     /** 로고 아래 한 줄 */
     tagline: '별이 붙여 준 나의 별명',
-    /** 웹도 같은 문구(우리 모양 위에 GIS 를 투명하게 겹친다, 결정 067 의 4) */
+    /** 웹도 같은 문구(웹도 같은 우리 버튼이 구글 리디렉트로 보낸다, 결정 067 의 4 · 070) */
     google: 'Google로 로그인',
     apple: 'Apple로 로그인',
     kakao: 'Kakao로 로그인',

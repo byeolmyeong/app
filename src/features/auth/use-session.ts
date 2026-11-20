@@ -49,6 +49,12 @@ export const clearSession = (): Promise<void> => store.clear();
 /** 웹이 시작할 때 서버에 닿지 못한 세션을 다시 확인한다(연결이 돌아옴 · 다시 시도, 결정 068 의 4) */
 export const recheckSession = (): Promise<void> => store.recheck();
 
+/**
+ * 켤 때의 세션 확인(start)이 끝나기를 기다린다(시작하지 않았으면 시작한다). 로그인에서 돌아오는 화면(/auth/google · /auth/kakao)은 페이지를 새로 열어
+ * 세션 확인과 로그인이 거의 함께 나가므로, 이것 뒤에 로그인한다 — 확인의 401(→ 로그인 전)이 늦게 와 성공한 로그인을 덮지 않게(결정 070)
+ */
+export const whenSessionChecked = (): Promise<void> => store.start();
+
 /** 로그아웃(서버 세션 · 보관된 토큰). 기기에 둔 출생 정보 · 글은 `sign-out.ts` 가 함께 비운다 */
 export const signOutSession = (): Promise<void> => store.signOut();
 

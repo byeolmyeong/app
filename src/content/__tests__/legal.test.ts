@@ -1,4 +1,4 @@
-import { legalInfo, marketing, privacy, terms } from '@/content/legal';
+import { legalInfo, marketing, privacy, privacyConsent, terms } from '@/content/legal';
 import { LEGAL_VERSIONS } from '@/content/legal-versions';
 
 /** "2026년 11월 19일" → "2026-11-19" */
@@ -15,7 +15,18 @@ describe('약관 글의 시행일과 약관 버전', () => {
     expect(isoDate(legalInfo.effective)).toBe(LEGAL_VERSIONS.privacy);
   });
 
-  it('세 글의 마지막 시행 문구가 그 시행일을 적는다', () => {
-    for (const doc of [terms, privacy, marketing]) expect(doc.closing).toContain(legalInfo.effective);
+  it('네 글의 마지막 시행 문구가 그 시행일을 적는다', () => {
+    for (const doc of [terms, privacy, marketing, privacyConsent]) expect(doc.closing).toContain(legalInfo.effective);
+  });
+
+  // 개인정보 수집 · 이용 동의(결정 045): 동의받을 때 알릴 네 가지(개인정보 보호법 제15조 제2항)만 담은 글
+  it('개인정보 수집 · 이용 동의는 목적 · 항목 · 보유 기간 · 거부할 권리 네 조항이다', () => {
+    expect(privacyConsent.title).toBe('개인정보 수집 · 이용 동의');
+    expect(privacyConsent.sections.map((s) => s.title)).toEqual([
+      '1. 수집 · 이용 목적',
+      '2. 수집하는 항목',
+      '3. 보유 및 이용 기간',
+      '4. 동의를 거부할 권리와 불이익',
+    ]);
   });
 });

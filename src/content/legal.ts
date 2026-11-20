@@ -1,6 +1,6 @@
 /**
- * 이용약관 · 개인정보 처리방침 · 마케팅 정보 수신 동의 약관의 글. 앱 화면(/settings/terms · /settings/privacy · /settings/marketing)이 여기서 나온다(결정 043).
- * 랜딩 저장소 app/data/legal.ts(byeolmyeong.com/terms · /privacy · /marketing-terms)의 사본이다. 글 · 구조(LegalDocument) · 값이 글자 하나까지 같다.
+ * 이용약관 · 개인정보 처리방침 · 마케팅 정보 수신 동의 약관 · 개인정보 수집 · 이용 동의의 글. 앱 화면(/settings/terms · /settings/privacy · /settings/marketing · /settings/privacy-consent)이 여기서 나온다(결정 043 · 045).
+ * 랜딩 저장소 app/data/legal.ts(byeolmyeong.com/terms · /privacy · /marketing-terms · /privacy-consent)의 사본이다. 글 · 구조(LegalDocument) · 값이 글자 하나까지 같다.
  * 글을 바꾸면 랜딩 `app/data/legal.ts` 와 앱 `src/content/legal.ts` 를 함께 바꾸고, 약관 버전(앱 `src/content/legal-versions.ts`, 서버 `byeolmyeong.legal.*-version`)을 올린다.
  * 화면 문구가 아니라 법적 글이라 `strings` 에 두지 않는다. 연락처 메일 주소는 이 글(처리방침 · 마케팅 약관) 안에만 있다(결정 024 의 예외, 결정 043).
  * 사실의 근거와 고치는 순서는 랜딩 파일의 머리 주석에 있다.
@@ -399,4 +399,49 @@ export const marketing: LegalDocument = {
     },
   ],
   closing: `이 약관은 ${effective}부터 시행합니다.`,
+};
+
+export const privacyConsent: LegalDocument = {
+  title: '개인정보 수집 · 이용 동의',
+  intro: '별명(이하 "서비스")의 운영자(이하 "운영자")는 회원가입과 서비스 제공을 위해 아래와 같이 개인정보를 수집 · 이용합니다. 자세한 내용은 개인정보 처리방침(byeolmyeong.com/privacy)에서 볼 수 있습니다.',
+  sections: [
+    {
+      title: '1. 수집 · 이용 목적',
+      blocks: [
+        {
+          ul: [
+            '회원 가입 및 관리, 로그인 인증',
+            '출생 차트 계산과 풀이 · 리포트 · 궁합 · 시기 제공',
+            '만 14세 미만의 가입 제한',
+            '서비스 이용에 필요한 안내 전달과 고객 문의 응대',
+            '부정 이용 방지 및 보안 관리',
+          ],
+        },
+      ],
+    },
+    {
+      title: '2. 수집하는 항목',
+      blocks: [
+        {
+          table: {
+            head: ['구분', '항목'],
+            rows: [
+              ['필수', '소셜 로그인 식별값(카카오 · Google · Apple이 제공하는 고유 식별자), 이메일 주소, 닉네임, 생년월일, 약관 동의 기록'],
+              ['선택', '태어난 시각, 태어난 곳'],
+              ['자동 생성', '로그인 세션 정보, 서비스 이용 기록'],
+            ],
+          },
+        },
+      ],
+    },
+    {
+      title: '3. 보유 및 이용 기간',
+      blocks: [{ p: '회원 탈퇴 시까지 보관하고, 탈퇴하면 지체 없이 파기합니다. 다만, 서비스 이용 기록은 1년 동안 보관합니다.' }],
+    },
+    {
+      title: '4. 동의를 거부할 권리와 불이익',
+      blocks: [{ p: '이용자는 개인정보 수집 · 이용에 동의하지 않을 권리가 있습니다. 다만, 위 필수 항목은 서비스 제공에 꼭 필요하므로 동의하지 않으면 회원가입을 할 수 없습니다.' }],
+    },
+  ],
+  closing: `이 안내는 ${effective}부터 시행합니다.`,
 };

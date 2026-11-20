@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar, isAvatarId } from '@/components/avatar';
-import { CardConstellation } from '@/components/card-constellation';
+import { CardConstellation, type CardConstellationArt } from '@/components/card-constellation';
 import { GlowBackdrop } from '@/components/glow';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, FontWeight, LineWidth, MyLayout } from '@/constants/theme';
@@ -16,6 +16,8 @@ export type MyCardProps = {
   avatar: number | null;
   /** 해 별자리 이름("물병자리" — 서버 차트의 SUN). 없으면 null */
   sunSign: string | null;
+  /** 오른쪽 위에 그릴 해 별자리 그림(서버 차트의 SUN 으로 화면이 고른다). 없으면 그리지 않는다 */
+  art: CardConstellationArt | null;
   /** 별명을 받은 지 며칠(받은 날 1일). 요약 해석에 만든 때가 없으면 null */
   days: number | null;
   /** 받아 둔 요약 해석의 한 줄 별명. 없으면 null */
@@ -40,12 +42,12 @@ function CardButton({ label, onPress }: { label: string; onPress: () => void }) 
  * 마이 위의 별명 카드(결정 056 의 1, 보드 16): 프로필 그림 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄,
  * 아래 버튼 둘(계정 · 프로필 / 출생 정보 바꾸기). 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 카드 자체는 누르지 않는다.
  */
-export function MyCard({ nickname, avatar, sunSign, days, headline, birthLine, onAccount, onBirth }: MyCardProps) {
+export function MyCard({ nickname, avatar, sunSign, art, days, headline, birthLine, onAccount, onBirth }: MyCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
   return (
     <View testID="my-card" style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
-      <CardConstellation />
+      <CardConstellation art={art} />
       <View style={styles.row}>
         {isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>

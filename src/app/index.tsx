@@ -17,6 +17,7 @@ import { recheckSession, useSession } from '@/features/auth/use-session';
 import { BirthForm } from '@/features/chart/birth-form';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { signName } from '@/features/chart/chart-rows';
+import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { useBirthRestore } from '@/features/chart/use-birth-restore';
 import { daysSince } from '@/features/home/days-since';
@@ -31,7 +32,7 @@ import { useStoredHeadline } from '@/features/reading/use-reading';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
 import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timing-card';
 import { HomeTodayCard, HomeTodaySkeleton } from '@/features/timing/home-today-card';
-import { useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
+import { TODAY_CARD_WRITING_AFTER_MS, useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 
 /**
@@ -69,9 +70,6 @@ function Home({ onRetry }: { onRetry: () => void }) {
   // 10초가 넘으면 스플래시를 걷고 불러오지 못한 화면(19, 결정 065)
   const firstData = loaded && !(empty && (!session.ready || (canRestore && !restoreSettled)));
   const phase = useLoadingPhase(!firstData);
-  useEffect(() => {
-    if (firstData || phase === 'timeout') markHomeReady();
-  }, [firstData, phase]);
   // 시기 칸(결정 047 의 1-4 · 1-5): 로그인이 확인된 뒤에만 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41)
   const asking = session.ready && session.status === 'signedIn' ? input : null;
   // 홈은 상태만 본다 — 쓰는 중이어도 5초마다 묻지 않는다(홈을 열 때마다 새로 묻는다, 리뷰 #63)
@@ -84,8 +82,14 @@ function Home({ onRetry }: { onRetry: () => void }) {
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);
   const todayLoading = asking !== null && today.state.status === 'loading';
-  const todayPhase = useLoadingPhase(todayLoading);
-  const todayWriting = useWritingAfter(todayLoading);
+  const todayWriting = useWritingAfter(todayLoading, TODAY_CARD_WRITING_AFTER_MS);
+  // 처음 들어올 때 스플래시는 홈 카드의 첫 상태까지 가린다 — 받아 둔 것(기기) 또는 서버의 상태 응답, 오늘의 하늘은 글이나 쓰는 중(1초)까지.
+  // 그래야 스플래시를 걷는 첫 그림부터 카드이고 뼈대가 보이지 않는다(소유자 "접속하자마자 바로"). 카드가 10초 넘게 모르면 그대로 걷는다
+  const cardsKnown = asking === null || (timing.state.status !== 'checking' && (!todayLoading || todayWriting));
+  const cardsPhase = useLoadingPhase(firstData && !cardsKnown);
+  useEffect(() => {
+    if ((firstData && (cardsKnown || cardsPhase === 'timeout')) || phase === 'timeout') markHomeReady();
+  }, [firstData, cardsKnown, cardsPhase, phase]);
   // 끊겨서 못 받았을 때만 연결이 돌아오면 다시 묻는다 — 못 쓴(502) · 한도(429)는 사람이 "다시 쓰기" 를 누를 때만(리뷰 #66)
   useOnReconnect(online, () => {
     if (today.state.status === 'failed' && today.state.error === 'NETWORK') today.retry();
@@ -156,13 +160,14 @@ function Home({ onRetry }: { onRetry: () => void }) {
             nickname={account?.nickname ?? null}
             avatar={account?.avatar ?? null}
             sunSign={sun ? signName(sun.sign) + strings.chart.signSuffix : null}
+            // 오른쪽 위 그림도 해 별자리(서버 값)로 고른다 — 사람마다 다르다
+            art={sun && CONSTELLATIONS[sun.sign] ? { sign: sun.sign, ...CONSTELLATIONS[sun.sign] } : null}
             days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
             headline={reading?.headline ?? null}
             onOpen={() => router.push('/reading')}
           />
           <HomeTodayCard
             state={today.state}
-            skeleton={todayPhase === 'skeleton' || todayPhase === 'timeout'}
             making={todayWriting}
             online={online}
             timeKnown={chart.timeKnown}

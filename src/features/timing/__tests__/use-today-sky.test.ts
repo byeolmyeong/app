@@ -110,6 +110,17 @@ describe('오늘의 하늘(결정 051 의 2)', () => {
     expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
   });
 
+  it('쓰는 사이 로그아웃 · 탈퇴로 기기를 지웠으면 끝난 글을 기기에 다시 두지 않는다(세대 표식, 리뷰 #66)', async () => {
+    let resolve: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValue(new Promise((r) => (resolve = r)));
+    const { result } = await renderHook(() => useTodaySky(birth));
+    await waitFor(() => expect(mockApi.postDaySky).toHaveBeenCalledTimes(1));
+    await act(async () => AsyncStorage.clear());
+    await act(async () => resolve({ ok: true, data: sky('2026-11-19') }));
+    await waitFor(() => expect(result.current.state.status).toBe('done'));
+    expect(await AsyncStorage.getItem(DAY_SKY_STORAGE_KEY)).toBeNull();
+  });
+
   it('출생 정보를 읽는 중(null)이면 부르지 않는다', async () => {
     const { result } = await renderHook(() => useTodaySky(null));
     await act(async () => {});

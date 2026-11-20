@@ -8,7 +8,7 @@ import { useSlideUpScreenOptions } from '@/components/slide-up';
 import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
-import { SuspensionGate } from '@/features/auth/suspension-gate';
+import { useSuspensionGate } from '@/features/auth/suspension-gate';
 import { useSession } from '@/features/auth/use-session';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { UpdateGate } from '@/features/update/update-gate';
@@ -50,7 +50,10 @@ export default function RootLayout() {
   // 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지(최대 5초) 둔다.
   const [gateBlocked, setGateBlocked] = useState(false);
   const fontsDone = loaded || !!error;
-  const splashDone = useSplashDone(fontsDone && (gateBlocked || (!covered && (first === 's' || session.ready))));
+  const signedIn = session.status === 'signedIn';
+  // 이용 정지 문(결정 065 의 5): 로그인이 확인되면 정지인지 답이 올 때까지 가리고, 정지면 정지 화면으로. 그동안 스플래시도 둔다
+  const suspensionCovers = useSuspensionGate(signedIn, fontsDone && !gateBlocked);
+  const splashDone = useSplashDone(fontsDone && (gateBlocked || (!covered && !suspensionCovers && (first === 's' || session.ready))));
   useEffect(() => {
     if (splashDone) SplashScreen.hideAsync();
   }, [splashDone]);
@@ -61,14 +64,13 @@ export default function RootLayout() {
   return (
     <>
       {fontsDone ? (
-        <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined} onBlockedChange={setGateBlocked}>
+        <UpdateGate canSuggest={signedIn && first === undefined && !suspensionCovers} onBlockedChange={setGateBlocked}>
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
             {SLIDE_UP_ROUTES.map((name) => (
               <Stack.Screen key={name} name={name} options={slideUp} />
             ))}
           </Stack>
-          {/* 이용 정지(결정 065 의 5): 403 ACCOUNT_SUSPENDED · 계정의 suspended 면 정지 화면으로. 로그인 직후 답이 올 때까지 스스로 가린다 */}
-          <SuspensionGate signedIn={session.status === 'signedIn'} />
+          {suspensionCovers ? <View testID="suspension-cover" style={styles.cover} /> : null}
           {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
         </UpdateGate>
       ) : null}

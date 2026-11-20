@@ -1,8 +1,7 @@
 import { router, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { AppState, StyleSheet, View } from 'react-native';
+import { AppState } from 'react-native';
 
-import { Colors } from '@/constants/theme';
 import { clearSuspended, markSuspended, suspensionRedirect, useSuspended } from '@/features/auth/suspension';
 import { getSession } from '@/features/auth/use-session';
 import { api, setSuspendedHandler } from '@/lib/api';
@@ -11,8 +10,10 @@ import { api, setSuspendedHandler } from '@/lib/api';
 const CHECK_COVER_MAX_MS = 3000;
 
 /**
- * 이용 정지 문(앱 결정 065 의 5). 루트 레이아웃에서 UpdateGate 안 Stack 뒤에 하나 두고, 루트가 읽은 로그인 여부를 넘긴다
- * (루트가 세션을 시작하는 한 곳이라 여기서 세션 훅을 따로 부르지 않는다).
+ * 이용 정지 문(앱 결정 065 의 5). 루트 레이아웃이 한 번 부르고, 돌려준 값이 참이면 화면들 위를 가린다.
+ * 루트가 읽은 로그인 여부를 받는다(루트가 세션을 시작하는 한 곳이라 여기서 세션 훅을 따로 부르지 않는다). `mounted` 는 화면들(Stack)이 그려져
+ * 있는가 — 글꼴을 받는 동안 · 강제 업데이트 문이 막는 동안에는 보내지 않는다. 가림 여부를 루트가 같은 그림에서 알아야 스플래시가 정지 확인
+ * 전에 걷히지 않는다(결정 067 의 3 — 걷고 나서 빈 바탕이 비치지 않게).
  * - 정지 신호(어느 요청이든 403 `ACCOUNT_SUSPENDED` · `GET /account` 의 `suspended: true`)는 로그인 상태일 때만 받는다 —
  *   로그아웃 뒤 늦게 온 403 이 다음 사람에게 남지 않게.
  * - 로그인이 확인되면(앱을 열 때 · 로그인할 때) 표시를 지우고 계정을 물어 그 답으로 다시 맞춘다. 답이 오기 전에는 화면을 가리고 보내지 않는다
@@ -21,7 +22,7 @@ const CHECK_COVER_MAX_MS = 3000;
  *   다른 곳으로 보내도 경로가 바뀌면 다시 보낸다.
  * - 정지 중에 앱이 앞으로 돌아오면 다시 물어, 풀렸으면 표시를 끄고 홈으로. 로그인 전이 되면(로그아웃 · 탈퇴) 표시를 끈다.
  */
-export function SuspensionGate({ signedIn }: { signedIn: boolean }) {
+export function useSuspensionGate(signedIn: boolean, mounted: boolean): boolean {
   const suspended = useSuspended();
   const segments = useSegments() as string[];
   /** 이번 로그인에서 정지인지 답을 받았는가(받기 전에는 가리고 보내지 않는다). 로그인 상태가 바뀌면 다시 받는다 */
@@ -67,7 +68,7 @@ export function SuspensionGate({ signedIn }: { signedIn: boolean }) {
     return () => sub.remove();
   }, [signedIn, suspended]);
 
-  const target = checked ? suspensionRedirect(signedIn, suspended, segments) : null;
+  const target = checked && mounted ? suspensionRedirect(signedIn, suspended, segments) : null;
   const route = segments.join('/');
   useEffect(() => {
     if (!target) return;
@@ -76,9 +77,5 @@ export function SuspensionGate({ signedIn }: { signedIn: boolean }) {
     // 경로가 바뀌면(다른 문이 뒤이어 보냈다) 다시 본다
   }, [target, route]);
 
-  return signedIn && !checked ? <View testID="suspension-cover" style={styles.cover} /> : null;
+  return signedIn && !checked;
 }
-
-const styles = StyleSheet.create({
-  cover: { ...StyleSheet.absoluteFill, backgroundColor: Colors.paper },
-});

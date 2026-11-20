@@ -17,6 +17,8 @@ export type InfoTipProps = {
   /** 열려 있는가. 한 번에 하나만 열리게 부르는 쪽이 정한다 */
   open: boolean;
   onToggle: () => void;
+  /** 말풍선을 물음표 위(기본)에 띄울지 아래에 띄울지. 위가 막힌 자리(시트의 첫 줄)는 아래 */
+  placement?: 'above' | 'below';
   testID?: string;
 };
 
@@ -25,7 +27,7 @@ export type InfoTipProps = {
  * 시트처럼 화면을 덮지 않아 읽던 자리를 잃지 않는다. 말풍선은 물음표 위 가운데에 두되 줄의 폭 밖으로 나가지 않게 민다.
  * 설명 시트가 필요한 긴 설명은 `InfoButton` 이다.
  */
-export function InfoTip({ children, label, title, text, open, onToggle, testID }: InfoTipProps) {
+export function InfoTip({ children, label, title, text, open, onToggle, placement = 'above', testID }: InfoTipProps) {
   const [rowWidth, setRowWidth] = useState(0);
   const [mark, setMark] = useState({ x: 0, width: 0 });
   const [bubbleWidth, setBubbleWidth] = useState(0);
@@ -33,8 +35,19 @@ export function InfoTip({ children, label, title, text, open, onToggle, testID }
   const left = Math.max(0, Math.min(center - bubbleWidth / 2, rowWidth - bubbleWidth));
   // 폭을 재기 전에는 보이지 않게 둔다(엉뚱한 자리에서 한 번 깜빡이지 않게)
   const measured = rowWidth > 0 && mark.width > 0 && bubbleWidth > 0;
+  const below = placement === 'below';
+  // 꼬리: 말풍선에서 물음표 쪽을 가리킨다
+  const arrow = (
+    <Svg width={T.arrow * 2} height={T.arrow} style={{ marginLeft: center - left - T.arrow }}>
+      <Path
+        d={below ? `M0 ${T.arrow} L${T.arrow} 0 L${T.arrow * 2} ${T.arrow} Z` : `M0 0 L${T.arrow} ${T.arrow} L${T.arrow * 2} 0 Z`}
+        fill={Colors.hair}
+      />
+    </Svg>
+  );
   return (
-    <View style={styles.row} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
+    // 열린 동안은 뒤에 오는 형제(다음 줄)보다 위에 그린다
+    <View style={[styles.row, open && styles.raised]} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
       {children}
       <Pressable
         testID={testID}
@@ -53,7 +66,8 @@ export function InfoTip({ children, label, title, text, open, onToggle, testID }
         <View
           testID={testID ? `${testID}-bubble` : undefined}
           pointerEvents="none"
-          style={[styles.bubbleBox, { left, opacity: measured ? 1 : 0 }]}>
+          style={[below ? styles.bubbleBelow : styles.bubbleAbove, { left, opacity: measured ? 1 : 0 }]}>
+          {below ? arrow : null}
           <View style={styles.bubble} onLayout={(e) => setBubbleWidth(e.nativeEvent.layout.width)}>
             <Txt variant="note" style={styles.title}>
               {title}
@@ -62,9 +76,7 @@ export function InfoTip({ children, label, title, text, open, onToggle, testID }
               {text}
             </Txt>
           </View>
-          <Svg width={T.arrow * 2} height={T.arrow} style={{ marginLeft: center - left - T.arrow }}>
-            <Path d={`M0 0 L${T.arrow} ${T.arrow} L${T.arrow * 2} 0 Z`} fill={Colors.hair} />
-          </Svg>
+          {below ? null : arrow}
         </View>
       ) : null}
     </View>
@@ -84,8 +96,10 @@ const styles = StyleSheet.create({
   },
   markOn: { borderColor: Colors.ink },
   markText: { fontWeight: FontWeight.semibold },
-  // 줄 바로 위에 붙는다: 꼬리 끝이 물음표 위로 (offset - arrow) 떨어진다
-  bubbleBox: { position: 'absolute', bottom: '100%', marginBottom: T.offset - T.arrow, alignItems: 'flex-start' },
+  raised: { zIndex: 1 },
+  // 줄 바로 위(아래)에 붙는다: 꼬리 끝이 물음표에서 (offset - arrow) 떨어진다
+  bubbleAbove: { position: 'absolute', bottom: '100%', marginBottom: T.offset - T.arrow, alignItems: 'flex-start' },
+  bubbleBelow: { position: 'absolute', top: '100%', marginTop: T.offset - T.arrow, alignItems: 'flex-start' },
   bubble: {
     maxWidth: T.maxWidth,
     paddingHorizontal: T.padX,

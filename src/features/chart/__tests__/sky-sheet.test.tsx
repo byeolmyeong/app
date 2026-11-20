@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { strings } from '@/content/strings';
 import { skyDetail } from '@/features/chart/chart-rows';
@@ -123,6 +124,30 @@ describe('SkySheet: 별을 누르면 올라오는 시트(시안 13-1 · 13-2)', 
     expect(screen.getByText(G.angles.ASC.nickname)).toBeTruthy();
     expect(screen.queryByText(S.relations)).toBeNull();
     expect(screen.queryByText(S.noRelations)).toBeNull();
+  });
+
+  it('별자리 물음표의 말풍선은 시트 위 끝에 막히지 않게 아래로 뜬다. 하우스 · 관계는 위로', async () => {
+    await render(<SkySheet chart={fixtures.chart} selected="SUN" visible onClose={jest.fn()} />);
+    const placement = (id: string) => StyleSheet.flatten(screen.getByTestId(`${id}-bubble`).props.style);
+    await fireEvent.press(screen.getByTestId('tip-sign'));
+    expect(placement('tip-sign')).toMatchObject({ top: '100%' });
+    await fireEvent.press(screen.getByTestId('tip-house'));
+    expect(placement('tip-house')).toMatchObject({ bottom: '100%' });
+    await fireEvent.press(screen.getByTestId('tip-relations'));
+    expect(placement('tip-relations')).toMatchObject({ bottom: '100%' });
+  });
+
+  it('시트를 닫으면 열린 말풍선도 닫혀, 다시 열 때 말풍선 없이 뜬다', async () => {
+    const onClose = jest.fn();
+    const view = await render(<SkySheet chart={fixtures.chart} selected="SUN" visible onClose={onClose} />);
+    await fireEvent.press(screen.getByTestId('tip-relations'));
+    expect(screen.getByText(S.relationsTip)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
+    await view.rerender(<SkySheet chart={fixtures.chart} selected="SUN" visible={false} onClose={onClose} />);
+    await sheetClosed();
+    await view.rerender(<SkySheet chart={fixtures.chart} selected="MOON" visible onClose={onClose} />);
+    expect(await screen.findByText(G.bodies.MOON.name)).toBeTruthy();
+    expect(screen.queryByText(S.relationsTip)).toBeNull();
   });
 
   it('바깥을 누르면 닫으라고 알린다', async () => {

@@ -42,8 +42,9 @@ export function SkySheet({ chart, selected, visible, onClose }: SkySheetProps) {
               {detail.subtitle}
             </Txt>
           </View>
-          <View style={styles.terms}>
-            <Term term={detail.sign} open={tip === 'sign'} onToggle={() => toggle('sign')} testID="tip-sign" />
+          {/* 별자리 말풍선은 시트 위 끝에 막혀 아래로 띄우고, 열린 동안 이 묶음을 관계 칸보다 위에 그린다 */}
+          <View style={[styles.terms, tip === 'sign' && styles.raised]}>
+            <Term term={detail.sign} open={tip === 'sign'} onToggle={() => toggle('sign')} placement="below" testID="tip-sign" />
             {detail.house ? (
               <Term term={detail.house} open={tip === 'house'} onToggle={() => toggle('house')} testID="tip-house" />
             ) : null}
@@ -107,11 +108,24 @@ function Relations({ relations, open, onToggle }: { relations: SkyRelation[]; op
 }
 
 /** 별자리 · 하우스 한 항목: 이름과 물음표, 그 아래 한 줄 뜻 */
-function Term({ term, open, onToggle, testID }: { term: SkyTerm; open: boolean; onToggle: () => void; testID: string }) {
+function Term({
+  term,
+  open,
+  onToggle,
+  placement,
+  testID,
+}: {
+  term: SkyTerm;
+  open: boolean;
+  onToggle: () => void;
+  placement?: 'above' | 'below';
+  testID: string;
+}) {
   return (
-    <View style={styles.term}>
+    <View style={[styles.term, open && styles.raised]}>
       <InfoTip
         testID={testID}
+        placement={placement}
         label={`${term.name}${S.questionSuffix}`}
         title={term.name}
         text={term.tip}
@@ -133,6 +147,7 @@ const styles = StyleSheet.create({
   subtitle: { flexShrink: 1 },
   terms: { marginTop: L.termsTop, gap: L.termsGap },
   term: { gap: Spacing.hairline },
+  raised: { zIndex: 1 },
   relationsHead: { marginTop: L.relationsTop },
   relations: { marginTop: Spacing.xs, maxHeight: Sizes.infoSheetHeight, flexGrow: 0 },
   none: { marginTop: Spacing.xs },

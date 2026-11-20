@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { InfoTip } from '@/components/info-tip';
 import { strings } from '@/content/strings';
@@ -36,5 +36,22 @@ describe('InfoTip: 이름 옆 물음표를 누르면 위에 뜨는 말풍선(시
     expect(mark.props.accessibilityState).toMatchObject({ expanded: true });
     await fireEvent.press(mark);
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('위가 막힌 자리에서는 말풍선을 물음표 아래로 띄운다(placement="below")', async () => {
+    const view = await render(
+      <InfoTip {...props} open onToggle={jest.fn()} testID="tip">
+        <Text>물병자리</Text>
+      </InfoTip>,
+    );
+    expect(StyleSheet.flatten(screen.getByTestId('tip-bubble').props.style)).toMatchObject({ bottom: '100%' });
+    await view.rerender(
+      <InfoTip {...props} open onToggle={jest.fn()} placement="below" testID="tip">
+        <Text>물병자리</Text>
+      </InfoTip>,
+    );
+    const below = StyleSheet.flatten(screen.getByTestId('tip-bubble').props.style);
+    expect(below).toMatchObject({ top: '100%' });
+    expect(below.bottom).toBeUndefined();
   });
 });

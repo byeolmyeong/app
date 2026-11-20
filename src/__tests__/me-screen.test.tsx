@@ -168,6 +168,39 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
   });
 });
 
+describe('나 탭 · 옛 보관본(업데이트 직후, 리뷰 #49)', () => {
+  const old = {
+    headline: '옛 요약 해석의 한 줄 별명',
+    sections: [{ title: '옛 문단', body: '옛 본문', basis: ['태양', '쌍둥이', '6하우스'] }],
+    strengths: ['하나', '둘', '셋'],
+    cautions: ['하나', '둘', '셋'],
+  };
+
+  it('기기의 요약 해석이 옛 모양이면 다시 받아(POST /readings) 새 모양으로 그린다', async () => {
+    // 요청 중복 막기(use-reading 의 inflight)는 모듈에 남아, 끝나지 않는 요청을 둔 앞 시험과 다른 출생 정보로 연다
+    const other = { ...profile, date: '1999-03-08' };
+    await saveBirth({ profile: other, chart: fixtures.chart });
+    await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: JSON.stringify([other.date, other.time, other.place.id]), reading: old }));
+    await render(<MeScreen />);
+    expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
+    expect(mockApi.createReading).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(reading.headline)).toBeTruthy();
+    expect(screen.queryByText(old.headline)).toBeNull();
+  });
+
+  it('서버가 내 별명을 새로 짓느라 10초가 넘으면 별명 짓는 중 — 머리 · 아래 탭이 있어 다른 탭으로 갈 수 있다(결정 065 의 2 · 061)', async () => {
+    jest.useFakeTimers();
+    await storeReading(old as unknown as Reading);
+    mockApi.createReading.mockReturnValue(new Promise(() => {}));
+    await render(<MeScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(10_500)));
+    expect(screen.getByTestId('making-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByTestId('nav-bar')).toBeTruthy();
+    expect(tabs()).toHaveLength(4);
+    expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', true);
+  });
+});
+
 describe('나 탭 · 쓰는 중 · 실패(11-8 · 11-9, 결정 061)', () => {
   it('끝까지 못 썼으면 11-9: 아래 탭 없이 "다시 쓰기"(새로 요청) · 그 위 "나중에 하기"(받기 전으로)', async () => {
     jest.useFakeTimers();

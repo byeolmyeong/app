@@ -99,12 +99,14 @@ function useLine(run: boolean, count: number) {
 export type MakingViewProps = {
   /** 화면 머리(뒤로 가기). 가입 직후에는 없다(보드 9), 홈에서 들어왔을 때는 있다 */
   nav?: ReactNode;
+  /** 아래 탭(탭 자리에서 오래 기다릴 때 — 다른 탭으로 갈 수 있게). 가입 직후 · 자세한 풀이 쓰는 중(보드 9 · 11-8)은 없다 */
+  tabs?: ReactNode;
   /** 제목과 차례로 바뀌는 안내 문구. 없으면 별명 짓는 중의 것(나 탭 자세한 풀이 쓰는 중은 보드 11-8 의 것) */
   title?: string;
   lines?: readonly string[];
 };
 
-export function MakingView({ nav, title = M.title, lines = M.lines }: MakingViewProps) {
+export function MakingView({ nav, tabs, title = M.title, lines = M.lines }: MakingViewProps) {
   const reduce = useReduceMotion();
   const run = !reduce;
   const float = usePulse(run, FLOAT_MS);
@@ -120,7 +122,7 @@ export function MakingView({ nav, title = M.title, lines = M.lines }: MakingView
   const twinkle = (v: Animated.Value) => (run ? v.interpolate({ inputRange: [0, 1], outputRange: [TWINKLE_DIM, TWINKLE_BRIGHT] }) : 1);
 
   return (
-    <Screen scroll={false} nav={nav}>
+    <Screen scroll={false} nav={nav} footer={tabs}>
       <View style={styles.body}>
         <GlowBackdrop color={BrandColors.backdropDim} extent={BackdropShape.making.extent} centerY={BackdropShape.making.centerY} />
         <View testID="making-art" aria-hidden importantForAccessibility="no-hide-descendants" style={styles.art}>

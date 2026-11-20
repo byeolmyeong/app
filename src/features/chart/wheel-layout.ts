@@ -3,6 +3,7 @@
  * 별자리·하우스·각도를 여기서 계산하지 않는다(docs/decisions/006-server-side-chart.md). 각도는 서버가 준 `longitude` 를 쓴다.
  * 내 하늘 지도의 휠(`wheelLayout`)은 시안 13(320 기준)의 고리 · 점 · 글자 자리를 옮겼다. 겹친 휠(궁합)은 아래의 공용 함수만 쓴다.
  */
+import { strings } from '@/content/strings';
 import type { Chart } from '@/lib/api';
 
 /** 황도대 순서. 휠에서 별자리 칸이 놓이는 차례다. */
@@ -24,9 +25,6 @@ export const SIGN_ORDER = [
 const HARD = ['SQUARE', 'OPPOSITION'];
 const SOFT = ['TRINE', 'SEXTILE'];
 
-/** 이 각도(도) 안으로 붙은 천체는 이름을 한 단씩 안쪽으로 민다 */
-const CROWD_DEGREES = 7;
-
 /** 겹친 휠(궁합)의 그림 크기 */
 export const WHEEL_SIZE = 300;
 /** 내 하늘 지도 휠의 그림 크기(시안 13). 아래 [SKY] 의 값은 이 크기에서의 값이다 */
@@ -37,10 +35,10 @@ const SKY = {
   rOuter: 152,
   rSign: 124,
   rInner: 60,
-  /** 별 점이 놓이는 원 · 이름이 놓이는 원 · 붙은 별의 이름을 한 단 안으로 미는 거리 */
+  /** 별 점이 놓이는 원 · 이름이 놓이는 원 · 붙은 별의 이름 사이에 두는 틈 */
   rDot: 108,
   rLabel: 90,
-  liftStep: 12,
+  labelGap: 2,
   /** 하우스 번호가 놓이는 원 */
   rHouseNumber: 70,
   /** 축 이름이 놓이는 원: 첫인상(세 글자, 가로) · 꿈(한 글자) */
@@ -82,7 +80,8 @@ export type WheelLayout = {
   houseSectors: { n: number; path: string }[];
   /** 첫인상(상승점) · 꿈(중천)의 축: 가운데 원에서 바깥 원까지, 이름은 가운데 원 안. 시각 "모름" 이면 없다 */
   axes: { key: 'ASC' | 'MC'; line: Line; label: Pt }[];
-  bodies: { body: string; dot: Pt; label: Pt; lift: number }[];
+  /** 별 점(서버의 황경)과 이름. 붙은 별의 이름은 같은 원 위에서 양옆으로 벌려 labelLon 이 황경과 다를 수 있다 */
+  bodies: { body: string; dot: Pt; label: Pt; labelLon: number }[];
 };
 
 /** 각도 선의 모양: 긴장(사분·충)은 점선(true), 조화(삼분·육분)는 실선(false). 합과 모르는 종류는 선을 긋지 않는다(null) */
@@ -121,29 +120,42 @@ export function ringMarks({ at, line }: ReturnType<typeof wheelPolar>, rSign: nu
   return { signs, ticks };
 }
 
-/** 황경 순으로 세우고, 앞의 것과 [CROWD_DEGREES] 안으로 붙었으면 lift 를 한 단씩 올린다(이름이 겹치지 않게) */
-export function liftCrowded(list: { body: string; lon: number }[]): { body: string; lon: number; lift: number }[] {
+/**
+ * 붙은 별의 이름을 같은 원 위에서 양옆으로 벌린다(그림의 자리만 정한다. 별의 위치는 서버 값 그대로).
+ * 황경 순서는 지키고, 이웃한 두 이름의 중심이 원 위에서 (두 이름 폭의 반씩 + gap) 보다 가까우면 둘을 반씩 밀어낸다.
+ * 무리의 가운데는 제자리에 남는다. 반환: 식별자 → 이름을 놓을 황경
+ */
+export function spreadLabels(list: { body: string; lon: number; width: number }[], r: number, gap: number): Map<string, number> {
+  const n = list.length;
   const sorted = [...list].sort((p, q) => p.lon - q.lon);
-  // 가장 넓게 빈 곳 다음에서 세기 시작해야 0도를 사이에 둔 이웃도 이어서 밀린다.
+  // 가장 넓게 빈 곳 다음에서 세기 시작해 한 줄로 편다(0도를 사이에 둔 이웃도 이어지게)
   let start = 0;
   let widest = -1;
   sorted.forEach((p, i) => {
-    const prev = sorted[(i - 1 + sorted.length) % sorted.length];
-    const gap = (p.lon - prev.lon + 360) % 360 || (sorted.length === 1 ? 360 : 0);
-    if (gap > widest) {
-      widest = gap;
+    const prev = sorted[(i - 1 + n) % n];
+    const space = n === 1 ? 360 : (p.lon - prev.lon + 360) % 360;
+    if (space > widest) {
+      widest = space;
       start = i;
     }
   });
-  const lifted: { body: string; lon: number; lift: number }[] = [];
-  let lift = 0;
-  for (let k = 0; k < sorted.length; k++) {
-    const p = sorted[(start + k) % sorted.length];
-    const prev = k === 0 ? null : sorted[(start + k - 1) % sorted.length];
-    lift = prev && (p.lon - prev.lon + 360) % 360 < CROWD_DEGREES ? lift + 1 : 0;
-    lifted.push({ ...p, lift });
+  const line = Array.from({ length: n }, (_, k) => sorted[(start + k) % n]);
+  const base = line[0]?.lon ?? 0;
+  const pos = line.map((p) => base + ((p.lon - base + 360) % 360));
+  const need = (a: number, b: number) => (((line[a].width + line[b].width) / 2 + gap) / r) * (180 / Math.PI);
+  for (let round = 0; round < 500; round++) {
+    let moved = false;
+    for (let i = 0; i + 1 < n; i++) {
+      const short = need(i, i + 1) - (pos[i + 1] - pos[i]);
+      if (short > 1e-6) {
+        pos[i] -= short / 2;
+        pos[i + 1] += short / 2;
+        moved = true;
+      }
+    }
+    if (!moved) break;
   }
-  return lifted;
+  return new Map(line.map((p, i) => [p.body, ((pos[i] % 360) + 360) % 360]));
 }
 
 /** 두 반지름 사이에서 황경 from 부터 to 까지(황경이 느는 쪽, 화면에서는 시계 반대 방향)의 칸 모양 */
@@ -191,14 +203,17 @@ export function wheelLayout(chart: Chart, size: number = SKY_WHEEL_SIZE): WheelL
     );
   }
 
-  const bodies: WheelLayout['bodies'] = liftCrowded(
-    chart.positions.map((p) => ({ body: p.body, lon: p.longitude })),
-  ).map((p) => ({
-    body: p.body,
-    dot: at(p.lon, SKY.rDot * u),
-    label: at(p.lon, (SKY.rLabel - p.lift * SKY.liftStep) * u),
-    lift: p.lift,
-  }));
+  // 이름의 폭: 한 글자가 고른 별의 글자 크기만큼(한글은 네모꼴이다)
+  const nameWidth = (body: string) => ((strings.bodiesShort as Record<string, string>)[body] ?? body).length * SKY.selectedLabel * u;
+  const labelLon = spreadLabels(
+    chart.positions.map((p) => ({ body: p.body, lon: p.longitude, width: nameWidth(p.body) })),
+    SKY.rLabel * u,
+    SKY.labelGap * u,
+  );
+  const bodies: WheelLayout['bodies'] = chart.positions.map((p) => {
+    const lon = labelLon.get(p.body) ?? p.longitude;
+    return { body: p.body, dot: at(p.longitude, SKY.rDot * u), label: at(lon, SKY.rLabel * u), labelLon: lon };
+  });
 
   return {
     size,

@@ -49,14 +49,11 @@ describe('wheelLayout: 시각을 아는 차트', () => {
     expect(layout.bodies).toHaveLength(10);
   });
 
-  it('시안(320) 의 고리: 바깥 152 · 별자리 안쪽 124 · 가운데 60, 점은 108, 이름은 90 에서 시작한다', () => {
+  it('시안(320) 의 고리: 바깥 152 · 별자리 안쪽 124 · 가운데 60, 점은 108, 이름은 모두 90 원 위에 놓는다', () => {
     expect(layout.size).toBe(320);
     expect([layout.rOuter, layout.rSign, layout.rInner]).toEqual([152, 124, 60]);
     for (const b of layout.bodies) expect(fromCenter(b.dot)).toBeCloseTo(108, 5);
-    const sun = layout.bodies.find((b) => b.body === 'SUN')!;
-    expect(fromCenter(sun.label)).toBeCloseTo(90, 5);
-    // 밀린 이름도 가운데 원 안으로 들어가지 않는다
-    for (const b of layout.bodies) expect(fromCenter(b.label)).toBeGreaterThan(layout.rInner);
+    for (const b of layout.bodies) expect(fromCenter(b.label)).toBeCloseTo(90, 5);
   });
 
   it('상승점(첫인상의 축)이 휠의 왼쪽 끝에 오고, 축은 가운데 원에서 바깥 원까지 긋는다', () => {
@@ -112,10 +109,25 @@ describe('wheelLayout: 시각을 아는 차트', () => {
     expect(layout).not.toHaveProperty('ticks');
   });
 
-  it('가까운 천체(태양·금성·화성)의 이름은 한 단씩 안쪽으로 밀린다', () => {
-    const lift = (name: string) => layout.bodies.find((b) => b.body === name)!.lift;
-    expect([lift('SUN'), lift('VENUS'), lift('MARS')]).toEqual([0, 1, 2]);
-    expect(lift('MERCURY')).toBe(0);
+  it('가까운 천체(태양·금성·화성)의 이름은 같은 원 위에서 양옆으로 벌리고, 무리의 가운데는 제자리에 둔다', () => {
+    const lon = (name: string) => layout.bodies.find((b) => b.body === name)!.labelLon;
+    const real = (name: string) => chart.positions.find((p) => p.body === name)!.longitude;
+    const trio = ['SUN', 'VENUS', 'MARS'];
+    // 황경 순서는 그대로, 사이는 벌어진다
+    expect(lon('SUN')).toBeLessThan(lon('VENUS'));
+    expect(lon('VENUS')).toBeLessThan(lon('MARS'));
+    expect(lon('VENUS') - lon('SUN')).toBeGreaterThan(real('VENUS') - real('SUN'));
+    const mean = (f: (n: string) => number) => trio.reduce((a, n) => a + f(n), 0) / trio.length;
+    expect(mean(lon)).toBeCloseTo(mean(real), 1);
+    // 떨어진 천체(수성)의 이름은 제 점 바로 안쪽이다
+    expect(lon('MERCURY')).toBeCloseTo(real('MERCURY'), 5);
+  });
+
+  it('이름은 하우스 번호 · 가운데 원 · 별 점과 겹치지 않는다', () => {
+    for (const b of layout.bodies) {
+      for (const h of layout.houseNumbers) expect(dist(b.label, h)).toBeGreaterThan((layout.labelFontSize + layout.houseFontSize) / 2 + 4);
+      for (const o of layout.bodies) expect(dist(b.label, o.dot)).toBeGreaterThan(layout.labelFontSize / 2 + layout.dotRadius);
+    }
   });
 
   it('어느 두 이름도 글자 크기보다 가깝게 놓이지 않는다', () => {
@@ -126,7 +138,7 @@ describe('wheelLayout: 시각을 아는 차트', () => {
   });
 });
 
-describe('wheelLayout: 이름 밀기', () => {
+describe('wheelLayout: 이름 벌리기', () => {
   it('같은 자리의 두 천체도 이름이 겹치지 않는다', () => {
     const layout = wheelLayout(chartOf([body('SUN', 'LEO', 10), body('MOON', 'LEO', 10)]));
     const [a, b] = layout.bodies;
@@ -134,14 +146,24 @@ describe('wheelLayout: 이름 밀기', () => {
     expect(dist(a.dot, b.dot)).toBeCloseTo(0, 5);
   });
 
-  it('0도를 사이에 둔 가까운 천체(물고기 끝과 양 처음)도 밀린다', () => {
+  it('0도를 사이에 둔 가까운 천체(물고기 끝과 양 처음)도 벌린다', () => {
     const layout = wheelLayout(chartOf([body('SUN', 'ARIES', 1), body('MOON', 'PISCES', 28)]));
-    expect(layout.bodies.map((b) => b.lift).sort()).toEqual([0, 1]);
+    const [sun, moon] = layout.bodies;
+    expect(dist(sun.label, moon.label)).toBeGreaterThanOrEqual(layout.labelFontSize);
+    // 물고기 쪽(달)은 0도 아래로, 양 쪽(해)은 위로 벌어진다
+    expect(((sun.labelLon - moon.labelLon + 360) % 360)).toBeGreaterThan(3);
+    expect(((sun.labelLon - moon.labelLon + 360) % 360)).toBeLessThan(180);
   });
 
-  it('떨어져 있으면 밀지 않는다', () => {
+  it('두 글자 이름(해왕)은 그만큼 더 벌린다', () => {
+    const layout = wheelLayout(chartOf([body('NEPTUNE', 'LEO', 10), body('MOON', 'LEO', 11)]));
+    const [a, b] = layout.bodies;
+    expect(dist(a.label, b.label)).toBeGreaterThanOrEqual(layout.labelFontSize * 1.5);
+  });
+
+  it('떨어져 있으면 벌리지 않는다', () => {
     const layout = wheelLayout(chartOf([body('SUN', 'ARIES', 1), body('MOON', 'LIBRA', 1)]));
-    expect(layout.bodies.map((b) => b.lift)).toEqual([0, 0]);
+    expect(layout.bodies.map((b) => b.labelLon)).toEqual([1, 181]);
   });
 });
 

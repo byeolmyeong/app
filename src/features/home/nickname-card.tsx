@@ -4,11 +4,13 @@ import Svg, { Path } from 'react-native-svg';
 import { Avatar, isAvatarId } from '@/components/avatar';
 import { CardConstellation } from '@/components/card-constellation';
 import { GlowBackdrop } from '@/components/glow';
+import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { BrandColors, Colors, LineWidth, NicknameCardLayout as L, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const C = strings.home.card;
+const K = L.skeleton;
 const M = strings.main;
 
 export type NicknameCardProps = {
@@ -68,6 +70,29 @@ export function NicknameCard({ nickname, avatar, sunSign, days, headline, onOpen
         </Svg>
       </View>
     </Pressable>
+  );
+}
+
+/**
+ * 홈 별명 카드의 뼈대(결정 071, 보드 24 의 첫 카드): 같은 카드에 프로필 동그라미 · 이름 · 해 별자리 · 한 줄 · 풀이 읽기.
+ * 홈 뼈대가 보이는 때는 기기가 비어 서버에서 되살릴 때라 받아 둔 풀이가 없다 — 한 줄 별명 두 줄 대신 "아직 별명을 짓지 않았어요" 한 줄 자리,
+ * 날 수 없이 해 별자리만(다 그려질 카드 그대로). 브랜드 장식(빛 · 별자리)은 그리지 않는다.
+ */
+export function NicknameCardSkeleton() {
+  return (
+    <View testID="nickname-card-skeleton" style={styles.card}>
+      <View style={styles.row}>
+        <Skeleton width={L.avatar} height={L.avatar} pill />
+        <View style={styles.names}>
+          <SkeletonText variant="heading" widths={[K.name]} />
+          <SkeletonText variant="caption" widths={[K.meta]} />
+        </View>
+      </View>
+      <SkeletonText variant="body" widths={[K.empty]} style={styles.headline} />
+      <View style={styles.more}>
+        <SkeletonText variant="captionStrong" widths={[K.more]} />
+      </View>
+    </View>
   );
 }
 

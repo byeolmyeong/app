@@ -190,39 +190,39 @@ describe('출생 정보 되살리기(결정 029)', () => {
     expect(await loadBirth()).toBeNull();
   });
 
-  it('확인하는 동안에는 입력 화면이 비치지 않는다: 세션을 기다릴 때도, 서버의 답을 기다릴 때도 "불러오는 중" 만 보인다', async () => {
+  it('확인하는 동안에는 입력 화면이 비치지 않는다: 세션을 기다릴 때도, 서버의 답을 기다릴 때도 되살린 뒤의 홈을 본뜬 뼈대만 보인다(결정 071)', async () => {
     mockSession.current = { status: 'checking' as const, token: null, ready: false, lastError: null };
     let answer: (r: ApiResult<BirthInput>) => void = () => {};
     mockApi.getProfile.mockReturnValue(new Promise((resolve) => (answer = resolve)));
     const seenForm = () => screen.queryByPlaceholderText(H.datePlaceholder) !== null;
 
     const view = await render(<HomeScreen />);
-    // 기기 저장소를 읽은 뒤: 세션 확인을 기다린다. 아직 서버에 묻지 않는다.
-    expect(await screen.findByText(H.restoring)).toBeTruthy();
+    // 기기 저장소를 읽은 뒤: 세션 확인을 기다린다. 아직 서버에 묻지 않는다(0.3초가 넘으면 뼈대).
+    expect(await screen.findByTestId('home-skeleton')).toBeTruthy();
     expect(seenForm()).toBe(false);
     expect(mockApi.getProfile).not.toHaveBeenCalled();
 
     mockSession.current = { status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null };
     await view.rerender(<HomeScreen />);
     await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalledTimes(1));
-    expect(screen.getByText(H.restoring)).toBeTruthy();
+    expect(screen.getByTestId('home-skeleton')).toBeTruthy();
     expect(seenForm()).toBe(false);
 
     await act(async () => answer({ ok: true, data: known }));
     await homeShown();
     expect(seenForm()).toBe(false);
-    expect(screen.queryByText(H.restoring)).toBeNull();
+    expect(screen.queryByTestId('home-skeleton')).toBeNull();
     expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
   });
 
-  it('답이 "없다" 이면 불러오는 중이 입력 화면으로 바뀐다', async () => {
+  it('답이 "없다" 이면 뼈대가 입력 화면으로 바뀐다', async () => {
     let answer: (r: ApiResult<BirthInput>) => void = () => {};
     mockApi.getProfile.mockReturnValue(new Promise((resolve) => (answer = resolve)));
     await render(<HomeScreen />);
-    expect(await screen.findByText(H.restoring)).toBeTruthy();
+    expect(await screen.findByTestId('home-skeleton')).toBeTruthy();
     await act(async () => answer(noProfile));
     expect(await formShown()).toBeTruthy();
-    expect(screen.queryByText(H.restoring)).toBeNull();
+    expect(screen.queryByTestId('home-skeleton')).toBeNull();
   });
 
   it('계정을 지운 뒤에는 입력 화면이 보인다: 세션이 비어 묻지 않고, 새 세션으로 물어도 서버에 없다', async () => {

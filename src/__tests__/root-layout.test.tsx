@@ -132,6 +132,14 @@ describe('약관 글 화면의 열림', () => {
       }
     });
   });
+
+  it('가입 닉네임 · 출생 정보 단계는 오른쪽에서 밀려 들어오는 화면 옵션으로 연다(앱은 기본 그대로)', async () => {
+    await render(<RootLayout />);
+    await waitFor(() => {
+      const names = mockScreen.mock.calls.map(([p]) => p.name);
+      expect(names).toEqual(expect.arrayContaining(['signup/nickname', 'signup/birth']));
+    });
+  });
 });
 
 // 스플래시(결정 067 의 3): 웹은 앱이 보드 1 모양을 그리고, 앱(iOS · 안드로이드)은 네이티브 스플래시를 같은 때까지 둔다

@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
-import { useSlideUpScreenOptions } from '@/components/slide-up';
+import { slideInScreenOptions, useSlideUpScreenOptions } from '@/components/slide-up';
 import { useSplashHeld } from '@/components/splash-hold';
 import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
@@ -20,6 +20,9 @@ SplashScreen.preventAutoHideAsync();
 
 /** 아래에서 올라오는 창으로 여는 약관 글(결정 067 의 1). 가입 약관 단계의 "보기" 와 마이가 같은 화면을 연다 */
 const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];
+/** 오른쪽에서 밀려 들어오는 가입 단계(앱은 화면 쌓기 기본, 웹은 화면이 스스로 — 결정 068 의 7) */
+const SLIDE_IN_ROUTES = ['signup/nickname', 'signup/birth'];
+const SLIDE_IN_OPTIONS = slideInScreenOptions(Platform.OS);
 /** 확인하지 못한 세션을 다시 확인하는 간격 */
 const RECHECK_MS = 30_000;
 
@@ -98,6 +101,9 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
             {SLIDE_UP_ROUTES.map((name) => (
               <Stack.Screen key={name} name={name} options={slideUp} />
+            ))}
+            {SLIDE_IN_ROUTES.map((name) => (
+              <Stack.Screen key={name} name={name} options={SLIDE_IN_OPTIONS} />
             ))}
           </Stack>
           {covered ? <View testID="guard-cover" style={styles.cover} /> : null}

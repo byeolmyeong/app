@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BackChevron } from '@/components/back-chevron';
+import { useSlideUp } from '@/components/slide-up';
 import { reduceMotionNow } from '@/components/byeoli';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
@@ -84,7 +85,17 @@ function useKeyboardShown() {
   return shown;
 }
 
-export function SignupStep({ step, onBack, title, guide, footer, children }: SignupStepProps) {
+export function SignupStep(props: SignupStepProps) {
+  // 웹은 다음 단계가 오른쪽에서 밀려 들어오고 뒤로는 오른쪽으로 나간다(앱의 화면 쌓기와 같게). 앱은 화면 쌓기가 움직인다
+  const { style, close, ref, hidden } = useSlideUp('right');
+  return (
+    <Animated.View testID="signup-step-slide" ref={ref} aria-hidden={hidden} style={style}>
+      <SignupStepScreen {...props} onBack={() => close(props.onBack)} />
+    </Animated.View>
+  );
+}
+
+function SignupStepScreen({ step, onBack, title, guide, footer, children }: SignupStepProps) {
   const keyboard = useKeyboardShown();
   const fills = useProgressFills(step);
   return (

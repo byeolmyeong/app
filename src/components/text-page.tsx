@@ -27,10 +27,10 @@ export type TextPageProps = {
  * 아래에서 올라오는 창이다(결정 067 의 1): 웹은 이 화면이 스스로 올라오고, 뒤로 · 동의하기는 내려간 뒤에 돌아간다.
  */
 export function TextPage({ doc, onBack, onAgree }: TextPageProps) {
-  const slide = useSlideUp();
+  const { style, close, ref, hidden } = useSlideUp();
   return (
-    <Animated.View testID="slide-up-page" style={slide.style}>
-      <TextPageScreen doc={doc} onBack={() => slide.close(onBack)} onAgree={onAgree ? () => slide.close(onAgree) : undefined} />
+    <Animated.View testID="slide-up-page" ref={ref} aria-hidden={hidden} style={style}>
+      <TextPageScreen doc={doc} onBack={() => close(onBack)} onAgree={onAgree ? () => close(onAgree) : undefined} />
     </Animated.View>
   );
 }

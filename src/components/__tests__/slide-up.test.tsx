@@ -2,13 +2,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useCanGoBack } from 'expo-router';
 import { Animated, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
-import { slideUpScreenOptions, useSlideUp } from '@/components/slide-up';
+import { slideInScreenOptions, slideUpScreenOptions, useSlideUp } from '@/components/slide-up';
 import { TextPage } from '@/components/text-page';
 import { Colors } from '@/constants/theme';
 import { terms } from '@/content/legal';
 import { strings } from '@/content/strings';
 
-jest.mock('expo-router', () => ({ useCanGoBack: jest.fn(() => true) }));
+jest.mock('expo-router', () => ({ useCanGoBack: jest.fn(() => true), useIsFocused: () => true }));
 
 // 아래에서 올라오는 창(결정 067 의 1): 약관 글 네 화면을 이 옵션으로 연다
 describe('아래에서 올라오는 창: 화면 옵션', () => {
@@ -158,5 +158,46 @@ describe('아래에서 올라오는 창: iOS · 안드로이드', () => {
     await fireEvent.press(screen.getByText('닫기'));
     expect(onClosed).toHaveBeenCalledTimes(1);
     expect(runs).toHaveLength(0);
+  });
+});
+
+// 가입 단계 사이(소유자: 앱과 같게 — 다음은 오른쪽에서 밀려 들어오고 뒤로는 반대)
+describe('오른쪽에서 밀려 들어오는 화면', () => {
+  it('화면 옵션: 웹만 앞 화면을 남기고(transparentModal) 바탕을 비운다. 앱은 화면 쌓기 기본(오른쪽에서) 그대로', () => {
+    expect(slideInScreenOptions('web')).toEqual({ presentation: 'transparentModal', contentStyle: { backgroundColor: 'transparent' } });
+    expect(slideInScreenOptions('ios')).toEqual({});
+    expect(slideInScreenOptions('android')).toEqual({});
+  });
+
+  it('웹: 오른쪽(100%)에서 들어오고, 닫으면 오른쪽으로 나간 뒤 돌아간다', async () => {
+    const original = Platform.OS;
+    Platform.OS = 'web';
+    (window as unknown as { matchMedia: unknown }).matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    (useCanGoBack as jest.Mock).mockReturnValue(true);
+    try {
+      const runs = fakeTiming();
+      const onClosed = jest.fn();
+      function Side() {
+        const { style, close } = useSlideUp('right');
+        return (
+          <Animated.View testID="slide" style={style}>
+            <Pressable onPress={() => close(onClosed)}>
+              <Text>닫기</Text>
+            </Pressable>
+          </Animated.View>
+        );
+      }
+      await render(<Side />);
+      expect(StyleSheet.flatten(screen.getByTestId('slide').props.style).transform?.[0]?.translateX).toBe('100%');
+      await act(async () => runs[0].finish());
+      await fireEvent.press(screen.getByText('닫기'));
+      expect(onClosed).not.toHaveBeenCalled();
+      await act(async () => runs[1].finish());
+      expect(onClosed).toHaveBeenCalledTimes(1);
+    } finally {
+      Platform.OS = original;
+      delete (window as unknown as { matchMedia?: unknown }).matchMedia;
+      jest.restoreAllMocks();
+    }
   });
 });

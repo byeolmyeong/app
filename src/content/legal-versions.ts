@@ -3,6 +3,6 @@
  * 약관이나 처리방침을 고쳐 다시 동의받을 때 이 한 곳만 바꾼다. 화면 문구가 아니라 `strings` 에 두지 않는다.
  */
 export const LEGAL_VERSIONS = {
-  terms: '2026-11-19',
-  privacy: '2026-11-19',
+  terms: '2026-11-20',
+  privacy: '2026-11-20',
 } as const;

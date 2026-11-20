@@ -28,7 +28,7 @@ describe('약관 글 화면의 모양(보드 6-2)', () => {
     expect(flat(screen.getByText(terms.title))).toMatchObject({ fontSize: 17, lineHeight: 24, fontWeight: '600', textAlign: 'center' });
     expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
     const date = screen.getByText(`${L.effectiveLabel} ${legalInfo.effective}`);
-    expect(`${L.effectiveLabel} ${legalInfo.effective}`).toBe('시행일 2026년 11월 19일');
+    expect(`${L.effectiveLabel} ${legalInfo.effective}`).toBe('시행일 2026년 11월 20일');
     expect(flat(date)).toMatchObject({ fontSize: 13, lineHeight: 18, color: '#7C7E8A' });
   });
 

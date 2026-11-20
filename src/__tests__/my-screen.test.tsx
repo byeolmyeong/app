@@ -120,8 +120,7 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
 
   it.each([
     [M.card.account, '/my/account'],
-    // 새 출생 정보 바꾸기(/my/birth)는 서버 S⑨ 뒤 — 그 전에는 지금 화면
-    [M.card.birth, '/birth'],
+    [M.card.birth, '/my/birth'],
     [R.faq, '/settings/faq'],
     // 앱 안 문의(/my/inquiries)는 계획 A7-4 — 그 전에는 지금 화면
     [R.inquiry, '/settings/inquiry'],

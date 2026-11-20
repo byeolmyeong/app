@@ -114,6 +114,9 @@ export function validateBirthInput(
 }
 
 /** 보관된 출생 정보를 서버 요청 모양으로. 시각 "모름" 이면 placeId 를 보내지 않는다(null) */
+/** 두 출생 정보가 같은 입력인가(날짜 · 시각 · 곳). 같으면 차트를 다시 받지 않는다 */
+export const sameBirth = (a: BirthProfile, b: BirthProfile) => a.date === b.date && a.time === b.time && a.place?.id === b.place?.id;
+
 export function birthInputOf(profile: BirthProfile): BirthInput {
   return {
     date: profile.date,

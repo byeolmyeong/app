@@ -176,6 +176,27 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     expect(screen.queryByTestId('toast')).toBeNull();
   });
 
+  it('저장 · 스토리를 빠르게 두 번 눌러도 한 번만 한다(같은 그림이 두 장 저장되지 않게)', async () => {
+    let finish: (v: 'SAVED') => void = () => {};
+    mockSave.mockImplementation(() => new Promise((r) => (finish = r)));
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
+    await open();
+    await screen.findByTestId('share-card');
+    const save = button(S.actions.saveImage);
+    await act(async () => {
+      fireEvent.press(save);
+      fireEvent.press(save);
+      fireEvent.press(button(S.actions.story));
+    });
+    expect(mockSave).toHaveBeenCalledTimes(1);
+    expect(mockStory).not.toHaveBeenCalled();
+    await act(async () => finish('SAVED'));
+    // 끝난 뒤에는 다시 누를 수 있다
+    mockSave.mockResolvedValue('SAVED');
+    await fireEvent.press(button(S.actions.saveImage));
+    expect(mockSave).toHaveBeenCalledTimes(2);
+  });
+
   it('스토리: 카드와 앱 ID 로 열고, 열렸거나 공유 창으로 넘겼으면 알림이 없다 · 실패하면 실패 알림', async () => {
     await render(<ShareEntry target={{ kind: 'NEXT_BIG' }} />);
     await open();

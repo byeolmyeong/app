@@ -93,20 +93,20 @@ function ShareBody({ target }: { target: ShareTarget }) {
   const phase = useLoadingPhase(state.status === 'loading');
   const cardRef: CardRef = useRef(null);
   const { toast, show, hide } = useToast();
-  /** 이미지를 찍는 동안 버튼을 다시 누르지 못하게(같은 그림이 두 장 저장되지 않게) */
-  const [busy, setBusy] = useState(false);
+  /** 이미지를 찍는 동안 버튼을 다시 누르지 못하게(같은 그림이 두 장 저장되지 않게). 같은 순간의 두 번 눌림도 막도록 ref */
+  const busy = useRef(false);
 
   if (target.kind === 'SCORE' && myName === null) return <MyNameForm onSubmit={setMyName} />;
 
   // 스토리는 앱에서, Meta 앱 ID 가 있는 빌드에서만(웹은 storyAppId 가 늘 null)
   const appId = storyAppId();
   const run = async (action: () => Promise<void>) => {
-    if (busy) return;
-    setBusy(true);
+    if (busy.current) return;
+    busy.current = true;
     try {
       await action();
     } finally {
-      setBusy(false);
+      busy.current = false;
     }
   };
   // 결과는 모두 짧은 알림(결정 065 의 1) — 시트 안에 글을 붙이지 않는다

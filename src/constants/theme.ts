@@ -187,6 +187,22 @@ export const SkyMapLayout = {
   sectorOpacity: 0.16,
 } as const;
 
+/**
+ * 이름 옆의 작은 물음표와 그 위에 뜨는 말풍선(시안 13-2, 내 하늘 지도 · 나 탭): 물음표의 지름 · 테두리 · 이름과의 틈,
+ * 말풍선의 최대 폭 · 안쪽 여백(가로 · 세로) · 줄 사이 · 꼬리 · 물음표와 말풍선 사이
+ */
+export const TipLayout = {
+  button: 20,
+  border: 1.5,
+  gap: 6,
+  maxWidth: 240,
+  padX: 14,
+  padY: 12,
+  lineGap: 4,
+  arrow: 7,
+  offset: 11,
+} as const;
+
 /** 시트 뒤를 가리는 막. 밤색 66%(결정 042 시안. 어두운 바탕에서는 40% 로는 어두워진 게 보이지 않는다). */
 export const DimColor = 'rgba(4,5,8,0.66)';
 
@@ -235,6 +251,8 @@ export const Typography = {
   body: type(15, 24, FontWeight.regular),
   /** 큰 제목 아래 안내 한두 줄(소개 · 가입 단계 · 로그인 한 줄) */
   lead: type(15, 23, FontWeight.regular),
+  /** 시트 안의 한 줄 뜻(내 하늘 지도 시트, 시안 13-1) */
+  desc: type(14, 21, FontWeight.regular),
   /** 약관의 "모두 동의"(결정 042 시안) */
   emphasis: type(17, 24, FontWeight.semibold),
   /** 약관 항목 한 줄 */

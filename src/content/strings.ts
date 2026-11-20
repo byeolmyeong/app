@@ -381,7 +381,6 @@ export const strings = {
     noRelations: '다른 별과 이루는 큰 각도는 없어요.',
     /** 물음표의 읽기 이름: 물병자리 → 물병자리가 뭔가요? */
     questionSuffix: '가 뭔가요?',
-    tipClose: '팁 닫기',
     /** 별자리 · 하우스 팁: 열두 개 중 몇째인지 */
     signTipPrefix: '해가 지나는 하늘길을 열두 별자리로 나눈 것 중 ',
     signTipSuffix: ' 자리예요.',
@@ -754,6 +753,8 @@ export const strings = {
   help: {
     buttonLabel: '설명 보기',
     mark: '?',
+    /** 말풍선(InfoTip)이 열려 있을 때 물음표의 읽기 이름 */
+    tipClose: '팁 닫기',
     close: '확인',
     wheel: {
       title: '이 그림 읽는 법',

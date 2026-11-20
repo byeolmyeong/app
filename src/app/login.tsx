@@ -3,6 +3,7 @@
  * 카카오 · 애플 · 구글 순서로(안드로이드는 애플 없음). 아래 안내 문구는 없다. 이 기기에서 마지막에 쓴 공급자 버튼에 "최근 로그인" 배지(결정 044, 보드 5-2).
  * 로그인하면 어디로 갈지는 루트 레이아웃의 가드가 정한다(계정이 있으면 홈, 처음 온 사람은 가입). 로그인 여부는 서버 응답만 따른다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Platform, StyleSheet, View } from 'react-native';
 
@@ -41,9 +42,12 @@ function alertEmailRequired() {
 
 export default function LoginScreen() {
   const { lastError, signIn, devSessionEnabled, devSignIn } = useAuth();
+  /** 웹 구글은 돌아오는 화면(/auth/google)에서 로그인하고, 실패하면 `?failed=1` 로 여기 온다(결정 070) */
+  const { failed: returnedFailed } = useLocalSearchParams<{ failed?: string }>();
   /** 자격 증명을 받아 서버를 기다리는 공급자. 그 버튼은 돌기, 나머지는 막는다(결정 067 의 2) */
   const [pending, setPending] = useState<LoginProvider | null>(null);
-  const [failed, setFailed] = useState(false);
+  // 이메일이 없어 막힌 것(EMAIL_REQUIRED)은 아래 알림 창만 알린다
+  const [failed, setFailed] = useState(() => returnedFailed === '1' && lastError !== EMAIL_REQUIRED);
   const [recent, setRecent] = useState<LoginProvider | null>(null);
   const alerted = useRef(false);
 
@@ -61,7 +65,7 @@ export default function LoginScreen() {
     };
   }, []);
 
-  // 카카오 웹은 다른 화면(/auth/kakao)에서 로그인하고 여기로 돌아온다 — 그 실패도 뜰 때 한 번 알린다.
+  // 카카오 · 구글 웹은 다른 화면(/auth/kakao · /auth/google)에서 로그인하고 여기로 돌아온다 — 그 실패도 뜰 때 한 번 알린다.
   useEffect(() => {
     if (lastError === EMAIL_REQUIRED && !alerted.current) {
       alerted.current = true;

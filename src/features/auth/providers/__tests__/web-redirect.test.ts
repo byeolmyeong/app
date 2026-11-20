@@ -50,7 +50,12 @@ describe('애플 웹: 쓸 수 있는가', () => {
 });
 
 /** 시험용 ID 토큰: 가운데 조각만 진짜 모양(base64url JSON)이고 서명은 아무 글자다 — 앱은 서명을 보지 않는다(서버 몫) */
-const idToken = (payload: object) => `eyJhbGciOiJSUzI1NiJ9.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.sig`;
+const base64url = (text: string) =>
+  btoa(String.fromCharCode(...new TextEncoder().encode(text)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+const idToken = (payload: object) => `eyJhbGciOiJSUzI1NiJ9.${base64url(JSON.stringify(payload))}.sig`;
 const sent = { state: 'st-1', nonce: 'n-1' };
 
 // 웹 구글은 OpenID Connect 리디렉트(결정 070): 인가 주소로 이동 → /auth/google 로 ID 토큰이 주소 조각에 실려 온다

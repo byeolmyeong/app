@@ -24,6 +24,7 @@ import { MainTabs } from '@/features/home/main-tabs';
 import { NicknameCard } from '@/features/home/nickname-card';
 import { useAccount } from '@/features/home/use-account';
 import { useStoredHeadline } from '@/features/reading/use-reading';
+import { PushAskSheet } from '@/features/push/push-ask-sheet';
 
 /**
  * 홈 v2(결정 047 · 055, 보드 11 · 11-1). 출생 정보가 있으면 머리(로고) · 별명 카드 · 아래 탭 넷을 보여 주고
@@ -110,6 +111,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
             onOpen={() => router.push('/reading')}
           />
         </View>
+        {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때) */}
+        <PushAskSheet />
       </Screen>
     );
   }

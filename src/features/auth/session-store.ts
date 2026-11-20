@@ -134,7 +134,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
         }
         if (deps.cookieSession) {
           const r = await deps.getSession();
-          return r.ok ? set('signedIn', null) : set('signedOut', null);
+          // 이용 정지된 계정(403 ACCOUNT_SUSPENDED)도 세션은 살아 있다 — 로그인 상태로 두고 정지 문이 정지 화면으로 보낸다(결정 065 의 5)
+          return r.ok || r.code === 'ACCOUNT_SUSPENDED' ? set('signedIn', null) : set('signedOut', null);
         }
         const kept = await deps.loadToken();
         if (!kept) return set('signedOut', null);

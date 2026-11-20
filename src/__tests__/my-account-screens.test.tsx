@@ -34,7 +34,7 @@ const A = strings.my.account;
 const LO = strings.my.logout;
 const N = strings.nickname;
 const D = strings.my.delete;
-const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 
 beforeEach(async () => {
   await AsyncStorage.clear();

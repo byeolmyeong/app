@@ -1,12 +1,12 @@
 ---
 type: plan
-status: proposed
+status: approved
 tags: [시안, 1.0.0, 서버, 어드민, 앱, 랜딩, 마이, 푸시, 음악, 문의, 업데이트, 공통 상태]
 last_reviewed: 2026-11-20
 ---
 # 시안 기준으로 서버 · 어드민 · 앱 · 랜딩을 모두 고친다 (1.0.0)
 
-> 상태: 제안 · 기준 2026-11-20 · 앱 develop `29f9b6c` · 서버 develop `7ed7b42` · 어드민 main `581aa6c` · 랜딩 main `cd7b2e4` · 이 계획은 앱 · 서버의 `docs/plans/2026-11-20-home-me-timing.md`(승인됨, 묶음 A①~A⑤ · S①~S⑦)를 **이어받는다** — 그 파일의 태스크는 그대로 쓰고, 이 파일은 순서 · 바뀐 줄 · 새 묶음만 적는다 · 브랜치 `docs/sian-decisions-2`(결정 055~064 와 이 계획)
+> 상태: 승인(소유자 2026-11-20 "승인 가자") · 기준 2026-11-20 · 앱 develop `29f9b6c` · 서버 develop `7ed7b42` · 어드민 main `581aa6c` · 랜딩 main `cd7b2e4` · 이 계획은 앱 · 서버의 `docs/plans/2026-11-20-home-me-timing.md`(승인됨, 묶음 A①~A⑤ · S①~S⑦)를 **이어받는다** — 그 파일의 태스크는 그대로 쓰고, 이 파일은 순서 · 바뀐 줄 · 새 묶음만 적는다 · 브랜치 `docs/sian-decisions-2`(결정 055~064 와 이 계획)
 
 ## 목표
 - 무엇을: 확정 시안(캔버스 https://claude.ai/artifact/Rt33TzPSEe4PdxNRCej3xT · 피그마 `PNrWFsXHhF8crQkLA3SYBn` 의 온보딩 · 홈 · 나 · 시기 · 마이 · 공통 상태 페이지)대로 서버 · 어드민 · 앱 · 랜딩을 고친다. 궁합은 1.1.0(결정 055 · 063).
@@ -75,7 +75,7 @@ last_reviewed: 2026-11-20
 
 ### 0. 먼저 들어갈 것
 
-#### P1. merge-docs-branches · 상태: 대기
+#### P1. merge-docs-branches · 상태: 진행
 - 읽을 것: 앱 `origin/docs/home-me-timing-plan` · `docs/sian-decisions-2`, 서버 `origin/docs/home-me-timing-plan`
 - 할 것: 앱 `docs/sian-decisions-2`(결정 055~064 · 이 계획 — 위 브랜치를 품는다)를 푸시하고 develop 으로 PR. 서버 `docs/home-me-timing-plan` 도 develop 으로 PR. 문서만이다.
 - 하지 말 것: 코드를 섞지 않는다. 이유: 문서 PR 은 바로 합칠 수 있어야 한다.

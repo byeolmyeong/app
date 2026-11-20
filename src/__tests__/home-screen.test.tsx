@@ -9,8 +9,10 @@ import HomeScreen from '@/app/index';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
+import * as homeReady from '@/features/home/home-ready';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
+import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -93,6 +95,21 @@ describe('홈', () => {
     expect(screen.queryByText(/궁합/)).toBeNull();
     await fireEvent.press(screen.getByTestId('nickname-card'));
     expect(router.push).toHaveBeenCalledWith('/reading');
+  });
+
+  it('별명 카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 사람마다 다르다(소유자 지적: 처녀자리인데 다른 자리)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    const view = await render(<HomeScreen />);
+    const card = within(await screen.findByTestId('nickname-card'));
+    expect(card.getByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeTruthy();
+    await view.unmount();
+    // 해가 처녀자리인 차트 — 달 · 상승궁이 아니라 해의 별자리로 고른다
+    const virgo = { ...fixtures.chart, positions: fixtures.chart.positions.map((p) => (p.body === 'SUN' ? { ...p, sign: 'VIRGO' } : p)) };
+    await saveBirth({ profile, chart: virgo });
+    await render(<HomeScreen />);
+    const again = within(await screen.findByTestId('nickname-card'));
+    expect(again.getByTestId('card-constellation-VIRGO', { includeHiddenElements: true })).toBeTruthy();
+    expect(again.queryByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeNull();
   });
 
   it('만든 때(createdAt)가 없는 옛 풀이면 해 별자리만 적는다(결정 047 의 3)', async () => {
@@ -432,25 +449,6 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
   });
 
-  it('처음 묻는 중: 0.3초 뒤 다 그려질 카드를 본뜬 뼈대(결정 071), 3초가 넘으면 쓰는 중 카드(보드 11 쓰는 중)', async () => {
-    let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
-    mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
-    await saveBirth({ profile, chart: fixtures.chart });
-    jest.useFakeTimers();
-    await render(<HomeScreen />);
-    await act(async () => {});
-    expect(screen.getByTestId('nickname-card')).toBeTruthy();
-    expect(screen.queryByTestId('sk-home-today-card')).toBeNull();
-    await act(async () => jest.advanceTimersByTime(300));
-    expect(screen.getByTestId('sk-home-today-card')).toBeTruthy();
-    await act(async () => jest.advanceTimersByTime(3000));
-    expect(screen.getByTestId('home-today-making')).toBeTruthy();
-    expect(screen.getByText(strings.today.making.card)).toBeTruthy();
-    await act(async () => finish({ ok: true, data: sky }));
-    expect(screen.getByTestId('home-today-card')).toBeTruthy();
-    jest.useRealTimers();
-  });
-
   it('연결이 돌아오면 끊겨서 못 받은 것만 다시 묻는다 — 못 쓴 것(502)은 다시 쓰기를 누를 때만(리뷰 #66)', async () => {
     let listener: ((s: { isConnected: boolean; isInternetReachable: boolean }) => void) | null = null;
     (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
@@ -530,5 +528,79 @@ describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071, 보드 24)
     expect(await screen.findByTestId('home-today-card')).toBeTruthy();
     expect(screen.getByText(M.readingEmpty)).toBeTruthy();
     expect(blocks()).toEqual(BLOCKS);
+  });
+});
+
+describe('홈은 접속하자마자 — 받아 둔 것 먼저 · 첫 상태까지 스플래시(소유자 "뼈대 없이 바로 보였으면")', () => {
+  /** 한국 날짜 2026-11-19 오전 */
+  const NOW = Date.parse('2026-11-19T01:00:00Z');
+  const report = fixtures.timingReport;
+  const birthKey = JSON.stringify([profile.date, profile.time, profile.place.id]);
+  const sky = {
+    ...fixtures.daySky,
+    date: '2026-11-19',
+    title: '마음이 가는 사람에게 먼저 안부를 건네 보기 좋은 날',
+    reason: { when: 'DAY', items: [{ kind: 'TRANSIT', mover: 'MOON', target: 'VENUS', type: 'CONJUNCTION' }] },
+  };
+  const skeletons = () => screen.queryAllByTestId(/^sk-home-/);
+  beforeEach(async () => {
+    homeReady.resetHomeReady();
+    jest.useFakeTimers({ now: NOW });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('받아 둔 시기 풀이 · 오늘의 하늘이 있으면 스플래시를 걷는 첫 그림부터 카드 — 뼈대 없이, 뒤에서 서버를 한 번씩', async () => {
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report }));
+    await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key: birthKey, sky }));
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
+    mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky });
+    await render(<HomeScreen />);
+    await act(async () => {});
+    expect(homeReady.getHomeReady()).toBe(true);
+    expect(screen.getByTestId('home-today-card')).toBeTruthy();
+    expect(screen.getByTestId('home-timing-card')).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
+    expect(skeletons()).toHaveLength(0);
+    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+  });
+
+  it('시기 풀이를 받기 전이면 "자세한 풀이 받기" 카드가 바로 — 뼈대 없이', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+    await render(<HomeScreen />);
+    await act(async () => {});
+    expect(screen.getByTestId('home-timing-empty')).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
+    expect(skeletons()).toHaveLength(0);
+  });
+
+  it('처음 들어올 때는 홈 카드의 첫 상태(시기 풀이 상태 응답)까지 스플래시를 걷지 않는다(markHomeReady 를 부르지 않음)', async () => {
+    let answer: (v: Awaited<ReturnType<typeof api.getTimingReport>>) => void = () => {};
+    mockApi.getTimingReport.mockReturnValue(new Promise((r) => (answer = r)));
+    await render(<HomeScreen />);
+    await act(async () => {});
+    expect(screen.getByTestId('nickname-card')).toBeTruthy();
+    expect(homeReady.getHomeReady()).toBe(false);
+    await act(async () => answer({ ok: true, data: { status: 'NONE' } }));
+    expect(homeReady.getHomeReady()).toBe(true);
+    expect(screen.getByTestId('home-timing-empty')).toBeTruthy();
+  });
+
+  it('오늘의 하늘을 그날 처음 쓰는 중이면 생성을 기다리지 않는다 — 1초 안에 못 받으면 쓰는 중 카드로 스플래시를 걷고, 뼈대는 없다', async () => {
+    let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+    await render(<HomeScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
+    expect(homeReady.getHomeReady()).toBe(false);
+    expect(skeletons()).toHaveLength(0);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(600)));
+    expect(homeReady.getHomeReady()).toBe(true);
+    expect(screen.getByTestId('home-today-making')).toBeTruthy();
+    expect(skeletons()).toHaveLength(0);
+    await act(async () => finish({ ok: true, data: sky }));
+    expect(screen.getByTestId('home-today-card')).toBeTruthy();
   });
 });

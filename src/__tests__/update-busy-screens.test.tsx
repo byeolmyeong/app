@@ -32,6 +32,8 @@ jest.mock('@/lib/app-client', () => ({ appClient: { platform: 'ios', version: '1
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   api: {
+    // 공유 아이콘이 있는 화면은 들어올 때 카드를 미리 받는다 — 이 시험에서는 끝나지 않는 요청으로 둔다
+    createShare: jest.fn(() => new Promise(() => {})),
     getAppConfig: jest.fn(),
     listPlaces: jest.fn(),
     saveProfile: jest.fn(),

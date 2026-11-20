@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -12,6 +12,7 @@ import { Txt } from '@/components/txt';
 import { Colors, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveImage, shareStory, type CardRef } from '@/features/share/share-actions';
+import { prefetchShare } from '@/features/share/share-cache';
 import { ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
 import { storyAppId } from '@/features/share/story';
 import { useShareCard } from '@/features/share/use-share-card';
@@ -34,16 +35,30 @@ export type ShareTarget =
   | { kind: 'SCORE'; synastryId: string }
   | { kind: 'RANKING'; relation: Relation };
 
+/** 미리 받을 수 있는 요청(공유 v2 넷). 궁합 카드는 내 이름 · 이름 표시를 시트에서 받아 미리 받지 않는다 */
+function prefetchRequestOf(target: ShareTarget): ShareRequest | null {
+  if (target.kind === 'ME_AREA') return { kind: 'ME_AREA', area: target.area };
+  if (target.kind === 'DAY_SKY') return { kind: 'DAY_SKY', date: target.date };
+  if (target.kind === 'NICKNAME' || target.kind === 'NEXT_BIG') return { kind: target.kind };
+  return null;
+}
+
 /** 마지막에 적은 내 이름. 앱이 켜져 있는 동안 메모리에만 둔다(기기 저장소에 두지 않는다. 결정 025) */
 let lastMyName = '';
 
 /**
  * "공유하기" 와 그것이 여는 시트(결정 053 의 1, 보드 12-4 · 12-5 · 12-13 · 11-6 · 14-5): 제목 없이 카드 미리보기와 아래 버튼.
- * 공유는 시트를 열 때 한 번 만든다(화면을 여는 것만으로는 `POST /shares` 를 부르지 않는다). 열 때마다 처음 상태로 시작한다.
+ * 화면에 들어오면 그 카드를 미리 받아 두고(share-cache.ts), 시트를 열면 받아 둔 카드를 먼저 보이고 뒤에서 확인한다. 열 때마다 처음 상태로 시작한다.
  * trigger="icon" 이면 보조 버튼 대신 머리 오른쪽의 공유 아이콘으로 연다(내 별명 · 나 탭 · 오늘의/그날의 하늘 — 보드 12 · 12-8 · 11-6).
  */
 export function ShareEntry({ target, label = S.open, trigger = 'button' }: { target: ShareTarget; label?: string; trigger?: 'button' | 'icon' }) {
   const [visible, setVisible] = useState(false);
+  // 공유 아이콘이 있는 화면에 들어오면 그 카드를 미리 받아 둔다(같은 카드는 한 번 — 받아 둔 것이 있으면 묻지 않는다)
+  const prefetchKey = JSON.stringify(prefetchRequestOf(target));
+  useEffect(() => {
+    const request = JSON.parse(prefetchKey) as ShareRequest | null;
+    if (request) prefetchShare(request);
+  }, [prefetchKey]);
   /** 연 횟수. 열 때마다 시트의 내용을 새로 만든다 */
   const [opened, setOpened] = useState(0);
   const open = () => {

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { Linking, Platform, StyleSheet } from 'react-native';
 
@@ -5,6 +6,7 @@ import { Colors, Sizes } from '@/constants/theme';
 
 import { strings } from '@/content/strings';
 import { saveImage, shareStory } from '@/features/share/share-actions';
+import { resetShareRequests } from '@/features/share/share-cache';
 import { ShareEntry, type ShareTarget } from '@/features/share/share-entry';
 import * as story from '@/features/share/story';
 import * as webStory from '@/features/share/story.web';
@@ -38,7 +40,9 @@ const actionLabels = () =>
 /** 버튼의 바탕색(주 버튼은 주색, 보조는 채운 면) */
 const fillOf = (label: string) => StyleSheet.flatten(button(label).props.style).backgroundColor;
 
-beforeEach(() => {
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  resetShareRequests();
   jest.clearAllMocks();
   process.env.EXPO_PUBLIC_META_APP_ID = APP_ID;
   mockApi.createShare.mockImplementation(async (request: ShareRequest) => {
@@ -67,7 +71,7 @@ afterEach(() => {
 });
 
 describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 12-5 · 12-13 · 11-6 · 14-5)', () => {
-  it('열기 전에는 공유를 만들지 않고, 열면 카드 넷 각각을 한 번만 만들어 미리보기를 보여 준다', async () => {
+  it('화면에 들어오면(아이콘이 그려지면) 카드를 한 번 미리 받아 두고, 열면 카드 넷 각각의 미리보기를 보여 준다', async () => {
     const targets: [ShareTarget, ShareRequest, string][] = [
       [{ kind: 'NICKNAME' }, { kind: 'NICKNAME' }, C.nickname.headline],
       [{ kind: 'ME_AREA', area: 'WORK' }, { kind: 'ME_AREA', area: 'WORK' }, C.meArea.title],
@@ -77,15 +81,19 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     for (const [target, request, text] of targets) {
       jest.clearAllMocks();
       const view = await render(<ShareEntry target={target} trigger="icon" />);
+      // 미리 받기: 화면에 들어오면 한 번(다시 그려져도 더 묻지 않는다)
+      await waitFor(() => expect(mockApi.createShare).toHaveBeenCalledTimes(1));
+      expect(mockApi.createShare).toHaveBeenCalledWith(request);
+      await view.rerender(<ShareEntry target={target} trigger="icon" />);
       await act(async () => {});
-      expect(mockApi.createShare).not.toHaveBeenCalled();
+      expect(mockApi.createShare).toHaveBeenCalledTimes(1);
       await open();
       const card = await screen.findByTestId('share-card');
       expect(within(card).getByText(text)).toBeTruthy();
-      // 버튼을 눌러도 다시 만들지 않는다(시트를 열 때 한 번)
+      // 버튼을 눌러도 다시 만들지 않는다
+      const calls = mockApi.createShare.mock.calls.length;
       await fireEvent.press(button(S.actions.saveImage));
-      expect(mockApi.createShare).toHaveBeenCalledTimes(1);
-      expect(mockApi.createShare).toHaveBeenCalledWith(request);
+      expect(mockApi.createShare).toHaveBeenCalledTimes(calls);
       await view.unmount();
     }
   });
@@ -186,6 +194,36 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     expect(within(await screen.findByTestId('toast')).getByText(S.notices.storyFailed)).toBeTruthy();
   });
 
+  it('받아 둔 카드가 있으면 다시 열 때 서버를 기다리지 않고 바로 보여 주고, 뒤에서 확인해 바뀌었으면 바꾼다', async () => {
+    await render(<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />);
+    await open();
+    expect(within(await screen.findByTestId('share-card')).getByText(C.nickname.headline)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
+
+    // 다시 열 때 서버는 끝나지 않는다 — 그래도 카드가 바로 보이고 뼈대가 없다
+    let resolve: (v: { ok: true; data: { shareId: string; card: ShareCard } }) => void = () => {};
+    mockApi.createShare.mockImplementation(() => new Promise((r) => (resolve = r)));
+    await open();
+    const card = await screen.findByTestId('share-card');
+    expect(within(card).getByText(C.nickname.headline)).toBeTruthy();
+    expect(screen.queryByTestId('share-card-skeleton')).toBeNull();
+    // 뒤에서 받은 카드가 달라졌으면 바꾼다
+    await act(async () => resolve(made({ ...C.nickname, headline: '새로 지은 한 줄 별명' }, 'share-2')));
+    expect(await within(screen.getByTestId('share-card')).findByText('새로 지은 한 줄 별명')).toBeTruthy();
+  });
+
+  it('받아 둔 카드가 있는데 뒤에서 확인하다 연결이 끊기면 받아 둔 카드를 그대로 둔다', async () => {
+    await render(<ShareEntry target={{ kind: 'NEXT_BIG' }} trigger="icon" />);
+    await open();
+    await screen.findByTestId('share-card');
+    await fireEvent.press(screen.getByTestId('sheet-dim'));
+    mockApi.createShare.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await open();
+    await act(async () => {});
+    expect(within(screen.getByTestId('share-card')).getByText(C.nextBig.title)).toBeTruthy();
+    expect(screen.queryByText(S.failed.NETWORK)).toBeNull();
+  });
+
   it('카드를 기다리는 동안(0.3초가 넘으면) 미리보기 자리에 같은 크기 · 같은 줄 배치의 9:16 카드 뼈대(결정 065 의 2 · 071)', async () => {
     jest.useFakeTimers();
     try {
@@ -218,8 +256,9 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
       [{ kind: 'DAY_SKY', date: '2026-11-21' }, S.nothing.DAY_SKY],
       [{ kind: 'NEXT_BIG' }, S.nothing.NEXT_BIG],
     ];
+    // 미리 받기와 열 때 모두 404
+    mockApi.createShare.mockResolvedValue(notFound);
     for (const [target, text] of cases) {
-      mockApi.createShare.mockResolvedValueOnce(notFound);
       const view = await render(<ShareEntry target={target} />);
       await open();
       expect(await screen.findByText(text)).toBeTruthy();
@@ -230,14 +269,16 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
   });
 
   it('만들지 못하면 안내와 "다시 시도" 를 보여 주고, 버튼은 없다', async () => {
-    mockApi.createShare.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    // 미리 받기(조용히 실패)와 열 때 모두 끊김 — 받아 둔 카드가 없으니 안내
+    mockApi.createShare.mockResolvedValue({ ok: false, error: 'NETWORK' });
     await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
     expect(await screen.findByText(S.failed.NETWORK)).toBeTruthy();
     expect(actionLabels()).toEqual([]);
+    mockApi.createShare.mockResolvedValue(made(C.nickname));
     await fireEvent.press(screen.getByText(S.retry));
     expect(await screen.findByTestId('share-card')).toBeTruthy();
-    expect(mockApi.createShare).toHaveBeenCalledTimes(2);
+    expect(mockApi.createShare).toHaveBeenCalledTimes(3);
   });
 });
 

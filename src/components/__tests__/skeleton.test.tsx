@@ -16,7 +16,7 @@ const advance = (ms: number) =>
     jest.advanceTimersByTime(ms);
   });
 
-// 처음 불러올 때(보드 24 · 24-1, ADR 065 예정): 처음 0.3초는 아무것도 · 넘으면 뼈대 · 10초 넘으면 실패 화면으로
+// 처음 불러올 때(보드 24 · 24-1, 결정 065): 처음 0.3초는 아무것도 · 넘으면 뼈대 · 10초 넘으면 실패 화면으로
 describe('useLoadingPhase', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());

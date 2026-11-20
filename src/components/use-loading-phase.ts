@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * 처음 불러올 때의 단계(보드 24 · 24-1, ADR 065 예정).
+ * 처음 불러올 때의 단계(보드 24 · 24-1, 결정 065).
  * - blank: 불러오기를 시작하고 0.3초 전 — 아무것도 그리지 않는다(빨리 오면 뼈대가 번쩍이지 않게)
  * - skeleton: 0.3초가 넘었다 — 뼈대(components/skeleton.tsx)를 그린다
  * - timeout: 10초가 넘었다 — 화면은 실패 화면(보드 19, StateScreen)으로 바꾼다

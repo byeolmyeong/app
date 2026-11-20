@@ -135,7 +135,7 @@ last_reviewed: 2026-11-20
 - 할 것: 점검 화면을 `StateScreen`(버튼 없음)으로, 떠 있는 동안 60초마다 · 앞으로 돌아올 때 `GET /app-config`. 풀리면 사라진다.
 - 검증: 가짜 타이머로 60초 뒤 다시 부르는지 · 풀리면 사라지는지 테스트.
 
-- 추가분(시안 세션 67 요청 · 앱 ADR 065 예정) · 상태: 완료(`feat/common-states`): 9-1 별명을 짓지 못했어요(가입 직후 실패 → `StateScreen` · 다시 짓기) · 짧은 알림 `Toast` · `useToast`(보드 23 · 23-1) · 처음 불러올 때 뼈대 `Skeleton` · `SkeletonCard` · `useLoadingPhase`(보드 24 · 24-1 — 화면에 붙이는 것은 A② · A③ · A④).
+- 추가분(시안 세션 67 요청 · 앱 결정 065) · 상태: 완료(`feat/common-states`): 9-1 별명을 짓지 못했어요(가입 직후 실패 → `StateScreen` · 다시 짓기) · 짧은 알림 `Toast` · `useToast`(보드 23 · 23-1) · 처음 불러올 때 뼈대 `Skeleton` · `SkeletonCard` · `useLoadingPhase`(보드 24 · 24-1 — 화면에 붙이는 것은 A② · A③ · A④).
 
 #### A6-5. verify-a6 · 상태: 완료(PR 열림 · CI — 합침은 소유자 쪽, 실행 기록 아래)
 - 할 것: `/verify`, 웹에서 19 · 20 · 17 · 18 상태를 가짜 서버로 띄워 캔버스 보드와 나란히 스크린샷. PR → CI → 합침.
@@ -404,7 +404,7 @@ last_reviewed: 2026-11-20
 | A6-2 | 실패는 화면마다 글자 → 홈 · 요약 해석 · 리포트에 19(다시 보기) · 20(띠) · 20-1(다시 시도), 연결이 돌아오면 저절로 다시 부름(`useOnline` · netinfo) | 상태별 렌더 테스트 | bb96f0d · 25aefcd |
 | A6-3 | 막기 하나 → app-config `latestVersion`(옛 서버 null) · `shouldSuggestUpdate` · 공용 `Dialog` · 권유 창(로그인한 홈에서만, 같은 최신은 한 번 — `byeolmyeong-device.updateAsked.v1`) · 막는 화면을 `StateScreen` "새 버전이 나왔어요" · "업데이트" | 3 · 16 · 3 · 9+11 · 4 → api 219 · version 45 · dialog 3 · store 42 · gate 34 | bfac089 · 05b9dbb · cc986aa · b7a8731 · 45f041a · a18ece0(키) |
 | A6-4 | "다시 확인" 버튼 → 버튼 없음, 떠 있는 동안 60초마다 · 앞으로 돌아올 때 확인(503 이 부른 한 번으로는 안 풀림 유지) | 6 → maintenance-gate 18 | d690f02 |
-| 추가분(세션 67 · ADR 065 예정) | 9-1 별명을 짓지 못했어요 · `Toast`/`useToast` · `Skeleton`/`SkeletonCard`/`useLoadingPhase` | 2 · 7 · 5 → reading 30 · toast 7 · skeleton 5 | 27fe720 · 8102706 · cc066f2 · a69131e(테마 색 시험) |
+| 추가분(세션 67 · 결정 065) | 9-1 별명을 짓지 못했어요 · `Toast`/`useToast` · `Skeleton`/`SkeletonCard`/`useLoadingPhase` | 2 · 7 · 5 → reading 30 · toast 7 · skeleton 5 | 27fe720 · 8102706 · cc066f2 · a69131e(테마 색 시험) |
 | A6-5 | 웹 비교에서 점검(18)의 그림 · 글이 28px 아래 → 버튼이 없어도 주 버튼 자리를 비움 | 1 → state-screen 5 | 45e1105 |
 - 문서: bd8d580(구조 · 출시 문서 · 상태 줄) · 5e94c53(공용 부품 줄 · 추가분 한 줄).
 - 확인(이번 실행, A6-5): `npx tsc --noEmit && npx expo lint` exit 0 · `npm test` 89 묶음 1113 통과(A⑥ 전 86 · 1054) · `npx expo export --platform web` exit 0 · `npx expo-doctor` 20/20.
@@ -426,4 +426,4 @@ last_reviewed: 2026-11-20
   - 토스트는 감싼 것(탭 · 주 버튼) 기준 `bottom: 100%` + 12 로 띄운다(기기 확인은 A⑦ 에서).
   - jest 에 AsyncStorage 가짜를 전역으로 깔았다.
   - 토스트 · 뼈대 커밋 때 전체 시험을 돌리지 않아 테마 색 목록 시험을 놓쳤고 a69131e 로 고쳤다.
-- 남은 것: 20-1 을 탭 화면에서도 보드처럼 탭 없이 둘지(지금은 061 의 3 에 맞춰 탭을 남김) — 소유자 확인. ADR 065(토스트 · 뼈대) 쓰기. 17 · 17-1 · 권유 창 · 토스트 자리 실제 기기 확인(다음 개발 빌드).
+- 남은 것: 20-1 을 탭 화면에서도 보드처럼 탭 없이 둘지(지금은 061 의 3 에 맞춰 탭을 남김) — 소유자 확인. 결정 065(develop b147bd8 로 들어옴)와 토스트 · 뼈대 · 9-1 구현은 1 · 2 · 4 가 맞다. 17 · 17-1 · 권유 창 · 토스트 자리 실제 기기 확인(다음 개발 빌드).

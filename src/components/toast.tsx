@@ -10,7 +10,7 @@ export type ToastMessage = { kind: ToastKind; text: string };
 /** 알림이 뜨는 자리: 아래 탭 위(화면 좌우 20) · 아래 주 버튼 위(버튼 폭 그대로) */
 export type ToastAnchor = 'tabs' | 'button';
 
-/** 저절로 사라지기까지(ADR 065 예정): 성공 2초 · 실패 4초 */
+/** 저절로 사라지기까지(결정 065): 성공 2초 · 실패 4초 */
 const TOAST_MS: Record<ToastKind, number> = { success: 2000, error: 4000 };
 
 /** 두 아이콘이 함께 쓰는 선 모양(보드 23 · 23-1) */

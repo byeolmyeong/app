@@ -216,7 +216,7 @@ export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, ab
 export const DialogLayout = { inset: 28, paddingTop: 26, padding: 20, radius: 20, bodyTop: 8, actionsTop: 22, actionGap: 8, button: 50 } as const;
 
 /**
- * 짧은 알림(보드 23 · 23-1, ADR 065 예정): 화면 좌우 · 감싼 것(아래 탭 · 주 버튼)과의 사이 · 안 여백(세로 · 가로) · 모서리 ·
+ * 짧은 알림(보드 23 · 23-1, 결정 065): 화면 좌우 · 감싼 것(아래 탭 · 주 버튼)과의 사이 · 안 여백(세로 · 가로) · 모서리 ·
  * 아이콘(크기 · 선 굵기) · 아이콘과 글 사이 · 그림자
  */
 export const ToastLayout = {

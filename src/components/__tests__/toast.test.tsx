@@ -33,7 +33,7 @@ const advance = (ms: number) =>
     jest.advanceTimersByTime(ms);
   });
 
-// 짧은 알림(보드 23 · 23-1, ADR 065 예정)
+// 짧은 알림(보드 23 · 23-1, 결정 065)
 describe('Toast', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());

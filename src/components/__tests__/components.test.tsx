@@ -60,7 +60,7 @@ describe('테마', () => {
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'desc', 'emphasis', 'item', 'table', 'caption', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
+      'display', 'hero', 'title', 'kicker', 'stat', 'statLabel', 'headline', 'sheetTitle', 'heading', 'button', 'input', 'body', 'lead', 'desc', 'emphasis', 'clause', 'legal', 'item', 'table', 'caption', 'badge', 'captionStrong', 'note', 'label', 'micro', 'mono', 'number', 'picker', 'pickerOn',
     ]);
     // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 042 시안)
     expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
@@ -81,6 +81,16 @@ describe('테마', () => {
     expect(Radius).toBe(12);
     expect(SheetRadius).toBe(24);
     expect(Sizes).toMatchObject({ buttonHeight: 56, inputHeight: 52, maxContentWidth: 480 });
+  });
+});
+
+// 시안의 word-break: keep-all(결정 044 보드 6-2 문단 · 보드 10 별명): 한국어 낱말 중간에서 줄을 바꾸지 않는다
+describe('Txt keepAll', () => {
+  it('켜면 iOS 는 hangul-word 줄바꿈(웹은 CSS word-break: keep-all), 끄면 그대로', async () => {
+    await render(<Txt keepAll>낱말 단위로 줄을 바꾼다</Txt>);
+    expect(screen.getByText('낱말 단위로 줄을 바꾼다').props.lineBreakStrategyIOS).toBe('hangul-word');
+    await render(<Txt>보통 글</Txt>);
+    expect(screen.getByText('보통 글').props.lineBreakStrategyIOS).toBeUndefined();
   });
 });
 
@@ -201,6 +211,24 @@ describe('Sheet', () => {
       </Sheet>,
     );
     expect(screen.queryByText('시트 내용')).toBeNull();
+  });
+
+  it('끄는 영역은 내용을 덮지 않는다 — 제목이 있으면 제목 줄까지, 없으면 내용이 시작하는 위 여백까지(리뷰 2026-11-20)', async () => {
+    const top = () => StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).paddingTop;
+    const drag = () => StyleSheet.flatten(screen.getByTestId('sheet-drag').props.style).height;
+    const view = await render(
+      <Sheet visible onClose={() => {}}>
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    expect(drag()).toBeLessThanOrEqual(top());
+    await view.rerender(
+      <Sheet visible onClose={() => {}} title="제목">
+        <Txt>시트 내용</Txt>
+      </Sheet>,
+    );
+    // 위 여백 36 + 제목 줄 28 + 간격 16 = 내용이 시작하는 80
+    expect(drag()).toBeLessThanOrEqual(top() + 28 + 16);
   });
 
   it('바깥 어두운 곳을 누르면 onClose 를 부른다', async () => {

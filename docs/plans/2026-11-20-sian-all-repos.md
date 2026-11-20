@@ -81,12 +81,12 @@ last_reviewed: 2026-11-20
 - 하지 말 것: 코드를 섞지 않는다. 이유: 문서 PR 은 바로 합칠 수 있어야 한다.
 - 검증: 두 PR 의 CI 통과(`gh pr checks <번호>`) → 합침 → `git log origin/develop -1` 에 머지 커밋.
 
-#### P2. sky-map-pr · 상태: 대기
+#### P2. sky-map-pr · 상태: 완료(PR #39, develop `2858566`)
 - 읽을 것: 앱 로컬 `feat/sky-map`(내 하늘 지도 13 · 13-1 · 13-2, 계획 `docs/plans/2026-11-20-sky-map.md`)
 - 할 것: develop 위로 다시 올려(rebase) 충돌을 풀고 `/verify` → 푸시 → PR.
 - 검증: `npm test` · `npx tsc --noEmit && npx expo lint` 통과 · CI 통과 → 합침.
 
-#### P3. onboarding-v2-final · 상태: 대기
+#### P3. onboarding-v2-final · 상태: 진행(PR #37 — 실행 기록은 `docs/plans/2026-11-20-onboarding-v2.md`)
 - 읽을 것: PR #37(`feat/onboarding-v2`, 결정 044 · 045), 결정 055 의 5, 시안 온보딩 1(점 1/2) · 3(점 2/2) · 8-1(시트 제목 없음)
 - 할 것: 소개를 두 장(나 → 시기)으로, 궁합 장을 뺀다. 태어난 시각 시트의 제목을 뺀다(결정 056 의 9). 보드와 나란히 웹 스크린샷.
 - 하지 말 것: 044 · 045 의 나머지 동작을 바꾸지 않는다.

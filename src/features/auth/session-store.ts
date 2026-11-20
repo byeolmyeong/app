@@ -43,6 +43,8 @@ export type SessionStoreDeps = {
   deleteToken: () => Promise<void>;
   /** 요청에 붙일 토큰을 api 에 건넨다 */
   setApiToken: (token: string | null) => void;
+  /** 로그인에 성공한(처음 온 사람은 가입을 마친) 공급자를 기기에 적는다 — 로그인 화면의 "최근 로그인"(결정 044) */
+  saveLastProvider: (provider: ProviderCredential['provider']) => Promise<void>;
 };
 
 /** 로그인 한 번의 결과 */
@@ -60,6 +62,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
   let fetching: Promise<boolean> | null = null;
   /** 가입권. 메모리에만 둔다(30분 · 1회용) */
   let signupToken: string | null = null;
+  /** 가입권을 받은 로그인의 공급자. 가입을 마치면 "최근 로그인" 으로 적는다(결정 044) */
+  let signupProvider: ProviderCredential['provider'] | null = null;
   /** 보내는 중인 가입. 두 번 눌러도 같은 요청을 함께 쓴다(가입권은 한 번 쓰면 끝이라 둘째 응답이 첫째의 로그인을 지우지 않게) */
   let submitting: Promise<ApiResult<SignupResult>> | null = null;
 
@@ -81,12 +85,14 @@ export function createSessionStore(deps: SessionStoreDeps) {
   /** 서버가 준 세션으로 로그인 상태가 된다. 앱은 토큰을 보관한다(웹은 토큰이 없다) */
   async function signedIn(token: string | null) {
     signupToken = null;
+    signupProvider = null;
     if (token && !deps.cookieSession) await deps.saveToken(token);
     set('signedIn', deps.cookieSession ? null : token);
   }
 
   async function signedOut(lastError: string | null = null) {
     signupToken = null;
+    signupProvider = null;
     if (!deps.cookieSession) await deps.deleteToken();
     set('signedOut', null, lastError);
   }
@@ -149,10 +155,12 @@ export function createSessionStore(deps: SessionStoreDeps) {
       }
       if (r.data.status === 'SIGNUP_REQUIRED') {
         signupToken = r.data.signupToken;
+        signupProvider = credential.provider;
         set('signingUp', null);
         return 'signingUp';
       }
       await signedIn(r.data.token);
+      await deps.saveLastProvider(credential.provider);
       return 'signedIn';
     },
 
@@ -169,7 +177,9 @@ export function createSessionStore(deps: SessionStoreDeps) {
         if (!signupToken) return noTicket();
         const r = await deps.signup(signupToken, birth, extra);
         if (r.ok) {
+          const provider = signupProvider;
           await signedIn(r.data.token);
+          if (provider) await deps.saveLastProvider(provider);
           return r;
         }
         if (r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));

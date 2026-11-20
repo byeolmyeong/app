@@ -3,7 +3,7 @@ type: decision
 tags: [약관, 개인정보 처리방침, 마케팅 수신 동의, 앱 안 글, 랜딩, 문의 메일]
 status: active
 last_reviewed: 2026-11-19
-superseded_by:
+superseded_by: 045-privacy-consent.md (1 · 4 의 "세 글" 에 넷째 글 「개인정보 수집 · 이용 동의」(/settings/privacy-consent)가 더해진다. 나머지는 유효)
 ---
 # 043. 약관 · 처리방침 · 마케팅 수신 동의 약관은 앱 안에서 랜딩과 같은 글로 보여 준다
 

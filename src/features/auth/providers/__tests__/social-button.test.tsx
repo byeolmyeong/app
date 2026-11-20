@@ -1,16 +1,24 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
+import { strings } from '@/content/strings';
 import { SocialButton } from '@/features/auth/providers/social-button';
 
 const flat = (testID: string) => StyleSheet.flatten(screen.getByTestId(testID).props.style);
 
+// 로그인 버튼 문구(결정 044, 보드 5 · 5-1): 영문 이름 + "로 로그인" 으로 셋 통일 — 카카오 · 구글은 공급자 가이드 문구와 다르다
+describe('로그인 버튼 문구', () => {
+  it('셋 다 "○○로 로그인"', () => {
+    expect([strings.login.kakao, strings.login.apple, strings.login.google]).toEqual(['Kakao로 로그인', 'Apple로 로그인', 'Google로 로그인']);
+  });
+});
+
 // 공급자 버튼 한 모양(결정 042): 높이 48 · 모서리 12 · 로고 20×20 은 왼쪽 16 · 문구는 가운데 16px(애플만 HIG 43% 에서 벗어남)
 describe('공급자 버튼', () => {
   const cases = [
-    { provider: 'KAKAO', label: '카카오 로그인', background: '#FEE500', text: 'rgba(0,0,0,0.85)', border: 0 },
-    { provider: 'APPLE', label: 'Apple로 계속하기', background: '#FFFFFF', text: '#000000', border: 0 },
-    { provider: 'GOOGLE', label: 'Google로 계속하기', background: '#131314', text: '#E3E3E3', border: 1 },
+    { provider: 'KAKAO', label: 'Kakao로 로그인', background: '#FEE500', text: 'rgba(0,0,0,0.85)', border: 0 },
+    { provider: 'APPLE', label: 'Apple로 로그인', background: '#FFFFFF', text: '#000000', border: 0 },
+    { provider: 'GOOGLE', label: 'Google로 로그인', background: '#131314', text: '#E3E3E3', border: 1 },
   ] as const;
 
   it.each(cases)('$provider: 공급자 가이드의 바탕 · 문구 · 글자색, 로고는 바깥 왼쪽 16 에 20×20', async (c) => {
@@ -30,20 +38,49 @@ describe('공급자 버튼', () => {
   });
 
   it('문구는 로고와 상관없이 버튼 전체 폭의 가운데에 놓인다', async () => {
-    await render(<SocialButton provider="KAKAO" label="카카오 로그인" onPress={jest.fn()} />);
+    await render(<SocialButton provider="KAKAO" label="Kakao로 로그인" onPress={jest.fn()} />);
     expect(flat('social-button-KAKAO')).toMatchObject({ alignItems: 'center', justifyContent: 'center' });
   });
 
   it('누르면 onPress, 막혀 있으면 부르지 않는다', async () => {
     const onPress = jest.fn();
-    await render(<SocialButton provider="APPLE" label="Apple로 계속하기" onPress={onPress} />);
-    await fireEvent.press(screen.getByText('Apple로 계속하기'));
+    await render(<SocialButton provider="APPLE" label="Apple로 로그인" onPress={onPress} />);
+    await fireEvent.press(screen.getByText('Apple로 로그인'));
     expect(onPress).toHaveBeenCalledTimes(1);
 
     onPress.mockClear();
-    await render(<SocialButton provider="APPLE" label="Apple로 계속하기" onPress={onPress} disabled />);
-    await fireEvent.press(screen.getByText('Apple로 계속하기'));
+    await render(<SocialButton provider="APPLE" label="Apple로 로그인" onPress={onPress} disabled />);
+    await fireEvent.press(screen.getByText('Apple로 로그인'));
     expect(onPress).not.toHaveBeenCalled();
     expect(screen.getByRole('button').props.accessibilityState).toMatchObject({ disabled: true });
+  });
+});
+
+// 최근 로그인 배지(결정 044, 보드 5-2): 위 −10 · 오른쪽 12, 안쪽 3/9, 모서리 999, 주색 바탕, 바깥 2px 바탕색 고리, 글자 11/15 · 600
+describe('최근 로그인 배지', () => {
+  it('recent 면 버튼 오른쪽 위에 배지를 얹고 화면 읽기 이름에 "최근 로그인" 을 덧붙인다', async () => {
+    await render(<SocialButton provider="KAKAO" label="Kakao로 로그인" onPress={jest.fn()} recent />);
+    const badge = flat('recent-badge');
+    expect(badge).toMatchObject({
+      position: 'absolute',
+      top: -10,
+      right: 12,
+      paddingVertical: 3,
+      paddingHorizontal: 9,
+      borderRadius: 999,
+      backgroundColor: '#4752FF',
+      boxShadow: '0 0 0 2px #0D0E12',
+    });
+    const text = screen.getByText(strings.login.recent);
+    expect(strings.login.recent).toBe('최근 로그인');
+    expect(StyleSheet.flatten(text.props.style)).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '600', color: '#F2F3F7' });
+    expect(screen.getByRole('button').props.accessibilityLabel).toBe(`Kakao로 로그인, ${strings.login.recent}`);
+  });
+
+  it('recent 가 아니면 배지가 없고 화면 읽기 이름은 문구 그대로', async () => {
+    await render(<SocialButton provider="GOOGLE" label="Google로 로그인" onPress={jest.fn()} />);
+    expect(screen.queryByTestId('recent-badge')).toBeNull();
+    expect(screen.queryByText(strings.login.recent)).toBeNull();
+    expect(screen.getByRole('button').props.accessibilityLabel).toBe('Google로 로그인');
   });
 });

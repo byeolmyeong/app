@@ -210,8 +210,8 @@ export function BirthFields({ control: c }: { control: BirthFieldsControl }) {
         </Field>
       </View>
 
-      <Sheet visible={c.sheet === 'time'} onClose={() => c.setSheet(null)} title={S.timeSheetTitle} gap={Spacing.md}>
-        <View style={styles.timeBody}>
+      <Sheet visible={c.sheet === 'time'} onClose={() => c.setSheet(null)}>
+        <View testID="time-body" style={styles.timeBody}>
           <View style={styles.pickers}>
             <View pointerEvents="none" style={styles.band} />
             <ScrollPicker
@@ -261,7 +261,8 @@ const PICKER_HEIGHT = Sizes.pickerRow * Sizes.pickerRows;
 const styles = StyleSheet.create({
   fields: { gap: Spacing.lg },
   unknown: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xxs + Spacing.hairline },
-  timeBody: { gap: Spacing.md + Spacing.xxs },
+  /** 제목 없는 시트(결정 056 의 9 · 061 의 6): 시트 위 여백(32)에 더해, 시트 위 끝에서 드럼까지 시안 8-1 의 58 */
+  timeBody: { gap: Spacing.md + Spacing.xxs, marginTop: Sizes.pickerSheetTop - Spacing.xl },
   pickers: {
     height: PICKER_HEIGHT,
     flexDirection: 'row',

@@ -4,6 +4,10 @@ import { useSession } from '@/features/auth/use-session';
 import { api } from '@/lib/api';
 
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => null), setItemAsync: jest.fn() }));
+// 세션은 최근 로그인(결정 044)을 기기 저장소에 적는다
+jest.mock('@react-native-async-storage/async-storage', () =>
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
 jest.mock('@/lib/api', () => {
   // use-session 은 읽힐 때 환경 변수를 본다. 이 모듈이 그보다 먼저 읽히므로 여기서 개발용 세션을 켠다.
   process.env.EXPO_PUBLIC_DEV_SESSION = '1';

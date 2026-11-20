@@ -1,6 +1,6 @@
 /**
  * 로그인 화면(결정 009 · 034 · 042, 시안 보드 5 · 5-1). 위는 로고와 한 줄, 아래는 그 플랫폼 · 설정에서 쓸 수 있는 공급자 버튼만
- * 카카오 · 애플 · 구글 순서로(안드로이드는 애플 없음). 아래 안내 문구는 없다.
+ * 카카오 · 애플 · 구글 순서로(안드로이드는 애플 없음). 아래 안내 문구는 없다. 이 기기에서 마지막에 쓴 공급자 버튼에 "최근 로그인" 배지(결정 044, 보드 5-2).
  * 로그인하면 어디로 갈지는 루트 레이아웃의 가드가 정한다(계정이 있으면 홈, 처음 온 사람은 가입). 로그인 여부는 서버 응답만 따른다.
  */
 import { useEffect, useRef, useState } from 'react';
@@ -15,6 +15,7 @@ import { strings } from '@/content/strings';
 import { AppleLoginButton } from '@/features/auth/providers/apple';
 import { GoogleLoginButton } from '@/features/auth/providers/google';
 import { KakaoLoginButton } from '@/features/auth/providers/kakao';
+import { getLastProvider, type LoginProvider } from '@/features/auth/last-provider';
 import { clearDraft } from '@/features/auth/signup-draft';
 import { getSession, useAuth } from '@/features/auth/use-session';
 import type { ProviderCredential } from '@/lib/api';
@@ -42,10 +43,22 @@ export default function LoginScreen() {
   const { lastError, signIn, devSessionEnabled, devSignIn } = useAuth();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [recent, setRecent] = useState<LoginProvider | null>(null);
   const alerted = useRef(false);
 
   // 로그인 화면에 왔으면 하다 만 가입은 끝났다(가입 시간이 지남 · 만 14세 미만 · 그만둠) — 초안을 지워 다음 가입은 처음부터.
   useEffect(() => clearDraft(), []);
+
+  // 이 기기에서 마지막에 쓴 공급자(공급자 이름만, 결정 044). 읽지 못하면 배지 없이
+  useEffect(() => {
+    let alive = true;
+    void getLastProvider().then((provider) => {
+      if (alive) setRecent(provider);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // 카카오 웹은 다른 화면(/auth/kakao)에서 로그인하고 여기로 돌아온다 — 그 실패도 뜰 때 한 번 알린다.
   useEffect(() => {
@@ -85,9 +98,9 @@ export default function LoginScreen() {
             {message}
           </Txt>
         ) : null}
-        <KakaoLoginButton {...buttonProps} />
-        <AppleLoginButton {...buttonProps} />
-        <GoogleLoginButton {...buttonProps} />
+        <KakaoLoginButton {...buttonProps} recent={recent === 'KAKAO'} />
+        <AppleLoginButton {...buttonProps} recent={recent === 'APPLE'} />
+        <GoogleLoginButton {...buttonProps} recent={recent === 'GOOGLE'} />
         {devSessionEnabled ? <Button label={S.dev} variant="line" onPress={() => void devSignIn()} disabled={busy} /> : null}
       </View>
     </Screen>

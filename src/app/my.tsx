@@ -76,6 +76,7 @@ export default function MyScreen() {
         <SectionLabel>{M.info}</SectionLabel>
         <View>
           <ListRow label={S.privacy} onPress={() => router.push('/settings/privacy')} />
+          <ListRow label={S.privacyConsent} onPress={() => router.push('/settings/privacy-consent')} />
           <ListRow label={S.terms} onPress={() => router.push('/settings/terms')} />
           <ListRow label={S.version} value={Constants.expoConfig?.version ?? strings.common.none} />
         </View>

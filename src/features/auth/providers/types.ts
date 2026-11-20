@@ -10,4 +10,6 @@ export type LoginButtonProps = {
   /** 공급자 쪽에서 실패했다(사용자가 닫은 것은 빼고) */
   onError: () => void;
   disabled?: boolean;
+  /** 이 기기에서 마지막에 쓴 공급자다 — 버튼에 "최근 로그인" 배지를 얹는다(결정 044). 버튼을 그리지 않으면 배지도 없다 */
+  recent?: boolean;
 };

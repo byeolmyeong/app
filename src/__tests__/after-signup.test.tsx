@@ -102,6 +102,7 @@ function setupStore(over: Partial<SessionStoreDeps> = {}) {
       kept = null;
     }),
     setApiToken: jest.fn(),
+    saveLastProvider: jest.fn(async () => {}),
     ...over,
   } satisfies SessionStoreDeps;
   return { deps, store: createSessionStore(deps), kept: () => kept };

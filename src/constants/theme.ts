@@ -112,6 +112,26 @@ export const SocialButtonStyle = {
   },
 } as const;
 
+/** 로그인 버튼의 "최근 로그인" 배지(결정 044 시안 보드 5-2): 버튼 오른쪽 위에 걸치고, 바깥에 바탕색 고리를 둘러 버튼과 떼어 보인다 */
+export const RecentBadgeStyle = {
+  top: -10,
+  right: 12,
+  paddingVertical: 3,
+  paddingHorizontal: 9,
+  radius: 999,
+  ring: 2,
+} as const;
+
+/**
+ * 약관 글 화면(결정 044 시안 보드 6-2): 조항 제목과 문단 사이 · 동의하기 위의 사라지는 바탕(버튼 위 높이 ·
+ * 바탕색이 다 차는 자리 — 시안의 가림막 전체(위 40 · 버튼 56 · 아래 34) 높이에 대한 비율)
+ */
+export const LegalLayout = {
+  blockGap: 6,
+  agreeFade: 40,
+  agreeFadeSolid: 0.32,
+} as const;
+
 /** 가입 단계 화면(결정 042 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
 export const StepLayout = {
   progressHeight: 3,
@@ -146,19 +166,38 @@ export const AvatarColors = {
 
 /**
  * 브랜드 자리 바탕의 옅은 빛 모양(결정 042 시안의 radial-gradient): 사라지는 자리(가운데에서 가장 먼 모서리까지를 1) · 가운데 높이.
- * 소개는 장마다 가운데 높이가 다르다(셋째 장은 그림이 위로 올라간다).
+ * 소개는 장마다 가운데 높이가 다르다(둘째 장 — 시기 — 은 그림이 위로 올라간다).
  */
 export const BackdropShape = {
-  intro: { extent: 0.62, centerY: [0.5, 0.5, 0.44] },
+  intro: { extent: 0.62, centerY: [0.5, 0.44] },
   login: { extent: 0.6, centerY: 0.46 },
   making: { extent: 0.56, centerY: 0.42 },
+  reveal: { extent: 0.58, centerY: 0.26 },
 } as const;
 
-/** 소개 둘째 · 셋째 장 그림의 자리(결정 042 시안 보드 3 · 4) */
+/** 별명 공개의 자리(결정 044 시안 보드 10): 그림 칸(240×220) 안의 뒤 빛 · 별이 · 반짝임 넷, 글 · 칸의 사이 */
+export const RevealLayout = {
+  art: { width: 240, height: 220, top: 8 },
+  glow: { size: 180, left: 30, top: 20 },
+  byeoli: { size: 140, left: 50, top: 40 },
+  twinkles: [
+    { left: 18, top: 46, size: 4 },
+    { right: 16, top: 150, size: 3 },
+    { right: 40, top: 18, size: 3 },
+    { left: 52, bottom: 8, size: 3 },
+  ],
+  textTop: 20,
+  headlineTop: 12,
+  headlineInset: 8,
+  cellsTop: 28,
+  cell: 104,
+  cellGap: 12,
+  cellInnerGap: 2,
+} as const;
+
+/** 소개 둘째 장(시기) 그림의 자리(시안 온보딩 보드 3) */
 export const IntroArtLayout = {
-  card: { width: 136, height: 172, radius: 22, art: 120, heart: 96 },
-  moonCard: { width: 148, height: 184, moon: 100 },
-  pair: { width: 300, height: 240, top: 30, left: 22, right: 142 },
+  moonCard: { width: 148, height: 184, radius: 22, moon: 100 },
   /** 달 카드와 시기 줄 사이 · 시기 줄(선 · 점 · 글자 사이) */
   artGap: 36,
   timeline: { width: 300, height: 14, line: 2, dot: 10, now: 14, gap: 10 },
@@ -237,6 +276,10 @@ export const Typography = {
   hero: type(26, 36, FontWeight.semibold),
   /** 화면 제목, 구간 제목 */
   title: type(24, 34, FontWeight.semibold),
+  /** 별명 공개의 "○○ 님의 별명은" · 세 칸의 값 · 세 칸의 이름(결정 044 시안) */
+  kicker: type(15, 22, FontWeight.medium),
+  stat: type(16, 24, FontWeight.semibold),
+  statLabel: type(12, 17, FontWeight.regular),
   /** 별명 짓는 중의 제목(결정 042 시안) */
   headline: type(22, 32, FontWeight.semibold),
   /** 하단 시트의 가운데 제목(결정 042 시안) */
@@ -253,21 +296,27 @@ export const Typography = {
   lead: type(15, 23, FontWeight.regular),
   /** 시트 안의 한 줄 뜻(내 하늘 지도 시트, 시안 13-1) */
   desc: type(14, 21, FontWeight.regular),
-  /** 약관의 "모두 동의"(결정 042 시안) */
+  /** 약관의 "모두 동의"(결정 042 시안) · 약관 글 화면의 머리 제목(결정 044 시안) */
   emphasis: type(17, 24, FontWeight.semibold),
+  /** 약관 글의 조항 제목(결정 044 시안) */
+  clause: type(15, 22, FontWeight.semibold),
+  /** 약관 글의 문단 · 목록 · 표(결정 044 시안) */
+  legal: type(14, 22, FontWeight.regular),
   /** 약관 항목 한 줄 */
   item: type(15, 22, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
   /** 입력칸 아래 도움말 · 오류, "보기"(결정 042 시안) */
   caption: type(13, 18, FontWeight.regular),
+  /** 로그인 버튼의 "최근 로그인" 배지(결정 044 시안) */
+  badge: type(11, 15, FontWeight.semibold),
   /** 입력칸 이름 · "모름"(결정 042 시안) */
   captionStrong: type(13, 18, FontWeight.medium),
   /** 약관의 마케팅 설명처럼 두 줄이 되는 작은 안내 */
   note: type(13, 19, FontWeight.regular),
   /** 도움말, 오류, 작은 라벨 */
   label: type(12, 17, FontWeight.medium),
-  /** 소개 셋째 장의 시기 줄 글자(결정 042 시안) */
+  /** 소개 둘째 장(시기)의 시기 줄 글자(결정 042 시안) */
   micro: type(12, 16, FontWeight.medium),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
   mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
@@ -367,6 +416,8 @@ export const Sizes = {
   handleHeight: 4,
   sheetTitleTop: 36,
   sheetBackIcon: 22,
+  /** 드럼 시트(태어난 시각 · 받는 시간)의 위 끝에서 드럼 위 끝까지(시안 8-1 · 16-3: 위 10 + 손잡이 4 + 28 + 16) */
+  pickerSheetTop: 58,
   /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
   pickerRow: 44,
   pickerRows: 5,

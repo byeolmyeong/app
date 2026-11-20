@@ -26,6 +26,7 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
       kept = null;
     }),
     setApiToken: jest.fn(),
+    saveLastProvider: jest.fn(async () => {}),
     ...overrides,
   } satisfies SessionStoreDeps;
   return { deps, store: createSessionStore(deps), kept: () => kept };
@@ -310,5 +311,51 @@ describe('로그인 · 가입 · 로그아웃', () => {
     expect(kept()).toBeNull();
     expect(store.getSnapshot()).toMatchObject({ status: 'signedOut', token: null });
     expect(listener).toHaveBeenCalled();
+  });
+});
+
+// 최근 로그인(결정 044): 로그인에 성공하면(처음 온 사람은 가입을 마치면) 그 공급자 이름을 적는다
+describe('마지막에 쓴 공급자 적기', () => {
+  const kakao = { provider: 'KAKAO' as const, idToken: 'k' };
+  const signupRequired = () => jest.fn(async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' }));
+
+  it('계정이 있어 로그인하면 그 공급자를 적는다', async () => {
+    const { deps, store } = setup();
+    await store.start();
+    await store.signIn(kakao);
+    expect(deps.saveLastProvider).toHaveBeenCalledWith('KAKAO');
+  });
+
+  it('처음 온 사람은 가입을 마칠 때 적는다 — 가입 중에 그만두거나 가입이 실패하면 적지 않는다', async () => {
+    const done = setup({ login: signupRequired() });
+    await done.store.start();
+    await done.store.signIn(kakao);
+    expect(done.deps.saveLastProvider).not.toHaveBeenCalled();
+    await done.store.completeSignup(signupInput);
+    expect(done.deps.saveLastProvider).toHaveBeenCalledWith('KAKAO');
+
+    const quit = setup({ login: signupRequired() });
+    await quit.store.start();
+    await quit.store.signIn(kakao);
+    await quit.store.cancelSignup();
+    expect(quit.deps.saveLastProvider).not.toHaveBeenCalled();
+
+    const rejected = setup({ login: signupRequired(), signup: jest.fn(async () => fail('SERVER', 400, 'NICKNAME_TAKEN')) });
+    await rejected.store.start();
+    await rejected.store.signIn(google);
+    await rejected.store.completeSignup(signupInput);
+    expect(rejected.deps.saveLastProvider).not.toHaveBeenCalled();
+  });
+
+  it('로그인에 실패하거나 개발용 세션으로 들어가면 적지 않는다', async () => {
+    const failed = setup({ login: jest.fn(async () => fail('LOGIN_REQUIRED', 401, 'INVALID_ID_TOKEN')) });
+    await failed.store.start();
+    await failed.store.signIn(google);
+    expect(failed.deps.saveLastProvider).not.toHaveBeenCalled();
+
+    const dev = setup({ devSession: true });
+    await dev.store.start();
+    await dev.store.devSignIn();
+    expect(dev.deps.saveLastProvider).not.toHaveBeenCalled();
   });
 });

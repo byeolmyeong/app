@@ -3,6 +3,7 @@
  * **메모리에만** 둔다 — 기기 저장소 · 로그 · 분석에 두지 않는다(닉네임은 개인정보). 앱을 껐다 켜면 비어 있고, 가입을 그만두거나 마치면 지운다.
  */
 import type { AvatarId } from '@/components/avatar';
+import { LEGAL_VERSIONS } from '@/content/legal-versions';
 
 export type SignupDraft = {
   termsVersion: string;
@@ -28,10 +29,65 @@ export function getDraft(): SignupDraft | null {
   return { ...draft, termsVersion, privacyVersion, pushConsent, marketingConsent };
 }
 
+/** 약관 단계의 체크 넷(결정 042) */
+export type Agreements = { terms: boolean; privacy: boolean; push: boolean; marketing: boolean };
+
+/** 초안의 동의를 하나씩 읽는다. 이용약관 · 처리방침은 그 버전이 있으면 켜짐이다(하나만 켠 것도 남는다 — 약관 보기에서 돌아올 때) */
+export function draftAgreements(): Agreements {
+  return {
+    terms: draft.termsVersion !== undefined,
+    privacy: draft.privacyVersion !== undefined,
+    push: draft.pushConsent ?? false,
+    marketing: draft.marketingConsent ?? false,
+  };
+}
+
+/**
+ * 약관 단계의 체크를 초안에 쓴다. 켠 약관 · 처리방침은 지금 버전을, 끈 것은 버전을 지운다 —
+ * 필수 하나라도 꺼지면 `getDraft()` 가 null 이라 다음 단계들이 약관 단계로 돌려보낸다.
+ */
+export function writeAgreements(a: Agreements): void {
+  setDraft({
+    termsVersion: a.terms ? LEGAL_VERSIONS.terms : undefined,
+    privacyVersion: a.privacy ? LEGAL_VERSIONS.privacy : undefined,
+    pushConsent: a.push,
+    marketingConsent: a.marketing,
+  });
+}
+
+/** 약관 보기(보드 6-2)의 "동의하기" 가 켜는 항목 */
+export type AgreeItem = 'terms' | 'privacy' | 'marketing';
+
+/** 약관 보기에서 동의했다: 그 항목만 켜고 나머지는 그대로 둔다(결정 044) */
+export function agreeInDraft(item: AgreeItem): void {
+  writeAgreements({ ...draftAgreements(), [item]: true });
+}
+
 export function clearDraft(): void {
   draft = {};
   rejection = null;
   termsRejected = false;
+  signedUp = null;
+}
+
+/** 방금 가입을 마친 사람의 닉네임(서버가 `POST /auth/signup` 으로 받은 값). 별명 공개(보드 10)가 한 번 쓴다 — 메모리에만(결정 044) */
+let signedUp: string | null = null;
+
+/** 가입을 마쳤다: 초안을 비우고 닉네임만 별명 공개를 위해 메모리에 남긴다 */
+export function finishDraft(): void {
+  const nickname = draft.nickname ?? null;
+  clearDraft();
+  signedUp = nickname;
+}
+
+/** 방금 가입한 사람의 닉네임. 가입 직후가 아니면(앱을 다시 켬 · 웹 새로 고침 · 이미 공개함) null */
+export function signedUpNickname(): string | null {
+  return signedUp;
+}
+
+/** 별명 공개를 마쳤다(풀이 읽기) — 다시 열면 풀이 글로 바로 */
+export function clearSignedUp(): void {
+  signedUp = null;
 }
 
 /** 마지막 단계에서 서버가 닉네임을 거절한 이유. 닉네임 단계로 돌아가 한 번 보여 준다 */

@@ -1,21 +1,26 @@
 /**
- * 공급자 로그인 버튼 한 모양(결정 042). 카카오 · 애플 · 구글 가이드의 바탕 · 문구 · 로고를 그대로 쓰고, 셋을 같은 줄에 맞춘다:
+ * 공급자 로그인 버튼 한 모양(결정 042). 카카오 · 애플 · 구글 가이드의 바탕 · 로고를 그대로 쓰고(문구는 셋 다 "○○로 로그인", 결정 044), 셋을 같은 줄에 맞춘다:
  * 높이 48 · 모서리 12, 로고 칸 20×20 은 바깥 왼쪽 16 에 고정, 문구는 버튼 전체 폭의 가운데 16px · 500.
  * 애플만 HIG 의 "제목 = 높이의 43%" 에서 벗어난다(소유자가 16px 통일을 골랐다). 심사에서 지적받으면 애플 글자만 되돌린다.
+ * 이 기기에서 마지막에 쓴 공급자면 오른쪽 위에 "최근 로그인" 배지를 얹는다(결정 044, 보드 5-2).
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { LineWidth, SocialButtonStyle as B } from '@/constants/theme';
+import { Txt } from '@/components/txt';
+import { Colors, LineWidth, RecentBadgeStyle as R, SocialButtonStyle as B } from '@/constants/theme';
+import { strings } from '@/content/strings';
 
 export type SocialProvider = 'KAKAO' | 'APPLE' | 'GOOGLE';
 
 export type SocialButtonProps = {
   provider: SocialProvider;
-  /** 공급자 가이드의 문구(strings.login) */
+  /** 버튼 문구(strings.login, 결정 044) */
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  /** 이 기기에서 마지막에 쓴 공급자(결정 044) */
+  recent?: boolean;
 };
 
 /** 카카오 공식 리소스의 말풍선 심볼 */
@@ -57,13 +62,26 @@ function GoogleLogo() {
 
 const LOGOS = { KAKAO: KakaoSymbol, APPLE: AppleLogo, GOOGLE: GoogleLogo } as const;
 
-export function SocialButton({ provider, label, onPress, disabled = false }: SocialButtonProps) {
+/** "최근 로그인" 배지. 놓을 칸(position: relative)의 오른쪽 위에 걸친다. 웹 구글(GIS)은 버튼을 감싼 칸에 얹는다 */
+export function RecentBadge() {
+  return (
+    <View testID="recent-badge" pointerEvents="none" style={styles.badge}>
+      <Txt variant="badge">{strings.login.recent}</Txt>
+    </View>
+  );
+}
+
+/** 화면 읽기 이름: 최근이면 ", 최근 로그인" 을 덧붙인다 */
+const socialLabel = (label: string, recent: boolean) =>
+  recent ? `${label}${strings.login.recentSeparator}${strings.login.recent}` : label;
+
+export function SocialButton({ provider, label, onPress, disabled = false, recent = false }: SocialButtonProps) {
   const Logo = LOGOS[provider];
   return (
     <Pressable
       testID={`social-button-${provider}`}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={socialLabel(label, recent)}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
@@ -72,6 +90,7 @@ export function SocialButton({ provider, label, onPress, disabled = false }: Soc
         <Logo />
       </View>
       <Text style={[styles.text, text[provider]]}>{label}</Text>
+      {recent ? <RecentBadge /> : null}
     </Pressable>
   );
 }
@@ -100,6 +119,16 @@ const styles = StyleSheet.create({
   /** 테두리(1) 안쪽에서 재므로 한 칸 덜 들어가야 바깥 기준 16 · 가운데가 된다 */
   logoInBorder: { left: B.logoInset - LineWidth, top: (B.height - B.logo) / 2 - LineWidth },
   text: { ...B.text },
+  badge: {
+    position: 'absolute',
+    top: R.top,
+    right: R.right,
+    paddingVertical: R.paddingVertical,
+    paddingHorizontal: R.paddingHorizontal,
+    borderRadius: R.radius,
+    backgroundColor: Colors.primary,
+    boxShadow: `0 0 0 ${R.ring}px ${Colors.paper}`,
+  },
 });
 
 const text = StyleSheet.create({

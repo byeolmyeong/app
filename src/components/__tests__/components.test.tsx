@@ -39,6 +39,7 @@ describe('테마', () => {
       accentText: '#9AA3FF',
       primarySoft: '#1D2050',
       danger: '#E5484D',
+      dangerSoft: '#FF8A8A',
     });
   });
 

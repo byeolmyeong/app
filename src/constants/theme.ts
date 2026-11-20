@@ -46,6 +46,8 @@ export const Colors = {
   primarySoft: '#1D2050',
   /** 오류 · 삭제. 대비 4.9, 그 위 ink 3.5 */
   danger: '#E5484D',
+  /** 연결 끊김 아이콘의 빗금(보드 20) */
+  dangerSoft: '#FF8A8A',
 } as const;
 
 export type ColorName = keyof typeof Colors;
@@ -201,6 +203,12 @@ export const IntroArtLayout = {
   artGap: 36,
   timeline: { width: 300, height: 14, line: 2, dot: 10, now: 14, gap: 10 },
 } as const;
+
+/** 공통 상태 화면(결정 061, 보드 19 · 20-1 · 17-1 · 점검): 그림 아래 제목 · 그 아래 설명 · 가운데 덩이를 위로 올림 · 주 버튼 아래(탭 없음 · 탭 위) */
+export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, aboveTabs: 16, laterGap: 12 } as const;
+
+/** 연결 끊김 띠(결정 061 의 4, 보드 20) */
+export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, icon: 20, gap: 10 } as const;
 
 /** 홈 별명 카드(결정 047, 보드 11 · 11-1): 모서리 · 안 여백 · 프로필 그림 · 그림과 이름 사이 · 위와의 사이 · 빛 · 뒤의 별자리 그림 */
 export const NicknameCardLayout = {

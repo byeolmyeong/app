@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import TodayScreen from '@/app/today';
@@ -19,7 +19,7 @@ jest.mock('@/features/auth/use-session', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { postDaySky: jest.fn(), saveProfile: jest.fn() },
+  api: { postDaySky: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
@@ -58,9 +58,22 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     expect(screen.getAllByTestId('day-flow')).toHaveLength(3);
     expect(screen.getByText(/^오늘 /)).toBeTruthy();
     for (const p of sky.practices) expect(screen.getByText(p.title)).toBeTruthy();
-    expect(screen.getByTestId('today-share-spot')).toBeTruthy();
+    // 머리 오른쪽의 공유 아이콘(결정 053) — 여는 것만으로는 공유를 만들지 않는다
+    expect(screen.getByRole('button', { name: strings.share.open })).toBeTruthy();
+    expect(mockApi.createShare).not.toHaveBeenCalled();
     expect(screen.getAllByRole('tab')).toHaveLength(4);
     expect(screen.queryByText(/재미|참고/)).toBeNull();
+  });
+
+  it('공유 아이콘을 누르면 오늘의 하늘 카드 시트(제목 없음) — 열 때 받은 글의 날짜로 한 번 만든다(결정 053, 보드 11-6 · 11-7)', async () => {
+    mockApi.createShare.mockResolvedValue({ ok: true, data: { shareId: 's1', card: { ...fixtures.shareCards.daySky, date: sky.date } } });
+    await render(<TodayScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: strings.share.open }));
+    const panel = await screen.findByTestId('sheet-panel');
+    expect(await within(panel).findByTestId('share-card')).toBeTruthy();
+    expect(within(panel).queryByText(strings.share.open)).toBeNull();
+    expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+    expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'DAY_SKY', date: '2026-11-19' });
   });
 
   it('기기에 둔 오늘 것을 바로 그리고 서버를 부르지 않는다', async () => {

@@ -23,7 +23,7 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     requestMeReport: jest.fn(),
     getMeReport: jest.fn(),
-    getAccount: jest.fn(),
+    getMyAccount: jest.fn(),
     createShare: jest.fn(() => new Promise(() => {})),
   },
 }));
@@ -100,7 +100,7 @@ beforeEach(async () => {
   (useLocalSearchParams as jest.Mock).mockReturnValue({});
   mockApi.createReading.mockResolvedValue({ ok: true, data: boardReading });
   mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
-  mockApi.getAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
+  mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   await saveBirth({ profile, chart: fixtures.chart });
 });
 

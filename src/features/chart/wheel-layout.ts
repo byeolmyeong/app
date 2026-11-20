@@ -1,7 +1,7 @@
 /**
  * 차트 휠의 화면 좌표. 서버가 준 `Chart` 의 값을 어디에 그릴지만 정한다.
  * 별자리·하우스·각도를 여기서 계산하지 않는다(docs/decisions/006-server-side-chart.md). 각도는 서버가 준 `longitude` 를 쓴다.
- * 구조는 시안 docs/design/screens-1.0.0.html 의 wheel() 을 옮겼다.
+ * 내 하늘 지도의 휠(`wheelLayout`)은 시안 13(320 기준)의 고리 · 점 · 글자 자리를 옮겼다. 겹친 휠(궁합)은 아래의 공용 함수만 쓴다.
  */
 import type { Chart } from '@/lib/api';
 
@@ -27,7 +27,34 @@ const SOFT = ['TRINE', 'SEXTILE'];
 /** 이 각도(도) 안으로 붙은 천체는 이름을 한 단씩 안쪽으로 민다 */
 const CROWD_DEGREES = 7;
 
+/** 겹친 휠(궁합)의 그림 크기 */
 export const WHEEL_SIZE = 300;
+/** 내 하늘 지도 휠의 그림 크기(시안 13). 아래 [SKY] 의 값은 이 크기에서의 값이다 */
+export const SKY_WHEEL_SIZE = 320;
+
+/** 시안 13 의 휠(지름 320): 고리의 반지름 · 점과 이름의 자리 · 글자 크기 */
+const SKY = {
+  rOuter: 152,
+  rSign: 124,
+  rInner: 60,
+  /** 별 점이 놓이는 원 · 이름이 놓이는 원 · 붙은 별의 이름을 한 단 안으로 미는 거리 */
+  rDot: 108,
+  rLabel: 90,
+  liftStep: 12,
+  /** 하우스 번호가 놓이는 원 */
+  rHouseNumber: 70,
+  /** 축 이름이 놓이는 원: 첫인상(세 글자, 가로) · 꿈(한 글자) */
+  rAscLabel: 38,
+  rMcLabel: 44,
+  dot: 3.5,
+  selectedDot: 5,
+  halo: 10,
+  label: 10,
+  selectedLabel: 11,
+  sign: 9,
+  house: 8,
+  axis: 9,
+} as const;
 
 type Pt = { x: number; y: number };
 type Line = { x1: number; y1: number; x2: number; y2: number };
@@ -39,14 +66,22 @@ export type WheelLayout = {
   rSign: number;
   rInner: number;
   dotRadius: number;
+  selectedDotRadius: number;
+  haloRadius: number;
   labelFontSize: number;
+  selectedLabelFontSize: number;
   signFontSize: number;
   houseFontSize: number;
+  axisFontSize: number;
+  /** 별자리 칸의 경계선(별자리 고리 안) · 이름 자리 */
   signs: { sign: string; line: Line; label: Pt }[];
-  ticks: Line[];
-  houseLines: (Line & { main: boolean })[];
+  /** 서버가 준 하우스 경계 12개: 가운데 원에서 별자리 고리까지. 시각 "모름" 이면 없다 */
+  houseLines: Line[];
   houseNumbers: (Pt & { n: number })[];
-  aspectLines: (Line & { dashed: boolean })[];
+  /** 하우스 칸(경계에서 다음 경계까지, 가운데 원과 별자리 고리 사이)의 SVG 경로. 고른 별의 칸을 칠한다 */
+  houseSectors: { n: number; path: string }[];
+  /** 첫인상(상승점) · 꿈(중천)의 축: 가운데 원에서 바깥 원까지, 이름은 가운데 원 안. 시각 "모름" 이면 없다 */
+  axes: { key: 'ASC' | 'MC'; line: Line; label: Pt }[];
   bodies: { body: string; dot: Pt; label: Pt; lift: number }[];
 };
 
@@ -111,55 +146,57 @@ export function liftCrowded(list: { body: string; lon: number }[]): { body: stri
   return lifted;
 }
 
-export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayout {
+/** 두 반지름 사이에서 황경 from 부터 to 까지(황경이 느는 쪽, 화면에서는 시계 반대 방향)의 칸 모양 */
+function sectorPath({ at }: ReturnType<typeof wheelPolar>, from: number, to: number, rIn: number, rOut: number) {
+  const span = (to - from + 360) % 360;
+  const large = span > 180 ? 1 : 0;
+  const p = (pt: Pt) => `${pt.x.toFixed(2)},${pt.y.toFixed(2)}`;
+  return (
+    `M${p(at(from, rOut))} A${rOut} ${rOut} 0 ${large} 0 ${p(at(to, rOut))} ` +
+    `L${p(at(to, rIn))} A${rIn} ${rIn} 0 ${large} 1 ${p(at(from, rIn))} Z`
+  );
+}
+
+/** 내 하늘 지도의 휠(시안 13). 각도 선과 눈금은 없다. 시각 "모름" 이면 하우스와 축이 없고 양자리 0도가 왼쪽이다 */
+export function wheelLayout(chart: Chart, size: number = SKY_WHEEL_SIZE): WheelLayout {
+  const u = size / SKY_WHEEL_SIZE;
   const center = size / 2;
-  const rOuter = center - 1;
-  const rSign = rOuter * 0.84;
-  const rInner = rOuter * 0.5;
+  const rOuter = SKY.rOuter * u;
+  const rSign = SKY.rSign * u;
+  const rInner = SKY.rInner * u;
   // 시각을 알 때만 상승점을 왼쪽 끝에 둔다. 모르면 양자리 0도가 왼쪽이다.
   const showHouses = chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
   const asc = showHouses && chart.angles ? chart.angles.asc.longitude : 0;
 
   const polar = wheelPolar(center, asc);
   const { at, line } = polar;
-  const { signs, ticks } = ringMarks(polar, rSign, rOuter, size);
+  const { signs } = ringMarks(polar, rSign, rOuter, size);
 
   const houseLines: WheelLayout['houseLines'] = [];
   const houseNumbers: WheelLayout['houseNumbers'] = [];
-  if (showHouses && chart.houses) {
+  const houseSectors: WheelLayout['houseSectors'] = [];
+  const axes: WheelLayout['axes'] = [];
+  if (showHouses && chart.houses && chart.angles) {
     const cusps = chart.houses.map((h) => h.longitude);
     cusps.forEach((cusp, i) => {
       const next = cusps[(i + 1) % cusps.length];
-      const main = i % 3 === 0;
-      houseLines.push({ ...line(cusp, main ? 0 : rInner, rSign), main });
+      houseLines.push(line(cusp, rInner, rSign));
       const middle = cusp + ((next - cusp + 360) % 360) / 2;
-      houseNumbers.push({ ...at(middle, rInner + size * 0.03), n: i + 1 });
+      houseNumbers.push({ ...at(middle, SKY.rHouseNumber * u), n: i + 1 });
+      houseSectors.push({ n: i + 1, path: sectorPath(polar, cusp, next, rInner, rSign) });
     });
+    axes.push(
+      { key: 'ASC', line: line(chart.angles.asc.longitude, rInner, rOuter), label: at(chart.angles.asc.longitude, SKY.rAscLabel * u) },
+      { key: 'MC', line: line(chart.angles.mc.longitude, rInner, rOuter), label: at(chart.angles.mc.longitude, SKY.rMcLabel * u) },
+    );
   }
 
-  const longitudes = new Map<string, number>();
-  for (const p of chart.positions) longitudes.set(p.body, p.longitude);
-  for (const p of chart.points) longitudes.set(p.point, p.longitude);
-
-  const aspectLines: WheelLayout['aspectLines'] = [];
-  for (const aspect of chart.aspects) {
-    const dashed = aspectDashed(aspect.type);
-    if (dashed === null) continue; // 합과 모르는 종류는 선을 긋지 않는다
-    const a = longitudes.get(aspect.a);
-    const b = longitudes.get(aspect.b);
-    if (a === undefined || b === undefined) continue;
-    const from = at(a, rInner);
-    const to = at(b, rInner);
-    aspectLines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, dashed });
-  }
-
-  const rDot = rSign - size * 0.045;
   const bodies: WheelLayout['bodies'] = liftCrowded(
     chart.positions.map((p) => ({ body: p.body, lon: p.longitude })),
   ).map((p) => ({
     body: p.body,
-    dot: at(p.lon, rDot),
-    label: at(p.lon, rDot - size * 0.048 - p.lift * size * 0.042),
+    dot: at(p.lon, SKY.rDot * u),
+    label: at(p.lon, (SKY.rLabel - p.lift * SKY.liftStep) * u),
     lift: p.lift,
   }));
 
@@ -169,15 +206,19 @@ export function wheelLayout(chart: Chart, size: number = WHEEL_SIZE): WheelLayou
     rOuter,
     rSign,
     rInner,
-    dotRadius: size * 0.013,
-    labelFontSize: size * 0.034,
-    signFontSize: size * 0.034,
-    houseFontSize: size * 0.028,
+    dotRadius: SKY.dot * u,
+    selectedDotRadius: SKY.selectedDot * u,
+    haloRadius: SKY.halo * u,
+    labelFontSize: SKY.label * u,
+    selectedLabelFontSize: SKY.selectedLabel * u,
+    signFontSize: SKY.sign * u,
+    houseFontSize: SKY.house * u,
+    axisFontSize: SKY.axis * u,
     signs,
-    ticks,
     houseLines,
     houseNumbers,
-    aspectLines,
+    houseSectors,
+    axes,
     bodies,
   };
 }

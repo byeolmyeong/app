@@ -41,7 +41,7 @@ export default function ChartScreen() {
       <Txt variant="table" color="gray">
         {S.wheelCaption}
       </Txt>
-      <ChartWheel chart={chart} />
+      <ChartWheel chart={chart} selected={null} />
       <SectionHead title={S.keyThreeHeading}>
         {/* 시각을 모르면 상승점(첫인상)을 보여 주지 않으므로 설명에서도 뺀다 */}
         <InfoButton

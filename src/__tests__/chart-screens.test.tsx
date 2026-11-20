@@ -349,7 +349,7 @@ describe('차트', () => {
     expect(await screen.findByText(strings.chart.keySun)).toBeTruthy();
     expect(screen.queryByText(strings.chart.keyAsc)).toBeNull();
     expect(screen.queryAllByTestId('wheel-house-line')).toHaveLength(0);
-    expect(screen.queryAllByTestId('wheel-house-number')).toHaveLength(0);
+    expect(screen.queryAllByTestId(/^wheel-house-number-/)).toHaveLength(0);
     expect(screen.getAllByTestId('wheel-body-dot')).toHaveLength(10);
     expect(screen.getByText(strings.chart.timeUnknownNote)).toBeTruthy();
   });

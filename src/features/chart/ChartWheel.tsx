@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Polygon, Text as SvgText } from 'react-native-svg';
 
 import { Colors, FontFamily, FontWeight, Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -9,7 +9,11 @@ import type { Chart } from '@/lib/api';
 
 const label = (map: Record<string, string>, key: string) => map[key] ?? key;
 
-export type ChartWheelProps = { chart: Chart };
+export type ChartWheelProps = {
+  chart: Chart;
+  /** 고른 별: 천체 식별자 · 'ASC' · 'MC'. 없으면 null */
+  selected: string | null;
+};
 
 /** (cx, cy) 를 가운데로 하는 다섯 꼭지 별의 꼭짓점. r 은 바깥 꼭지까지의 거리다. */
 const starPoints = (cx: number, cy: number, r: number) =>
@@ -88,84 +92,128 @@ export function ChartPicture({ chart, size, named = true }: ChartPictureProps) {
   );
 }
 
+/** 고른 별의 빛무리 · 고른 별이 있던 하우스 칸을 칠하는 주색의 진하기(시안 13) */
+const HALO_OPACITY = 0.25;
+const SECTOR_OPACITY = 0.16;
+
 /**
- * 출생 차트 휠. 서버가 준 `Chart` 만 그린다.
- * 별자리 고리 · 눈금 · 하우스 선과 번호 · 각도 선(조화 실선, 긴장 점선) · 천체 점과 이름.
- * 시각 "모름" 차트는 하우스 선과 번호 없이 그린다.
+ * 내 하늘 지도의 휠(시안 13). 서버가 준 `Chart` 만 그린다.
+ * 별자리 고리 · 하우스 선과 번호 · 첫인상(상승점)과 꿈(중천)의 축 · 별 점과 짧은 이름. 각도 선은 긋지 않는다.
+ * 고른 별(`selected`: 천체 · ASC · MC)은 주색으로 빛나고, 그 별이 있던 별자리 이름 · 하우스 번호가 밝아지며 그 하우스 칸이 칠해진다.
+ * 시각 "모름" 차트는 하우스와 축 없이 그린다(golden-rules "프로젝트 규칙").
  */
-export function ChartWheel({ chart }: ChartWheelProps) {
+export function ChartWheel({ chart, selected }: ChartWheelProps) {
   const w = wheelLayout(chart);
   const text = { fontFamily: FontFamily, textAnchor: 'middle', alignmentBaseline: 'central' } as const;
+  const withHouses = w.axes.length > 0;
+  // 고른 것이 있던 별자리 · 하우스(서버 값). 상승점은 1하우스, 중천은 10하우스가 시작되는 곳이다.
+  const position = chart.positions.find((p) => p.body === selected);
+  const angle = withHouses && chart.angles && (selected === 'ASC' || selected === 'MC') ? selected : null;
+  const selectedSign = position?.sign ?? (angle && chart.angles ? chart.angles[angle === 'ASC' ? 'asc' : 'mc'].sign : undefined);
+  const selectedHouse = withHouses ? (position?.house ?? (angle === 'ASC' ? 1 : angle === 'MC' ? 10 : undefined)) : undefined;
+  const sector = w.houseSectors.find((h) => h.n === selectedHouse);
+  const name = selected ? selectedName(selected) : undefined;
+  const a11y = name ? `${strings.skyMap.wheelLabel}. ${strings.skyMap.selectedPrefix}${name}` : strings.skyMap.wheelLabel;
   return (
-    <View style={styles.box} accessibilityRole="image" accessibilityLabel={strings.chart.wheelLabel}>
+    <View style={styles.box} accessibilityRole="image" accessibilityLabel={a11y}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${w.size} ${w.size}`}>
-        <Circle cx={w.center} cy={w.center} r={w.rOuter} fill="none" stroke={Colors.ink} strokeWidth={1.2} />
-        <Circle cx={w.center} cy={w.center} r={w.rSign} fill="none" stroke={Colors.ink} strokeWidth={1.2} />
-        <Circle cx={w.center} cy={w.center} r={w.rInner} fill="none" stroke={Colors.hair} strokeWidth={1} />
-        {w.ticks.map((t, i) => (
-          <Line key={`t${i}`} {...t} stroke={Colors.ink} strokeWidth={0.7} />
-        ))}
+        <Circle cx={w.center} cy={w.center} r={w.rOuter} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1.2} />
+        <Circle cx={w.center} cy={w.center} r={w.rSign} fill={Colors.paper} stroke={Colors.hair} strokeWidth={1} />
+        <Circle cx={w.center} cy={w.center} r={w.rInner} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1} />
+        {sector ? (
+          <Path testID="wheel-house-sector" d={sector.path} fill={Colors.primary} fillOpacity={SECTOR_OPACITY} />
+        ) : null}
         {w.signs.map((s) => (
-          <Line key={`sl${s.sign}`} {...s.line} stroke={Colors.ink} strokeWidth={1.2} />
+          <Line key={`sl${s.sign}`} {...s.line} stroke={Colors.hair} strokeWidth={1} />
         ))}
-        {w.signs.map((s) => (
-          <SvgText key={`st${s.sign}`} {...text} {...s.label} fontSize={w.signFontSize} fontWeight={FontWeight.semibold} fill={Colors.ink}>
-            {label(strings.signs, s.sign)}
-          </SvgText>
+        {w.houseLines.map((l, i) => (
+          <Line key={`h${i}`} testID="wheel-house-line" {...l} stroke={Colors.hair} strokeWidth={1} />
         ))}
-        {w.houseLines.map(({ main, ...l }, i) => (
-          <Line
-            key={`h${i}`}
-            testID="wheel-house-line"
-            {...l}
-            stroke={main ? Colors.ink : Colors.hair}
-            strokeWidth={main ? 1.2 : 0.9}
-          />
+        {w.axes.map((a) => (
+          <Line key={`ax${a.key}`} testID="wheel-axis" {...a.line} stroke={Colors.muted} strokeWidth={1.5} />
         ))}
+        {w.signs.map((s) => {
+          const on = s.sign === selectedSign;
+          return (
+            <SvgText
+              key={`st${s.sign}`}
+              testID={`wheel-sign-${s.sign}`}
+              {...text}
+              {...s.label}
+              fontSize={w.signFontSize}
+              fontWeight={on ? FontWeight.semibold : FontWeight.regular}
+              fill={on ? Colors.accentText : Colors.hint}>
+              {label(strings.signs, s.sign)}
+            </SvgText>
+          );
+        })}
         {w.houseNumbers.map((h) => (
           <SvgText
             key={`hn${h.n}`}
-            testID="wheel-house-number"
+            testID={`wheel-house-number-${h.n}`}
             {...text}
             x={h.x}
             y={h.y}
             fontSize={w.houseFontSize}
-            fill={Colors.gray}>
+            fill={h.n === selectedHouse ? Colors.accentText : Colors.muted}>
             {h.n}
           </SvgText>
         ))}
-        {w.aspectLines.map(({ dashed, ...l }, i) => (
-          <Line
-            key={`a${i}`}
-            testID="wheel-aspect-line"
-            {...l}
-            stroke={Colors.ink}
-            strokeWidth={0.8}
-            strokeDasharray={dashed ? '3.4 2.7' : undefined}
-          />
-        ))}
-        {w.bodies.map((b) => (
-          <Circle
-            key={`d${b.body}`}
-            testID="wheel-body-dot"
-            cx={b.dot.x}
-            cy={b.dot.y}
-            r={w.dotRadius}
-            fill={Colors.ink}
-            stroke={Colors.ink}
-            strokeWidth={1}
-          />
-        ))}
-        {w.bodies.map((b) => (
-          <SvgText key={`l${b.body}`} {...text} {...b.label} fontSize={w.labelFontSize} fontWeight={FontWeight.semibold} fill={Colors.ink}>
-            {label(strings.bodiesShort, b.body)}
+        {w.axes.map((a) => (
+          <SvgText
+            key={`al${a.key}`}
+            testID={`wheel-axis-label-${a.key}`}
+            {...text}
+            {...a.label}
+            fontSize={w.axisFontSize}
+            fontWeight={FontWeight.medium}
+            fill={a.key === angle ? Colors.accentText : Colors.hint}>
+            {strings.glossary.angles[a.key].short}
           </SvgText>
         ))}
+        {w.bodies.map((b) =>
+          b.body === selected ? (
+            <G key={`d${b.body}`}>
+              <Circle
+                testID="wheel-selected-halo"
+                cx={b.dot.x}
+                cy={b.dot.y}
+                r={w.haloRadius}
+                fill={Colors.primary}
+                fillOpacity={HALO_OPACITY}
+              />
+              <Circle testID="wheel-selected-dot" cx={b.dot.x} cy={b.dot.y} r={w.selectedDotRadius} fill={Colors.primary} />
+            </G>
+          ) : (
+            <Circle key={`d${b.body}`} testID="wheel-body-dot" cx={b.dot.x} cy={b.dot.y} r={w.dotRadius} fill={Colors.ink} />
+          ),
+        )}
+        {w.bodies.map((b) => {
+          const on = b.body === selected;
+          return (
+            <SvgText
+              key={`l${b.body}`}
+              testID={`wheel-body-label-${b.body}`}
+              {...text}
+              {...b.label}
+              fontSize={on ? w.selectedLabelFontSize : w.labelFontSize}
+              fontWeight={on ? FontWeight.semibold : FontWeight.medium}
+              fill={on ? Colors.ink : Colors.gray}>
+              {label(strings.bodiesShort, b.body)}
+            </SvgText>
+          );
+        })}
       </Svg>
     </View>
   );
 }
 
+/** 고른 것의 이름: 천체는 용어 사전의 이름, 상승점 · 중천은 별명 */
+function selectedName(key: string): string | undefined {
+  if (key === 'ASC' || key === 'MC') return strings.glossary.angles[key].nickname;
+  return (strings.glossary.bodies as Record<string, { name: string } | undefined>)[key]?.name;
+}
+
 const styles = StyleSheet.create({
-  box: { width: '100%', maxWidth: Sizes.wheel, aspectRatio: 1, alignSelf: 'center' },
+  box: { width: '100%', maxWidth: Sizes.skyWheel, aspectRatio: 1, alignSelf: 'center' },
 });

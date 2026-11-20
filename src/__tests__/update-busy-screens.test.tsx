@@ -7,7 +7,7 @@ import { AppState, Text, type AppStateStatus } from 'react-native';
 import DirectionScreen from '@/app/direction';
 import ReadingScreen from '@/app/reading';
 import ReportScreen from '@/app/report';
-import InquiryScreen from '@/app/settings/inquiry';
+import NewInquiryScreen from '@/app/my/inquiries/new';
 import SynastryDirectionScreen from '@/app/synastry/[id]/direction';
 import SynastryResultScreen from '@/app/synastry/[id]/index';
 import SynastryReportScreen from '@/app/synastry/[id]/report';
@@ -254,30 +254,30 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('문의하기: 적은 글이 있으면 미루고, 보내고 나면 막는다', async () => {
+  it('새 문의: 적은 글이 있으면 미루고, 보내고 나면 막는다', async () => {
     mockApi.createInquiry.mockResolvedValue({ ok: true, data: { id: 'inq-1' } });
-    await render(gate(<InquiryScreen />));
+    await render(gate(<NewInquiryScreen />));
     await fireEvent.press(screen.getByText(I.categories.BUG));
-    await fireEvent.changeText(screen.getByLabelText(I.bodyLabel), '리포트 화면이 열리지 않아요.');
+    await fireEvent.changeText(screen.getByLabelText(I.form.bodyLabel), '리포트 화면이 열리지 않아요.');
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
 
-    await fireEvent.press(screen.getByText(I.submit));
+    await fireEvent.press(screen.getByText(I.form.submit));
     await waitFor(() => expect(blocked()).toBe(true));
     expect(mockApi.createInquiry).toHaveBeenCalledTimes(1);
   });
 
-  it('문의하기: 답장 받을 이메일만 적어도 미루고, 지우면 막는다', async () => {
-    await render(gate(<InquiryScreen />));
-    await fireEvent.changeText(screen.getByLabelText(I.emailLabel), 'me@example.test');
+  it('새 문의: 적은 글을 지우면 다시 막는다', async () => {
+    await render(gate(<NewInquiryScreen />));
+    await fireEvent.changeText(screen.getByLabelText(I.form.bodyLabel), '적다가 지울 글');
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
-    await fireEvent.changeText(screen.getByLabelText(I.emailLabel), '');
+    await fireEvent.changeText(screen.getByLabelText(I.form.bodyLabel), '');
     expect(blocked()).toBe(true);
   });
 
-  it('문의하기: 아무것도 적지 않았으면(종류만 골랐어도) 미루지 않는다', async () => {
-    await render(gate(<InquiryScreen />));
+  it('새 문의: 아무것도 적지 않았으면(종류만 골랐어도) 미루지 않는다', async () => {
+    await render(gate(<NewInquiryScreen />));
     await fireEvent.press(screen.getByText(I.categories.BUG));
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(true);

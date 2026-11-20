@@ -272,12 +272,29 @@ export type SynastryReportState =
 /** `POST /synastry/{id}/report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
 export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
-/** 문의의 종류(결정 024). 계정 · 풀이/리포트 · 궁합 · 오류 신고 · 기타 */
-export const INQUIRY_CATEGORIES = ['ACCOUNT', 'READING', 'SYNASTRY', 'BUG', 'OTHER'] as const;
+/** 문의의 종류(결정 058, 서버 결정 039): 오류 · 제안 · 계정 · 기타. 옛 문의의 다른 값(READING · SYNASTRY · OTHER …)은 앱이 기타로 읽는다 */
+export const INQUIRY_CATEGORIES = ['BUG', 'IDEA', 'ACCOUNT', 'ETC'] as const;
 export type InquiryCategory = (typeof INQUIRY_CATEGORIES)[number];
 
-/** `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~2000자(유니코드 코드 포인트로 센다), replyEmail 은 답장을 받지 않으면 null */
-export type InquiryInput = { category: InquiryCategory; body: string; replyEmail: string | null };
+/**
+ * `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~1000자(유니코드 코드 포인트로 센다). 이메일 칸은 없다 —
+ * `replyEmail` 키를 보내면 서버가 옛 앱으로 보고 옛 규칙을 쓰므로 싣지 않는다(서버 결정 039 의 2).
+ */
+export type InquiryInput = { category: InquiryCategory; body: string };
+
+/**
+ * `GET /inquiries` · `GET /inquiries/{id}` 의 한 건에서 앱이 쓰는 값(결정 058). 모르는 종류는 `ETC`. 답(answer)이 있으면 답한 문의다 —
+ * 서버의 `status` 는 답이 있을 때만 `ANSWERED` 라 같은 뜻이고, 앱은 답의 유무로 본다. `emailed` 는 옛 앱이 이메일로 답을 받기로 한 문의
+ * (서버가 `replyEmail` 을 준 것 — 이메일 글자는 앱이 들고 있지 않는다).
+ */
+export type InquiryItem = {
+  id: string;
+  category: InquiryCategory;
+  body: string;
+  createdAt: string;
+  answer: { body: string; answeredAt: string } | null;
+  emailed: boolean;
+};
 
 /** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */
 export type InquiryCreated = { id: string };
@@ -711,6 +728,41 @@ const isReportRequest = (v: unknown): v is ReportRequest =>
 
 const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
 
+/** 서버의 한 건(값이 없는 키는 빠져 온다 — answer · replyEmail) */
+type InquiryItemWire = {
+  id: string;
+  category: string;
+  body: string;
+  status: string;
+  createdAt: string;
+  answer?: { body: string; answeredAt: string };
+  replyEmail?: string | null;
+};
+
+const isInquiryItemWire = (v: unknown): v is InquiryItemWire =>
+  isObject(v) &&
+  isText(v.id) &&
+  typeof v.category === 'string' &&
+  typeof v.body === 'string' &&
+  typeof v.status === 'string' &&
+  isText(v.createdAt) &&
+  (v.answer === undefined || (isObject(v.answer) && typeof v.answer.body === 'string' && isText(v.answer.answeredAt))) &&
+  (v.replyEmail === undefined || v.replyEmail === null || typeof v.replyEmail === 'string');
+
+const isInquiryList = (v: unknown): v is InquiryItemWire[] => Array.isArray(v) && v.every(isInquiryItemWire);
+
+const isInquiryCategory = (v: string): v is InquiryCategory => INQUIRY_CATEGORIES.some((c) => c === v);
+
+/** 앱이 쓰는 모양으로: 모르는 종류는 기타, 답이 없으면 null, 이메일 글자는 버리고 있었는지만 */
+const inquiryItemOf = (v: InquiryItemWire): InquiryItem => ({
+  id: v.id,
+  category: isInquiryCategory(v.category) ? v.category : 'ETC',
+  body: v.body,
+  createdAt: v.createdAt,
+  answer: v.answer ? { body: v.answer.body, answeredAt: v.answer.answeredAt } : null,
+  emailed: typeof v.replyEmail === 'string' && v.replyEmail.length > 0,
+});
+
 /** 하나라도 어긋나면 목록 전체를 받지 않는다. 계약에 없는 필드는 보지 않는다 */
 export function isFaqList(v: unknown): v is Faq[] {
   return (
@@ -1106,15 +1158,28 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /inquiries` 문의를 보낸다(결정 024). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` ·
-     * `INVALID_BODY` · `INVALID_EMAIL`). 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용과 주소는 어디에도 남기지 않는다.
+     * `POST /inquiries` 문의를 보낸다(결정 058). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` · `INVALID_BODY`).
+     * 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용은 어디에도 남기지 않는다.
      */
     async createInquiry(input: InquiryInput): Promise<ApiResult<InquiryCreated>> {
       if (config.useFixtures) return { ok: true, data: { id: 'fixture-inquiry' } };
       return request('POST', '/inquiries', {
-        body: { category: input.category, body: input.body, replyEmail: input.replyEmail },
+        body: { category: input.category, body: input.body },
         validate: isInquiryCreated,
       });
+    },
+
+    /** `GET /inquiries` 내 문의 전부, 새것부터(서버 순서 그대로). 없으면 빈 목록. 한 줄이라도 모양이 틀리면 INVALID */
+    async getInquiries(): Promise<ApiResult<InquiryItem[]>> {
+      if (config.useFixtures) return { ok: true, data: [] };
+      const res = await request('GET', '/inquiries', { validate: isInquiryList });
+      return res.ok ? { ok: true, data: res.data.map(inquiryItemOf) } : res;
+    },
+
+    /** `GET /inquiries/{id}` 내 문의 한 건과 답. 남의 것 · 없는 것은 404 `NOT_FOUND` */
+    async getInquiry(id: string): Promise<ApiResult<InquiryItem>> {
+      const res = await request('GET', `/inquiries/${encodeURIComponent(id)}`, { validate: isInquiryItemWire });
+      return res.ok ? { ok: true, data: inquiryItemOf(res.data) } : res;
     },
 
     /**

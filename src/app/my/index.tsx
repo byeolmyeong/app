@@ -56,8 +56,7 @@ export default function MyScreen() {
         <View style={styles.listTop} />
         <ListCard>
           <ListCardRow label={R.faq} onPress={() => router.push('/settings/faq')} />
-          {/* 앱 안 문의(`/my/inquiries`, 결정 058)는 서버 S⑧ 뒤 계획 A7-4 */}
-          <ListCardRow label={R.inquiry} onPress={() => router.push('/settings/inquiry')} />
+          <ListCardRow label={R.inquiry} onPress={() => router.push('/my/inquiries')} />
         </ListCard>
         <ListCard>
           <ListCardRow label={R.terms} onPress={() => router.push('/settings/terms')} />

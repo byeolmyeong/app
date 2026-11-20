@@ -1,230 +1,211 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 
-import InquiryScreen from '@/app/settings/inquiry';
+import InquiryDetailScreen from '@/app/my/inquiries/[id]';
+import InquiriesScreen from '@/app/my/inquiries/index';
+import NewInquiryScreen from '@/app/my/inquiries/new';
+import OldInquiryScreen from '@/app/settings/inquiry';
 import { strings } from '@/content/strings';
-import { api, createApi, type ApiResult, type InquiryCreated } from '@/lib/api';
+import { api, type InquiryItem } from '@/lib/api';
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), dismissTo: jest.fn() },
+  useLocalSearchParams: jest.fn(() => ({ id: 'a' })),
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
+  Redirect: ({ href }: { href: string }) => {
+    const { Text } = jest.requireActual('react-native');
+    return <Text testID="redirect">{href}</Text>;
+  },
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { createInquiry: jest.fn() },
-}));
-jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
+  api: { getInquiries: jest.fn(), getInquiry: jest.fn(), createInquiry: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 const I = strings.inquiry;
-const MESSAGE = '리포트 화면이 열리지 않아요.';
-const sent: ApiResult<InquiryCreated> = { ok: true, data: { id: 'inq-1' } };
+const F = I.form;
+const answered: InquiryItem = {
+  id: 'a',
+  category: 'BUG',
+  body: '아침에 오늘의 하늘 알림이 오지 않아요.\n둘째 줄',
+  createdAt: '2026-11-18T01:00:00Z',
+  answer: { body: '알려 주셔서 고마워요.', answeredAt: '2026-11-19T02:00:00Z' },
+  emailed: false,
+};
+const open: InquiryItem = { id: 'b', category: 'IDEA', body: '별명을 다시 받을 수 있나요?', createdAt: '2026-11-20T01:00:00Z', answer: null, emailed: false };
 
-const bodyInput = () => screen.getByLabelText(I.bodyLabel);
-const emailInput = () => screen.getByLabelText(I.emailLabel);
-const submit = () => fireEvent.press(screen.getByText(I.submit));
-
-async function fill({ category = I.categories.BUG as string, body = MESSAGE, email = '' } = {}) {
-  await fireEvent.press(screen.getByText(category));
-  await fireEvent.changeText(bodyInput(), body);
-  await fireEvent.changeText(emailInput(), email);
-}
-
-beforeEach(async () => {
-  await AsyncStorage.clear();
+let nowSpy: jest.SpyInstance;
+beforeEach(() => {
   jest.clearAllMocks();
-  mockApi.createInquiry.mockResolvedValue(sent);
+  nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
+});
+afterEach(() => nowSpy.mockRestore());
+
+describe('문의 내역(/my/inquiries, 보드 16-8)', () => {
+  it('내 문의를 받은 순서대로 첫 줄 · 상태(확인 중 / 답변 왔어요) · 날짜로 보이고, 맨 아래 "새 문의하기"', async () => {
+    mockApi.getInquiries.mockResolvedValue({ ok: true, data: [open, answered] });
+    await render(<InquiriesScreen />);
+    expect(await screen.findByText(open.body)).toBeTruthy();
+    // 여러 줄이면 첫 줄만
+    expect(screen.getByText('아침에 오늘의 하늘 알림이 오지 않아요.')).toBeTruthy();
+    expect(screen.queryByText(/둘째 줄/)).toBeNull();
+    expect(screen.getByText(I.status.open)).toBeTruthy();
+    expect(screen.getByText(I.status.answered)).toBeTruthy();
+    expect(screen.getByText('11월 20일')).toBeTruthy();
+    expect(screen.getByText('11월 18일')).toBeTruthy();
+    const shown = JSON.stringify(screen.toJSON());
+    expect(shown.indexOf(open.body)).toBeLessThan(shown.indexOf('아침에'));
+    await fireEvent.press(screen.getByText(I.newInquiry));
+    expect(router.push).toHaveBeenLastCalledWith('/my/inquiries/new');
+  });
+
+  it('줄을 누르면 그 문의의 답변 보기로 간다', async () => {
+    mockApi.getInquiries.mockResolvedValue({ ok: true, data: [answered] });
+    await render(<InquiriesScreen />);
+    await fireEvent.press(await screen.findByText(I.status.answered));
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: '/my/inquiries/[id]', params: { id: 'a' } });
+  });
+
+  it('비어 있으면 "아직 문의가 없어요" 와 설명, 아래 "새 문의하기" 는 그대로(결정 065 의 3)', async () => {
+    mockApi.getInquiries.mockResolvedValue({ ok: true, data: [] });
+    await render(<InquiriesScreen />);
+    expect(await screen.findByText(I.empty.title)).toBeTruthy();
+    expect(screen.getByText(I.empty.body)).toBeTruthy();
+    expect(screen.getByText(I.newInquiry)).toBeTruthy();
+  });
+
+  it('못 불러오면 실패 화면, "다시 보기" 를 누르면 다시 부른다', async () => {
+    mockApi.getInquiries.mockResolvedValueOnce({ ok: false, error: 'NETWORK' }).mockResolvedValueOnce({ ok: true, data: [open] });
+    await render(<InquiriesScreen />);
+    expect(await screen.findByText(I.loadFail.title)).toBeTruthy();
+    await fireEvent.press(screen.getByText(strings.states.loadFail.retry));
+    expect(await screen.findByText(open.body)).toBeTruthy();
+    expect(mockApi.getInquiries).toHaveBeenCalledTimes(2);
+  });
+
+  it('주소로 바로 열어 돌아갈 곳이 없으면 뒤로 가기는 마이로', async () => {
+    mockApi.getInquiries.mockResolvedValue({ ok: true, data: [] });
+    (router.canGoBack as jest.Mock).mockReturnValueOnce(false);
+    await render(<InquiriesScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+    expect(router.replace).toHaveBeenCalledWith('/my');
+  });
 });
 
-describe('문의하기(/settings/inquiry)', () => {
-  it('보낸 뒤의 버튼 이름은 도착지를 말하지 않는다(온 곳 — 마이 · 자주 묻는 질문 — 으로 돌아간다)', () => {
-    expect(I.done.back).toBe('돌아가기');
+describe('새 문의(/my/inquiries/new, 보드 16-8)', () => {
+  const submit = () => screen.getByRole('button', { name: F.submit });
+  const body = () => screen.getByLabelText(F.bodyLabel);
+
+  it('종류 칩 넷 · 내용 · 글자 수 · 안내가 있고 이메일 칸은 없다. 종류를 고르고 10자를 넘겨야 보낼 수 있다', async () => {
+    await render(<NewInquiryScreen />);
+    for (const label of Object.values(I.categories)) expect(screen.getByRole('radio', { name: label })).toBeTruthy();
+    expect(screen.getByText(F.hint)).toBeTruthy();
+    expect(screen.queryByText(/이메일/)).toBeNull();
+    expect(screen.getByText('0/1000')).toBeTruthy();
+    expect(submit().props.accessibilityState.disabled).toBe(true);
+    await fireEvent.changeText(body(), '아침에 오늘의 하늘 알림이 오지 않아요.');
+    expect(screen.getByText('22/1000')).toBeTruthy();
+    expect(submit().props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(screen.getByRole('radio', { name: I.categories.BUG }));
+    expect(submit().props.accessibilityState.disabled).toBe(false);
+    await fireEvent.changeText(body(), '짧아요');
+    expect(submit().props.accessibilityState.disabled).toBe(true);
   });
 
-  it('종류 다섯 가지 · 내용 · 답장 받을 이메일 · 보내기 버튼을 보여 준다', async () => {
-    await render(<InquiryScreen />);
-    expect(screen.getByText(I.title)).toBeTruthy();
-    for (const label of ['계정', '풀이/리포트', '궁합', '오류 신고', '기타'])
-      expect(screen.getByText(label)).toBeTruthy();
-    expect(bodyInput().props.multiline).toBe(true);
-    expect(emailInput()).toBeTruthy();
-    expect(screen.getByText(I.bodyHint)).toBeTruthy();
-    expect(screen.getByText(`0${I.countSeparator}2000${I.countUnit}`)).toBeTruthy();
-  });
-
-  it('글자 수는 앞뒤 공백을 뗀 길이로 센다', async () => {
-    await render(<InquiryScreen />);
-    await fireEvent.changeText(bodyInput(), '  안녕하세요  ');
-    expect(screen.getByText(`5${I.countSeparator}2000${I.countUnit}`)).toBeTruthy();
-  });
-
-  it('이모지는 하나를 한 글자로 세고(서버와 같다), 이모지 2000개는 보낼 수 있다', async () => {
-    await render(<InquiryScreen />);
-    await fill({ body: ` ${'🌙'.repeat(2000)} ` });
-    expect(screen.getByText(`2000${I.countSeparator}2000${I.countUnit}`)).toBeTruthy();
-    await submit();
-    expect(screen.queryByText(I.errors.bodyTooLong)).toBeNull();
-    expect(mockApi.createInquiry).toHaveBeenCalledWith({ category: 'BUG', body: '🌙'.repeat(2000), replyEmail: null });
-  });
-
-  it('고른 종류는 선택 상태가 된다', async () => {
-    await render(<InquiryScreen />);
-    await fireEvent.press(screen.getByText(I.categories.SYNASTRY));
-    expect(screen.getByRole('button', { name: I.categories.SYNASTRY }).props.accessibilityState).toMatchObject({
-      selected: true,
-    });
-    expect(screen.getByRole('button', { name: I.categories.BUG }).props.accessibilityState).toMatchObject({
-      selected: false,
-    });
-  });
-
-  it('종류를 고르지 않았거나 내용이 10자보다 짧으면 보내지 않고 알려 준다', async () => {
-    await render(<InquiryScreen />);
-    await fireEvent.changeText(bodyInput(), '  짧아요  ');
-    await submit();
-    expect(screen.getByText(I.errors.categoryRequired)).toBeTruthy();
-    expect(screen.getByText(I.errors.bodyTooShort)).toBeTruthy();
-    expect(mockApi.createInquiry).not.toHaveBeenCalled();
-  });
-
-  it('내용이 2000자를 넘으면 보내지 않는다', async () => {
-    await render(<InquiryScreen />);
-    await fill({ body: '가'.repeat(2001) });
-    await submit();
-    expect(screen.getByText(I.errors.bodyTooLong)).toBeTruthy();
-    expect(mockApi.createInquiry).not.toHaveBeenCalled();
-  });
-
-  it('이메일 모양이 틀리면 보내지 않고, 고쳐 적으면 오류가 사라진다', async () => {
-    await render(<InquiryScreen />);
-    await fill({ email: 'me@example' });
-    await submit();
-    expect(screen.getByText(I.errors.emailFormat)).toBeTruthy();
-    expect(mockApi.createInquiry).not.toHaveBeenCalled();
-    await fireEvent.changeText(emailInput(), 'me@example.test');
-    expect(screen.queryByText(I.errors.emailFormat)).toBeNull();
-  });
-
-  it('이메일을 비우면 null 로, 내용은 앞뒤 공백을 떼어 보낸다', async () => {
-    await render(<InquiryScreen />);
-    await fill({ body: `  ${MESSAGE}\n ` });
-    await submit();
-    expect(mockApi.createInquiry).toHaveBeenCalledTimes(1);
-    expect(mockApi.createInquiry).toHaveBeenCalledWith({ category: 'BUG', body: MESSAGE, replyEmail: null });
-  });
-
-  it('이메일을 적으면 함께 보낸다', async () => {
-    await render(<InquiryScreen />);
-    await fill({ category: I.categories.READING, email: ' me@example.test ' });
-    await submit();
-    expect(mockApi.createInquiry).toHaveBeenCalledWith({
-      category: 'READING',
-      body: MESSAGE,
-      replyEmail: 'me@example.test',
-    });
-  });
-
-  it('보내는 동안에는 버튼이 눌리지 않아 두 번 보내지 않는다', async () => {
-    let finish: (r: ApiResult<InquiryCreated>) => void = () => {};
-    mockApi.createInquiry.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
-    await render(<InquiryScreen />);
-    await fill();
-    await submit();
-    expect(screen.getByRole('button', { name: I.sending }).props.accessibilityState).toMatchObject({ disabled: true });
-    await fireEvent.press(screen.getByText(I.sending));
-    expect(mockApi.createInquiry).toHaveBeenCalledTimes(1);
-    await act(async () => finish(sent));
-    expect(screen.getByText(I.done.title)).toBeTruthy();
-  });
-
-  it('보내면 "문의를 보냈어요" 와 설정으로 돌아가는 버튼만 남는다', async () => {
-    await render(<InquiryScreen />);
-    await fill();
-    await submit();
-    expect(await screen.findByText(I.done.title)).toBeTruthy();
-    expect(screen.queryByLabelText(I.bodyLabel)).toBeNull();
-    expect(screen.queryByText(I.submit)).toBeNull();
-    await fireEvent.press(screen.getByText(I.done.back));
-    expect(router.back).toHaveBeenCalledTimes(1);
-  });
-
-  it('주소로 바로 들어와 돌아갈 곳이 없으면 마이로 간다(결정 038)', async () => {
-    (router.canGoBack as jest.Mock).mockReturnValue(false);
-    await render(<InquiryScreen />);
-    await fill();
-    await submit();
-    await fireEvent.press(await screen.findByText(I.done.back));
-    expect(router.replace).toHaveBeenCalledWith('/my');
-    (router.canGoBack as jest.Mock).mockReturnValue(true);
+  it('보내면 종류 · 내용만 서버에 보내고 "문의를 보냈어요", "문의 내역 보기" 는 내역으로 돌아간다', async () => {
+    mockApi.createInquiry.mockResolvedValue({ ok: true, data: { id: 'c' } });
+    await render(<NewInquiryScreen />);
+    await fireEvent.press(screen.getByRole('radio', { name: I.categories.IDEA }));
+    await fireEvent.changeText(body(), '  별명을 다시 받을 수 있나요?  ');
+    await fireEvent.press(submit());
+    expect(await screen.findByText(I.sent.title)).toBeTruthy();
+    expect(mockApi.createInquiry).toHaveBeenCalledWith({ category: 'IDEA', body: '별명을 다시 받을 수 있나요?' });
+    await fireEvent.press(screen.getByText(I.sent.toList));
+    expect(router.dismissTo).toHaveBeenCalledWith('/my/inquiries');
   });
 
   it.each([
-    ['연결 실패', { ok: false, error: 'NETWORK' }, I.failed.NETWORK],
-    ['서버 오류', { ok: false, error: 'SERVER', status: 500 }, I.failed.OTHER],
-    [
-      '서버가 내용을 받지 않음',
-      { ok: false, error: 'SERVER', status: 400, code: 'INVALID_BODY' },
-      I.failed.INVALID_BODY,
-    ],
-    [
-      '서버가 이메일을 받지 않음',
-      { ok: false, error: 'SERVER', status: 400, code: 'INVALID_EMAIL' },
-      I.failed.INVALID_EMAIL,
-    ],
-  ] as [string, ApiResult<InquiryCreated>, string][])(
-    '실패(%s)하면 안내를 보여 주고 적은 것은 그대로 둔다',
-    async (_name, result, message) => {
-      mockApi.createInquiry.mockResolvedValueOnce(result);
-      await render(<InquiryScreen />);
-      await fill({ category: I.categories.ACCOUNT, email: 'me@example.test' });
-      await submit();
-      expect(await screen.findByText(message)).toBeTruthy();
-      expect(screen.queryByText(I.done.title)).toBeNull();
-      expect(bodyInput().props.value).toBe(MESSAGE);
-      expect(emailInput().props.value).toBe('me@example.test');
-      expect(screen.getByRole('button', { name: I.categories.ACCOUNT }).props.accessibilityState).toMatchObject({
-        selected: true,
-      });
-      // 스스로 다시 보내지 않는다. 다시 누르면 같은 내용으로 한 번 더 보낸다.
-      expect(mockApi.createInquiry).toHaveBeenCalledTimes(1);
-      await submit();
-      expect(mockApi.createInquiry).toHaveBeenCalledTimes(2);
-      expect(await screen.findByText(I.done.title)).toBeTruthy();
-    },
-  );
-
-  it('한 시간 한도를 넘으면(429) 잠시 뒤 다시 보내 달라고 한다', async () => {
-    mockApi.createInquiry.mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
-    await render(<InquiryScreen />);
-    await fill();
-    await submit();
-    expect(await screen.findByText(I.failed.LIMIT)).toBeTruthy();
-    expect(I.failed.LIMIT).toMatch(/잠시 뒤 다시/);
-    expect(bodyInput().props.value).toBe(MESSAGE);
+    ['인터넷이 끊겼을 때', { ok: false as const, error: 'NETWORK' as const }, I.failed.NETWORK],
+    ['한 시간에 여러 번(429)', { ok: false as const, error: 'LIMIT' as const }, I.failed.LIMIT],
+    ['서버가 내용을 거절(INVALID_BODY)', { ok: false as const, error: 'SERVER' as const, status: 400, code: 'INVALID_BODY' }, I.failed.INVALID_BODY],
+    ['그 밖', { ok: false as const, error: 'SERVER' as const, status: 500 }, I.failed.OTHER],
+  ])('보내지 못하면(%s) 짧은 알림, 적은 글은 그대로', async (_name, result, message) => {
+    mockApi.createInquiry.mockResolvedValue(result);
+    await render(<NewInquiryScreen />);
+    await fireEvent.press(screen.getByRole('radio', { name: I.categories.ETC }));
+    await fireEvent.changeText(body(), '알림이 오지 않아요. 확인해 주세요.');
+    await fireEvent.press(submit());
+    expect(await screen.findByText(message)).toBeTruthy();
+    expect(body().props.value).toBe('알림이 오지 않아요. 확인해 주세요.');
+    expect(screen.queryByText(I.sent.title)).toBeNull();
   });
 
-  it('가짜 서버 모드에서는 fetch 없이 보낸 것으로 끝난다', async () => {
-    const fetchFn = jest.fn();
-    const fixtureApi = createApi({ baseUrl: '', fetchFn, getToken: () => null, useFixtures: true });
-    mockApi.createInquiry.mockImplementationOnce((input) => fixtureApi.createInquiry(input));
-    await render(<InquiryScreen />);
-    await fill();
-    await submit();
-    expect(await screen.findByText(I.done.title)).toBeTruthy();
-    expect(fetchFn).not.toHaveBeenCalled();
+  it('보내는 동안 다시 눌러도 한 번만 보낸다', async () => {
+    let finish: (r: { ok: true; data: { id: string } }) => void = () => {};
+    mockApi.createInquiry.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    await render(<NewInquiryScreen />);
+    await fireEvent.press(screen.getByRole('radio', { name: I.categories.BUG }));
+    await fireEvent.changeText(body(), '알림이 오지 않아요. 확인해 주세요.');
+    await fireEvent.press(submit());
+    await fireEvent.press(submit());
+    expect(mockApi.createInquiry).toHaveBeenCalledTimes(1);
+    await act(async () => finish({ ok: true, data: { id: 'c' } }));
+    expect(await screen.findByText(I.sent.title)).toBeTruthy();
   });
 
-  it('적은 내용과 이메일을 기기 저장소에 두지 않는다', async () => {
-    await render(<InquiryScreen />);
-    await fill({ email: 'me@example.test' });
-    await submit();
-    await screen.findByText(I.done.title);
-    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
-    expect(await AsyncStorage.getAllKeys()).toEqual([]);
+  it('옛 주소(/settings/inquiry)는 새 문의로 보낸다', async () => {
+    await render(<OldInquiryScreen />);
+    expect(screen.getByTestId('redirect').props.children).toBe('/my/inquiries/new');
+  });
+});
+
+describe('답변 보기(/my/inquiries/[id], 보드 16-8)', () => {
+  it('내 문의 카드(종류 · 날짜 · 글)와 별명 답변 카드(날짜 · 글)를 보인다', async () => {
+    mockApi.getInquiry.mockResolvedValue({ ok: true, data: answered });
+    await render(<InquiryDetailScreen />);
+    expect(await screen.findByText(`${I.detail.mine}${I.detail.separator}${I.categories.BUG}`)).toBeTruthy();
+    expect(screen.getByText(answered.body)).toBeTruthy();
+    expect(screen.getByText('11월 18일')).toBeTruthy();
+    const card = within(screen.getByTestId('inquiry-answer'));
+    expect(card.getByText(I.detail.answer)).toBeTruthy();
+    expect(card.getByText('11월 19일')).toBeTruthy();
+    expect(card.getByText('알려 주셔서 고마워요.')).toBeTruthy();
+    expect(mockApi.getInquiry).toHaveBeenCalledWith('a');
+  });
+
+  it('답이 아직 없으면 답변 카드 대신 안내, 옛 이메일 문의면 "이메일로 보내 드려요"', async () => {
+    mockApi.getInquiry.mockResolvedValueOnce({ ok: true, data: open });
+    const view = await render(<InquiryDetailScreen />);
+    expect(await screen.findByText(I.detail.waiting)).toBeTruthy();
+    expect(screen.queryByTestId('inquiry-answer')).toBeNull();
+    await view.unmount();
+
+    mockApi.getInquiry.mockResolvedValueOnce({ ok: true, data: { ...open, category: 'ETC', emailed: true } });
+    await render(<InquiryDetailScreen />);
+    expect(await screen.findByText(I.detail.emailed)).toBeTruthy();
+    expect(screen.getByText(`${I.detail.mine}${I.detail.separator}${I.categories.ETC}`)).toBeTruthy();
+  });
+
+  it('남의 것 · 없는 것(404 NOT_FOUND)이면 "문의를 찾지 못했어요" → 문의 내역으로', async () => {
+    mockApi.getInquiry.mockResolvedValue({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+    await render(<InquiryDetailScreen />);
+    expect(await screen.findByText(I.detail.notFound.title)).toBeTruthy();
+    await fireEvent.press(screen.getByText(I.sent.toList));
+    expect(router.dismissTo).toHaveBeenCalledWith('/my/inquiries');
+  });
+
+  it('그 밖에 못 불러오면 실패 화면과 "다시 보기"', async () => {
+    mockApi.getInquiry.mockResolvedValueOnce({ ok: false, error: 'NETWORK' }).mockResolvedValueOnce({ ok: true, data: answered });
+    await render(<InquiryDetailScreen />);
+    await fireEvent.press(await screen.findByText(strings.states.loadFail.retry));
+    await waitFor(() => expect(screen.getByTestId('inquiry-answer')).toBeTruthy());
+  });
+
+  it('주소의 식별자가 없으면 빈 식별자로 묻고(서버가 404) 찾지 못했다고 보인다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValueOnce({});
+    mockApi.getInquiry.mockResolvedValue({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+    await render(<InquiryDetailScreen />);
+    expect(await screen.findByText(I.detail.notFound.title)).toBeTruthy();
   });
 });

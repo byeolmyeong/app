@@ -536,3 +536,19 @@ export const MyLayout = {
   delete: { headingTop: 8, gap: 22, notePadding: 18, noteGap: 12, dot: 4, dotTop: 10, dotGap: 10, checkGap: 10, checkPadV: 4, checkPadH: 2 },
   done: { icon: 72, iconGlyph: 32, titleTop: 24, bodyTop: 10, lift: 40 },
 } as const;
+
+/**
+ * 문의(결정 058 · 065, 보드 16-8): 내역 한 줄(안 여백 · 글과 상태 사이 · 상태와 날짜 사이) · 상태 칩(높이 · 가로 여백 · 모서리 · 답변 왔어요의 옅은 보라
+ * 바탕과 글자) · 종류 칩(높이 · 모서리 · 사이) · 내용 칸(높이 · 안 여백) · 카드(안 여백 · 사이) · 별명 답변 카드(옅은 주색 바탕 · 테두리 · 이름표 글자) ·
+ * 비었을 때 · 보냈어요(둥근 그림 칸 · 아이콘 · 제목 위 · 설명 위)
+ */
+export const InquiryLayout = {
+  row: { paddingV: 14, paddingH: 16, gap: 6, metaGap: 8 },
+  status: { height: 22, paddingH: 8, radius: 11, answeredFill: 'rgba(154,163,255,0.14)', answeredText: '#C9CEFF' },
+  category: { height: 36, radius: 18, gap: 6 },
+  body: { height: 180, paddingV: 14, paddingH: 16 },
+  card: { padding: 16, gap: 8 },
+  answer: { fill: 'rgba(71,82,255,0.10)', border: 'rgba(154,163,255,0.28)', label: '#C9CEFF' },
+  empty: { icon: 72, glyph: 32, titleTop: 20, bodyTop: 8 },
+  sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
+} as const;

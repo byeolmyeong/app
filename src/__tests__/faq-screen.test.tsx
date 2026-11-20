@@ -121,7 +121,7 @@ describe('자주 묻는 질문(/settings/faq, 결정 028)', () => {
     expect(await screen.findByText(F.empty)).toBe(screen.getByText('아직 등록된 질문이 없어요'));
     expect(screen.getByText(F.emptyNote)).toBeTruthy();
     await fireEvent.press(screen.getByRole('link', { name: F.toInquiry }));
-    expect(router.push).toHaveBeenCalledWith('/settings/inquiry');
+    expect(router.push).toHaveBeenCalledWith('/my/inquiries/new');
   });
 
   it.each([

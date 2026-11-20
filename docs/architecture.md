@@ -41,7 +41,7 @@ features/            기능별 로직과 기능 전용 부품
   auth/              세션(session-store · use-session 의 useAuth — 소셜 로그인 · 가입 · 닉네임 확인 · 가입 그만두기 · 로그아웃, 개발용 세션), 공급자 버튼(providers/ — `google`·`apple`·`kakao` 의 기본(앱) · `.ios` · `.web` 파일, 같은 이름의 버튼, 모양은 social-button.tsx 하나 — 웹 구글만 GIS), 최근 로그인(last-provider.ts — 마지막에 로그인한 공급자 이름만 AsyncStorage `byeolmyeong-device.lastProvider.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 044), 세션 토큰 보관, 로그인 전 가드(guard.ts), 가입 단계 뼈대(signup-step.tsx) · 초안(signup-draft.ts, 메모리만) · 닉네임 규칙(nickname-rule.ts) · 프로필 고르기 시트(avatar-sheet.tsx), 로그아웃(sign-out.ts — 기기 저장도 비움), 계정 삭제(확인 시트 · 기기 저장 비움)
   onboarding/        소개 3장의 그림(intro-art.tsx)과 이 기기에서 봤는지(intro-seen.ts — AsyncStorage `byeolmyeong-device.introSeen.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 042)
   chart/             내 하늘 지도(휠 · "별마다 있던 자리" · 별 시트, 용어는 `strings.glossary`)·겹친 휠(궁합)·표·입력 폼과 출생 정보 세 칸(BirthFields) · 태어난 곳 시트(place-sheet.tsx — 검색 · 시 · 도 칩 → 시 · 군 · 구, 결정 042) (서버가 준 값만 그린다). 기기에 출생 정보가 없을 때 서버의 것으로 되살리기(use-birth-restore.ts, 결정 029)
-  reading/           요약 해석 요청 상태·문단 부품 · 별명 짓는 중(making-view.tsx, 결정 042)
+  reading/           요약 해석 요청 상태·문단 부품 · 별명 짓는 중(making-view.tsx, 결정 042) · 별명 공개(reveal-view.tsx — 가입 직후 한 번, 값은 reading.tsx 가 풀이 · 차트 · 가입이 받은 닉네임(메모리)으로 채운다, 결정 044)
   report/            심층 리포트·변곡점 타임라인
   synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts). 궁합 지우기(delete-synastry.ts · 확인 시트 synastry-delete-sheet.tsx)
   direction/         방향성 제시(이성 · 미래 · 궁합)의 요청 상태·글 부품. 기기 보관은 이성만(결정 023 · 026)

@@ -67,6 +67,27 @@ export function clearDraft(): void {
   draft = {};
   rejection = null;
   termsRejected = false;
+  signedUp = null;
+}
+
+/** 방금 가입을 마친 사람의 닉네임(서버가 `POST /auth/signup` 으로 받은 값). 별명 공개(보드 10)가 한 번 쓴다 — 메모리에만(결정 044) */
+let signedUp: string | null = null;
+
+/** 가입을 마쳤다: 초안을 비우고 닉네임만 별명 공개를 위해 메모리에 남긴다 */
+export function finishDraft(): void {
+  const nickname = draft.nickname ?? null;
+  clearDraft();
+  signedUp = nickname;
+}
+
+/** 방금 가입한 사람의 닉네임. 가입 직후가 아니면(앱을 다시 켬 · 웹 새로 고침 · 이미 공개함) null */
+export function signedUpNickname(): string | null {
+  return signedUp;
+}
+
+/** 별명 공개를 마쳤다(풀이 읽기) — 다시 열면 풀이 글로 바로 */
+export function clearSignedUp(): void {
+  signedUp = null;
 }
 
 /** 마지막 단계에서 서버가 닉네임을 거절한 이유. 닉네임 단계로 돌아가 한 번 보여 준다 */

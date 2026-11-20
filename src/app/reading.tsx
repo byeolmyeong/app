@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -10,14 +10,17 @@ import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
 import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { clearSignedUp, signedUpNickname } from '@/features/auth/signup-draft';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
+import { keyThree } from '@/features/chart/chart-rows';
 import { ChartPicture } from '@/features/chart/ChartWheel';
 import { KeyThree } from '@/features/chart/key-three';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MakingView } from '@/features/reading/making-view';
 import { ReadingView } from '@/features/reading/reading-view';
+import { RevealView } from '@/features/reading/reveal-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
 import { ShareEntry } from '@/features/share/share-entry';
 import { useGenerationBusy } from '@/features/update/update-gate';
@@ -28,11 +31,14 @@ const S = strings.reading;
 /**
  * 요약 해석: 서버가 쓴 글(총평 · 문단 · 강점 · 보완점)을 보여 준다. 차트는 여기서 "내 차트 보기" 로 연다.
  * 다시 생성은 없다(같은 차트 = 같은 글). 실패했을 때만 "다시 시도" 가 보인다.
+ * 가입을 마치고 바로 와서(from=signup) 글이 다 지어지면 별명 공개(보드 10)를 한 번 보이고, "풀이 읽기" 로 글을 보인다(결정 044).
  */
 export default function ReadingScreen() {
   const { ready } = useSession();
   // 가입을 마치고 바로 온 것인가(별명 짓는 중을 머리 없이, 보드 9). 홈 · 출생 정보 바꾸기에서 오면 뒤로 가기가 있다
   const { from } = useLocalSearchParams<{ from?: string }>();
+  // 별명 공개에 쓸 닉네임: 가입 직후에만 메모리에 있다(가입이 받은 값, 결정 044). 앱을 다시 켜거나 웹을 새로 고치면 없다
+  const [revealFor, setRevealFor] = useState(() => (from === 'signup' ? signedUpNickname() : null));
   const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 먼저 기기에 받아 둔 글을 찾는다. 있으면 세션을 기다리지 않고 바로 보여 준다.
@@ -49,6 +55,21 @@ export default function ReadingScreen() {
       <Screen nav={nav}>
         <ChartEmpty />
       </Screen>
+    );
+
+  const written = stored.reading ?? (state.status === 'done' ? state.reading : null);
+  if (revealFor && written)
+    return (
+      <RevealView
+        nickname={revealFor}
+        headline={written.headline}
+        // 해 · 달 · (시각을 알 때만) 상승궁 — 차트 요약(KeyThree)과 같은 값
+        signs={chart ? keyThree(chart).map((k) => ({ label: k.label, value: k.value + strings.chart.signSuffix })) : []}
+        onRead={() => {
+          clearSignedUp();
+          setRevealFor(null);
+        }}
+      />
     );
 
   if (stored.reading)

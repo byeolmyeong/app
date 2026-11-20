@@ -38,8 +38,8 @@ const GLOW_RADIUS = 50 * Math.SQRT2;
 
 const ease = Easing.inOut(Easing.ease);
 
-/** 0 → 1 → 0 을 끝없이(반 주기씩 ms/2). 움직이지 않을 때는 0 */
-function usePulse(run: boolean, ms: number, delay = 0) {
+/** 0 → 1 → 0 을 끝없이(반 주기씩 ms/2). 움직이지 않을 때는 0. 별명 공개(reveal-view)도 쓴다 */
+export function usePulse(run: boolean, ms: number, delay = 0) {
   const [value] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (!run) return;
@@ -95,6 +95,22 @@ function useLine(run: boolean) {
   return { index: run ? index : 0, shown };
 }
 
+/** 별이 뒤의 둥근 빛(칸을 가득 채운다). 별명 공개(reveal-view)도 쓴다 — id 는 화면마다 다르게 */
+export function GlowOrb({ id }: { id: string }) {
+  return (
+    <Svg width="100%" height="100%" viewBox="0 0 100 100">
+      <Defs>
+        {/* 시안의 CSS radial-gradient(circle) 는 반지름이 가장 먼 모서리(50√2)까지라 그대로 맞춘다 */}
+        <RadialGradient id={id} cx={50} cy={50} r={GLOW_RADIUS} gradientUnits="userSpaceOnUse">
+          <Stop offset="0" stopColor={BrandColors.glowMid} stopOpacity={0.55} />
+          <Stop offset="0.7" stopColor={BrandColors.glowMid} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Circle cx={50} cy={50} r={50} fill={`url(#${id})`} />
+    </Svg>
+  );
+}
+
 export type MakingViewProps = {
   /** 화면 머리(뒤로 가기). 가입 직후에는 없다(보드 9), 홈에서 들어왔을 때는 있다 */
   nav?: ReactNode;
@@ -129,16 +145,7 @@ export function MakingView({ nav }: MakingViewProps) {
                 transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [1, GLOW_SCALE] }) }],
               },
             ]}>
-            <Svg width="100%" height="100%" viewBox="0 0 100 100">
-              <Defs>
-                {/* 시안의 CSS radial-gradient(circle) 는 반지름이 가장 먼 모서리(50√2)까지라 그대로 맞춘다 */}
-                <RadialGradient id="makingGlow" cx={50} cy={50} r={GLOW_RADIUS} gradientUnits="userSpaceOnUse">
-                  <Stop offset="0" stopColor={BrandColors.glowMid} stopOpacity={0.55} />
-                  <Stop offset="0.7" stopColor={BrandColors.glowMid} stopOpacity={0} />
-                </RadialGradient>
-              </Defs>
-              <Circle cx={50} cy={50} r={50} fill="url(#makingGlow)" />
-            </Svg>
+            <GlowOrb id="makingGlow" />
           </Animated.View>
           <Animated.View style={[styles.orbit, { transform: [{ rotate: spin(orbit) }] }]}>
             <View style={styles.orbitDot} />

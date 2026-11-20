@@ -5,7 +5,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import ReadingScreen from '@/app/reading';
 import { strings } from '@/content/strings';
+import { clearDraft, finishDraft, setDraft, signedUpNickname } from '@/features/auth/signup-draft';
 import { useSession } from '@/features/auth/use-session';
+import { keyThree } from '@/features/chart/chart-rows';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { api, type ApiResult, type Reading } from '@/lib/api';
@@ -35,6 +37,8 @@ const reading = fixtures.reading;
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
+  clearDraft();
+  (useLocalSearchParams as jest.Mock).mockReturnValue({});
   mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
   await saveBirth({ profile, chart: fixtures.chart });
@@ -226,5 +230,78 @@ describe('요약 해석 화면', () => {
     // 누르면 차트로 간다
     await fireEvent.press(screen.getByTestId('chart-picture'));
     expect(router.push).toHaveBeenCalledWith('/chart');
+  });
+});
+
+// 별명 공개(결정 044, 보드 10): 가입을 마치고(from=signup) 풀이가 다 지어지면 한 번, "풀이 읽기" 로 풀이 글
+describe('별명 공개', () => {
+  const V = strings.reveal;
+  /** 가입 단계를 마친 것처럼: 서버가 받은 닉네임만 메모리에 남긴다 */
+  function justSignedUp(nickname = '새벽별') {
+    setDraft({ termsVersion: '2026-11-19', privacyVersion: '2026-11-19', pushConsent: false, marketingConsent: false, nickname, avatar: 2 });
+    finishDraft();
+  }
+  const cellValues = () => screen.queryAllByTestId('reveal-cell').map((cell) => cell);
+
+  it('가입 직후 풀이가 다 지어지면 닉네임 · 별명(풀이 headline) · 해 · 달 · 상승궁 별자리를 보이고, 풀이 읽기를 누르면 풀이 글', async () => {
+    justSignedUp();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    let resolve: (r: ApiResult<Reading>) => void = () => {};
+    mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    await act(async () => resolve({ ok: true, data: reading }));
+
+    expect(await screen.findByText(`새벽별 ${V.nicknameSuffix}`)).toBeTruthy();
+    expect(screen.getByRole('header', { name: reading.headline })).toBeTruthy();
+    const three = keyThree(fixtures.chart);
+    expect(three.map((k) => k.label)).toEqual([strings.chart.keySun, strings.chart.keyMoon, strings.chart.keyAsc]);
+    for (const k of three) expect(screen.getByText(k.value + strings.chart.signSuffix)).toBeTruthy();
+    expect(cellValues()).toHaveLength(3);
+    expect(screen.queryByText(reading.sections[0].title)).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: V.read }));
+    expect(screen.getByText(reading.sections[0].title)).toBeTruthy();
+    expect(screen.queryByText(`새벽별 ${V.nicknameSuffix}`)).toBeNull();
+    // 한 번 쓰면 메모리의 닉네임을 지운다
+    expect(signedUpNickname()).toBeNull();
+  });
+
+  it('다시 열면(가입 직후가 아니면) 풀이 글로 바로 간다', async () => {
+    justSignedUp();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    const first = await render(<ReadingScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: V.read }));
+    await first.unmount();
+
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.sections[0].title)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: V.read })).toBeNull();
+  });
+
+  it('홈에서 들어오면(from 없음) 공개하지 않고, 주소만 from=signup 이고 방금 가입한 닉네임이 없어도(웹 새로 고침) 공개하지 않는다', async () => {
+    justSignedUp();
+    const home = await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.sections[0].title)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: V.read })).toBeNull();
+    await home.unmount();
+
+    clearDraft();
+    await AsyncStorage.removeItem(READING_STORAGE_KEY);
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.sections[0].title)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: V.read })).toBeNull();
+  });
+
+  it('시각 "모름" 이면 첫인상 칸 없이 둘만', async () => {
+    await saveBirth({ profile: { date: '1999-03-08', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    justSignedUp();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    await render(<ReadingScreen />);
+    expect(await screen.findByRole('button', { name: V.read })).toBeTruthy();
+    expect(cellValues()).toHaveLength(2);
+    expect(screen.queryByText(strings.chart.keyAsc)).toBeNull();
+    expect(screen.getByText(strings.chart.keySun)).toBeTruthy();
   });
 });

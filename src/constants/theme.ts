@@ -169,6 +169,27 @@ export const BackdropShape = {
   intro: { extent: 0.62, centerY: [0.5, 0.5, 0.44] },
   login: { extent: 0.6, centerY: 0.46 },
   making: { extent: 0.56, centerY: 0.42 },
+  reveal: { extent: 0.58, centerY: 0.26 },
+} as const;
+
+/** 별명 공개의 자리(결정 044 시안 보드 10): 그림 칸(240×220) 안의 뒤 빛 · 별이 · 반짝임 넷, 글 · 칸의 사이 */
+export const RevealLayout = {
+  art: { width: 240, height: 220, top: 8 },
+  glow: { size: 180, left: 30, top: 20 },
+  byeoli: { size: 140, left: 50, top: 40 },
+  twinkles: [
+    { left: 18, top: 46, size: 4 },
+    { right: 16, top: 150, size: 3 },
+    { right: 40, top: 18, size: 3 },
+    { left: 52, bottom: 8, size: 3 },
+  ],
+  textTop: 20,
+  headlineTop: 12,
+  headlineInset: 8,
+  cellsTop: 28,
+  cell: 104,
+  cellGap: 12,
+  cellInnerGap: 2,
 } as const;
 
 /** 소개 둘째 · 셋째 장 그림의 자리(결정 042 시안 보드 3 · 4) */
@@ -254,6 +275,10 @@ export const Typography = {
   hero: type(26, 36, FontWeight.semibold),
   /** 화면 제목, 구간 제목 */
   title: type(24, 34, FontWeight.semibold),
+  /** 별명 공개의 "○○ 님의 별명은" · 세 칸의 값 · 세 칸의 이름(결정 044 시안) */
+  kicker: type(15, 22, FontWeight.medium),
+  stat: type(16, 24, FontWeight.semibold),
+  statLabel: type(12, 17, FontWeight.regular),
   /** 별명 짓는 중의 제목(결정 042 시안) */
   headline: type(22, 32, FontWeight.semibold),
   /** 하단 시트의 가운데 제목(결정 042 시안) */

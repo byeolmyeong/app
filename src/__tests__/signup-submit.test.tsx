@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 import BirthStep from '@/app/signup/birth';
 import { strings } from '@/content/strings';
-import { clearDraft, getDraft, setDraft, takeNicknameRejection, takeTermsRejection } from '@/features/auth/signup-draft';
+import { clearDraft, getDraft, setDraft, signedUpNickname, takeNicknameRejection, takeTermsRejection } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
 import { loadBirth } from '@/features/chart/use-birth-profile';
 import { api } from '@/lib/api';
@@ -76,6 +76,9 @@ describe('가입 마치기', () => {
     await submit();
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith({ pathname: '/reading', params: { from: 'signup' } }));
     expect(getDraft()).toBeNull();
+    // 별명 공개(결정 044, 보드 10)가 쓸 닉네임만 메모리에 남는다(서버가 받은 값 — 기기 저장소에는 없다)
+    expect(signedUpNickname()).toBe(draft.nickname);
+    expect(JSON.stringify(await AsyncStorage.multiGet(await AsyncStorage.getAllKeys()))).not.toContain(draft.nickname);
     expect((await loadBirth())?.profile).toEqual({ date: '1999-03-08', time: null, place: null });
   });
 

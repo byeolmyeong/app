@@ -2,7 +2,7 @@
  * 가입 3단계: 출생 정보(결정 009 · 034 · 042, 시안 보드 8 · 8-1 · 8-2 · 8-3 · 8-4). 진행 막대 3/3, 위 안내 문구 없음.
  * 세 칸을 채우면 "내 별명 읽기" 가 켜진다. 누르면 앞 단계의 초안(약관 버전 · 동의 · 닉네임 · 프로필)과 출생 정보를
  * `POST /auth/signup` 한 번으로 보낸다 — 단계마다 서버를 부르지 않는다(가입권은 한 번 쓰면 끝, 중간에 나가면 계정이 반쯤 생긴다).
- * 성공하면 초안을 지우고 차트를 받아 기기에 둔 뒤 풀이 글(짓는 동안은 "별명 짓는 중")로 간다. 차트를 받지 못하면 홈으로 —
+ * 성공하면 초안을 지우고(닉네임만 별명 공개를 위해 메모리에) 차트를 받아 기기에 둔 뒤 풀이 글(짓는 동안은 "별명 짓는 중", 다 지으면 별명 공개)로 간다. 차트를 받지 못하면 홈으로 —
  * 홈이 서버에 저장된 출생 정보로 되살린다(결정 029). 오류마다 돌아갈 곳: 닉네임(`INVALID_NICKNAME` · `NICKNAME_TAKEN`) ·
  * 약관(`TERMS_REQUIRED`) · 생년월일 칸 아래 빨강(`UNDER_AGE`) · 로그인(`SIGNUP_EXPIRED`, 가드가 보낸다) · 그 밖은 버튼 위 안내.
  * 닉네임 단계를 건너뛰고 들어오면 닉네임 단계로 돌려보낸다. 보내는 동안은 뒤로 가지 않고(두 번 누르기도 막는다),
@@ -16,7 +16,7 @@ import { Button } from '@/components/button';
 import { Txt } from '@/components/txt';
 import { Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { clearDraft, getDraft, rejectNickname, rejectTerms } from '@/features/auth/signup-draft';
+import { finishDraft, getDraft, rejectNickname, rejectTerms } from '@/features/auth/signup-draft';
 import { SignupStep } from '@/features/auth/signup-step';
 import { useAuth } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
@@ -86,7 +86,8 @@ export default function BirthStep() {
       }
       return setRequestError(r.error === 'NETWORK' ? H.requestErrors.NETWORK : H.requestErrors.OTHER);
     }
-    clearDraft();
+    // 초안을 비우고 닉네임만 별명 공개(결정 044)를 위해 메모리에 남긴다
+    finishDraft();
     const chart = await api.createChart(v.input);
     if (chart.ok) await saveBirth({ profile: v.profile, chart: chart.data });
     stop();

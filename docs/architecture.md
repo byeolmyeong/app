@@ -50,6 +50,7 @@ features/            기능별 로직과 기능 전용 부품
   report/            시기(변곡점 타임라인 · use-report — 옛 심층 리포트의 시기 부분, 계획 A③ 이 features/timing 으로 옮긴다)
   synastry/          궁합(직접 입력)·랭킹·궁합 리포트의 상태와 부품. 방금 계산한 궁합의 메모리 보관(fresh-synastry.ts). 궁합 지우기(delete-synastry.ts · 확인 시트 synastry-delete-sheet.tsx)
   direction/         방향성 제시(궁합)의 요청 상태·글 부품(결정 026). 이성 · 미래는 없앴다(결정 048 · 049)
+  push/              휴대폰 푸시(결정 057 · 066, 계획 A8-1 — 공유 파일 push.ts · push-data.ts): 권한 읽기 · 묻기(안드로이드는 채널 먼저) · 이 기기 등록(`POST /push/devices`, 토큰은 AsyncStorage `byeolmyeong-device.push-token.v1` — 로그아웃 정리가 지우지 않는 기기 값) · 로그아웃 때 해제(sign-out.ts 가 세션 지우기 전에 `DELETE /push/devices/{토큰}`) · 루트의 `usePushDeviceSync`(로그인하면 다시 등록, 토큰이 바뀌면 다시) · `usePushTapRouting`(누르면 화면들 · 로그인 · 정지 확인 뒤 그 종류의 화면으로, 쓰는 중 배너 없음) · `onPushReceived`(쓰는 중 온 푸시 — 홈 종 · 알림함) · data 읽기와 갈 곳(push-data.ts 의 `parsePushData` · `pushTarget` — 앱 밖 주소는 버림). 웹은 모두 아무것도 하지 않는다
   support/           자주 묻는 질문을 받아 오는 상태(use-faqs.ts, 메모리에만 5분) · 목록, 문의의 입력 확인 · 날짜(inquiry.ts) · 보내는 상태(use-inquiry.ts) · 내역 · 한 건을 보일 때마다 받기(use-inquiries.ts) · 종류 칩(결정 028 · 058)
   update/            강제 업데이트(결정 027 · 059)와 점검 안내(결정 030 · 060): 버전 비교 · 권유 판정(version.ts) · 셋의 판정(update-store.ts) · 루트를 감싸는 문과 바쁨 등록(update-gate.tsx) · 막는 화면(update-required.tsx · maintenance-notice.tsx) · 권유 창(update-suggest.tsx) · 웹 화면 조각을 못 불러오면 한 번 새로 고침(chunk-reload.tsx — 루트의 ErrorBoundary)
   share/             공유 카드(9:16, 서버가 준 card 만으로 그린다)·공유 버튼과 시트·공유 주소·이미지와 링크 보내기(앱 share-actions.ts, 웹 share-actions.web.ts)·공유 페이지의 카드 받기

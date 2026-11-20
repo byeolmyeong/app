@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import MarketingScreen from '@/app/settings/marketing';
 import PrivacyScreen from '@/app/settings/privacy';
@@ -7,6 +9,62 @@ import { legalInfo, marketing, privacy, terms } from '@/content/legal';
 import { strings } from '@/content/strings';
 
 const L = strings.legal;
+const flat = (node: { props: Record<string, any> }) => StyleSheet.flatten(node.props.style);
+
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
+  useLocalSearchParams: jest.fn(() => ({})),
+}));
+
+beforeEach(() => {
+  (useLocalSearchParams as jest.Mock).mockReturnValue({});
+});
+
+// 약관 보기(결정 044, 보드 6-2): 가운데 제목 17/24 · 600 과 왼쪽 뒤로, 시행일 한 줄 13/18, 조항 제목 15/22 · 600, 문단 14/22 회색, 조항 사이 24, 좌우 20
+describe('약관 글 화면의 모양(보드 6-2)', () => {
+  it('머리는 가운데 제목(17/24 · 600)과 왼쪽 뒤로, 그 아래 시행일 한 줄(13/18 · 안내색)', async () => {
+    await render(<TermsScreen />);
+    expect(flat(screen.getByText(terms.title))).toMatchObject({ fontSize: 17, lineHeight: 24, fontWeight: '600', textAlign: 'center' });
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    const date = screen.getByText(`${L.effectiveLabel} ${legalInfo.effective}`);
+    expect(`${L.effectiveLabel} ${legalInfo.effective}`).toBe('시행일 2026년 11월 19일');
+    expect(flat(date)).toMatchObject({ fontSize: 13, lineHeight: 18, color: '#7C7E8A' });
+  });
+
+  it('조항 제목 15/22 · 600, 문단 · 목록 · 표는 14/22, 조항 사이 24, 좌우 20', async () => {
+    await render(<PrivacyScreen />);
+    const first = privacy.sections[0];
+    expect(flat(screen.getByRole('header', { name: first.title }))).toMatchObject({ fontSize: 15, lineHeight: 22, fontWeight: '600' });
+    const p = first.blocks.find((b) => 'p' in b) as { p: string };
+    expect(flat(screen.getByText(p.p))).toMatchObject({ fontSize: 14, lineHeight: 22, color: '#A9ABB7' });
+    const ul = first.blocks.find((b) => 'ul' in b) as { ul: string[] };
+    expect(flat(screen.getByText(ul.ul[0]))).toMatchObject({ fontSize: 14, lineHeight: 22 });
+    const table = privacy.sections.flatMap((s) => s.blocks).find((b) => 'table' in b) as { table: { head: string[]; rows: string[][] } };
+    expect(flat(screen.getAllByText(table.table.rows[0][1])[0])).toMatchObject({ fontSize: 14, lineHeight: 22 });
+    expect(flat(screen.getAllByText(table.table.head[0])[0])).toMatchObject({ fontSize: 14, lineHeight: 22 });
+    const sections = screen.getAllByTestId('legal-section');
+    expect(sections).toHaveLength(privacy.sections.length);
+    expect(flat(sections[1])).toMatchObject({ marginTop: 24 });
+    expect(flat(screen.getByTestId('legal-body'))).toMatchObject({ paddingHorizontal: 20, paddingTop: 8 });
+  });
+
+  it.each([
+    ['이용약관', TermsScreen],
+    ['개인정보 처리방침', PrivacyScreen],
+    ['마케팅 정보 수신 동의 약관', MarketingScreen],
+  ])('%s: 마이에서 연 글(가입 중이 아님)에는 동의하기가 없다', async (_name, Component) => {
+    await render(<Component />);
+    expect(screen.queryByRole('button', { name: L.agree })).toBeNull();
+  });
+
+  it('가입 약관 단계에서 연 글(from=signup)에는 맨 아래 동의하기(56 · 주색)가 있다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    await render(<TermsScreen />);
+    const agree = screen.getByRole('button', { name: L.agree });
+    expect(L.agree).toBe('동의하기');
+    expect(flat(agree)).toMatchObject({ height: 56, backgroundColor: '#4752FF' });
+  });
+});
 
 // 앱 안의 약관 · 처리방침 · 마케팅 수신 동의(결정 043). 글은 랜딩(byeolmyeong.com)과 같은 원본 `src/content/legal.ts` 에서 온다.
 describe('약관 글 화면', () => {

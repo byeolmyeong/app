@@ -122,6 +122,13 @@ export const RecentBadgeStyle = {
   ring: 2,
 } as const;
 
+/** 약관 글 화면(결정 044 시안 보드 6-2): 조항 제목과 문단 사이 · 동의하기 위의 사라지는 바탕(높이 · 바탕색이 다 차는 자리) */
+export const LegalLayout = {
+  blockGap: 6,
+  agreeFade: 40,
+  agreeFadeSolid: 0.32,
+} as const;
+
 /** 가입 단계 화면(결정 042 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
 export const StepLayout = {
   progressHeight: 3,
@@ -263,8 +270,12 @@ export const Typography = {
   lead: type(15, 23, FontWeight.regular),
   /** 시트 안의 한 줄 뜻(내 하늘 지도 시트, 시안 13-1) */
   desc: type(14, 21, FontWeight.regular),
-  /** 약관의 "모두 동의"(결정 042 시안) */
+  /** 약관의 "모두 동의"(결정 042 시안) · 약관 글 화면의 머리 제목(결정 044 시안) */
   emphasis: type(17, 24, FontWeight.semibold),
+  /** 약관 글의 조항 제목(결정 044 시안) */
+  clause: type(15, 22, FontWeight.semibold),
+  /** 약관 글의 문단 · 목록 · 표(결정 044 시안) */
+  legal: type(14, 22, FontWeight.regular),
   /** 약관 항목 한 줄 */
   item: type(15, 22, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */

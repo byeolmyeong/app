@@ -106,7 +106,10 @@ describe('약관 단계', () => {
     await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.privacy }));
     await fireEvent.press(screen.getByRole('link', { name: T.viewLabels.marketing }));
     expect(screen.getAllByRole('link')).toHaveLength(3);
-    expect((router.push as jest.Mock).mock.calls).toEqual([['/settings/terms'], ['/settings/privacy'], ['/settings/marketing']]);
+    // 가입 중에 연 것을 글 화면이 알아 맨 아래에 동의하기를 둔다(결정 044, 보드 6-2)
+    expect((router.push as jest.Mock).mock.calls).toEqual(
+      ['/settings/terms', '/settings/privacy', '/settings/marketing'].map((pathname) => [{ pathname, params: { from: 'signup' } }]),
+    );
   });
 
   it('체크를 바꿀 때마다 초안에 쓴다 — 웹에서 앞으로 가기로 넘어가도 옛 동의가 가지 않는다(리뷰 A3)', async () => {

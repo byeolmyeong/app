@@ -18,7 +18,7 @@ export const strings = {
   login: {
     /** 로고 아래 한 줄 */
     tagline: '별이 붙여 준 나의 별명',
-    /** 웹은 구글이 그리는 GIS 버튼이라 이 문구를 쓰지 않는다(GIS 의 "로그인" 문구, 결정 044) */
+    /** 웹도 같은 문구(우리 모양 위에 GIS 를 투명하게 겹친다, 결정 067 의 4) */
     google: 'Google로 로그인',
     apple: 'Apple로 로그인',
     kakao: 'Kakao로 로그인',

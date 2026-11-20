@@ -66,8 +66,8 @@ function GoogleLogo() {
 
 const LOGOS = { KAKAO: KakaoSymbol, APPLE: AppleLogo, GOOGLE: GoogleLogo } as const;
 
-/** "최근 로그인" 배지. 놓을 칸(position: relative)의 오른쪽 위에 걸친다. 웹 구글(GIS)은 버튼을 감싼 칸에 얹는다 */
-export function RecentBadge() {
+/** "최근 로그인" 배지. 버튼(position: relative)의 오른쪽 위에 걸친다 */
+function RecentBadge() {
   return (
     <View testID="recent-badge" pointerEvents="none" style={styles.badge}>
       <Txt variant="badge">{strings.login.recent}</Txt>
@@ -79,17 +79,11 @@ export function RecentBadge() {
 const socialLabel = (label: string, recent: boolean) =>
   recent ? `${label}${strings.login.recentSeparator}${strings.login.recent}` : label;
 
-export function SocialButton({ provider, label, onPress, disabled = false, loading = false, recent = false }: SocialButtonProps) {
+/** 버튼 안: 왼쪽 로고 · 가운데 문구(기다리는 중이면 돌기) · 최근 로그인 배지 */
+function Content({ provider, label, loading, recent }: Pick<SocialButtonProps, 'provider' | 'label'> & { loading: boolean; recent: boolean }) {
   const Logo = LOGOS[provider];
   return (
-    <Pressable
-      testID={`social-button-${provider}`}
-      accessibilityRole="button"
-      accessibilityLabel={socialLabel(label, recent)}
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      disabled={disabled || loading}
-      onPress={onPress}
-      style={[styles.base, styles[provider], disabled && !loading && styles.disabled]}>
+    <>
       <View testID={`social-logo-${provider}`} style={[styles.logo, provider === 'GOOGLE' && styles.logoInBorder]}>
         <Logo />
       </View>
@@ -99,7 +93,43 @@ export function SocialButton({ provider, label, onPress, disabled = false, loadi
         <Text style={[styles.text, text[provider]]}>{label}</Text>
       )}
       {recent ? <RecentBadge /> : null}
+    </>
+  );
+}
+
+export function SocialButton({ provider, label, onPress, disabled = false, loading = false, recent = false }: SocialButtonProps) {
+  return (
+    <Pressable
+      testID={`social-button-${provider}`}
+      accessibilityRole="button"
+      accessibilityLabel={socialLabel(label, recent)}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      disabled={disabled || loading}
+      onPress={onPress}
+      style={[styles.base, styles[provider], disabled && !loading && styles.disabled]}>
+      <Content provider={provider} label={label} loading={loading} recent={recent} />
     </Pressable>
+  );
+}
+
+export type SocialButtonFaceProps = Omit<SocialButtonProps, 'onPress'> & {
+  /** 위에 겹친 버튼(GIS)에 키보드 포커스가 있다 — 주색 테두리 */
+  focused?: boolean;
+};
+
+/**
+ * 누름이 없는 같은 모양(결정 067 의 4). 웹 구글은 이 위에 GIS 버튼을 투명하게 겹쳐 누름을 GIS 가 받는다.
+ * 키보드 포커스와 화면 읽기는 겹친 GIS 버튼이 받으므로 이 모양은 화면 읽기에서 숨기고, 그 버튼에 포커스가 있으면 주색 테두리를 보인다.
+ */
+export function SocialButtonFace({ provider, label, disabled = false, loading = false, recent = false, focused = false }: SocialButtonFaceProps) {
+  return (
+    <View
+      testID={`social-button-${provider}`}
+      aria-hidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.base, styles[provider], disabled && !loading && styles.disabled, focused && styles.focused]}>
+      <Content provider={provider} label={label} loading={loading} recent={recent} />
+    </View>
   );
 }
 
@@ -115,6 +145,7 @@ const styles = StyleSheet.create({
   APPLE: { backgroundColor: B.apple.background },
   GOOGLE: { backgroundColor: B.google.background, borderWidth: LineWidth, borderColor: B.google.border },
   disabled: { opacity: B.disabledOpacity },
+  focused: { borderColor: Colors.primary },
   logo: {
     position: 'absolute',
     left: B.logoInset,

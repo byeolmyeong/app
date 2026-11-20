@@ -27,6 +27,7 @@ jest.mock('expo-router', () => ({
     canDismiss: jest.fn(() => false),
     dismissAll: jest.fn(),
   },
+  Stack: { Screen: () => null },
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
 }));
 jest.mock('@/lib/api', () => ({

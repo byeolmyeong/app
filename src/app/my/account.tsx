@@ -65,7 +65,7 @@ export default function AccountScreen() {
 
   const linked = account ? (account.email ? maskEmail(account.email) : providerName(account.provider)) : null;
   return (
-    <Screen scroll={false} nav={<NavBar chevron title={A.title} onBack={() => router.back()} />}>
+    <Screen scroll={false} nav={<NavBar chevron title={A.title} onBack={() => (router.canGoBack() ? router.back() : router.replace('/my'))} />}>
       <View style={styles.body}>
         <Pressable accessibilityRole="button" accessibilityLabel={A.editAvatar} onPress={() => setSheet(true)} style={styles.avatar}>
           {avatar ? <Avatar id={avatar} size={Sizes.avatarLarge} /> : <View testID="avatar-empty" style={styles.avatarEmpty} />}

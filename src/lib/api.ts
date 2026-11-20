@@ -117,8 +117,8 @@ export type Account = { nickname: string | null; avatar: number | null };
  */
 export type MyAccount = Account & { email: string | null; provider: string; marketingConsent: boolean };
 
-/** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028) */
-export type AccountPatch = { nickname?: string; avatar?: number; marketingConsent?: boolean };
+/** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028). 마케팅 · 푸시 동의는 알림 화면(계획 A8-2)이 더한다 */
+export type AccountPatch = { nickname?: string; avatar?: number };
 
 /** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
 export const DIRECTION_TOPICS = ['LOVE', 'FUTURE', 'SYNASTRY'] as const;
@@ -1090,7 +1090,7 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `PATCH /account` 닉네임 · 프로필 · 마케팅 수신 동의를 바꾼다(보낸 칸만). 400 `INVALID_NICKNAME` · `INVALID_AVATAR`,
+     * `PATCH /account` 닉네임 · 프로필을 바꾼다(보낸 칸만). 400 `INVALID_NICKNAME` · `INVALID_AVATAR`,
      * 409 `NICKNAME_TAKEN` 은 code 로 온다 — 그때는 같이 보낸 칸도 바뀌지 않는다.
      */
     async updateAccount(patch: AccountPatch): Promise<ApiResult<MyAccount>> {

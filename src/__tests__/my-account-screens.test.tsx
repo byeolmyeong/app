@@ -15,7 +15,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canDismiss: jest.fn(() => true), dismissAll: jest.fn() },
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => true), dismissAll: jest.fn() },
+  Stack: { Screen: () => null },
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
 }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -240,6 +241,46 @@ describe('계정 삭제(/my/delete, 보드 16-10)', () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
     expect(clearSession).toHaveBeenCalledTimes(1);
     spy.mockRestore();
+  });
+
+  it('지우는 동안에는 뒤로 갈 수 없다(머리 꺾쇠 · 안드로이드 뒤로)', async () => {
+    const handlers: (() => boolean)[] = [];
+    const spy = jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_e, handler) => {
+      handlers.push(handler as () => boolean);
+      return { remove: jest.fn() };
+    });
+    let finish: (r: { ok: true; data: null }) => void = () => {};
+    mockApi.deleteAccount.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    await render(<DeleteAccountScreen />);
+    await fireEvent.press(screen.getByRole('checkbox'));
+    await fireEvent.press(confirm());
+    await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+    expect(router.back).not.toHaveBeenCalled();
+    expect(handlers.length).toBeGreaterThan(0);
+    expect(handlers[handlers.length - 1]()).toBe(true);
+    expect(router.replace).not.toHaveBeenCalled();
+    await act(async () => finish({ ok: true, data: null }));
+    expect(await screen.findByText(D.doneTitle)).toBeTruthy();
+    spy.mockRestore();
+  });
+
+  it('지우는 중에 화면을 떠났어도(웹의 뒤로 등) 지우기가 끝나면 곧바로 세션을 비우고 로그인으로 간다', async () => {
+    let finish: (r: { ok: true; data: null }) => void = () => {};
+    mockApi.deleteAccount.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const view = await render(<DeleteAccountScreen />);
+    await fireEvent.press(screen.getByRole('checkbox'));
+    await fireEvent.press(confirm());
+    await view.unmount();
+    await act(async () => finish({ ok: true, data: null }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
+    expect(clearSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('주소로 바로 열어 돌아갈 곳이 없으면 뒤로 가기는 계정 화면으로 바꾼다', async () => {
+    (router.canGoBack as jest.Mock).mockReturnValueOnce(false);
+    await render(<DeleteAccountScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+    expect(router.replace).toHaveBeenCalledWith('/my/account');
   });
 
   it('지우는 동안에는 다시 누를 수 없다', async () => {

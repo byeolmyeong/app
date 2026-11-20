@@ -72,7 +72,7 @@ export default function NicknameScreen() {
   }
 
   return (
-    <Screen scroll={false} nav={<NavBar chevron title={MN.title} onBack={() => router.back()} />}>
+    <Screen scroll={false} nav={<NavBar chevron title={MN.title} onBack={() => (router.canGoBack() ? router.back() : router.replace('/my/account'))} />}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.body}>
           <FieldInput
@@ -100,8 +100,11 @@ export default function NicknameScreen() {
           </Txt>
         </View>
         <View style={styles.footer}>
-          <Toast toast={toast} onClose={hide} above="button" />
-          <Button label={MN.save} onPress={() => void save()} disabled={!canSave} />
+          {/* 알림이 버튼 폭 그대로 뜨게 여백 없는 칸으로 감싼다(absolute 는 바깥 여백을 무시한다) */}
+          <View>
+            <Toast toast={toast} onClose={hide} above="button" />
+            <Button label={MN.save} onPress={() => void save()} disabled={!canSave} />
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Screen>

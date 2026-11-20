@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, MyLayout, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, MyLayout } from '@/constants/theme';
 
 const L = MyLayout.list;
 
@@ -26,8 +26,6 @@ export function ListCard({ children }: { children: ReactNode }) {
 
 export type ListCardRowProps = {
   label: string;
-  /** 이름 아래 한 줄 설명(알림 화면의 "매일 아침 …") */
-  sub?: string;
   /** 오른쪽에 적는 값(받는 시간 · 닉네임 · 앱 버전) */
   value?: string;
   /** 값 대신 오른쪽에 둘 것(연결된 계정의 공급자 표시) */
@@ -50,19 +48,12 @@ function SwitchMark({ on }: { on: boolean }) {
 }
 
 /** 목록 카드의 한 줄: 왼쪽 이름(과 설명), 오른쪽 값 · 덧붙일 것 · 화살표 또는 스위치. 최소 높이 52 */
-export function ListCardRow({ label, sub, value, trailing, onPress, chevron = true, toggle }: ListCardRowProps) {
+export function ListCardRow({ label, value, trailing, onPress, chevron = true, toggle }: ListCardRowProps) {
   const content = (
     <>
-      <View style={styles.text}>
-        <Txt variant="item" style={styles.label}>
-          {label}
-        </Txt>
-        {sub ? (
-          <Txt variant="caption" color="hint" keepAll>
-            {sub}
-          </Txt>
-        ) : null}
-      </View>
+      <Txt variant="item" style={styles.label}>
+        {label}
+      </Txt>
       {value !== undefined ? (
         <Txt variant="desc" color="gray">
           {value}
@@ -115,8 +106,7 @@ const styles = StyleSheet.create({
     paddingVertical: L.paddingV,
     paddingHorizontal: L.paddingH,
   },
-  text: { flex: 1, gap: Spacing.hairline },
-  label: { fontWeight: FontWeight.medium },
+  label: { flex: 1, fontWeight: FontWeight.medium },
   switch: { width: L.switch.width, height: L.switch.height, borderRadius: L.switch.height / 2, justifyContent: 'center' },
   switchOn: { backgroundColor: Colors.primary },
   switchOff: { backgroundColor: Colors.hair },

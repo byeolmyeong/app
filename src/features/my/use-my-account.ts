@@ -12,6 +12,8 @@ import { api, type MyAccount } from '@/lib/api';
 export function useMyAccount() {
   const signedIn = useSession().status === 'signedIn';
   const [account, setAccount] = useState<MyAccount | null>(null);
+  // 로그아웃한 뒤 같은 화면이 살아남아 다른 사람이 로그인해도 앞사람의 계정이 보이지 않게 비운다
+  if (!signedIn && account !== null) setAccount(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -26,5 +28,5 @@ export function useMyAccount() {
     }, [signedIn]),
   );
 
-  return { account: signedIn ? account : null, setAccount };
+  return { account, setAccount };
 }

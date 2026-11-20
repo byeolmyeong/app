@@ -22,15 +22,24 @@ describe('조각 불러오기 실패', () => {
     expect(isChunkLoadError('boom')).toBe(false);
   });
 
-  it('한 번만 새로 고친다: 표시를 남기고 새로 고치고, 표시가 있으면(새로 고친 뒤에도 실패) 다시 고치지 않는다. 표시를 지우면 다시 된다', () => {
+  it('한 번만 새로 고친다: 시각을 남기고 새로 고치고, 5분 안에 또 실패하면 다시 고치지 않는다. 표시를 지우면 다시 된다', () => {
     const storage = fakeStorage();
     const reload = jest.fn();
-    expect(reloadOnceForChunk(storage, reload)).toBe(true);
+    expect(reloadOnceForChunk(storage, reload, 1_000)).toBe(true);
     expect(reload).toHaveBeenCalledTimes(1);
-    expect(reloadOnceForChunk(storage, reload)).toBe(false);
+    expect(reloadOnceForChunk(storage, reload, 1_000 + 60_000)).toBe(false);
     expect(reload).toHaveBeenCalledTimes(1);
     clearChunkReload(storage);
-    expect(reloadOnceForChunk(storage, reload)).toBe(true);
+    expect(reloadOnceForChunk(storage, reload, 1_000 + 61_000)).toBe(true);
+  });
+
+  // 리뷰 PR #57 제안 7: 뜬 뒤 10초에 표시를 지우면 느린 실패가 10초마다 새로 고칠 수 있었다 — 시각으로 5분에 한 번만
+  it('새로 고친 지 5분이 지난 실패면(다음 배포) 다시 한 번 새로 고친다', () => {
+    const storage = fakeStorage();
+    const reload = jest.fn();
+    reloadOnceForChunk(storage, reload, 1_000);
+    expect(reloadOnceForChunk(storage, reload, 1_000 + 5 * 60_000)).toBe(true);
+    expect(reload).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -54,7 +63,7 @@ describe('루트의 오류 경계(웹)', () => {
   });
 
   it('새로 고친 뒤에도 실패하면 볼 게 없는 화면(20-1) — 다시 시도는 표시를 지우고 새로 고친다', async () => {
-    reloadOnceForChunk(storage, jest.fn());
+    reloadOnceForChunk(storage, jest.fn(), Date.now());
     await render(<ChunkErrorBoundary error={asyncRequire} retry={jest.fn()} storage={storage} reload={reload} />);
     expect(reload).not.toHaveBeenCalled();
     expect(screen.getByText(strings.states.offlineEmpty.title)).toBeTruthy();

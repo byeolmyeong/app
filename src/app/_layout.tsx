@@ -14,7 +14,7 @@ import { resumeStep } from '@/features/auth/signup-resume';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { useHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
-import { ChunkErrorBoundary, useClearChunkReloadWhenSettled } from '@/features/update/chunk-reload';
+import { ChunkErrorBoundary } from '@/features/update/chunk-reload';
 import { UpdateGate } from '@/features/update/update-gate';
 
 SplashScreen.preventAutoHideAsync();
@@ -36,7 +36,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 }
 
 export default function RootLayout() {
-  // ── 루트 훅: 세션 · 소개 기록 · 가드 · 글꼴 · 조각 실패 표시 · 확인하지 못한 세션 다시 확인.
+  // ── 루트 훅: 세션 · 소개 기록 · 가드 · 글꼴 · 확인하지 못한 세션 다시 확인.
   // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
   // 공유 페이지(/s/…)는 로그인 없이 열리는 화면이라 그 안에서는 시작하지 않는다(결정 025).
   const segments: string[] = useSegments();
@@ -64,8 +64,6 @@ export default function RootLayout() {
     },
   ]);
   const fontsDone = loaded || !!error;
-  // 조각 실패로 새로 고친 뒤 잘 떴으면 표시를 지운다(다음 배포 때 다시 한 번 새로 고칠 수 있게)
-  useClearChunkReloadWhenSettled();
   // 웹이 시작할 때 서버에 닿지 못했으면(결정 068 의 4) 30초마다 다시 확인한다 — 살아 있으면 로그인, 401 이면 로그인 화면
   const unreachable = session.status === 'offline';
   useEffect(() => {

@@ -4,6 +4,9 @@
  */
 export type Track = 'opening' | 'waiting' | 'background';
 
+/** 앱에 음악이 들어가 있는가. 1.0.0 에서는 꺼 둔다 — 1.1.0 때 켤 일은 결정 069 의 목록(이것을 true 로 하면 `/my/music` 이 열린다) */
+export const MUSIC_IN_APP = false;
+
 export const TRACK_SOURCES: Record<Track, number> = {
   opening: require('@/assets/audio/opening.wav'),
   waiting: require('@/assets/audio/waiting.wav'),

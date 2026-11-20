@@ -50,6 +50,13 @@ describe('소개를 봤는지', () => {
 });
 
 describe('소개 화면', () => {
+  it('둘째 장 본문은 확정 시안(보드 3, 2026-11-20) 그대로', async () => {
+    const body = '궁합으로 서로 닮은 점과 부딪히는 점을 알아봐요. 연인 · 친구 · 동료 · 가족 모두요.';
+    expect(S.slides[1].body).toBe(body);
+    await render(<IntroScreen />);
+    expect(screen.getByText(body)).toBeTruthy();
+  });
+
   it('제목은 피그마 보드처럼 한 줄 — 줄을 억지로 나누지 않는다(비교 B1)', () => {
     expect(S.slides.map((slide) => slide.title.includes('\n'))).toEqual([false, false, false]);
   });

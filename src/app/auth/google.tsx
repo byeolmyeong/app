@@ -25,7 +25,9 @@ export default function GoogleReturnScreen() {
   useEffect(() => {
     if (handled === fragment) return;
     handled = fragment;
+    // 라우터도 조각을 경로 값('#')으로 들고 있다가 주소를 다시 쓰므로 둘 다 지운다
     clearUrlFragment();
+    router.setParams({ '#': undefined });
     const result = readGoogleReturn(fragment, takeGoogleRequest());
     if (result.kind === 'cancelled') {
       router.replace('/login');

@@ -5,7 +5,7 @@ import GoogleReturn from '@/app/auth/google';
 import { clearUrlFragment, takeGoogleRequest, urlFragment } from '@/features/auth/providers/web-redirect';
 import { useAuth } from '@/features/auth/use-session';
 
-jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { replace: jest.fn(), setParams: jest.fn() } }));
 jest.mock('@/features/auth/providers/web-redirect', () => ({
   ...jest.requireActual('@/features/auth/providers/web-redirect'),
   urlFragment: jest.fn(() => ''),
@@ -77,10 +77,12 @@ describe('/auth/google', () => {
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  it('읽은 주소 조각은 서버를 부르기 전에 기록에서 지운다(토큰이 주소 · 뒤로 가기에 남지 않게)', async () => {
+  // 라우터도 조각을 경로 값('#')으로 들고 있다가 주소를 다시 쓴다(헤드리스 확인) — 브라우저 주소와 라우터 값을 함께 지운다
+  it('읽은 주소 조각은 서버를 부르기 전에 브라우저 주소와 라우터의 값에서 지운다(기다리는 동안 주소창에 토큰이 남지 않게)', async () => {
     mockFragment.mockReturnValue(`#id_token=${idToken('n-1', 'clear')}&state=st-1`);
     mockSignIn.mockImplementation(() => {
       expect(clearUrlFragment).toHaveBeenCalledTimes(1);
+      expect(router.setParams).toHaveBeenCalledWith({ '#': undefined });
       return new Promise(() => {});
     });
     await render(<GoogleReturn />);

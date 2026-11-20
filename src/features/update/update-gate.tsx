@@ -103,3 +103,20 @@ export function useGenerationBusy(generating: boolean, hasResult: boolean) {
   if (generating && !generated) setGenerated(true);
   useUpdateBusy(generating || (generated && hasResult));
 }
+
+const noSubscribe = () => () => {};
+const settledOutside = () => true;
+const noSuggestion = () => null;
+
+/**
+ * 홈의 다른 권유(알림 받기, 결정 066)가 업데이트 권유(결정 059)와 같이 뜨지 않게 보는 상태: 첫 확인 전이면 'checking', 권할 최신 버전이
+ * 있으면 'suggesting'(권유 창이 떠 있거나 곧 뜬다), 아니면 'none'. UpdateGate 밖에서는 'none'.
+ */
+export function useUpdateSuggestion(): 'checking' | 'suggesting' | 'none' {
+  const store = useContext(UpdateContext);
+  const settled = useSyncExternalStore(store?.subscribeSettled ?? noSubscribe, store?.getSettled ?? settledOutside, store?.getSettled ?? settledOutside);
+  const suggestion = useSyncExternalStore(store?.subscribe ?? noSubscribe, store?.getSuggestion ?? noSuggestion, store?.getSuggestion ?? noSuggestion);
+  if (suggestion) return 'suggesting';
+  return settled ? 'none' : 'checking';
+}
+

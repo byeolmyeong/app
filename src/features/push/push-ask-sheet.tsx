@@ -12,6 +12,7 @@ import { Txt } from '@/components/txt';
 import { Colors, FontWeight, LineWidth, PushAskLayout as L, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { getPushPermission, requestPushPermission } from '@/features/push/push';
+import { useUpdateSuggestion } from '@/features/update/update-gate';
 import { api, type AccountPatch } from '@/lib/api';
 
 const A = strings.push.ask;
@@ -47,10 +48,16 @@ async function save(patch: AccountPatch): Promise<void> {
  * - 나중에(밖을 눌러 닫아도) → 다시 묻지 않는다. 마이 › 알림에서 켤 수 있다.
  * - 휴대폰에서 이미 거절했거나 웹이면 띄우지 않는다(창이 다시 뜨지 않으니 마이 › 알림의 "설정 열기"로). 이미 허용이면 창만 건너뛴다.
  * - 받는 시간은 계정의 값(`time`)에서 시작한다 — 다른 기기에서 정한 시각을 덮지 않게.
+ * - 별명 공개를 본 뒤에만(`ready` — 홈에 받아 둔 풀이가 있다, 짓는 중에 닫았다 연 경우는 아직) 띄운다.
+ * - 업데이트 권유(결정 059)가 먼저: 첫 확인이 끝날 때까지 기다리고, 이번 홈 방문에 업데이트 권유가 있으면 다음 방문으로 미룬다.
  * 홈 화면에 한 줄로 붙인다.
  */
-export function PushAskSheet({ time: savedTime }: { time?: string }) {
+export function PushAskSheet({ time: savedTime, ready = true }: { time?: string; ready?: boolean }) {
   const splashGone = useSplashGone();
+  const update = useUpdateSuggestion();
+  /** 이번 홈 방문에 업데이트 권유가 있었다 — 이 방문에서는 띄우지 않는다 */
+  const [deferred, setDeferred] = useState(false);
+  if (update === 'suggesting' && !deferred) setDeferred(true);
   const [eligible, setEligible] = useState(false);
   const [step, setStep] = useState<'hidden' | 'ask' | 'time'>('hidden');
   const [time, setTime] = useState(savedTime ?? DEFAULT_TIME);
@@ -84,7 +91,7 @@ export function PushAskSheet({ time: savedTime }: { time?: string }) {
   }, []);
 
   // 스플래시가 걷힌 뒤에 띄운다(스플래시 · 정지 확인 위로 올라오지 않게)
-  if (eligible && splashGone && step === 'hidden' && !answered) setStep('ask');
+  if (eligible && splashGone && ready && update === 'none' && !deferred && step === 'hidden' && !answered) setStep('ask');
 
   const finish = () => {
     acted.current = true;

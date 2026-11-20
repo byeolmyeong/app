@@ -159,7 +159,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
             online={online} onOpen={() => router.replace('/timing')} onRetry={timing.recheck} />
         </View>
         {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때) */}
-        <PushAskSheet time={account?.todaySkyTime} />
+        <PushAskSheet time={account?.todaySkyTime} ready={!!reading?.headline} />
       </Screen>
     );
   }

@@ -9,6 +9,9 @@ import { PUSH_ASK_KEY, PUSH_ASK_PENDING_KEY, PushAskSheet } from '@/features/pus
 import { api } from '@/lib/api';
 
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { extra: { eas: { projectId: 'project-1' } } }, easConfig: null } }));
+// 업데이트 권유 상태(결정 059)는 시험이 정한다(기본: 권할 것 없음)
+const mockUpdate = { value: 'none' as 'checking' | 'suggesting' | 'none' };
+jest.mock('@/features/update/update-gate', () => ({ useUpdateSuggestion: () => mockUpdate.value }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   api: { updateAccount: jest.fn(), registerPushDevice: jest.fn(), deletePushDevice: jest.fn() },
@@ -27,13 +30,14 @@ beforeEach(async () => {
   jest.clearAllMocks();
   await AsyncStorage.clear();
   setSplashGoneForTest(true);
+  mockUpdate.value = 'none';
   N.getPermissionsAsync.mockResolvedValue(perm(S.NOT_DETERMINED));
   mockApi.updateAccount.mockResolvedValue(ok);
   mockApi.registerPushDevice.mockResolvedValue({ ok: true, data: null });
 });
 
-const shown = async (time?: string) => {
-  const view = await render(<PushAskSheet time={time} />);
+const shown = async (time?: string, ready = true) => {
+  const view = await render(<PushAskSheet time={time} ready={ready} />);
   await act(async () => {});
   return view;
 };
@@ -53,6 +57,29 @@ describe('알림 받기 권유(보드 11-10, 결정 066 의 2)', () => {
     await shown();
     expect(screen.queryByText(A.title)).toBeNull();
     await act(async () => setSplashGoneForTest(true));
+    expect(screen.getByText(A.title)).toBeTruthy();
+  });
+
+  it('별명 공개를 보기 전(홈에 받아 둔 풀이가 없다 — 짓는 중에 닫았다 연 경우)에는 띄우지 않는다', async () => {
+    const view = await shown(undefined, false);
+    expect(screen.queryByText(A.title)).toBeNull();
+    await view.rerender(<PushAskSheet ready />);
+    expect(screen.getByText(A.title)).toBeTruthy();
+  });
+
+  it('업데이트 권유가 먼저: 첫 확인 중에는 기다리고, 이번 방문에 업데이트 권유가 있었으면 다음 홈 방문에 띄운다', async () => {
+    mockUpdate.value = 'checking';
+    const view = await shown();
+    expect(screen.queryByText(A.title)).toBeNull();
+    mockUpdate.value = 'suggesting';
+    await view.rerender(<PushAskSheet ready />);
+    expect(screen.queryByText(A.title)).toBeNull();
+    // 업데이트 권유를 닫아도 이번 방문에서는 띄우지 않는다
+    mockUpdate.value = 'none';
+    await view.rerender(<PushAskSheet ready />);
+    expect(screen.queryByText(A.title)).toBeNull();
+    await view.unmount();
+    await shown();
     expect(screen.getByText(A.title)).toBeTruthy();
   });
 

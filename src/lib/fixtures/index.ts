@@ -11,6 +11,10 @@
  * - report.json: 심층 리포트의 네 영역(성격 · 관계 · 일 · 감정)과 시기(`timing`: 변곡점 넷, 구간 23개, 오늘은 2026-11-11).
  *   글과 날짜는 계약의 모양에 맞춰 쓴 예시다(서버가 계산한 값이 아니다).
  * - report-timing-time-unknown.json: 시각 모름일 때의 시기 예시. 운명적 만남 구간과 돈 영역이 없다. `reportTimeUnknown` 이 쓴다.
+ * - timing-report.json: `GET /timing-report` 의 다 쓴 시기 풀이(결정 049 · 서버 결정 033). 구간 이름 · 기간 · 한 줄 · 자세히 · 실천 · 마디의 해와 나이는
+ *   캔버스 14 보드(14 · 14-1 · 14-2 · 14-3)의 글에 맞춘 예시이고(오늘 2026-11-19, 대표 구간 i11), 서버가 계산한 값이 아니다.
+ *   timing-report-time-unknown.json 은 같은 것의 시각 모름(운명적 만남 · 돈 · 상승점 · 중천 · 하우스 · 버텍스가 대상인 구간이 없다).
+ * - month-sky.json: `GET /timing/month` 의 2026-11(보드 14-1 의 이번 달 내내 둘 · 눈여겨볼 날 셋). day-sky.json: `POST /day-sky` 의 그날(보드 14-4).
  * - synastry.json: `POST /synastry/direct` 의 응답 예시(겹친 휠 `overlay` 포함). 내 쪽 위치는 chart.json 의 값이고 상대 쪽과 글은 지어낸 예시다.
  * - synastry-list.json: `GET /synastry` 의 예시(새것부터, `overlay` 없음). 60점 미만인 것에만 `scoreLabel` 이 있다.
  * - synastry-report.json: 궁합 리포트의 네 영역(끌림 · 대화 · 갈등 · 오래가기). 글은 예시 문장이고 근거는 내 쪽 요소뿐이다.
@@ -23,10 +27,12 @@
  */
 import type {
   Chart,
+  DaySky,
   Direction,
   Faq,
   InquiryItem,
   MeReport,
+  MonthSky,
   Place,
   Reading,
   Report,
@@ -34,16 +40,19 @@ import type {
   ShareCard,
   Synastry,
   SynastryReport,
+  TimingReport,
 } from '@/lib/api';
 
 import chartTimeUnknown from './chart-time-unknown.json';
 import chart from './chart.json';
+import daySky from './day-sky.json';
 import directionFuture from './direction-future.json';
 import directionSynastry from './direction-synastry.json';
 import direction from './direction.json';
 import faqs from './faqs.json';
 import inquiries from './inquiries.json';
 import meReport from './me-report.json';
+import monthSky from './month-sky.json';
 import places from './places.json';
 import reading from './reading.json';
 import reportTimingTimeUnknown from './report-timing-time-unknown.json';
@@ -52,6 +61,8 @@ import shareCards from './share-cards.json';
 import synastryList from './synastry-list.json';
 import synastryReport from './synastry-report.json';
 import synastry from './synastry.json';
+import timingReportTimeUnknown from './timing-report-time-unknown.json';
+import timingReport from './timing-report.json';
 
 export const fixtures = {
   places: places as Place[],
@@ -61,6 +72,10 @@ export const fixtures = {
   meReport: meReport as MeReport,
   report: report as Report,
   reportTimeUnknown: { sections: report.sections, timing: reportTimingTimeUnknown as ReportTiming } as Report,
+  timingReport: timingReport as TimingReport,
+  timingReportTimeUnknown: timingReportTimeUnknown as TimingReport,
+  monthSky: monthSky as MonthSky,
+  daySky: daySky as DaySky,
   direction: direction as Direction,
   faqs: faqs as Faq[],
   inquiries: inquiries as InquiryItem[],

@@ -246,16 +246,31 @@ export type TimingMilestone = {
   body: string;
 };
 
-/** 나에게만 오는 구간. CHANGE 변화 · OPPORTUNITY 기회 · FATED 운명적 만남(시각을 알 때만). size 는 CHANGE 에만 있다 */
+/** 시기 자세히(14-3)의 01 무엇이 달라지나요 · 02 이렇게 지내 보세요 · 03 이 시기가 지나면(서버 결정 033) */
+export type TimingDetail = { changes: string; howTo: string; after: string };
+
+/** 시기의 영역: 일 · 사람·인연 · 나 자신 · 돈(시각을 모르면 돈이 없다) */
+export const LIFE_AREAS = ['PEOPLE', 'WORK', 'MONEY', 'SELF'] as const;
+export type LifeArea = (typeof LIFE_AREAS)[number];
+
+/**
+ * 나에게만 오는 구간. CHANGE 변화 · OPPORTUNITY 기회 · FATED 운명적 만남(시각을 알 때만). size 는 CHANGE 에만 있다.
+ * title 은 서버 표의 제목(이번 달 내내와 같은 말). 시기 풀이에서 모델이 쓴 구간(풀이를 만든 날에 걸쳐 있거나 10년 안에 시작)에만
+ * 한 줄 summary · 자세히 detail · 작은 실천 셋 practices · 근거 reason(`NOW`)이 있다 — 나머지는 키가 없다(서버 결정 033).
+ */
 export type TimingInterval = {
   id: string;
   kind: 'CHANGE' | 'OPPORTUNITY' | 'FATED';
   from: string;
   to: string;
-  area: 'PEOPLE' | 'WORK' | 'MONEY' | 'SELF';
+  area: LifeArea;
   size?: TimingSize;
   title: string;
   body: string;
+  summary?: string;
+  detail?: TimingDetail;
+  practices?: { title: string }[];
+  reason?: Reason;
 };
 
 /** 지금 나의 구간. 서버가 `GET /reports/me` 때마다 그날(date)로 만든다. 없는 값은 키가 없다 */
@@ -269,6 +284,8 @@ export type TimingCurrent = {
   nextMilestone?: TimingMilestone;
   /** 오늘에서 가장 가까운 변곡점(지났든 아니든). 화면에서 강조한다 */
   nearestMilestone: MilestoneKind;
+  /** 시기 풀이의 대표 구간(오늘 걸친 구간 가운데 서버가 고른 것, 서버 결정 033). 걸친 구간이 없으면 키가 없다 */
+  mainId?: string;
 };
 
 /** 심층 리포트의 시기 영역. milestones 는 언제나 넷이 시간 순서로, intervals 는 시작 순서로 온다(서로 겹칠 수 있다) */
@@ -287,6 +304,45 @@ export type ReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 
 
 /** `POST /reports` 의 응답(202). WRITING 쓰기 시작했거나 쓰는 중 · DONE 이미 써 둠 */
 export type ReportRequest = { status: 'WRITING' | 'DONE' };
+
+/** 시기 풀이(결정 049 · 050, 서버 결정 033): 시기의 모양에 모델이 쓴 칸 · 대표 구간이 더해진 것. 지금(current)은 GET 할 때마다 그날로 붙는다 */
+export type TimingReport = ReportTiming;
+
+/** `GET /timing-report`. 풀이는 DONE 일 때만 온다(지금 프로필의 차트 기준 — 출생 정보를 고치면 NONE) */
+export type TimingReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: TimingReport };
+
+/** `POST /timing-report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
+export type TimingReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
+
+/** 눈여겨볼 날 · 그날의 하늘의 칩: 사람 · 일 · 마음(서버 결정 032 · 034). 모르는 칩은 받아 두고 그리는 쪽이 그 줄을 숨긴다 */
+export const DAY_CATEGORIES = ['PEOPLE', 'WORK', 'MIND'] as const;
+export type DayCategory = (typeof DAY_CATEGORIES)[number];
+
+/** "이번 달 내내" 한 줄: 그달에 걸친 시기 구간의 영역 · 표 제목 · 기간(그달 밖으로 이어질 수 있다) */
+export type MonthTheme = { area: LifeArea | (string & {}); title: string; from: string; to: string };
+
+/** 눈여겨볼 날 하나 = 달력의 점. reason 은 `{ when: DAY, items: [TRANSIT] }` */
+export type MonthDay = { date: string; category: DayCategory | (string & {}); text: string; reason: Reason };
+
+/**
+ * 이번 달(`GET /timing/month`, 서버 결정 032): month 는 계산한 달(`YYYY-MM` — 앱은 처음 받은 달로 앞뒤 한 달을 정한다),
+ * themes 0~2 · days 0~3(날짜 순). 서버가 요청 때 계산하고 저장하지 않는다(AI 없음).
+ */
+export type MonthSky = { month: string; timeKnown: boolean; themes: MonthTheme[]; days: MonthDay[] };
+
+/**
+ * 그날의 하늘(`POST /day-sky`, 서버 결정 034): 달력에서 누른 날(날짜 없으면 오늘 = 오늘의 하늘). 그날의 흐름 셋 · 이유(`DAY`) · 실천 셋.
+ * 소유자 · 차트 · 날짜마다 한 번 만들어 서버가 저장한다 — 다시 열면 같은 글. createdAt 은 만든 때(UTC)
+ */
+export type DaySky = {
+  date: string;
+  title: string;
+  category: DayCategory | (string & {});
+  flow: { people: string; work: string; mind: string };
+  reason: Reason;
+  practices: { title: string }[];
+  createdAt: string;
+};
 
 /** 궁합의 관계 유형(결정 020). 서버가 유형마다 다른 가중치로 점수를 계산한다 */
 export const RELATIONS = ['LOVE', 'FRIEND', 'WORK', 'FAMILY'] as const;
@@ -679,16 +735,31 @@ const isMilestone = (v: unknown): v is TimingMilestone =>
   typeof v.title === 'string' &&
   typeof v.body === 'string';
 
-/** 크기는 변화 구간에만 있고 다른 종류에는 키가 없다 */
+/** 시기 풀이의 실천 수(서버 결정 033 · 034 — 구간 · 그날 모두 셋) */
+const PRACTICE_COUNT = 3;
+
+const isPractices = (v: unknown) =>
+  Array.isArray(v) && v.length === PRACTICE_COUNT && v.every((p) => isObject(p) && isNonEmptyText(p.title));
+
+const isTimingDetail = (v: unknown) => isObject(v) && isNonEmptyText(v.changes) && isNonEmptyText(v.howTo) && isNonEmptyText(v.after);
+
+/**
+ * 크기는 변화 구간에만 있고 다른 종류에는 키가 없다. 모델이 쓴 칸(한 줄 · 자세히 · 실천 셋 · 근거)은 있으면 제 모양이어야 한다
+ * (시기 풀이의 구간에만 있다 — 서버 결정 033)
+ */
 const isInterval = (v: unknown): v is TimingInterval =>
   isObject(v) &&
   typeof v.id === 'string' &&
   (v.kind === 'CHANGE' ? isSize(v.size) : (v.kind === 'OPPORTUNITY' || v.kind === 'FATED') && v.size === undefined) &&
   isDate(v.from) &&
   isDate(v.to) &&
-  ['PEOPLE', 'WORK', 'MONEY', 'SELF'].includes(v.area as string) &&
+  LIFE_AREAS.some((area) => area === v.area) &&
   typeof v.title === 'string' &&
-  typeof v.body === 'string';
+  typeof v.body === 'string' &&
+  (v.summary === undefined || isNonEmptyText(v.summary)) &&
+  (v.detail === undefined || isTimingDetail(v.detail)) &&
+  (v.practices === undefined || isPractices(v.practices)) &&
+  (v.reason === undefined || isReason(v.reason));
 
 const isTimingCurrent = (v: unknown): v is TimingCurrent =>
   isObject(v) &&
@@ -698,7 +769,8 @@ const isTimingCurrent = (v: unknown): v is TimingCurrent =>
   (v.milestone === undefined || isMilestone(v.milestone)) &&
   (v.nextInterval === undefined || isInterval(v.nextInterval)) &&
   (v.nextMilestone === undefined || isMilestone(v.nextMilestone)) &&
-  MILESTONE_KINDS.some((kind) => kind === v.nearestMilestone);
+  MILESTONE_KINDS.some((kind) => kind === v.nearestMilestone) &&
+  (v.mainId === undefined || isNonEmptyText(v.mainId));
 
 /** 변곡점은 계약의 순서대로 넷이 모두 있어야 한다(화면이 그 순서를 믿고 "첫 번째~네 번째" 로 그린다) */
 const isTiming = (v: unknown): v is ReportTiming =>
@@ -761,6 +833,55 @@ export function isReportState(v: unknown): v is ReportState {
   if (!isObject(v)) return false;
   if (v.status === 'DONE') return isReport(v.report);
   return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+/** 시기 풀이: 마디 넷이 계약의 순서대로 · 구간 · 지금(대표 구간은 있으면 글자) — 모델이 쓴 칸은 구간마다 isInterval 이 본다 */
+export const isTimingReport = (v: unknown): v is TimingReport => isTiming(v);
+
+export function isTimingReportState(v: unknown): v is TimingReportState {
+  if (!isObject(v)) return false;
+  if (v.status === 'DONE') return isTimingReport(v.report);
+  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+const isTimingReportRequest = (v: unknown): v is TimingReportRequest =>
+  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
+
+const isMonth = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
+
+/** 영역 · 칩은 비지 않은 글자면 받는다 — 모르는 것은 그리는 쪽이 그 줄만 숨긴다(계획 "전역 제약") */
+const isMonthTheme = (v: unknown) =>
+  isObject(v) && isNonEmptyText(v.area) && isNonEmptyText(v.title) && isDate(v.from) && isDate(v.to);
+
+const isMonthDay = (v: unknown) =>
+  isObject(v) && isDate(v.date) && isNonEmptyText(v.category) && isNonEmptyText(v.text) && isReason(v.reason);
+
+export function isMonthSky(v: unknown): v is MonthSky {
+  return (
+    isObject(v) &&
+    isMonth(v.month) &&
+    typeof v.timeKnown === 'boolean' &&
+    Array.isArray(v.themes) &&
+    v.themes.every(isMonthTheme) &&
+    Array.isArray(v.days) &&
+    v.days.every(isMonthDay)
+  );
+}
+
+export function isDaySky(v: unknown): v is DaySky {
+  return (
+    isObject(v) &&
+    isDate(v.date) &&
+    isNonEmptyText(v.title) &&
+    isNonEmptyText(v.category) &&
+    isObject(v.flow) &&
+    isNonEmptyText(v.flow.people) &&
+    isNonEmptyText(v.flow.work) &&
+    isNonEmptyText(v.flow.mind) &&
+    isReason(v.reason) &&
+    isPractices(v.practices) &&
+    typeof v.createdAt === 'string'
+  );
 }
 
 const isLongitudes = (v: unknown) =>
@@ -1346,6 +1467,40 @@ export function createApi(config: ApiConfig) {
     async getMeReport(): Promise<ApiResult<MeReportState>> {
       if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.meReport } };
       return request('GET', '/me-report', { validate: isMeReportState });
+    },
+
+    /**
+     * `GET /timing/month` 이번 달(결정 049 의 2). month(`YYYY-MM`)가 없으면 서버의 이번 달이다. 앞뒤 한 달 밖이면 400 `MONTH_OUT_OF_RANGE`,
+     * 서버에 출생 정보가 없으면 404 `NO_PROFILE`. 모의 서버는 예시의 달이 아니면 눈여겨볼 날 없이 그 달로 답한다
+     */
+    async getMonth(month?: string): Promise<ApiResult<MonthSky>> {
+      if (config.useFixtures)
+        return {
+          ok: true,
+          data: !month || month === fixtures.monthSky.month ? fixtures.monthSky : { ...fixtures.monthSky, month, days: [] },
+        };
+      return request('GET', month ? `/timing/month?month=${encodeURIComponent(month)}` : '/timing/month', { validate: isMonthSky });
+    },
+
+    /** `POST /timing-report` 시기 풀이를 쓰기 시작한다(결정 049 의 7). 202 로 바로 답하고 글은 뒤에서 쓴다. 402 `PURCHASE_REQUIRED` 는 1.1.0 예약 */
+    async requestTimingReport(): Promise<ApiResult<TimingReportRequest>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
+      return request('POST', '/timing-report', { validate: isTimingReportRequest });
+    },
+
+    /** `GET /timing-report` 시기 풀이의 상태와(DONE 이면) 글. 지금(current) · 대표 구간은 부를 때마다 서버의 오늘로 붙는다 */
+    async getTimingReport(): Promise<ApiResult<TimingReportState>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.timingReport } };
+      return request('GET', '/timing-report', { validate: isTimingReportState });
+    },
+
+    /**
+     * `POST /day-sky` 그날의 하늘(결정 049 의 6). date 가 없으면 본문 없이 = 오늘의 하늘. 처음 만들 때는 수십 초가 걸릴 수 있고(동기 응답),
+     * 새로 만들어야 할 때 생성 한도를 넘으면 429, 못 쓰면 502 `GENERATION_FAILED`(다시 보내면 된다)
+     */
+    async postDaySky(date?: string): Promise<ApiResult<DaySky>> {
+      if (config.useFixtures) return { ok: true, data: date ? { ...fixtures.daySky, date } : fixtures.daySky };
+      return request('POST', '/day-sky', { ...(date ? { body: { date } } : {}), validate: isDaySky });
     },
 
     /** `GET /account` 내 계정 — 홈 별명 카드(닉네임 · 프로필, 결정 047)와 마이 · 계정 화면(결정 056)이 함께 쓴다. 동의 일시는 버리고, 알림 칸(푸시 동의 · 오늘의 하늘)은 꼴이 맞을 때만 둔다 */

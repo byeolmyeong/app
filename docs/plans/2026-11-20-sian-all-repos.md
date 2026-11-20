@@ -114,13 +114,13 @@ last_reviewed: 2026-11-20
 - 할 것: 화면 전체 불러오기 실패 → `StateScreen withTabs`("다시 보기"), 카드 하나 실패 → 카드 자리 안내, 네트워크 끊김 → 받아 둔 것 + `OfflineBanner`, 받아 둔 것이 없으면 `StateScreen`("다시 시도"). 연결 상태는 `@react-native-community/netinfo`(`npx expo install`)로 안다.
 - 검증: 상태별 렌더 테스트(실패 · 끊김 · 되살아남), 연결이 돌아오면 띠가 사라지고 다시 부르는지 테스트.
 
-#### A6-3. update-two-steps · 상태: 대기
+#### A6-3. update-two-steps · 상태: 완료(`feat/common-states` — 실행 기록은 A6-5 의 PR)
 - 읽을 것: 결정 027 · 059, `src/features/update/`(version.ts · update-store.ts · update-gate.tsx · update-required.tsx), `src/lib/api.ts` 의 `getAppConfig`
 - 할 것: `AppConfig` 플랫폼 값에 `latestVersion: string | null`(없으면 null — 옛 서버). 권유 판정 `shouldSuggestUpdate(current, latest, min, lastAsked)`. 권유 창(가운데 창 · "나중에" / "업데이트") — 같은 `latestVersion` 은 한 번(물은 버전을 `byeolmyeong.updateAsked.v1` 에), 바쁨 · 로그인 전 · 가입 중엔 미룸. 막는 화면은 `StateScreen` 모양 + 문구 "새 버전이 나왔어요" · 버튼 "업데이트".
 - 하지 말 것: 027 의 판정 · 바쁨 · 426 을 바꾸지 않는다.
 - 검증: 판정 표 테스트(낮음/같음/높음 · null · 읽을 수 없는 버전 · 이미 물음), 렌더 테스트.
 
-#### A6-4. maintenance-auto · 상태: 대기
+#### A6-4. maintenance-auto · 상태: 완료(`feat/common-states` — 실행 기록은 A6-5 의 PR)
 - 읽을 것: 결정 030 · 060, `src/features/update/maintenance-notice.tsx`
 - 할 것: 점검 화면을 `StateScreen`(버튼 없음)으로, 떠 있는 동안 60초마다 · 앞으로 돌아올 때 `GET /app-config`. 풀리면 사라진다.
 - 검증: 가짜 타이머로 60초 뒤 다시 부르는지 · 풀리면 사라지는지 테스트.

@@ -311,4 +311,4 @@ last_reviewed: 2026-11-20
     - 수정 3(홈 회귀 — 위 `useStoredHeadline`): 다시 짓지 않고 돌려주는 GET 이 서버에 없어 "조용히 다시 받기" 는 생성을 시작할 수 있다 → 리뷰어 안(중립 문구)보다 기기의 한 줄 별명을 그대로 보이는 쪽을 골랐다(옛 글이어도 그 사람의 별명이 맞고 지어낸 말이 아니다 · 서버를 부르지 않는다). 마이 별명 카드도 같은 훅으로.
     - 제안 4 사전을 제 키로만 찾기(`lookup`), 5 모르는 `when` 도 그 줄만 숨김(`isReason` 이 받음), 6 `saveProfile` 도 10초 한도, 7 DESIGN 브랜드 자리 · `Paragraph` 설명, 8 지나가는 별이 상승점 · 중천과 합이면 "자리" 를 겹치지 않음, 9 시험(받은 풀이 + 연결 복귀 실패 · 옛 보관본으로 홈 · 마이 · 나 탭 · 나 탭 업데이트 미루기).
     - 미룸(코디네이터): 웹 `/report` · `/direction` 북마크 404, `fixtures.direction` · `direction-future.json` · LOVE/FUTURE 는 S⑦ 정리 때.
-  - 확인(마지막): __CHECK__
+  - 확인(마지막): develop `aa61794`(문의 안내 #54) 위로 다시 올린 뒤 `npx tsc --noEmit && npx expo lint` exit 0 · `npm test` 100 묶음 1264 통과 · `npx expo export --platform web` exit 0 · `npx expo-doctor` 20/20.

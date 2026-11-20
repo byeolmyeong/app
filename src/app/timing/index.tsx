@@ -1,48 +1,94 @@
-import { useMemo } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
+import { CardFail } from '@/components/card-fail';
+import { MakingView } from '@/components/making-view';
 import { NavBar } from '@/components/nav-bar';
 import { OfflineBanner } from '@/components/offline-banner';
-import { StateScreen } from '@/components/state-screen';
 import { Screen } from '@/components/screen';
+import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
+import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
-import { Spacing } from '@/constants/theme';
+import { TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
-import { TimingView } from '@/features/report/timing-view';
-import { useReport } from '@/features/report/use-report';
-import { ShareEntry } from '@/features/share/share-entry';
+import { koreaToday } from '@/features/timing/dates';
+import { LifeView } from '@/features/timing/life-view';
+import { MonthView } from '@/features/timing/month-view';
+import {
+  ChipRow,
+  DetailCard,
+  LockedView,
+  NowCard,
+  PracticeCards,
+  TIMING_CHIPS,
+  TimingSkeleton,
+  type TimingChip,
+} from '@/features/timing/timing-parts';
+import { useMonth } from '@/features/timing/use-month';
+import { useTimingReport } from '@/features/timing/use-timing-report';
+import { YearView, mainInterval } from '@/features/timing/year-view';
 import { useGenerationBusy } from '@/features/update/update-gate';
 
-const S = strings.report;
+const T = strings.timing;
 const ST = strings.states;
 
 /**
- * 시기 탭의 임시 화면(계획 A② 태스크 14): 심층 리포트 화면(`/report`)을 없애면서(결정 048 의 6) 그 시기 부분(변곡점 · 구간)만 여기서 그린다.
- * 글은 지금의 심층 리포트(`POST /reports` · `GET /reports/me`, 서버 S⑦ 까지 있다)를 그대로 쓰고, 요청한 뒤 쓰는 중을 보여 준다.
- * 계획 A③ 이 새 시기 탭(이번 달 · 올해 · 인생, 결정 049)으로 바꾼다. 탭의 첫 화면이라 뒤로 가기가 없다(결정 046 의 2).
+ * 시기 탭(결정 049 · 050 · 061 · 065, 캔버스 14 · 14 받기 전 · 14-1 · 14-2 · 14 잠긴 칩 · 14-7 · 14-8).
+ * - 시기 풀이를 받기 전: 이번 달만 열린다(올해 · 인생 칩은 잠김 — 누르면 그 자리에 자물쇠 카드), 이번 달 아래에 "자세한 풀이" 카드.
+ * - 받기 → 쓰는 중(14-7, 머리 · 아래 탭 없음) → 다 쓰면 올해 칩. 끝까지 못 쓰면 14-8(다시 쓰기 · 나중에 하기).
+ * - 받은 뒤: 맨 위 "지금 나의 시기"(대표 구간 — 누르면 시기 자세히) · 처음 고른 칩은 올해(`/timing?tab=month|year|life` 로 고를 수 있다).
+ * 처음 불러올 때 0.3초가 넘으면 뼈대, 10초면 보드 19, 볼 게 없는데 끊기면 20-1. 받은 시기 풀이는 기기의 것을 먼저 보인다.
+ * 탭의 첫 화면이라 뒤로 가기가 없고 아래 탭이 있다(결정 046 의 2). 면책 문구는 두지 않는다(결정 064 의 3 — 시안 14 대로).
  */
 export default function TimingScreen() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const { ready } = useSession();
   const { loaded, profile } = useBirthProfile();
-  // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다.
-  const input = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
-  const { state, start, recheck } = useReport(input);
-  // 쓰는 중이거나 방금 다 쓰인 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
-  useGenerationBusy(state.status === 'writing', state.status === 'done');
-  const nav = <NavBar title={strings.tabs.timing} />;
-  const tabs = <MainTabs active="timing" />;
-  // 연결 끊김(결정 061 의 4): 다 쓴 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 상태만 다시 묻는다
+  // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다
+  const birth = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
+  const timing = useTimingReport(birth);
+  const month = useMonth(birth);
   const online = useOnline();
+  // 달력의 "오늘" — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
+  const [today] = useState(() => koreaToday());
+  const [picked, setPicked] = useState<TimingChip | null>(null);
+  const s = timing.state;
+  const done = s.status === 'done';
+  // 처음 고른 칩: 주소의 tab, 없으면 시기 풀이를 받았으면 올해 · 아니면 이번 달(결정 049 의 1)
+  const chip = picked ?? TIMING_CHIPS.find((c) => c === tab) ?? (done ? 'year' : 'month');
+  // 쓰는 중이거나 방금 다 쓰인 풀이가 떠 있는 동안 강제 업데이트를 미룬다(결정 027)
+  useGenerationBusy(s.status === 'writing', done);
+
+  const start = () => {
+    // 다 쓰면 올해 칩으로(결정 049 의 7) — 고른 칩을 비운다
+    setPicked(null);
+    timing.start();
+  };
+  const reload = () => {
+    if (s.status !== 'done') timing.recheck();
+    if (month.state.status === 'failed') month.retry();
+  };
+  // 연결이 돌아오면 상태만 다시 묻는다(GET) — 만들기(POST)는 사람이 누를 때만(결정 061 의 4)
   useOnReconnect(online, () => {
-    if (state.status === 'failed' && state.error === 'NETWORK') recheck();
+    if (s.status === 'done') timing.refresh();
+    else if (s.status === 'unknown' || (s.status === 'failed' && s.stage === 'poll' && s.error === 'NETWORK')) timing.recheck();
+    if (month.state.status === 'failed') month.retry();
   });
+
+  // 처음 불러올 때: 시기 풀이의 상태를 처음 묻는 중이거나(기기에 받아 둔 것이 없다), 받기 전인데 이번 달을 아직 받지 못했다
+  const monthPending = month.base === null && month.state.status === 'loading';
+  const loading = loaded && profile !== null && (s.status === 'checking' || (!done && monthPending));
+  const phase = useLoadingPhase(loading);
+
+  const nav = <NavBar title={T.title} chevron />;
+  const tabs = <MainTabs active="timing" />;
 
   if (loaded && !profile)
     return (
@@ -51,89 +97,116 @@ export default function TimingScreen() {
       </Screen>
     );
 
-  if (state.status === 'checking')
-    return (
-      <Screen nav={nav} footer={tabs}>
-        <View style={styles.status}>
-          <Txt variant="table" color="gray">
-            {S.checking}
-          </Txt>
-        </View>
-      </Screen>
-    );
+  // 쓰는 중(14-7): 머리 · 아래 탭 없이 별명 짓는 중과 같은 그림 · 시기 문구
+  if (s.status === 'writing') return <MakingView title={T.making.title} lines={T.making.lines} />;
 
-  if (state.status === 'none')
-    return (
-      <Screen nav={nav} footer={tabs}>
-        <View style={styles.status}>
-          <Txt variant="body">{S.intro}</Txt>
-          <Button label={S.request} onPress={start} />
-        </View>
-      </Screen>
-    );
-
-  if (state.status === 'writing')
-    return (
-      <Screen nav={nav} footer={tabs}>
-        <View style={styles.status}>
-          <Txt variant="heading">{S.writing}</Txt>
-          <Txt variant="table" color="gray">
-            {S.writingNote}
-          </Txt>
-        </View>
-      </Screen>
-    );
-
-  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겨서면 보드 20-1, 서버가 끝내 못 썼으면(FAILED) "다시 쓰기", 그 밖에는 보드 19.
-  // "다시 보기" 와 연결이 돌아왔을 때는 상태만 다시 확인한다 — 만들기(POST)는 사람이 누를 때만(리뷰 PR #44)
-  if (state.status === 'failed') {
-    if (state.error === 'NETWORK' && !online)
+  if (s.status === 'failed') {
+    if (s.error === 'NETWORK' && !online)
       return (
         <StateScreen
           nav={nav}
           tabs={tabs}
           title={ST.offlineEmpty.title}
           body={ST.offlineEmpty.body}
-          primary={{ label: ST.offlineEmpty.retry, onPress: recheck }}
+          primary={{ label: ST.offlineEmpty.retry, onPress: s.stage === 'request' ? start : timing.recheck }}
         />
       );
-    if (state.error === 'FAILED')
+    // 쓰는 중 확인만 못 했으면(서버는 쓰고 있을 수 있다) 보드 19 — 다시 보기는 상태만 묻는다
+    if (s.stage === 'poll' && s.error !== 'FAILED')
       return (
-        <StateScreen
-          nav={nav}
-          tabs={tabs}
-          title={ST.writeFail.title.report}
-          body={ST.writeFail.body}
-          primary={{ label: ST.writeFail.retry, onPress: start }}
-        />
+        <StateScreen nav={nav} tabs={tabs} title={T.loadFail.report} body={ST.loadFail.body} primary={{ label: ST.loadFail.retry, onPress: timing.recheck }} />
       );
+    // 끝까지 못 썼거나 시작하지 못했으면 14-8: 다시 쓰기 · 그 위 나중에 하기(받기 전으로), 머리 · 아래 탭 없이
     return (
       <StateScreen
-        nav={nav}
-        tabs={tabs}
-        title={ST.loadFail.title.report}
-        body={state.error === 'LIMIT' ? S.failed.LIMIT : ST.loadFail.body}
-        primary={{ label: ST.loadFail.retry, onPress: recheck }}
+        title={T.writeFail}
+        body={s.error === 'LIMIT' ? T.limit : ST.writeFail.body}
+        primary={{ label: ST.writeFail.retry, onPress: start }}
+        later={{ label: T.later, onPress: timing.dismiss }}
       />
     );
   }
 
+  // 볼 것이 하나도 없는데 못 불러왔으면 화면 전체(19 · 끊겼으면 20-1) — 아래 탭은 남는다
+  const nothing = !done && month.base === null && (month.state.status === 'failed' || phase === 'timeout');
+  if (nothing)
+    return !online ? (
+      <StateScreen nav={nav} tabs={tabs} title={ST.offlineEmpty.title} body={ST.offlineEmpty.body} primary={{ label: ST.offlineEmpty.retry, onPress: reload }} />
+    ) : (
+      <StateScreen nav={nav} tabs={tabs} title={T.loadFail.title} body={ST.loadFail.body} primary={{ label: ST.loadFail.retry, onPress: reload }} />
+    );
+
+  if (s.status === 'checking' || (!done && monthPending))
+    return (
+      <Screen nav={nav} footer={tabs}>
+        {phase === 'skeleton' ? <TimingSkeleton /> : null}
+      </Screen>
+    );
+
+  const report = done ? s.report : null;
+  const main = report ? mainInterval(report) : null;
+  const timeKnown = report ? report.timeKnown : month.state.status === 'done' ? month.state.sky.timeKnown : true;
+  const blocked = s.status === 'none' && s.blocked === true;
+
+  let content: React.ReactNode;
+  if (chip === 'month')
+    content = (
+      <>
+        {month.base && month.shown ? (
+          <MonthView
+            base={month.base}
+            shown={month.shown}
+            state={month.state}
+            canPrev={month.canPrev}
+            canNext={month.canNext}
+            onMove={month.go}
+            onRetry={month.retry}
+            today={today}
+            onDay={(date) => router.push(`/timing/day?date=${date}`)}
+          />
+        ) : (
+          <CardFail
+            kicker={T.month.loadFail.kicker}
+            title={T.month.loadFail.title}
+            body={T.month.loadFail.body}
+            retry={{ label: ST.loadFail.retry, onPress: month.retry }}
+          />
+        )}
+        {main?.practices ? <PracticeCards practices={main.practices} /> : null}
+        {report ? null : s.status === 'unknown' ? (
+          <CardFail kicker={T.detail.kicker} title={T.loadFail.report} body={T.loadFail.body} retry={{ label: ST.loadFail.retry, onPress: timing.recheck }} />
+        ) : (
+          <DetailCard blocked={blocked} onRequest={start} />
+        )}
+      </>
+    );
+  else if (!report) content = <LockedView chip={chip} blocked={blocked} onRequest={start} />;
+  else if (chip === 'year') content = <YearView report={report} onPeriod={(id) => router.push(`/timing/period?id=${id}`)} />;
+  else content = <LifeView report={report} />;
+
   return (
     <Screen nav={nav} footer={tabs}>
       {online ? null : <OfflineBanner />}
-      <TimingView
-        timing={state.report.timing}
-        // 다음 변곡점이 없으면(네 번을 모두 지났다) 공유할 것이 없어 버튼을 두지 않는다(결정 025)
-        share={
-          state.report.timing.current.nextMilestone ? (
-            <ShareEntry target={{ kind: 'NEXT_TURN' }} label={strings.share.openNextTurn} />
-          ) : undefined
-        }
-      />
+      {/* 한 덩어리로 둔다 — 화면의 칸 사이 간격(16)이 끼지 않게 시안 14 의 간격 그대로 */}
+      <View>
+        {main ? <NowCard interval={main} onPress={main.detail ? () => router.push(`/timing/period?id=${main.id}`) : undefined} /> : null}
+        {timeKnown ? null : (
+          <Txt variant="caption" color="gray" style={styles.timeUnknown}>
+            {T.timeUnknown}
+          </Txt>
+        )}
+        <View style={main ? styles.chips : styles.chipsBare}>
+          <ChipRow value={chip} locked={!report} onChange={setPicked} />
+        </View>
+        <View style={styles.content}>{content}</View>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  status: { gap: Spacing.md, paddingTop: Spacing.lg },
+  timeUnknown: { marginTop: L.timeUnknownTop },
+  chips: { marginTop: L.chips.top },
+  chipsBare: { marginTop: L.chips.topBare },
+  content: { paddingTop: L.contentTop, gap: L.sectionGap },
 });

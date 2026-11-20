@@ -20,7 +20,25 @@ jest.mock('expo-router', () => ({
   useSegments: jest.fn(() => []),
   router: { replace: jest.fn() },
 }));
-jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
+// 글꼴을 받았는지는 시험이 정한다(기본: 받음)
+let mockFontsLoaded = true;
+jest.mock('expo-font', () => ({ useFonts: () => [mockFontsLoaded, null] }));
+// 스플래시가 몇 번 새로 그려졌는지 센다(걷는 때 판단 useSplashDone 은 진짜)
+let mockSplashMounts = 0;
+jest.mock('@/components/splash-view', () => {
+  const actual = jest.requireActual('@/components/splash-view');
+  const { useEffect } = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
+  return {
+    ...actual,
+    SplashView: () => {
+      useEffect(() => {
+        mockSplashMounts += 1;
+      }, []);
+      return <View testID="splash" />;
+    },
+  };
+});
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() }));
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null })) }));
 jest.mock('@/features/onboarding/intro-seen', () => ({ useIntroSeen: jest.fn(() => true) }));
@@ -160,6 +178,23 @@ describe('스플래시', () => {
     await view.rerender(<RootLayout />);
     expect(screen.queryByTestId('splash')).toBeNull();
     expect(screen.getByTestId('guard-cover')).toBeTruthy();
+  });
+
+  it('웹: 글꼴을 받는 동안과 받은 뒤의 스플래시가 같은 자리라 다시 그려지지 않는다(깜빡임 없음)', async () => {
+    Platform.OS = 'web';
+    mockSplashMounts = 0;
+    mockFontsLoaded = false;
+    mockUseSession.mockReturnValue(session('checking'));
+    try {
+      const view = await render(<RootLayout />);
+      expect(screen.getByTestId('splash')).toBeTruthy();
+      mockFontsLoaded = true;
+      await view.rerender(<RootLayout />);
+      expect(screen.getByTestId('splash')).toBeTruthy();
+      expect(mockSplashMounts).toBe(1);
+    } finally {
+      mockFontsLoaded = true;
+    }
   });
 
   it('웹: 공유 페이지는 세션을 확인하지 않으므로 0.8초만 보인다', async () => {

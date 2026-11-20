@@ -46,31 +46,33 @@ export default function RootLayout() {
 
   // 스플래시(결정 067 의 3): 처음 열 때 글꼴 · 세션 확인 · (로그인 전이면) 소개 기록 확인이 끝나 보낼 곳에 간 뒤에 걷는다.
   // 공유 페이지는 세션을 확인하지 않는다. 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지 둔다.
-  const splashDone = useSplashDone((loaded || !!error) && !covered && (first === 's' || session.ready));
+  const fontsDone = loaded || !!error;
+  const splashDone = useSplashDone(fontsDone && !covered && (first === 's' || session.ready));
   useEffect(() => {
     if (splashDone) SplashScreen.hideAsync();
   }, [splashDone]);
 
-  if (!loaded && !error) {
-    return Platform.OS === 'web' ? <SplashView /> : null;
-  }
-
   // 최소 버전보다 낮은 앱은 화면들 대신 막는 화면만 본다(결정 027). 세션과 상관없다.
   // 최신 버전보다 낮으면 로그인한 홈에서만 한 번 권한다 — 로그인 전 · 가입 중에는 묻지 않는다(결정 059).
+  // 웹 스플래시는 글꼴을 받는 동안과 받은 뒤 같은 자리(맨 위)에 둬 다시 그려지지 않게 한다.
   return (
-    <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
-        {SLIDE_UP_ROUTES.map((name) => (
-          <Stack.Screen key={name} name={name} options={slideUp} />
-        ))}
-      </Stack>
-      {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
+    <>
+      {fontsDone ? (
+        <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
+            {SLIDE_UP_ROUTES.map((name) => (
+              <Stack.Screen key={name} name={name} options={slideUp} />
+            ))}
+          </Stack>
+          {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
+        </UpdateGate>
+      ) : null}
       {Platform.OS === 'web' && !splashDone ? (
         <View style={styles.cover}>
           <SplashView />
         </View>
       ) : null}
-    </UpdateGate>
+    </>
   );
 }
 

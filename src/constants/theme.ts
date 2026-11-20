@@ -267,7 +267,8 @@ export const NicknameCardLayout = {
   moreTop: 14,
   chevron: 16,
   glow: { x: 0.88, y: 0.08, extent: 0.58 },
-  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55 },
+  /** 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기 */
+  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8 },
   /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." · "내 별명 읽기" 막대 폭 */
   skeleton: { name: 72, meta: 64, empty: 168, more: 72 },
 } as const;
@@ -800,9 +801,8 @@ export const Sizes = {
   /** 작은 아이콘(검색 · 체크) · 검색 지우기 단추와 그 안의 X */
   icon: 20,
   clearIcon: 10,
-  /** 설명(물음표) 버튼의 지름 · 설명 시트에서 글이 굴러가는 영역의 최대 높이 */
+  /** 설명(물음표) 버튼의 지름 */
   infoButton: 20,
-  infoSheetHeight: 360,
   /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기(보드 12-4 의 209 — 360 카드의 0.58) · 공유 페이지 */
   shareCardWidth: 209,
   sharePageCardWidth: 280,
@@ -817,6 +817,8 @@ export const Sizes = {
   cardShareIcon: 20,
   /** 드럼 시트(태어난 시각 · 받는 시간)의 위 끝에서 드럼 위 끝까지(시안 8-1 · 16-3: 위 10 + 손잡이 4 + 28 + 16) */
   pickerSheetTop: 58,
+  /** 내용만큼 늘어나는 시트도 화면 위 끝에서 이만큼은 남긴다(태어난 곳 목록 시트의 위 64 와 같다, 보드 8-2-1). 넘치면 시트 안에서 굴린다 */
+  sheetTop: 64,
   /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
   pickerRow: 44,
   pickerRows: 5,

@@ -56,7 +56,10 @@ function MakingArt() {
   );
 }
 
-/** 홈 오늘의 하늘 카드의 뼈대(결정 071): 다 그려진 카드(이름표 · 두 줄 제목 · 짧은 이유)와 같은 자리 · 높이 */
+/**
+ * 홈 오늘의 하늘 카드의 뼈대(결정 071): 다 그려진 카드(이름표 · 두 줄 제목 · 짧은 이유)와 같은 자리 · 높이.
+ * 홈을 서버에서 되살리는 동안(아무것도 모를 때)의 홈 뼈대만 쓴다 — 카드 자체는 묻는 중에 뼈대를 두지 않는다
+ */
 export function HomeTodaySkeleton() {
   return (
     <SkeletonGroup testID="sk-home-today-card">
@@ -72,12 +75,12 @@ export function HomeTodaySkeleton() {
 
 /**
  * 홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11 · 11 쓰는 중): "오늘의 하늘 · 11월 19일" · 제목 · 짧은 이유 한 줄. 누르면 `/today`.
- * - 처음 묻는 중: 0.3초가 넘으면 뼈대(skeleton), 그날 처음 쓰는 것으로 볼 만큼 길어지면 쓰는 중 카드(making — 별이 · "몇 초면 돼요")
+ * - 처음 묻는 중: 비워 두고(처음 들어올 때는 스플래시가 가린다), 1초 넘게 걸리면 그날 처음 쓰는 것으로 보고 쓰는 중 카드(making — 별이 · "몇 초면 돼요").
+ *   뼈대는 두지 않는다 — 기기의 오늘 것은 바로 그리고, 없으면 짧게 기다려 글이나 쓰는 중이다(소유자 "접속하자마자 바로")
  * - 못 썼으면 그 자리에 작은 안내와 "다시 쓰기"(19-1). 끊겨서 못 받았거나 서버에 그 경로가 없으면(404 — S④ 전) 칸을 숨긴다
  */
 export function HomeTodayCard({
   state,
-  skeleton,
   making,
   online,
   timeKnown,
@@ -85,7 +88,6 @@ export function HomeTodayCard({
   onRetry,
 }: {
   state: TodaySkyState;
-  skeleton: boolean;
   making: boolean;
   online: boolean;
   timeKnown: boolean;
@@ -109,7 +111,7 @@ export function HomeTodayCard({
           </View>
         </View>
       );
-    return skeleton ? <HomeTodaySkeleton /> : null;
+    return null;
   }
   if (state.status === 'failed') {
     if (state.httpStatus === NOT_FOUND || (state.error === 'NETWORK' && !online)) return null;

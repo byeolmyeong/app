@@ -68,6 +68,19 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
   });
 
+  it('카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 홈 카드와 같은 그림, 출생 정보가 없으면 그림도 없다', async () => {
+    const virgo = { ...fixtures.chart, positions: fixtures.chart.positions.map((p) => (p.body === 'SUN' ? { ...p, sign: 'VIRGO' } : p)) };
+    await saveBirth({ profile, chart: virgo });
+    const view = await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    expect(await card.findByTestId('card-constellation-VIRGO', { includeHiddenElements: true })).toBeTruthy();
+    await view.unmount();
+    await AsyncStorage.clear();
+    await render(<MyScreen />);
+    const empty = within(await screen.findByTestId('my-card'));
+    expect(empty.queryByTestId(/^card-constellation/, { includeHiddenElements: true })).toBeNull();
+  });
+
   it('시각 "모름" 이면 "시각 모름", 만든 때(createdAt)가 없는 옛 풀이면 받은 날 없이 해 별자리만 적는다', async () => {
     const unknown = { date: '1999-03-08', time: null, place: null };
     await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });

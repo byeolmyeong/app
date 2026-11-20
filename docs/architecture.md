@@ -53,7 +53,7 @@ features/            기능별 로직과 기능 전용 부품
   push/              휴대폰 푸시(결정 057 · 066, 계획 A8-1 — 공유 파일 push.ts · push-data.ts, 웹은 같은 이름의 빈 구현 push.web.ts 라 expo-notifications 가 웹 묶음에 없다): 권한 읽기 · 묻기(안드로이드는 채널 먼저) · 이 기기 등록(`POST /push/devices`, 토큰은 AsyncStorage `byeolmyeong-device.push-token.v1` — 로그아웃 정리가 지우지 않는 기기 값) · 로그아웃 때 해제(sign-out.ts 가 세션 지우기 전에 `DELETE /push/devices/{토큰}`) · 루트의 `usePushDeviceSync`(로그인하면 다시 등록, 토큰이 바뀌면 다시) · `usePushTapRouting`(누르면 화면들 · 로그인 · 정지 확인 뒤 그 종류의 화면으로, 쓰는 중 배너 없음) · `onPushReceived`(쓰는 중 온 푸시 — 홈 종 · 알림함) · data 읽기와 갈 곳(push-data.ts 의 `parsePushData` · `pushTarget` — 앱 밖 주소는 버림). 웹은 모두 아무것도 하지 않는다
   support/           자주 묻는 질문을 받아 오는 상태(use-faqs.ts, 메모리에만 5분) · 목록, 문의의 입력 확인 · 날짜(inquiry.ts) · 보내는 상태(use-inquiry.ts) · 내역 · 한 건을 보일 때마다 받기(use-inquiries.ts) · 종류 칩(결정 028 · 058)
   update/            강제 업데이트(결정 027 · 059)와 점검 안내(결정 030 · 060): 버전 비교 · 권유 판정(version.ts) · 셋의 판정(update-store.ts) · 루트를 감싸는 문과 바쁨 등록(update-gate.tsx) · 막는 화면(update-required.tsx · maintenance-notice.tsx) · 권유 창(update-suggest.tsx) · 웹 화면 조각을 못 불러오면 한 번 새로 고침(chunk-reload.tsx — 루트의 ErrorBoundary)
-  share/             공유 카드(9:16, 서버가 준 card 만으로 그린다)·공유 버튼과 시트·공유 주소·이미지와 링크 보내기(앱 share-actions.ts, 웹 share-actions.web.ts)·공유 페이지의 카드 받기
+  share/             공유 v2(결정 053): 공유 카드(9:16, 서버가 준 card 만으로 그린다 — v2 넷은 시안 카드, 옛 넷은 "별이와 함께" · 기다리는 동안의 카드 모양 뼈대, share-card.tsx · 달 · 계단 그림 share-art.tsx — 해 별자리는 chart/ChartWheel.tsx 의 SignArt, 영역은 me/area-art.tsx)·공유 아이콘과 시트(share-entry.tsx — 제목 없음, 결과는 Toast)·이미지 저장 · 스토리(앱 share-actions.ts — 사진 앱 · 인스타그램 스토리 → 없으면 기기 공유 창, 웹 share-actions.web.ts — PNG 내려받기)·인스타그램 스토리 열기(story.ts — react-native-share, 웹 story.web.ts 는 없음)·공유 페이지의 카드 받기
 components/          공용 부품(버튼·입력 줄·표·시트·가운데 창 Dialog·짧은 알림 Toast·뼈대 Skeleton·탭·제목 없는 목록 카드 ListCard(화살표 · 값 · 스위치 줄, 이름 아래 설명), 시각 드럼 TimeWheel · 받는 시간 시트 TimeSheet(시안 8-1 — 출생 시각 · 받는 시간이 함께 씀, 분 간격)…, 별명 카드(홈 · 마이)의 별자리 장식 CardConstellation, 상태: 실패 화면 StateScreen · 연결 끊김 띠 OfflineBanner, 브랜드 그림: 로고 · 별이 · 빛나는 모양 · 스플래시 SplashView, 아래 · 오른쪽에서 들어오는 화면 slide-up.ts — 약관 글 TextPage · 가입 단계 SignupStep 이 쓴다, 웹 inert use-inert.ts). 기능을 모른다
 constants/theme.ts   디자인 값의 단일 출처
 content/strings.ts   문구의 단일 출처
@@ -109,12 +109,13 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
 - 점검 안내(결정 030 · 060): 같은 문이 같은 설정의 `maintenance: { active, message }` 를 본다(웹 포함. 키가 없는 옛 서버의 응답은 "점검 중이 아니다"). `active` 이면 화면들 대신 점검 화면(`features/update/maintenance-notice.tsx`: `StateScreen` 의 "지금 별명을 손보고 있어요", `message` 가 있으면 그 줄 다음 "끝나면 저절로 이어서 볼 수 있어요.", 버튼 없음)을 그리고, 업데이트 화면보다 먼저다. 점검 화면이 떠 있는 동안 60초마다와 앞으로 돌아올 때의 확인이 성공해 `active: false` 이면 스스로 풀려 화면들이 다시 그려진다. 확인이 실패하면 앞의 판정을 그대로 둔다. 바쁨은 강제 업데이트와 같이 미룬다.
   - 503: 어느 호출이든 503 `{ error: "MAINTENANCE" }` 를 받으면 `lib/api.ts` 가 등록된 처리기(`setMaintenanceHandler`)를 부르고, 문은 바쁨과 상관없이 바로 점검 화면을 그린 뒤 안내를 받으러 설정을 한 번 묻는다. 426 과 달리 붙박이가 아니다 — 그 뒤의 확인(60초마다 · 앞으로 돌아올 때)이 `active: false` 이면 풀린다. 다만 503 이 스스로 부른 그 한 번의 확인으로는 풀지 않는다(설정과 503 이 어긋날 때 풀렸다 막혔다를 되풀이하지 않게). 그 호출의 결과는 `SERVER` 실패(`status: 503`, `code: "MAINTENANCE"`)다.
   - 공유 페이지(`/s/…`)도 문 안에 있어 세션 없이 같은 화면을 본다.
-- 공유(결정 025, 서버 결정 012): 화면의 "공유하기"(`features/share/share-entry.tsx`)가 시트를 열 때 `POST /shares` 를 부른다(화면을 여는 것만으로는 부르지 않는다). 본문은 `{ kind: "READING" }` · `{ kind: "SCORE", synastryId, myName }` · `{ kind: "RANKING", relation, showNames }` · `{ kind: "NEXT_TURN" }` 이고, 받은 `{ shareId, card }` 의 `card` 로 카드를 그리고 `shareId` 로 주소 `<웹 주소>/s/<shareId>` 를 만든다(웹 주소는 `EXPO_PUBLIC_WEB_URL`, 없으면 웹에서는 지금 주소의 origin, 둘 다 없으면 링크 버튼을 누를 수 없다).
-  - 들어가는 곳: 요약 해석(`/reading`) · 궁합 결과(`/synastry/<id>`) · 궁합 랭킹(`/synastry/ranking`, 고른 관계 탭 · 줄이 있을 때만). 시기 탭의 다음 큰 변화 · 그날의 하늘 공유는 공유 v2(계획 A⑤)가 더한다 — 지금은 아이콘 자리만 비워 둔다.
-  - 궁합 점수 카드는 시트가 먼저 "내 이름"(앞뒤 공백을 뗀 1~20자)을 받는다. 마지막 이름은 메모리에만 둔다. 랭킹 카드의 "이름 그대로 보이기" 는 꺼진 채로 시작하고 바꾸면 다시 요청한다. 이니셜은 서버가 만든다(앱은 이름을 줄이지 않는다).
+- 공유(결정 053 · 025, 서버 결정 036 · 012): 화면 머리의 공유 아이콘(`features/share/share-entry.tsx`)이 시트를 열 때 `POST /shares` 를 한 번 부른다(화면을 여는 것만으로는 부르지 않고, 시트의 버튼을 눌러도 다시 부르지 않는다). 본문은 `{ kind: "NICKNAME" }` · `{ kind: "ME_AREA", area }` · `{ kind: "DAY_SKY", date }` · `{ kind: "NEXT_BIG" }`(궁합 1.1.0 코드는 `SCORE` · `RANKING`)이고, 받은 `card` 로 카드를 그린다. 옛 `READING` · `NEXT_TURN` 은 더 만들지 않는다(옛 링크의 카드는 계속 그린다, 053 의 6). 링크 버튼은 없다(`shareId` 는 쓰지 않는다).
+  - 들어가는 곳: 내 별명(`/reading`) · 나 탭 받기 전(`/me`) → 내 별명 카드, 나 탭 받은 뒤 → 고른 칩의 영역 카드. 그날의 하늘(`/timing/day`) · 시기 탭의 다음 큰 변화 카드는 계획 A③, 오늘의 하늘(`/today`)은 A④ 가 `ShareEntry` 를 붙인다(카드 · 시트는 넷 다 된다). 궁합 결과 · 랭킹은 1.0.0 에서 열리지 않는다(결정 055).
+  - 시트(결정 053 의 1 · 061 의 5 · 6): 제목 없이 카드 미리보기(209) 아래에 앱은 보조 "이미지 저장" · 주 "인스타그램 스토리 공유", 웹과 Meta 앱 ID(`EXPO_PUBLIC_META_APP_ID`)가 없는 빌드는 "이미지 저장" 하나(주 버튼). 결과(저장했어요 · 저장하지 못했어요 · 사진 접근 막음 — 누르면 설정 · 스토리 실패)는 모두 짧은 알림(`Toast`, 결정 065 의 1)이고 시트 안에 글을 붙이지 않는다. 카드를 기다리는 동안 0.3초가 넘으면 같은 크기의 카드 모양 뼈대(결정 065 의 2 · 071).
+  - 궁합 점수 카드는 시트가 먼저 "내 이름"(앞뒤 공백을 뗀 1~20자)을 받는다. 마지막 이름은 메모리에만 둔다. 랭킹 카드의 "이름 그대로 보이기" 는 꺼진 채 시작하고 바꾸면 다시 요청한다(1.1.0 궁합 코드).
   - 404 는 "공유할 것이 없다" 는 말만 보여 준다(다시 시도 없음). 요청한 종류와 다른 카드나 계약과 다른 모양은 쓰지 않는다(`isShareCard`).
-  - 이미지: 앱은 카드 뷰를 `react-native-view-shot` 으로 1080×1920 PNG 파일로 만들어 `expo-sharing` 의 시스템 공유 시트로, 링크는 React Native `Share` 로 보낸다(버튼 둘). 웹은 `html2canvas-pro` 로 같은 크기의 PNG 를 내려받고 링크는 `expo-clipboard` 로 복사한다.
-  - 공유 페이지 `/s/<shareId>`: 세션 헤더 없는 `GET /shared/{shareId}` 하나만 부르고 카드와 "나도 보러 가기"(`/` 로)만 보여 준다. 루트 레이아웃은 첫 경로 조각이 `s` 인 동안 세션을 시작하지 않는다(`useSession(false)`). 링크 미리보기의 제목 · 설명은 `generateMetadata()` 의 고정 문구다.
+  - 이미지: 앱은 카드 뷰를 `react-native-view-shot` 으로 1080×1920 PNG 파일로 만들어 저장은 `expo-media-library`(쓰기 권한만 — `requestPermissionsAsync(true)` · `Asset.create`, 안드로이드 READ 권한은 싣지 않는다)로 사진 앱에, 스토리는 `react-native-share`(iOS 붙여넣기 보드 + `instagram-stories://share` · 안드로이드 `ADD_TO_STORY` 인텐트, Meta 앱 ID 필요)로 — 인스타그램이 없거나 열지 못하면 `expo-sharing` 의 기기 공유 창으로 같은 이미지를 넘긴다. 앱 조회 목록(instagram-stories · com.instagram.android)은 앱 ID 가 있을 때만 `app.config.ts` 가 플러그인으로 넣는다. 웹은 `html2canvas-pro` 로 그린 뒤 정확히 1080×1920 칸에 옮겨 PNG 를 내려받는다.
+  - 공유 페이지 `/s/<shareId>`: 세션 헤더 없는 `GET /shared/{shareId}` 하나만 부르고 카드와 "나도 보러 가기"(`/` 로)만 보여 준다(옛 링크 · 1.1.0 궁합 링크). 루트 레이아웃은 첫 경로 조각이 `s` 인 동안 세션을 시작하지 않는다(`useSession(false)`). 링크 미리보기의 제목 · 설명은 `generateMetadata()` 의 고정 문구다.
   - `Reading.shareId` 는 읽지 않는다. `DELETE /shares/{shareId}` 는 호출(`api.deleteShare`)만 있고 화면이 없다.
 - 서버 오류의 이름: 실패 결과의 `code` 에 오류 본문 `{ error }` 의 값이 온다(`lib/api.ts`). 화면이 가려 쓰는 것은 `BIRTH_MISMATCH` · `PROFILE_CHANGED` 와 새 문의의 `INVALID_BODY`, 문의 답변 보기의 `NOT_FOUND`, 로그인의 `EMAIL_REQUIRED`(알림 창), 가입의 `INVALID_NICKNAME` · `NICKNAME_TAKEN`(닉네임 단계로) · `TERMS_REQUIRED`(약관 단계로) · `UNDER_AGE`(생년월일 아래) · `SIGNUP_EXPIRED`(로그인으로)다.
 - 서버가 준비되기 전에는 `lib/fixtures/` 의 응답 예시로 화면을 만든다.
@@ -131,7 +132,7 @@ lib/app-client.ts    이 앱의 플랫폼과 버전(expo 설정의 version). 웹
 - 궁합은 서버가 지웠다고 답한 뒤에만 화면에서 치운다(미리 지운 것처럼 그리지 않는다).
 - 점검 안내는 확인하지 못하면 막지 않고, 점검이 끝나면 앱을 끄지 않아도 풀린다(결정 030).
 - 강제 업데이트는 확인하지 못하면 막지 않고, 하던 일(만드는 중 · 방금 받은 결과 · 적어 둔 문의)을 끊지 않는다. 서버의 426 만 바로 막는다. 앱 버전을 시간 간격으로 다시 묻지 않는다(결정 027).
-- 공유 카드와 공유 페이지에는 서버가 준 `card` 의 값만 그린다. 차트 · 출생 정보 · 근거 · 리포트 본문을 넣지 않는다. 궁합 점수 카드의 내 이름을 기기 저장소에 두지 않는다(결정 025).
+- 공유 카드와 공유 페이지에는 서버가 준 `card` 의 값만 그린다. 출생 정보 · 근거 · 본문 · 하우스 · 상승점을 넣지 않는다 — 차트 요소는 내 별명 카드의 해 별자리 이름과 그림뿐이다(결정 053 의 4). 궁합 점수 카드의 내 이름을 기기 저장소에 두지 않는다(결정 025).
 - 알림 허용은 리포트 요청이나 초대 링크 생성 직후에만 묻는다.
 
 ## 관련

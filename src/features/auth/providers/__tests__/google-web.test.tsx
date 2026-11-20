@@ -101,9 +101,39 @@ describe('구글(웹): 기다리는 중 · 막힘', () => {
     expect(screen.getByTestId('google-gis-overlay', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
   });
 
-  it('평소에는 GIS 가 누름을 받는다', async () => {
+  it('GIS 버튼이 그려지면 GIS 가 누름을 받고 우리 버튼은 흐리지 않다', async () => {
     await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} />);
+    await layout(350);
+    await waitFor(() => expect(renderButton).toHaveBeenCalled());
     expect(screen.getByTestId('google-gis-overlay', { includeHiddenElements: true }).props.pointerEvents).toBe('auto');
+    expect(flat('social-button-GOOGLE').opacity).toBeUndefined();
+  });
+});
+
+// 준비 전(리뷰 PR #46 의 2): GIS 버튼이 그려지기 전에 누르면 아무 일도 없으므로 막힌 모양으로 보이고, 스크립트가 오지 않으면 거두고 알린다
+describe('구글(웹): 준비 전', () => {
+  it('스크립트를 받는 중 · GIS 버튼이 그려지기 전에는 우리 버튼이 흐리고 누름을 받지 않는다', async () => {
+    (loadScript as jest.Mock).mockImplementationOnce(() => new Promise(() => {}));
+    await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} />);
+    await layout(350);
+    expect(flat('social-button-GOOGLE').opacity).toBe(0.4);
+    expect(screen.getByTestId('google-gis-overlay', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
+  });
+
+  it('스크립트가 10초 안에 오지 않으면 버튼을 거두고 실패를 알린다(로그인 화면의 안내)', async () => {
+    jest.useFakeTimers();
+    try {
+      (loadScript as jest.Mock).mockImplementationOnce(() => new Promise(() => {}));
+      const onError = jest.fn();
+      await render(<GoogleLoginButton onCredential={jest.fn()} onError={onError} />);
+      await act(async () => jest.advanceTimersByTime(9999));
+      expect(onError).not.toHaveBeenCalled();
+      await act(async () => jest.advanceTimersByTime(1));
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId('social-button-GOOGLE', { includeHiddenElements: true })).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 

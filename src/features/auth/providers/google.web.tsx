@@ -4,7 +4,8 @@
  * 구글이 ID 토큰(credential)을 콜백으로 준다 — 서버 계약(`POST /auth/login` 의 구글 ID 토큰)은 그대로다.
  * GIS 버튼은 높이(40) · 폭(200~400)이 정해져 있어 우리 버튼(48 · 꽉 찬 폭)을 빈틈 없이 덮도록 늘린다. 개인 맞춤 버튼의 프로필 · 이름 · 이메일은 보이지 않는다.
  * 키보드 포커스 · 화면 읽기는 겹친 GIS 버튼이 받는다(이름은 구글의 문구). 포커스가 있으면 우리 버튼에 주색 테두리.
- * 클라이언트 ID(`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`)가 없거나 GIS 를 불러오지 못하면 그리지 않는다(최근 로그인 배지도 없다, 결정 044).
+ * GIS 버튼이 그려지기 전에는 우리 버튼을 흐리게(누를 수 없게) 둔다. 클라이언트 ID(`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`)가 없거나
+ * GIS 를 불러오지 못하면(10초 안에 오지 않으면 포함) 그리지 않는다(최근 로그인 배지도 없다, 결정 044).
  */
 import { useEffect, useEffectEvent, useRef, useState, type ComponentRef } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -20,6 +21,8 @@ const GIS_SCRIPT = 'https://accounts.google.com/gsi/client';
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
 const GIS_HEIGHT = 40;
+/** 스크립트를 이만큼 기다려도 오지 않으면 쓸 수 없는 것으로 본다 */
+const GIS_TIMEOUT_MS = 10_000;
 
 type GoogleIdentity = {
   initialize(options: { client_id: string; callback: (response: { credential?: string }) => void }): void;
@@ -58,21 +61,28 @@ export function GoogleLoginButton({ onCredential, onError, disabled = false, loa
   );
   const failed = useEffectEvent(() => onError());
 
-  // 스크립트는 그리자마자 불러온다
+  // 스크립트는 그리자마자 불러온다. 10초 안에 오지 않으면 못 불러온 것과 같다
   useEffect(() => {
     if (!clientId) return;
-    let cancelled = false;
+    let settled = false;
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      setScript('unavailable');
+      failed();
+    };
+    const timer = setTimeout(fail, GIS_TIMEOUT_MS);
     loadScript(GIS_SCRIPT)
       .then(() => {
-        if (!cancelled) setScript(googleIdentity() ? 'ready' : 'unavailable');
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        setScript(googleIdentity() ? 'ready' : 'unavailable');
       })
-      .catch(() => {
-        if (cancelled) return;
-        setScript('unavailable');
-        failed();
-      });
+      .catch(fail);
     return () => {
-      cancelled = true;
+      settled = true;
+      clearTimeout(timer);
     };
   }, [clientId]);
 
@@ -107,6 +117,8 @@ export function GoogleLoginButton({ onCredential, onError, disabled = false, loa
   }, [blocked]);
 
   if (!clientId || script === 'unavailable') return null;
+  // GIS 버튼이 그려지기 전에는 눌러도 아무 일이 없으므로 막힌 모양으로 둔다
+  const ready = gisWidth !== null;
   const cover = width === null ? null : coverStyle(width, gisWidth ?? gisWidthFor(width));
   return (
     <View
@@ -114,8 +126,15 @@ export function GoogleLoginButton({ onCredential, onError, disabled = false, loa
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}>
-      <SocialButtonFace provider="GOOGLE" label={strings.login.google} disabled={disabled} loading={loading} recent={recent} focused={focused} />
-      <View ref={overlay} testID="google-gis-overlay" pointerEvents={blocked ? 'none' : 'auto'} style={styles.overlay}>
+      <SocialButtonFace
+        provider="GOOGLE"
+        label={strings.login.google}
+        disabled={disabled || !ready}
+        loading={loading}
+        recent={recent}
+        focused={focused}
+      />
+      <View ref={overlay} testID="google-gis-overlay" pointerEvents={blocked || !ready ? 'none' : 'auto'} style={styles.overlay}>
         <View ref={container} testID="google-gis" style={[styles.gis, cover]} />
       </View>
     </View>

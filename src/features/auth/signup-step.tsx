@@ -11,9 +11,11 @@ import { BackChevron } from '@/components/back-chevron';
 import { useSlideUp } from '@/components/slide-up';
 import { reduceMotionNow } from '@/components/byeoli';
 import { Screen } from '@/components/screen';
+import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
 import { Colors, ScreenPaddingX, Sizes, StepLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { recheckSession } from '@/features/auth/use-session';
 
 /** 가입 단계 수: 약관 · 닉네임 · 출생 정보 */
 export const SIGNUP_STEPS = 3;
@@ -156,3 +158,12 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: ScreenPaddingX },
   footerKeyboard: { paddingBottom: L.keyboardGap },
 });
+
+/**
+ * 웹이 시작할 때 서버에 닿지 못해 세션을 확인하지 못했는데(offline, 결정 068 의 4) 가입 주소로 열렸을 때 — 가입 단계는 서버 없이 나아갈 수 없어
+ * 볼 게 없는 화면(20-1)을 보이고, 다시 시도는 세션을 다시 확인한다(가입권이 살아 있으면 하던 단계로).
+ */
+export function SignupOffline() {
+  const S = strings.states.offlineEmpty;
+  return <StateScreen title={S.title} body={S.body} primary={{ label: S.retry, onPress: () => void recheckSession() }} />;
+}

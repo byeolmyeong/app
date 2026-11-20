@@ -18,7 +18,7 @@ import { strings } from '@/content/strings';
 import { AvatarSheet } from '@/features/auth/avatar-sheet';
 import { NICKNAME_MAX, checkNickname, isComposingOnly, nicknameLength } from '@/features/auth/nickname-rule';
 import { getDraft, setDraft, takeNicknameRejection } from '@/features/auth/signup-draft';
-import { SignupStep } from '@/features/auth/signup-step';
+import { SignupOffline, SignupStep } from '@/features/auth/signup-step';
 import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 
@@ -44,7 +44,10 @@ const randomAvatar = (): AvatarId => AVATAR_IDS[Math.min(AVATAR_IDS.length - 1, 
  */
 export default function NicknameStep() {
   const { status } = useAuth();
-  return status === 'checking' ? null : <NicknameStepScreen />;
+  if (status === 'checking') return null;
+  // 세션을 확인하지 못했으면(offline) 가입은 나아갈 수 없다 — 20-1(결정 068 의 4)
+  if (status === 'offline') return <SignupOffline />;
+  return <NicknameStepScreen />;
 }
 
 function NicknameStepScreen() {

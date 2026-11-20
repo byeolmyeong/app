@@ -17,7 +17,7 @@ import { Colors, LineWidth, Radius, Sizes, Spacing, StepLayout } from '@/constan
 import { strings } from '@/content/strings';
 import { FROM_SIGNUP } from '@/features/auth/signup-agree';
 import { clearDraft, draftAgreements, takeTermsRejection, writeAgreements, type Agreements } from '@/features/auth/signup-draft';
-import { SignupStep } from '@/features/auth/signup-step';
+import { SignupOffline, SignupStep } from '@/features/auth/signup-step';
 import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 
@@ -41,7 +41,10 @@ const NONE: Agreements = { terms: false, privacy: false, push: false, marketing:
  */
 export default function TermsStep() {
   const { status } = useAuth();
-  return status === 'checking' ? null : <TermsStepScreen />;
+  if (status === 'checking') return null;
+  // 세션을 확인하지 못했으면(offline) 가입은 나아갈 수 없다 — 20-1(결정 068 의 4)
+  if (status === 'offline') return <SignupOffline />;
+  return <TermsStepScreen />;
 }
 
 function TermsStepScreen() {

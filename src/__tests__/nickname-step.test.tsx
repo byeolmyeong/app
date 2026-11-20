@@ -6,7 +6,7 @@ import NicknameStep from '@/app/signup/nickname';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { clearDraft, getDraft, rejectNickname, setDraft } from '@/features/auth/signup-draft';
-import { useAuth } from '@/features/auth/use-session';
+import { recheckSession, useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({
   // 가입 단계는 웹에서 오른쪽에서 밀려 들어온다 — 이 시험들은 앱(움직이지 않음)
@@ -20,7 +20,7 @@ jest.mock('expo-router', () => ({
     return <Text>{`redirect:${href}`}</Text>;
   },
 }));
-jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn() }));
+jest.mock('@/features/auth/use-session', () => ({ useAuth: jest.fn(), recheckSession: jest.fn(async () => {}) }));
 
 const N = strings.nickname;
 const checkNickname = jest.fn();
@@ -286,4 +286,13 @@ describe('닉네임 단계: 늦은 확인', () => {
     expect(screen.getByText(N.available)).toBeTruthy();
     expect(checkNickname).toHaveBeenCalledTimes(1);
   });
+});
+
+// 리뷰 PR #57 제안 12: 서버에 닿지 못해 세션을 확인하지 못했는데(offline) 가입 주소로 열리면 "다음" 이 말없이 무시됐다 — 20-1
+it('세션을 확인하지 못했으면(offline) 가입 단계 대신 볼 게 없는 화면(20-1), 다시 시도는 세션을 다시 확인한다', async () => {
+  (useAuth as jest.Mock).mockReturnValue({ status: 'offline', checkNickname });
+  await render(<NicknameStep />);
+  expect(screen.getByText(strings.states.offlineEmpty.title)).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: strings.states.offlineEmpty.retry }));
+  expect(recheckSession).toHaveBeenCalledTimes(1);
 });

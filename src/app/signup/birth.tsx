@@ -17,7 +17,7 @@ import { Txt } from '@/components/txt';
 import { Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { finishDraft, getDraft, rejectNickname, rejectTerms } from '@/features/auth/signup-draft';
-import { SignupStep } from '@/features/auth/signup-step';
+import { SignupOffline, SignupStep } from '@/features/auth/signup-step';
 import { markSignupStep } from '@/features/auth/signup-resume';
 import { useAuth } from '@/features/auth/use-session';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
@@ -36,7 +36,10 @@ type Leave = { href: Href; clear: boolean };
  */
 export default function BirthStep() {
   const { status } = useAuth();
-  return status === 'checking' ? null : <BirthStepScreen />;
+  if (status === 'checking') return null;
+  // 세션을 확인하지 못했으면(offline) 가입은 나아갈 수 없다 — 20-1(결정 068 의 4)
+  if (status === 'offline') return <SignupOffline />;
+  return <BirthStepScreen />;
 }
 
 function BirthStepScreen() {

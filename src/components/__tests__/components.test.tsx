@@ -40,6 +40,10 @@ describe('테마', () => {
       primarySoft: '#1D2050',
       danger: '#E5484D',
       dangerSoft: '#FF8A8A',
+      // 짧은 알림의 성공 체크(보드 23) · 처음 불러올 때 뼈대의 바탕과 빛(보드 24)
+      success: '#7EE0B5',
+      skeleton: '#1E1F27',
+      skeletonShine: '#2A2B35',
     });
   });
 

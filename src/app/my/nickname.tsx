@@ -81,8 +81,15 @@ export default function NicknameScreen() {
   const canSave = check.ok && check.value !== current && !saving && !checking && rejected === null;
 
   function onChange(text: string) {
+    // 다듬은 값이 같으면(앞뒤 공백만 더함) 받은 안내(초록 · 빨강)를 그대로 둔다 — 다시 묻지 않으니(가입 단계와 같게, #77 리뷰)
+    const before = checkNickname(raw);
+    const after = checkNickname(text);
+    const same = before.ok && after.ok && before.value === after.value;
     setTyped(text);
+    if (same) return;
     setRejected(null);
+    // 앞서 받은 초록은 그 값으로 다시 물을 때까지 보이지 않게
+    setAvailable(null);
   }
 
   async function save() {

@@ -214,6 +214,27 @@ describe('닉네임(/my/nickname, 보드 16-5)', () => {
       expect(mockApi.checkMyNickname).not.toHaveBeenCalled();
     });
 
+    it('"이미 있는 닉네임" 뒤에 공백만 더하면 빨강 · 꺼진 저장을 그대로 둔다(다시 묻지 않으니, #77 리뷰)', async () => {
+      mockApi.checkMyNickname.mockResolvedValue({ ok: true, data: { available: false } });
+      await typed('별빛');
+      await act(async () => jest.advanceTimersByTime(500));
+      await fireEvent.changeText(box(), '별빛 ');
+      await act(async () => jest.advanceTimersByTime(500));
+      expect(screen.getByText(N.taken)).toBeTruthy();
+      expect(disabled()).toBe(true);
+      expect(mockApi.checkMyNickname).toHaveBeenCalledTimes(1);
+    });
+
+    it('앞서 초록이던 값으로 돌아와도 다시 물을 때까지 초록을 보이지 않는다', async () => {
+      await typed('별빛');
+      await act(async () => jest.advanceTimersByTime(500));
+      await fireEvent.changeText(box(), '별빛달');
+      await fireEvent.changeText(box(), '별빛');
+      expect(screen.queryByText(N.available)).toBeNull();
+      await act(async () => jest.advanceTimersByTime(500));
+      expect(screen.getByText(N.available)).toBeTruthy();
+    });
+
     it('묻지 못하면(끊김 · 옛 서버) 아무것도 적지 않고 저장할 수 있다 — 판정은 저장 때 서버', async () => {
       mockApi.checkMyNickname.mockResolvedValue({ ok: false, error: 'NETWORK' });
       await typed('별빛');

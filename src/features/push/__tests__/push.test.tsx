@@ -3,17 +3,19 @@ import { act, render } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
 import { IosAuthorizationStatus } from 'expo-notifications';
 import { router } from 'expo-router';
-import { Platform } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 
 import { parsePushData, pushTarget } from '@/features/push/push-data';
 import {
   getPushPermission,
   onPushReceived,
+  openPushSettings,
   PUSH_TOKEN_KEY,
   registerPushDevice,
   requestPushPermission,
   unregisterPushDevice,
   usePushDeviceSync,
+  usePushPermission,
   usePushTapRouting,
 } from '@/features/push/push';
 import { api } from '@/lib/api';
@@ -37,7 +39,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   N.getPermissionsAsync.mockResolvedValue(perm(S.NOT_DETERMINED));
   N.getExpoPushTokenAsync.mockResolvedValue({ type: 'expo', data: 'ExponentPushToken[abc]' });
-  N.getLastNotificationResponseAsync.mockResolvedValue(null);
+  N.getLastNotificationResponse.mockReturnValue(null);
   N.addNotificationResponseReceivedListener.mockImplementation(() => ({ remove: jest.fn() }));
   mockApi.registerPushDevice.mockResolvedValue({ ok: true, data: null });
   mockApi.deletePushDevice.mockResolvedValue({ ok: true, data: null });
@@ -79,19 +81,44 @@ describe('휴대폰 알림 권한(결정 066)', () => {
     expect(mockApi.registerPushDevice).not.toHaveBeenCalled();
   });
 
-  it('웹은 푸시가 없다 — 무엇도 부르지 않고 "unsupported"', async () => {
-    const os = Platform.OS;
-    Platform.OS = 'web';
-    try {
-      expect(await getPushPermission()).toBe('unsupported');
-      expect(await requestPushPermission()).toBe('unsupported');
-      await registerPushDevice();
-      expect(N.getPermissionsAsync).not.toHaveBeenCalled();
-      expect(N.requestPermissionsAsync).not.toHaveBeenCalled();
-      expect(mockApi.registerPushDevice).not.toHaveBeenCalled();
-    } finally {
-      Platform.OS = os;
+  it('웹은 푸시가 없다 — 빈 구현(push.web.ts)이 무엇도 부르지 않고 "unsupported"', async () => {
+    const web = jest.requireActual<typeof import('@/features/push/push.web')>('@/features/push/push.web');
+    expect(await web.getPushPermission()).toBe('unsupported');
+    expect(await web.requestPushPermission()).toBe('unsupported');
+    await web.registerPushDevice();
+    await web.unregisterPushDevice();
+    await web.openPushSettings();
+    web.onPushReceived(() => {})();
+    expect(N.getPermissionsAsync).not.toHaveBeenCalled();
+    expect(mockApi.registerPushDevice).not.toHaveBeenCalled();
+  });
+
+  it('화면이 보이는 동안의 권한은 앱으로 돌아오면 다시 읽는다(16-2-1)', async () => {
+    let onChange: (state: string) => void = () => {};
+    // 한 번만 바꿔 끼운다(되돌리면 react-native 가짜의 원래 구현까지 지워진다)
+    jest.spyOn(AppState, 'addEventListener').mockImplementationOnce((_t, h) => {
+      onChange = h as (state: string) => void;
+      return { remove: jest.fn() } as never;
+    });
+    N.getPermissionsAsync.mockResolvedValue(perm(S.DENIED));
+    let seen: string | null = null;
+    function Probe() {
+      seen = usePushPermission();
+      return null;
     }
+    await render(<Probe />);
+    await act(async () => {});
+    expect(seen).toBe('denied');
+    N.getPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+    await act(async () => onChange('active'));
+    expect(seen).toBe('granted');
+  });
+
+  it('"설정 열기" 는 휴대폰 설정을 연다', async () => {
+    const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
+    await openPushSettings();
+    expect(open).toHaveBeenCalled();
+    open.mockRestore();
   });
 
   it('안드로이드는 채널을 먼저 만든 뒤 묻는다(13 이상은 채널이 없으면 창이 뜨지 않는다)', async () => {
@@ -135,6 +162,51 @@ describe('이 기기 등록 · 해제(서버 S10-2)', () => {
     expect(mockApi.deletePushDevice).toHaveBeenCalledTimes(1);
   });
 
+  it('겹쳐 부르면 한 번만 보낸다(권한 창 뒤 등록과 루트의 등록)', async () => {
+    N.getPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+    await Promise.all([registerPushDevice(), registerPushDevice()]);
+    expect(mockApi.registerPushDevice).toHaveBeenCalledTimes(1);
+  });
+
+  it('토큰을 받는 사이 로그아웃이 시작되면 앞사람 계정으로 보내지 않는다(#64 리뷰)', async () => {
+    N.getPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+    let give: (t: { type: 'expo'; data: string }) => void = () => {};
+    N.getExpoPushTokenAsync.mockReturnValueOnce(new Promise((r) => (give = r)) as never);
+    const reg = registerPushDevice();
+    await act(async () => {});
+    const out = unregisterPushDevice();
+    give({ type: 'expo', data: 'ExponentPushToken[abc]' });
+    await reg;
+    await out;
+    expect(mockApi.registerPushDevice).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(PUSH_TOKEN_KEY)).toBeNull();
+  });
+
+  it('서버에 보내는 사이 로그아웃이 시작되면, 로그아웃이 기다렸다가 그 등록을 바로 지운다(세션이 있을 때)', async () => {
+    N.getPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+    let answer: (r: { ok: true; data: null }) => void = () => {};
+    mockApi.registerPushDevice.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const reg = registerPushDevice();
+    await act(async () => {});
+    await act(async () => {});
+    expect(mockApi.registerPushDevice).toHaveBeenCalledTimes(1);
+    let unregistered = false;
+    const out = unregisterPushDevice().then(() => (unregistered = true));
+    await act(async () => {});
+    expect(unregistered).toBe(false);
+    answer({ ok: true, data: null });
+    await reg;
+    await out;
+    expect(mockApi.deletePushDevice).toHaveBeenCalledWith('ExponentPushToken[abc]');
+    expect(await AsyncStorage.getItem(PUSH_TOKEN_KEY)).toBeNull();
+  });
+
+  it('로그아웃하면 알림 센터에 남은 앞사람의 알림과 배지를 걷는다', async () => {
+    await unregisterPushDevice();
+    expect(N.dismissAllNotificationsAsync).toHaveBeenCalled();
+    expect(N.setBadgeCountAsync).toHaveBeenCalledWith(0);
+  });
+
   it('루트: 로그인돼 있을 때만 켤 때 다시 등록한다', async () => {
     N.getPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
     function Sync({ signedIn }: { signedIn: boolean }) {
@@ -152,13 +224,15 @@ describe('이 기기 등록 · 해제(서버 S10-2)', () => {
 
 describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
   it.each([
-    [{ type: 'TODAY_SKY', date: '2026-11-21' }, '/today'],
+    // /today 는 길 A 의 A④ 가 만든다 — 그 전에는 홈(오늘의 하늘 카드)
+    [{ type: 'TODAY_SKY', date: '2026-11-21' }, '/'],
     [{ type: 'READING_DONE' }, '/reading'],
     [{ type: 'ME_REPORT_DONE' }, '/me'],
     [{ type: 'TIMING_REPORT_DONE' }, '/timing'],
     [{ type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }, { pathname: '/my/inquiries/[id]', params: { id: 'q1' } }],
     [{ type: 'INQUIRY_ANSWERED', inquiryId: 42 }, { pathname: '/my/inquiries/[id]', params: { id: '42' } }],
     [{ type: 'EVENT', target: '/timing' }, '/timing'],
+    [{ type: 'EVENT', target: '/my/inquiries' }, '/my/inquiries'],
   ])('%j → %j', (raw, href) => {
     const data = parsePushData(raw);
     expect(data).not.toBeNull();
@@ -173,6 +247,9 @@ describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
     // 광고 푸시가 앱 밖으로 보내지 않게
     [{ type: 'EVENT', target: 'https://example.com' }],
     [{ type: 'EVENT', target: '//example.com' }],
+    // 없는 주소로는 보내지 않는다(길 잃은 화면)
+    [{ type: 'EVENT', target: '/nowhere' }],
+    [{ type: 'EVENT', target: '/today' }],
   ])('모르는 종류 · 빠진 값 · 앱 밖 주소는 버린다: %j', (raw) => {
     expect(parsePushData(raw)).toBeNull();
   });
@@ -196,8 +273,8 @@ describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
 });
 
 describe('알림을 누르면(루트)', () => {
-  function Tap({ ready }: { ready: boolean }) {
-    usePushTapRouting(ready);
+  function Tap({ ready, suspended = false, signedOut = false }: { ready: boolean; suspended?: boolean; signedOut?: boolean }) {
+    usePushTapRouting({ ready, suspended, signedOut });
     return null;
   }
 
@@ -209,7 +286,7 @@ describe('알림을 누르면(루트)', () => {
 
   it('알림으로 처음 켜면 화면들이 준비될 때까지 기다렸다가 한 번 간다 — 같은 알림이 듣기로 또 와도 한 번', async () => {
     let tap: (r: never) => void = () => {};
-    N.getLastNotificationResponseAsync.mockResolvedValue(response('n1', { type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }));
+    N.getLastNotificationResponse.mockReturnValue(response('n1', { type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }));
     N.addNotificationResponseReceivedListener.mockImplementation((l) => {
       tap = l as never;
       return { remove: jest.fn() };
@@ -221,7 +298,28 @@ describe('알림을 누르면(루트)', () => {
     expect(router.push).toHaveBeenCalledWith({ pathname: '/my/inquiries/[id]', params: { id: 'q1' } });
     await act(async () => tap(response('n1', { type: 'INQUIRY_ANSWERED', inquiryId: 'q1' })));
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(N.clearLastNotificationResponseAsync).toHaveBeenCalled();
+    expect(N.clearLastNotificationResponse).toHaveBeenCalled();
+  });
+
+  it('정지된 계정이면 문의 답변만 보내고 나머지는 버린다(정지 화면 위에 다른 화면이 쌓이지 않게, #64 리뷰)', async () => {
+    let tap: (r: never) => void = () => {};
+    N.addNotificationResponseReceivedListener.mockImplementation((l) => {
+      tap = l as never;
+      return { remove: jest.fn() };
+    });
+    await render(<Tap ready suspended />);
+    await act(async () => tap(response('n4', { type: 'TIMING_REPORT_DONE' })));
+    expect(router.push).not.toHaveBeenCalled();
+    await act(async () => tap(response('n5', { type: 'INQUIRY_ANSWERED', inquiryId: 'q9' })));
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/my/inquiries/[id]', params: { id: 'q9' } });
+  });
+
+  it('로그인 전으로 확인되면 들고 있던 갈 곳을 버린다 — 다음에 로그인하는 사람에게 가지 않는다', async () => {
+    N.getLastNotificationResponse.mockReturnValue(response('n6', { type: 'INQUIRY_ANSWERED', inquiryId: 'A-inquiry' }));
+    const view = await render(<Tap ready={false} signedOut />);
+    await act(async () => {});
+    await view.rerender(<Tap ready />);
+    expect(router.push).not.toHaveBeenCalled();
   });
 
   it('켜져 있을 때 누르면 바로 간다. 모르는 종류는 가지 않는다', async () => {

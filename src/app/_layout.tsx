@@ -10,6 +10,7 @@ import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { resumeStep } from '@/features/auth/signup-resume';
+import { useSuspended } from '@/features/auth/suspension';
 import { useSuspensionGate } from '@/features/auth/suspension-gate';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { useHomeReady } from '@/features/home/home-ready';
@@ -69,9 +70,14 @@ export default function RootLayout() {
   const [gateBlocked, setGateBlocked] = useState(false);
   const signedIn = session.status === 'signedIn';
   const suspensionCovers = useSuspensionGate(signedIn, fontsDone && !gateBlocked);
+  const suspendedNow = useSuspended();
   // 휴대폰 푸시(결정 057 · 066): 로그인하면 이 기기를 등록하고, 알림을 누르면 화면들이 그려진 뒤 그 종류의 화면으로
   usePushDeviceSync(signedIn);
-  usePushTapRouting(fontsDone && !gateBlocked && signedIn && !suspensionCovers);
+  usePushTapRouting({
+    ready: fontsDone && !gateBlocked && signedIn && !suspensionCovers,
+    suspended: suspendedNow,
+    signedOut: session.status === 'signedOut',
+  });
   // 웹이 시작할 때 서버에 닿지 못했으면(결정 068 의 4) 30초마다 다시 확인한다 — 살아 있으면 로그인, 401 이면 로그인 화면
   const unreachable = session.status === 'offline';
   useEffect(() => {

@@ -35,7 +35,8 @@ jest.mock('expo-audio', () => ({
 // 권한 · 토큰 · 누르면 이동을 보는 시험(features/push)은 그 파일에서 바꿔 끼운다.
 jest.mock('expo-notifications', () => ({
   IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3, EPHEMERAL: 4 },
-  AndroidImportance: { DEFAULT: 3, HIGH: 4 },
+  AndroidImportance: { MIN: 3, LOW: 4, DEFAULT: 5, HIGH: 6 },
+  DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
   getPermissionsAsync: jest.fn(async () => ({ granted: false, status: 'undetermined', canAskAgain: true, expires: 'never' })),
   requestPermissionsAsync: jest.fn(async () => ({ granted: false, status: 'denied', canAskAgain: false, expires: 'never' })),
   getExpoPushTokenAsync: jest.fn(async () => {
@@ -46,6 +47,8 @@ jest.mock('expo-notifications', () => ({
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })),
-  getLastNotificationResponseAsync: jest.fn(async () => null),
-  clearLastNotificationResponseAsync: jest.fn(async () => {}),
+  getLastNotificationResponse: jest.fn(() => null),
+  clearLastNotificationResponse: jest.fn(),
+  dismissAllNotificationsAsync: jest.fn(async () => {}),
+  setBadgeCountAsync: jest.fn(async () => true),
 }));

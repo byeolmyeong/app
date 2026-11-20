@@ -423,7 +423,7 @@ describe('루트 레이아웃의 휴대폰 푸시(결정 057 · 066)', () => {
     jest.clearAllMocks();
     mockSegments.mockReturnValue([]);
     markHomeReady();
-    N.getLastNotificationResponseAsync.mockResolvedValue(null);
+    N.getLastNotificationResponse.mockReturnValue(null);
   });
   afterEach(() => (useSession as jest.Mock).mockReturnValue(session('checking')));
 
@@ -440,7 +440,7 @@ describe('루트 레이아웃의 휴대폰 푸시(결정 057 · 066)', () => {
   });
 
   it('알림으로 켜면 로그인 · 정지 확인이 끝난 뒤에 그 화면으로 간다', async () => {
-    N.getLastNotificationResponseAsync.mockResolvedValue({
+    N.getLastNotificationResponse.mockReturnValue({
       actionIdentifier: 'default',
       notification: { request: { identifier: 'n1', content: { data: { type: 'TIMING_REPORT_DONE' } } } },
     } as never);

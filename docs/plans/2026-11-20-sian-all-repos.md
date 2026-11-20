@@ -116,7 +116,7 @@ last_reviewed: 2026-11-20
 
 #### A6-3. update-two-steps · 상태: 완료(`feat/common-states` — 실행 기록은 A6-5 의 PR)
 - 읽을 것: 결정 027 · 059, `src/features/update/`(version.ts · update-store.ts · update-gate.tsx · update-required.tsx), `src/lib/api.ts` 의 `getAppConfig`
-- 할 것: `AppConfig` 플랫폼 값에 `latestVersion: string | null`(없으면 null — 옛 서버). 권유 판정 `shouldSuggestUpdate(current, latest, min, lastAsked)`. 권유 창(가운데 창 · "나중에" / "업데이트") — 같은 `latestVersion` 은 한 번(물은 버전을 `byeolmyeong.updateAsked.v1` 에), 바쁨 · 로그인 전 · 가입 중엔 미룸. 막는 화면은 `StateScreen` 모양 + 문구 "새 버전이 나왔어요" · 버튼 "업데이트".
+- 할 것: `AppConfig` 플랫폼 값에 `latestVersion: string | null`(없으면 null — 옛 서버). 권유 판정 `shouldSuggestUpdate(current, latest, min, lastAsked)`. 권유 창(가운데 창 · "나중에" / "업데이트") — 같은 `latestVersion` 은 한 번(물은 버전을 `byeolmyeong-device.updateAsked.v1` 에 — 로그아웃 · 탈퇴가 지우지 않게, 2026-11-20 소유자), 바쁨 · 로그인 전 · 가입 중엔 미룸. 막는 화면은 `StateScreen` 모양 + 문구 "새 버전이 나왔어요" · 버튼 "업데이트".
 - 하지 말 것: 027 의 판정 · 바쁨 · 426 을 바꾸지 않는다.
 - 검증: 판정 표 테스트(낮음/같음/높음 · null · 읽을 수 없는 버전 · 이미 물음), 렌더 테스트.
 
@@ -124,6 +124,8 @@ last_reviewed: 2026-11-20
 - 읽을 것: 결정 030 · 060, `src/features/update/maintenance-notice.tsx`
 - 할 것: 점검 화면을 `StateScreen`(버튼 없음)으로, 떠 있는 동안 60초마다 · 앞으로 돌아올 때 `GET /app-config`. 풀리면 사라진다.
 - 검증: 가짜 타이머로 60초 뒤 다시 부르는지 · 풀리면 사라지는지 테스트.
+
+- 추가분(시안 세션 67 요청 · 앱 ADR 065 예정) · 상태: 완료(`feat/common-states`): 9-1 별명을 짓지 못했어요(가입 직후 실패 → `StateScreen` · 다시 짓기) · 짧은 알림 `Toast` · `useToast`(보드 23 · 23-1) · 처음 불러올 때 뼈대 `Skeleton` · `SkeletonCard` · `useLoadingPhase`(보드 24 · 24-1 — 화면에 붙이는 것은 A② · A③ · A④).
 
 #### A6-5. verify-a6 · 상태: 대기
 - 할 것: `/verify`, 웹에서 19 · 20 · 17 · 18 상태를 가짜 서버로 띄워 캔버스 보드와 나란히 스크린샷. PR → CI → 합침.

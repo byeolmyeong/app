@@ -49,7 +49,7 @@ features/            기능별 로직과 기능 전용 부품
   support/           자주 묻는 질문을 받아 오는 상태(use-faqs.ts, 메모리에만 5분) · 목록, 문의하기의 입력 확인(inquiry.ts) · 보내는 상태 · 종류 칩(결정 024 · 028)
   update/            강제 업데이트(결정 027 · 059)와 점검 안내(결정 030 · 060): 버전 비교 · 권유 판정(version.ts) · 셋의 판정(update-store.ts) · 루트를 감싸는 문과 바쁨 등록(update-gate.tsx) · 막는 화면(update-required.tsx · maintenance-notice.tsx) · 권유 창(update-suggest.tsx)
   share/             공유 카드(9:16, 서버가 준 card 만으로 그린다)·공유 버튼과 시트·공유 주소·이미지와 링크 보내기(앱 share-actions.ts, 웹 share-actions.web.ts)·공유 페이지의 카드 받기
-components/          공용 부품(버튼·입력 줄·표·시트·가운데 창·탭…, 브랜드 그림: 로고 · 별이 · 빛나는 모양 · 상태 화면). 기능을 모른다
+components/          공용 부품(버튼·입력 줄·표·시트·가운데 창 Dialog·짧은 알림 Toast·뼈대 Skeleton·탭…, 상태: 실패 화면 StateScreen · 연결 끊김 띠 OfflineBanner, 브랜드 그림: 로고 · 별이 · 빛나는 모양). 기능을 모른다
 constants/theme.ts   디자인 값의 단일 출처
 content/strings.ts   문구의 단일 출처
 content/legal.ts     약관 · 처리방침 · 마케팅 수신 동의 약관의 글. 랜딩 app/data/legal.ts 와 같은 사본(결정 043)

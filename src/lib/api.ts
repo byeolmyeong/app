@@ -113,9 +113,10 @@ export type Account = { nickname: string | null; avatar: number | null };
 
 /**
  * 마이 · 계정 화면이 쓰는 `GET /account` · `PATCH /account` 의 값(결정 056): 홈의 둘에 더해 이메일(옛 계정 null) · 공급자 ·
- * 마케팅 수신 동의. 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
+ * 마케팅 수신 동의 · 이용 정지 여부(`suspended` — 없는 옛 서버는 false, 사유는 오지 않는다). 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만
+ * 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
  */
-export type MyAccount = Account & { email: string | null; provider: string; marketingConsent: boolean };
+export type MyAccount = Account & { email: string | null; provider: string; marketingConsent: boolean; suspended: boolean };
 
 /** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028). 마케팅 · 푸시 동의는 알림 화면(계획 A8-2)이 더한다 */
 export type AccountPatch = { nickname?: string; avatar?: number };
@@ -453,6 +454,7 @@ export function isMyAccount(v: unknown): v is MyAccount {
     (v.email === null || typeof v.email === 'string') &&
     typeof v.provider === 'string' &&
     typeof v.marketingConsent === 'boolean' &&
+    (v.suspended === undefined || typeof v.suspended === 'boolean') &&
     isAccount(v)
   );
 }
@@ -463,6 +465,7 @@ const myAccountOf = (v: MyAccount): MyAccount => ({
   email: v.email,
   provider: v.provider,
   marketingConsent: v.marketingConsent,
+  suspended: v.suspended === true,
 });
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -844,6 +847,8 @@ export type ApiConfig = {
   onUpdateRequired?: () => void;
   /** 서버가 503 `MAINTENANCE` 로 거절했을 때 부른다(결정 030) */
   onMaintenance?: () => void;
+  /** 서버가 403 `ACCOUNT_SUSPENDED` 로 거절했을 때 부른다(이용 정지 — 결정 065 의 5, 서버 결정 044) */
+  onSuspended?: () => void;
   /**
    * 웹이면 true: 세션은 서버의 httpOnly 쿠키 `bm_session` 이다(결정 034). 모든 요청에 쿠키를 싣고(`credentials: 'include'`),
    * Authorization 헤더를 붙이지 않으며, 로그인 · 가입 · 개발용 로그인에 `cookie: true` 를 보내고 받은 토큰을 버린다.
@@ -863,6 +868,8 @@ const UPDATE_REQUIRED = 'UPDATE_REQUIRED';
 
 /** `{ error }` 로 오는 이름: 점검 중이다(상태 503). `/app-config` 를 뺀 모든 주소가 이렇게 답한다 */
 const MAINTENANCE = 'MAINTENANCE';
+/** 이용이 정지된 계정의 거절 이름(서버 결정 044) — 문의 · 계정 보기 · 로그아웃 · 계정 삭제 말고는 모두 이 403 이다 */
+const ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED';
 
 /** 가짜 서버의 설정. 아무도 막지 않는다 */
 const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
@@ -877,7 +884,7 @@ const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
 const FIXTURE_TOKEN = 'fixture-session';
 
 /** 모의 서버(`useFixtures`)의 내 계정 */
-const FIXTURE_MY_ACCOUNT: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+const FIXTURE_MY_ACCOUNT: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 
 export function createApi(config: ApiConfig) {
   /**
@@ -930,6 +937,7 @@ export function createApi(config: ApiConfig) {
       const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
       if (status === 426 && code.code === UPDATE_REQUIRED) config.onUpdateRequired?.();
       if (status === 503 && code.code === MAINTENANCE) config.onMaintenance?.();
+      if (status === 403 && code.code === ACCOUNT_SUSPENDED) config.onSuspended?.();
       return { ok: false, error: 'SERVER', status, ...code };
     }
 
@@ -1138,7 +1146,10 @@ export function createApi(config: ApiConfig) {
     async getMyAccount(): Promise<ApiResult<MyAccount>> {
       if (config.useFixtures) return { ok: true, data: FIXTURE_MY_ACCOUNT };
       const res = await request('GET', '/account', { validate: isMyAccount });
-      return res.ok ? { ok: true, data: myAccountOf(res.data) } : res;
+      if (!res.ok) return res;
+      // 정지된 계정에도 이 경로는 200 이다 — 403 대신 이 값으로 정지를 알린다(서버 결정 044)
+      if (res.data.suspended === true) config.onSuspended?.();
+      return { ok: true, data: myAccountOf(res.data) };
     },
 
     /**
@@ -1313,6 +1324,13 @@ export function setMaintenanceHandler(handler: (() => void) | null) {
   maintenanceHandler = handler;
 }
 
+let suspendedHandler: (() => void) | null = null;
+
+/** 이용 정지(403 `ACCOUNT_SUSPENDED`)를 받았을 때 부를 것을 정한다. 정지 문(`features/auth/suspension-gate.tsx`)이 건다 */
+export function setSuspendedHandler(handler: (() => void) | null) {
+  suspendedHandler = handler;
+}
+
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
@@ -1322,5 +1340,6 @@ export const api = createApi({
   client: appClient,
   onUpdateRequired: () => updateRequiredHandler?.(),
   onMaintenance: () => maintenanceHandler?.(),
+  onSuspended: () => suspendedHandler?.(),
   cookieSession: Platform.OS === 'web',
 });

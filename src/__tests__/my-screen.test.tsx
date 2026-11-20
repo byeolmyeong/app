@@ -31,7 +31,7 @@ jest.mock('@/lib/api', () => ({
 const mockApi = api as jest.Mocked<typeof api>;
 const M = strings.my;
 const R = M.rows;
-const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 const profile = { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } };
 type Profile = { date: string; time: string | null; place: { id: number; name: string } | null };
 /** 그 출생 정보로 받아 둔 풀이를 기기에 넣는다(use-reading 의 열쇠: 날짜 · 시각 · 곳) */

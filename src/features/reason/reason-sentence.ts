@@ -172,8 +172,11 @@ function clauseOf(item: KnownBasisItem, timeKnown: boolean): Clause | null {
         const target = bodyTerm(item.target);
         const aspect = aspectTerm(item.type);
         if (!target || !aspect) return null;
+        // 합은 "내 ○○ 자리를 지나요" — 상승점 · 중천은 이름이 이미 "…의 자리" 라 "자리" 를 겹쳐 쓰지 않는다
         if (item.type === 'CONJUNCTION')
-          return { pieces: [...head, ...named(target.reason, target.name), { t: ` ${R.place}${josa(R.place, R.josa.object)}` }], verb: R.passes };
+          return isAngle(item.target)
+            ? { pieces: [...head, ...named(target.reason, target.name, R.josa.object)], verb: R.passes }
+            : { pieces: [...head, ...named(target.reason, target.name), { t: ` ${R.place}${josa(R.place, R.josa.object)}` }], verb: R.passes };
         const phrase: Piece[] = NAMED_TRANSITS.includes(item.type)
           ? named(aspect.transitPhrase, aspect.name, R.josa.object)
           : [{ t: aspect.transitPhrase + josa(aspect.transitPhrase, R.josa.object) }];

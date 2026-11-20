@@ -54,6 +54,10 @@ describe('이유 문장(결정 054 의 2): 시안의 문장과 글자까지 같�
     expect(
       reasonSentence({ when: 'NOW', items: [{ kind: 'TRANSIT', mover: 'JUPITER', house: 10 }] }, known)?.text,
     ).toBe('지금 기회를 맡은 별(목성)이 내 일과 사회의 자리(10하우스)를 지나요');
+    // 상승점 · 중천과 합이면 "자리" 를 겹쳐 쓰지 않는다("…의 자리(상승점) 자리를" 이 아니라 — 리뷰 #49)
+    expect(
+      reasonSentence({ when: 'NOW', items: [{ kind: 'TRANSIT', mover: 'SATURN', target: 'ASC', type: 'CONJUNCTION' }] }, known)?.text,
+    ).toBe('지금 책임을 맡은 별(토성)이 내 첫인상의 자리(상승점)를 지나요');
   });
 
   it('상승점 · 중천: 하나면 "…에 …가 있었어요", 둘이면 "…에 …가, …에 …가 있었어요"', () => {

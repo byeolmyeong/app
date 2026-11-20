@@ -110,6 +110,15 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(screen.getByText('2026년의 흐름')).toBeTruthy();
   });
 
+  it('다른 곳에서 받기를 눌러 쓰는 중인 채로 열면 머리 · 아래 탭이 있는 틀 안의 쓰는 중(다른 탭으로 갈 수 있게, #49 의 나 탭과 같이)', async () => {
+    mockApi.getTimingReport.mockResolvedValue(got('WRITING'));
+    await render(<TimingScreen />);
+    expect(await screen.findByText(T.making.title)).toBeTruthy();
+    expect(bottomTabs()).toHaveLength(4);
+    expect(within(screen.getByTestId('nav-bar')).getByText(T.title)).toBeTruthy();
+    expect(mockApi.requestTimingReport).not.toHaveBeenCalled();
+  });
+
   it('끝까지 못 쓰면(14-8) 머리 · 아래 탭 없이 "다시 쓰기" · 그 위 "나중에 하기"(받기 전으로)', async () => {
     jest.useFakeTimers();
     await render(<TimingScreen />);

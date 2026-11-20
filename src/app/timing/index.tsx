@@ -62,6 +62,8 @@ export default function TimingScreen() {
   // 달력의 "오늘" — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
   const [today] = useState(() => koreaToday());
   const [picked, setPicked] = useState<TimingChip | null>(null);
+  /** 이 화면에서 받기를 눌렀나 — 누른 직후의 쓰는 중만 머리 · 아래 탭 없이(14-7), 열었을 때 이미 쓰는 중이면 탭이 있는 틀 안에 */
+  const [requested, setRequested] = useState(false);
   const s = timing.state;
   const done = s.status === 'done';
   // 처음 고른 칩: 주소의 tab, 없으면 시기 풀이를 받았으면 올해 · 아니면 이번 달(결정 049 의 1)
@@ -72,6 +74,7 @@ export default function TimingScreen() {
   const start = () => {
     // 다 쓰면 올해 칩으로(결정 049 의 7) — 고른 칩을 비운다
     setPicked(null);
+    setRequested(true);
     timing.start();
   };
   const reload = () => {
@@ -100,8 +103,14 @@ export default function TimingScreen() {
       </Screen>
     );
 
-  // 쓰는 중(14-7): 머리 · 아래 탭 없이 별명 짓는 중과 같은 그림 · 시기 문구
-  if (s.status === 'writing') return <MakingView title={T.making.title} lines={T.making.lines} />;
+  // 쓰는 중(14-7): 받기를 누른 직후는 머리 · 아래 탭 없이 별명 짓는 중과 같은 그림 · 시기 문구.
+  // 다른 곳에서 받기를 눌러 열었을 때 이미 쓰는 중이면(길면 몇 분) 머리 · 아래 탭이 있는 틀 안에 — 그동안 다른 탭으로 갈 수 있게(리뷰 #49 · #63)
+  if (s.status === 'writing')
+    return requested ? (
+      <MakingView title={T.making.title} lines={T.making.lines} />
+    ) : (
+      <MakingView nav={nav} tabs={tabs} title={T.making.title} lines={T.making.lines} />
+    );
 
   if (s.status === 'failed') {
     if (s.error === 'NETWORK' && !online)

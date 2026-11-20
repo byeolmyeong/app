@@ -179,3 +179,51 @@ describe('닉네임 단계', () => {
     expect(nextDisabled()).toBe(false);
   });
 });
+
+// 닉네임 중복 안내(결정 068 의 6): 치기를 멈추고 0.5초 뒤 서버에 한 번 묻고 안내 줄에 쓴다. 확인 중엔 다음이 흐리다
+describe('닉네임 단계: 멈추면 확인', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+  const settle = () => act(async () => jest.advanceTimersByTime(500));
+
+  it('규칙에 맞는 닉네임을 치고 멈추면 한 번 묻고, 쓸 수 있으면 초록 "사용할 수 있는 닉네임이에요"', async () => {
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽');
+    await act(async () => jest.advanceTimersByTime(300));
+    await fireEvent.changeText(input(), '새벽별');
+    await act(async () => jest.advanceTimersByTime(499));
+    expect(checkNickname).not.toHaveBeenCalled();
+    await settle();
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+    expect(checkNickname).toHaveBeenCalledWith('새벽별');
+    const ok = screen.getByText(N.available);
+    expect(StyleSheet.flatten(ok.props.style).color).toBe(Colors.success);
+    expect(nextDisabled()).toBe(false);
+    // 쓸 수 있다고 확인한 이름이면 다음에서 다시 묻지 않는다
+    await fireEvent.press(next());
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith('/signup/birth');
+  });
+
+  it('겹치면 빨강 "이미 쓰고 있는 닉네임이에요" 와 다음 꺼짐', async () => {
+    checkNickname.mockResolvedValue({ ok: true, data: { available: false } });
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '새벽별');
+    await settle();
+    expect(N.taken).toBe('이미 쓰고 있는 닉네임이에요');
+    expect(StyleSheet.flatten(screen.getByText(N.taken).props.style).color).toBe(Colors.danger);
+    expect(nextDisabled()).toBe(true);
+  });
+
+  it('확인하는 동안은 다음이 흐리다. 규칙에 어긋나면 묻지 않는다', async () => {
+    checkNickname.mockImplementation(() => new Promise(() => {}));
+    await render(<NicknameStep />);
+    await fireEvent.changeText(input(), '별!');
+    await settle();
+    expect(checkNickname).not.toHaveBeenCalled();
+    await fireEvent.changeText(input(), '새벽별');
+    await settle();
+    expect(checkNickname).toHaveBeenCalledTimes(1);
+    expect(nextDisabled()).toBe(true);
+  });
+});

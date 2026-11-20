@@ -33,6 +33,9 @@ const SERVER_MESSAGE: Record<ServerError, string> = {
   OTHER: N.checkFailed,
 };
 
+/** 치기를 멈추고 이만큼 지나면 중복을 묻는다 */
+const CHECK_AFTER_MS = 500;
+
 const randomAvatar = (): AvatarId => AVATAR_IDS[Math.min(AVATAR_IDS.length - 1, Math.floor(Math.random() * AVATAR_IDS.length))];
 
 export default function NicknameStep() {
@@ -46,6 +49,10 @@ export default function NicknameStep() {
   const [sheet, setSheet] = useState(false);
   const [checking, setChecking] = useState(false);
   const [serverError, setServerError] = useState<ServerError | null>(null);
+  /** 서버가 쓸 수 있다고 답한 닉네임(지금 칸의 값과 같을 때만 안내하고, 다음에서 다시 묻지 않는다) */
+  const [available, setAvailable] = useState<string | null>(null);
+  /** 지금 칸의 값(늦게 온 답이 바뀐 칸에 쓰이지 않게) */
+  const latest = useRef(raw);
 
   // 처음 들어오면 무작위로 고른 그림을 초안에 둔다
   useEffect(() => {
@@ -69,6 +76,20 @@ export default function NicknameStep() {
     }, [status, draft]),
   );
 
+  // 중복 안내(결정 068 의 6): 규칙에 맞는 닉네임을 치고 0.5초 멈추면 서버에 한 번 묻는다(칠 때마다는 묻지 않는다)
+  const candidate = checkNickname(raw);
+  const candidateValue = candidate.ok ? candidate.value : null;
+  useEffect(() => {
+    latest.current = raw;
+  }, [raw]);
+  useEffect(() => {
+    if (!candidateValue || status !== 'signingUp') return;
+    const timer = setTimeout(() => void ask(candidateValue), CHECK_AFTER_MS);
+    return () => clearTimeout(timer);
+    // ask 는 그리는 때마다 새로 만들어진다 — 값이 바뀔 때만 다시 건다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidateValue, status]);
+
   // 가입을 마친 사람이 뒤로 가기로 돌아오면 홈으로(여기서 누른 "다음" 이 로그아웃시키지 않게)
   if (status === 'signedIn') return <Redirect href="/" />;
   if (!draft) return <Redirect href="/signup/terms" />;
@@ -83,10 +104,35 @@ export default function NicknameStep() {
         : null;
   const error = serverError ? SERVER_MESSAGE[serverError] : localError;
   const canNext = check.ok && !checking && serverError !== 'TAKEN';
+  const confirmed = check.ok && available === check.value;
 
   function onChange(text: string) {
     setRaw(text);
     setServerError(null);
+    setAvailable(null);
+  }
+
+  /** 서버에 묻는다. 그사이 칸이 바뀌었으면 답을 버린다. 쓸 수 있으면 true */
+  async function ask(value: string): Promise<boolean> {
+    if (asking.current) return false;
+    asking.current = true;
+    setChecking(true);
+    const r = await askServer(value);
+    asking.current = false;
+    setChecking(false);
+    const current = checkNickname(latest.current);
+    if (!current.ok || current.value !== value) return false;
+    if (r.ok && r.data.available) {
+      setAvailable(value);
+      return true;
+    }
+    if (r.ok) {
+      setServerError('TAKEN');
+      return false;
+    }
+    // 가입권이 없거나 만료면 세션이 로그인 전이 되고 가드가 로그인 화면으로 보낸다
+    if (r.code !== 'SIGNUP_EXPIRED') setServerError(r.code === 'INVALID_NICKNAME' ? 'INVALID' : r.error === 'NETWORK' ? 'NETWORK' : 'OTHER');
+    return false;
   }
 
   function pickAvatar(id: AvatarId) {
@@ -96,22 +142,13 @@ export default function NicknameStep() {
   }
 
   async function next() {
-    // "이미 있는 닉네임" 이 떠 있거나 묻는 중이면 다시 묻지 않는다(엔터 포함)
+    // "이미 있는 닉네임" 이 떠 있거나 묻는 중이면 다시 묻지 않는다(엔터 포함). 쓸 수 있다고 확인한 이름이면 묻지 않고 넘어간다
     if (!check.ok || !canNext || asking.current) return;
-    asking.current = true;
-    setChecking(true);
-    const r = await askServer(check.value);
-    asking.current = false;
-    setChecking(false);
-    if (r.ok && r.data.available) {
-      setDraft({ nickname: check.value, avatar });
+    const value = check.value;
+    if (confirmed || (await ask(value))) {
+      setDraft({ nickname: value, avatar });
       router.push('/signup/birth');
-      return;
     }
-    if (r.ok) return setServerError('TAKEN');
-    // 가입권이 없거나 만료면 세션이 로그인 전이 되고 가드가 로그인 화면으로 보낸다
-    if (r.code === 'SIGNUP_EXPIRED') return;
-    setServerError(r.code === 'INVALID_NICKNAME' ? 'INVALID' : r.error === 'NETWORK' ? 'NETWORK' : 'OTHER');
   }
 
   return (
@@ -135,7 +172,7 @@ export default function NicknameStep() {
         </View>
       </Pressable>
       <View style={styles.field}>
-        <Field label={N.label} hint={N.rule} error={error ?? undefined}>
+        <Field label={N.label} hint={N.rule} error={error ?? undefined} success={confirmed && !error ? N.available : undefined}>
           <FieldInput
             boxTestID="nickname-box"
             accessibilityLabel={N.label}

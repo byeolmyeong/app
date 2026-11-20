@@ -242,6 +242,17 @@ describe('스플래시', () => {
     expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
   });
 
+  // 리뷰 PR #57 제안 5: 웹 스플래시에도 상한(문이 붙잡아도)
+  it('웹: 세션 확인이나 문이 10초 넘게 끝나지 않아도 스플래시를 걷는다(최대 대기)', async () => {
+    Platform.OS = 'web';
+    mockUseSession.mockReturnValue(session('checking'));
+    await render(<RootLayout />);
+    await act(async () => jest.advanceTimersByTime(9_999));
+    expect(screen.getByTestId('splash')).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(1));
+    expect(screen.queryByTestId('splash')).toBeNull();
+  });
+
   it('앱: 세션 확인이 5초 넘게 끝나지 않아도 네이티브 스플래시를 걷는다(최대 대기)', async () => {
     mockUseSession.mockReturnValue(session('checking'));
     await render(<RootLayout />);

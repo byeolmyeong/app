@@ -447,6 +447,13 @@ describe('웹: 시작할 때 서버에 닿지 못함', () => {
     expect(gone.store.getSnapshot().status).toBe('signedOut');
   });
 
+  // 판정 순서(이용 정지 PR #52 와 맞춤): ok → 로그인 · 403 ACCOUNT_SUSPENDED → 로그인(쿠키 세션은 살아 있고 정지 화면은 문이 보낸다) · 401 → 로그인 전 · 그 밖 → offline
+  it('정지된 계정(403 ACCOUNT_SUSPENDED)은 로그인 상태로 시작한다 — offline 도 로그인 전도 아니다', async () => {
+    const { store } = setup({ cookieSession: true, getSession: jest.fn(async () => fail('SERVER', 403, 'ACCOUNT_SUSPENDED')) });
+    await store.start();
+    expect(store.getSnapshot().status).toBe('signedIn');
+  });
+
   it('offline 이 아니면 다시 확인하지 않는다', async () => {
     const { deps, store } = setup({ cookieSession: true });
     await store.start();

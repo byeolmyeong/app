@@ -149,9 +149,10 @@ export function createSessionStore(deps: SessionStoreDeps) {
           return;
         }
         if (deps.cookieSession) {
+          // 판정 순서: 살아 있음 → 로그인 · 403 ACCOUNT_SUSPENDED → 로그인(쿠키 세션은 살아 있고 정지 화면은 문이 보낸다, 서버 결정 044) ·
+          // 401 → 로그인 전 · 그 밖(닿지 못함 · 5xx) → 확인하지 못함(결정 068 의 4 — 로그인 전으로 정하지 않는다)
           const r = await deps.getSession();
-          if (r.ok) return set('signedIn', null);
-          // 401 이 아니라 닿지 못했거나 서버 오류면 로그인 전으로 정하지 않는다(결정 068 의 4)
+          if (r.ok || r.code === 'ACCOUNT_SUSPENDED') return set('signedIn', null);
           return set(r.error === 'LOGIN_REQUIRED' ? 'signedOut' : 'offline', null);
         }
         const kept = await deps.loadToken();
@@ -169,7 +170,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       if (state.status !== 'offline') return;
       const r = await deps.getSession();
       if (state.status !== 'offline') return;
-      if (r.ok) set('signedIn', null);
+      if (r.ok || r.code === 'ACCOUNT_SUSPENDED') set('signedIn', null);
       else if (r.error === 'LOGIN_REQUIRED') await signedOut();
     },
 

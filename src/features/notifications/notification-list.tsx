@@ -49,10 +49,10 @@ function Row({ item, nickname, now, onOpen }: { item: NotificationItem; nickname
         <Txt variant="item" keepAll style={styles.title}>
           {text.title}
         </Txt>
-        <Txt variant="desc" color="gray" keepAll>
+        <Txt variant="desc" color="gray" keepAll style={styles.body}>
           {text.body}
         </Txt>
-        <Txt variant="statLabel" color="hint" style={styles.time}>
+        <Txt variant="statLabel" color="hint" style={[styles.time, styles.timeText]}>
           {time}
         </Txt>
       </View>
@@ -113,10 +113,10 @@ export function NotificationsEmpty() {
 }
 
 /** 글 한 줄의 뼈대: 그 글의 줄 높이 칸 가운데에 글자 크기만 한 막대 */
-function SkLine({ width, variant }: { width: DimensionValue; variant: 'item' | 'desc' | 'statLabel' | 'captionStrong' }) {
+function SkLine({ width, variant, line }: { width: DimensionValue; variant: 'item' | 'desc' | 'statLabel' | 'captionStrong'; line?: number }) {
   const { lineHeight, fontSize } = Typography[variant];
   return (
-    <View style={[styles.skLine, { height: lineHeight }]}>
+    <View style={[styles.skLine, { height: line ?? lineHeight }]}>
       <Skeleton width={width} height={fontSize} />
     </View>
   );
@@ -136,9 +136,9 @@ export function NotificationsSkeleton() {
           <Skeleton width={L.icon} height={L.icon} pill />
           <View style={[styles.text, styles.unreadText]}>
             <SkLine width={i === 1 ? '50%' : '58%'} variant="item" />
-            <SkLine width={i === 2 ? '72%' : '90%'} variant="desc" />
+            <SkLine width={i === 2 ? '72%' : '90%'} variant="desc" line={L.row.bodyLine} />
             <View style={styles.time}>
-              <SkLine width={44} variant="statLabel" />
+              <SkLine width={44} variant="statLabel" line={L.row.timeLine} />
             </View>
           </View>
         </View>
@@ -164,6 +164,8 @@ const styles = StyleSheet.create({
   unreadText: { paddingRight: L.row.unreadRight },
   title: { fontWeight: FontWeight.semibold },
   time: { marginTop: L.row.timeTop },
+  body: { lineHeight: L.row.bodyLine },
+  timeText: { lineHeight: L.row.timeLine },
   dot: {
     position: 'absolute',
     top: L.dot.top,

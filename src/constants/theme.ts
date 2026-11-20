@@ -527,13 +527,13 @@ export const TodayCardLayout = { titleTop: 10, rowTop: 14, rowGap: 14, textGap: 
 
 /**
  * 알림함(결정 052, 보드 11-3 · 11-3-1): 묶음 이름(위 · 아래) · 한 줄(안 여백 · 사이 · 아래 · 모서리 — 안 읽은 줄만 떠 있는 면) · 둥근 아이콘 칸 ·
- * 글 줄 사이 · 때 위 · 안 읽음 점(자리 · 글이 점을 비켜 가는 폭) · 비었을 때(머리 아래 높이 640 칸의 가운데) · 처음 불러올 때 뼈대의 줄 수.
+ * 글 줄 사이 · 때 위 · 본문 · 때의 줄 높이(보드 11-3 의 14/20 · 12/16) · 안 읽음 점(자리 · 글이 점을 비켜 가는 폭) · 비었을 때(머리 아래 높이 640 칸의 가운데) · 처음 불러올 때 뼈대의 줄 수.
  * 홈 머리의 종(보드 11): 누르는 칸 · 아이콘 · 점(바탕색 테두리) · 머리 오른쪽 끝에서 더 나간 거리.
  */
 export const NotificationLayout = {
   groupTop: 24,
   groupBottom: 4,
-  row: { padV: 14, padX: 12, gap: 12, bottom: 8, radius: 14, textGap: 2, timeTop: 2, unreadRight: 14 },
+  row: { padV: 14, padX: 12, gap: 12, bottom: 8, radius: 14, textGap: 2, timeTop: 2, unreadRight: 14, bodyLine: 20, timeLine: 16 },
   icon: 40,
   glyph: 20,
   dot: { size: 8, top: 18, right: 12 },

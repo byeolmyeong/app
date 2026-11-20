@@ -9,7 +9,7 @@ import { Txt } from '@/components/txt';
 import { BrandColors, Colors, LineWidth, TimingLayout as L, TodayCardLayout as M } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { reasonBrief } from '@/features/reason/reason-sentence';
-import { formatMonthDay } from '@/features/timing/dates';
+import { formatMonthDay, koreaToday } from '@/features/timing/dates';
 import { ChevronRight, SkBlock, SkLine } from '@/features/timing/timing-parts';
 import type { TodaySkyState } from '@/features/timing/use-today-sky';
 
@@ -92,7 +92,8 @@ export function HomeTodayCard({
     if (making)
       return (
         <View testID="home-today-making" accessible accessibilityLabel={T.making.title} style={styles.card}>
-          <Head label={T.title} />
+          {/* 쓰는 중에는 서버의 날짜를 아직 모른다 — 기기의 오늘(한국 날짜)을 적는다(보드 11 쓰는 중) */}
+          <Head label={`${T.title}${T.separator}${formatMonthDay(koreaToday())}`} />
           <View style={styles.makingRow}>
             <MakingArt />
             <View style={styles.makingText}>

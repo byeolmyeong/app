@@ -142,7 +142,7 @@ async function request(run: Run): Promise<void> {
   let r = await withTimeout(api.requestMeReport());
   if (!run.alive) return;
   // 서버에 출생 정보가 없으면(이 기능 전에 입력했거나 서버 저장이 비워진 경우) 저장하고 한 번만 더 요청한다
-  if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(run.input)).ok) r = await withTimeout(api.requestMeReport());
+  if (!r.ok && r.status === NO_PROFILE_STATUS && (await withTimeout(api.saveProfile(run.input))).ok) r = await withTimeout(api.requestMeReport());
   if (!run.alive) return;
   if (!r.ok) {
     // 받을 수 있는지는 서버가 판정한다(결정 050 의 4) — 1.0.0 에서는 한 줄만 보인다

@@ -208,6 +208,18 @@ describe('useMeReport(결정 048 의 4 · 8)', () => {
     expect(result.current.state).toEqual({ status: 'failed', error: 'SERVER', stage: 'request' });
   });
 
+  it('출생 정보를 서버에 다시 저장하는 것(404 뒤 PUT /profile)도 10초까지만 기다린다(리뷰 #49)', async () => {
+    const { result } = await renderHook(() => useMeReport(input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'none' }));
+    mockApi.requestMeReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' });
+    mockApi.saveProfile.mockReturnValueOnce(new Promise(() => {}));
+    await act(async () => result.current.start());
+    expect(result.current.state).toEqual({ status: 'writing' });
+    await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_TIMEOUT_MS)));
+    expect(result.current.state).toEqual({ status: 'failed', error: 'SERVER', stage: 'request' });
+    expect(mockApi.requestMeReport).toHaveBeenCalledTimes(1);
+  });
+
   it('쓰는 중이 3분을 넘으면 확인을 멈추고 확인 단계의 실패로 둔다 — 다시 보기는 상태만 다시 묻는다', async () => {
     expect(ME_REPORT_MAX_WRITING_MS).toBe(180_000);
     mockApi.getMeReport.mockResolvedValue(got('WRITING'));

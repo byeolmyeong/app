@@ -108,6 +108,39 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(chipsTop()).toBe(top);
   });
 
+  it('받기 전인 것을 기기가 기억하면 뼈대 없이 곧바로 받기 화면 — 이번 달이 늦으면 달력 자리만 0.3초 뒤 뼈대(소유자 지적 3)', async () => {
+    jest.useFakeTimers();
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'NONE' }));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    mockApi.getMonth.mockReturnValue(new Promise(() => {}));
+    await render(<TimingScreen />);
+    await tick(0);
+    expect(screen.getByTestId('timing-detail-card')).toBeTruthy();
+    expect(screen.getByTestId('timing-chips')).toBeTruthy();
+    expect(screen.queryByTestId('timing-skeleton')).toBeNull();
+    // 0.3초 전에는 달력 자리만 비워 둔다(달이 와도 아래 카드가 밀리지 않게)
+    expect(screen.queryByTestId('timing-month-skeleton')).toBeNull();
+    expect(screen.getByTestId('timing-month-pending', { includeHiddenElements: true })).toBeTruthy();
+    await tick(400);
+    expect(screen.queryByTestId('timing-skeleton')).toBeNull();
+    expect(screen.getByTestId('timing-month-skeleton')).toBeTruthy();
+    expect(screen.getByTestId('timing-detail-card')).toBeTruthy();
+    // 받기는 곧바로 누를 수 있다(뒤의 확인을 기다리지 않는다)
+    await fireEvent.press(screen.getByRole('button', { name: T.detail.request }));
+    expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('쓰는 중인 것을 기기가 기억하면 곧바로 쓰는 중(머리 · 아래 탭이 있는 틀 안)', async () => {
+    jest.useFakeTimers();
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'WRITING' }));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    await render(<TimingScreen />);
+    await tick(0);
+    expect(screen.getByText(T.making.title)).toBeTruthy();
+    expect(bottomTabs()).toHaveLength(4);
+    expect(screen.queryByTestId('timing-skeleton')).toBeNull();
+  });
+
   it('받기 → 쓰는 중(14-7: 머리 · 아래 탭 없이 별명 짓는 중과 같은 그림 · 시기 문구) → 5초마다 확인 → 다 쓰면 올해 칩', async () => {
     jest.useFakeTimers();
     await render(<TimingScreen />);

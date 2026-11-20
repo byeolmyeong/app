@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '@/components/byeoli';
-import { Colors, LineWidth, SkeletonLayout as L, Typography, type TypographyName } from '@/constants/theme';
+import { Colors, SkeletonLayout as L, Typography, type TypographyName } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const useNativeDriver = Platform.OS !== 'web';
@@ -18,7 +18,7 @@ export type SkeletonProps = {
 
 /**
  * 뼈대 막대 하나(보드 24 · 24-1): 회색 바탕 위로 옅은 빛이 1.4초에 한 번 오간다(동작 줄이기면 멈춘다).
- * 모서리는 8(높이가 낮으면 높이의 반). 화면 읽기에는 숨긴다 — 카드가 "불러오는 중이에요" 를 한 번 읽는다.
+ * 모서리는 8(높이가 낮으면 높이의 반). 화면 읽기에는 숨긴다 — 화면의 뼈대를 묶은 SkeletonGroup 이 "불러오는 중이에요" 를 한 번 읽는다.
  * 언제 그릴지는 useLoadingPhase 가 정한다(0.3초가 넘었을 때만).
  */
 export function Skeleton({ width, height, pill = false, style }: SkeletonProps) {
@@ -90,28 +90,10 @@ export function SkeletonGroup({ testID, children }: { testID: string; children: 
   );
 }
 
-/** 뼈대 카드(보드 24 · 24-1): 홈 · 나의 카드와 같은 떠 있는 면 · 테두리. 큰 카드(별명 카드)는 모서리 24 */
-export function SkeletonCard({ big = false, children }: { big?: boolean; children: ReactNode }) {
-  return (
-    <View accessible accessibilityLabel={strings.states.loading} style={[styles.card, big && styles.big]}>
-      {children}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   bar: { overflow: 'hidden', backgroundColor: Colors.skeleton },
   shine: { ...StyleSheet.absoluteFill, backgroundColor: Colors.skeletonShine },
   text: { alignSelf: 'stretch' },
   line: { justifyContent: 'center' },
   center: { alignItems: 'center' },
-  card: {
-    padding: L.cardPadding,
-    gap: L.gap,
-    borderRadius: L.cardRadius,
-    borderWidth: LineWidth,
-    borderColor: Colors.hair,
-    backgroundColor: Colors.raised,
-  },
-  big: { borderRadius: L.bigCardRadius },
 });

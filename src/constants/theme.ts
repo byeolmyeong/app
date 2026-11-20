@@ -245,8 +245,8 @@ export const ToastLayout = {
   shadow: '0 8px 24px rgba(0,0,0,0.45)',
 } as const;
 
-/** 처음 불러올 때 뼈대(보드 24 · 24-1): 막대 모서리 · 카드 모서리(큰 카드) · 카드 안 여백 · 조각 사이 · 빛이 한 번 오가는 시간 */
-export const SkeletonLayout = { radius: 8, cardRadius: 20, bigCardRadius: 24, cardPadding: 20, gap: 12, shimmerMs: 1400 } as const;
+/** 처음 불러올 때 뼈대(보드 24 · 24-1): 막대 모서리 · 빛이 한 번 오가는 시간. 카드는 그 부품의 틀을 쓴다(결정 071) */
+export const SkeletonLayout = { radius: 8, shimmerMs: 1400 } as const;
 
 /** 연결 끊김 띠(결정 061 의 4, 보드 20) */
 export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, icon: 20, gap: 10 } as const;

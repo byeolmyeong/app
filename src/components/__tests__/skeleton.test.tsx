@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 
-import { Skeleton, SkeletonCard, SkeletonGroup, SkeletonText } from '@/components/skeleton';
+import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { Colors, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -72,29 +72,6 @@ describe('뼈대 조각', () => {
     expect(StyleSheet.flatten(short.props.style)).toMatchObject({ width: 70, height: 14, borderRadius: 7 });
     expect(StyleSheet.flatten(circle.props.style)).toMatchObject({ width: 44, height: 44, borderRadius: 22 });
     expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
-  });
-
-  it('카드: 떠 있는 면 · 테두리 · 모서리 20(큰 카드 24) · 안 여백 20 · 사이 12, 화면 읽기에는 "불러오는 중이에요" 한 번', async () => {
-    const view = await render(
-      <SkeletonCard>
-        <Skeleton width="44%" height={13} />
-      </SkeletonCard>,
-    );
-    const card = screen.getByLabelText(strings.states.loading);
-    expect(StyleSheet.flatten(card.props.style)).toMatchObject({
-      backgroundColor: Colors.raised,
-      borderColor: Colors.hair,
-      borderWidth: 1,
-      borderRadius: 20,
-      padding: 20,
-      gap: 12,
-    });
-    await view.rerender(
-      <SkeletonCard big>
-        <Skeleton width="44%" height={13} />
-      </SkeletonCard>,
-    );
-    expect(StyleSheet.flatten(screen.getByLabelText(strings.states.loading).props.style)).toMatchObject({ borderRadius: 24 });
   });
 });
 

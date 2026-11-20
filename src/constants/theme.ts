@@ -316,7 +316,7 @@ export const Typography = {
   note: type(13, 19, FontWeight.regular),
   /** 도움말, 오류, 작은 라벨 */
   label: type(12, 17, FontWeight.medium),
-  /** 소개 셋째 장의 시기 줄 글자(결정 042 시안) */
+  /** 소개 둘째 장(시기)의 시기 줄 글자(결정 042 시안) */
   micro: type(12, 16, FontWeight.medium),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
   mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
@@ -416,9 +416,9 @@ export const Sizes = {
   handleHeight: 4,
   sheetTitleTop: 36,
   sheetBackIcon: 22,
-  /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
   /** 드럼 시트(태어난 시각 · 받는 시간)의 위 끝에서 드럼 위 끝까지(시안 8-1 · 16-3: 위 10 + 손잡이 4 + 28 + 16) */
   pickerSheetTop: 58,
+  /** 드럼롤 선택(결정 042 시안): 한 줄 높이 · 보이는 줄 수 · 한 열의 너비 · 가운데 띠의 모서리 */
   pickerRow: 44,
   pickerRows: 5,
   pickerWidth: 76,

@@ -55,12 +55,14 @@ function MakingArt() {
   );
 }
 
-/** 홈 오늘의 하늘 카드의 뼈대(결정 071): 다 그려진 카드(이름표 · 제목 · 짧은 이유)와 같은 자리 · 높이 */
+/** 홈 오늘의 하늘 카드의 뼈대(결정 071): 다 그려진 카드(이름표 · 두 줄 제목 · 짧은 이유)와 같은 자리 · 높이 */
 export function HomeTodaySkeleton() {
   return (
     <SkBlock of="home-today-card" style={styles.card}>
       <SkLine width="44%" variant="captionStrong" />
-      <SkLine width="86%" variant="emphasis" style={styles.title} />
+      {/* 제목은 시안 11 처럼 두 줄 */}
+      <SkLine width="92%" variant="emphasis" style={styles.title} />
+      <SkLine width="24%" variant="emphasis" />
       <SkLine width="60%" variant="desc" style={styles.sub} />
     </SkBlock>
   );

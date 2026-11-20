@@ -231,7 +231,7 @@ last_reviewed: 2026-11-20
 
 ### A⑤ 공유 v2 (서버 S⑥ · Meta 앱 ID · 새 개발 빌드 뒤)
 
-#### 30. bring-story-plan · 상태: 대기
+#### 30. bring-story-plan · 상태: 완료(대응표는 실행 기록 A⑤)
 - 할 것: `origin/docs/instagram-story-share` 의 계획 태스크 2~8(strings-share · story-module-spike · share-card · share-sheet-app · save-to-photos · share-sheet-web · verify)을 이 묶음으로 가져온다. 그 계획의 태스크 1(결정)은 053 이 맡으므로 하지 않는다. 그 브랜치 계획 파일 앞머리에 "053 이 결정, 실행은 home-me-timing A⑤" 한 줄.
 - 검증: 가져온 태스크가 이 계획 실행 기록에 대응표로 있음
 
@@ -335,3 +335,16 @@ last_reviewed: 2026-11-20
     - 12(옛 NEXT_TURN 공유 진입 정리)는 A⑤ 담당.
     - develop `949d2c6`(#64 휴대폰 푸시) 위로 다시 올림(충돌은 CLAUDE.md 기능 폴더 한 줄 — push 를 살리고 report → timing). 확인: `npx tsc --noEmit && npx expo lint` exit 0(로컬 eslint 캐시가 새 패키지 expo-notifications 를 못 찾아 `--no-cache` 로 — 캐시 없는 CI 와 같음) · `npm test` 122 묶음 1511 통과 · `npx expo export --platform web` exit 0 · `npx expo-doctor` 20/20.
   - 계획과 다르게 한 것: 잠긴 칩은 시안 14 잠긴 칩대로(굴리지 않음) · 흐림 대신 뼈대 · 눈여겨볼 날 0개 문구는 시안 14-1 · 065 의 3("흘러가요" · 설명) · 이번 달의 점 색 · 딱지 글자 색은 칩마다(보드) · 다가오는 시기는 오늘 뒤 1년 안 셋(기본값 그대로) · 시기 풀이 훅은 나 탭 풀이 훅을 본뜬 사본(공용으로 합치는 일은 A② 코드를 건드려 따로) · 그날의 하늘의 쓰는 중은 3초 뒤.
+- 2026-11-20 묶음 A⑤(워크트리 `.wt-app-a5`, 브랜치 `feat/share-v2`, develop `5b9b229` 위). 서버 계약은 S⑥(서버 PR #43 `feat/share-v2`, 아직 develop 아님 — 이 PR 은 S⑥ 가 develop 에 들어간 뒤 합친다). 상위 계획의 "바뀌는 줄"(궁합 카드 없음 055 의 6 · 공유 시트 제목 없음 A7-5)을 따름.
+  - 태스크 30: `origin/docs/instagram-story-share`(PR #34)의 계획 파일을 이 브랜치로 가져와 앞머리에 "053 이 결정, 실행은 home-me-timing A⑤" 한 줄. 그 계획의 태스크 대응표:
+
+    | 그 계획 | 이 계획 | 넓힌 것 · 바꾼 것 |
+    |---|---|---|
+    | 1 adr-share-card-story | (하지 않음) | 결정 053 이 맡음 |
+    | 2 strings-share | 31 | 카드 넷의 글(이름표 · 칩 · 한 줄 소개) · 시트 버튼 · 짧은 알림 문구 |
+    | 3 story-module-spike | 31 | 실제 기기 비교는 새 개발 빌드 뒤(32 의 기기 표) — 고른 쪽과 이유는 아래 실행 기록 |
+    | 4 share-card-sky | 31 | "나의 별자리" 한 장 → 카드 넷(내 별명 · 나 탭 영역 · 오늘의/그날의 하늘 · 다음 큰 변화, 결정 053 의 2) |
+    | 5 share-sheet-app | 31 | 시트를 여는 자리를 넷으로(내 별명 · 칩 다섯 · 오늘의/그날의 하늘 · 다음 큰 변화) |
+    | 6 save-to-photos | 31 | 그대로 |
+    | 7 share-sheet-web | 31 | 그대로 |
+    | 8 verify | 32 | 시안 보드 10장(12-4~12-7 · 12-13 · 12-14 · 11-6 · 11-7 · 14-5 · 14-6)과 나란히 |

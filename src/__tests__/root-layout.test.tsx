@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import RootLayout, { ErrorBoundary } from '@/app/_layout';
 import { strings } from '@/content/strings';
 import { recheckSession, useSession } from '@/features/auth/use-session';
+import { useSplashHold } from '@/components/splash-hold';
 import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 
@@ -290,5 +291,40 @@ describe('루트의 오류 경계', () => {
     const error = Object.assign(new Error('Loading module /_expo/static/js/web/terms-1.js failed.'), { name: 'AsyncRequireError' });
     await render(<ErrorBoundary error={error} retry={jest.fn(async () => {})} />);
     expect(screen.getByText(strings.states.offlineEmpty.title)).toBeTruthy();
+  });
+});
+
+// 루트에 걸린 문(예: 이용 정지 확인 — 6a 가 꽂는다)이 준비될 때까지 스플래시를 둔다(useSplashHold)
+describe('스플래시를 붙잡는 문', () => {
+  const original = Platform.OS;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    mockSegments.mockReturnValue(['login']);
+    mockUseSession.mockReturnValue(session('signedOut'));
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    Platform.OS = original;
+  });
+
+  it('문이 붙잡는 동안은 걷지 않고, 놓으면 걷는다', async () => {
+    Platform.OS = 'web';
+    let setHeld: (v: boolean) => void = () => {};
+    function Gate() {
+      const [held, set] = jest.requireActual('react').useState(true);
+      setHeld = set;
+      useSplashHold(held);
+      return null;
+    }
+    await render(
+      <>
+        <Gate />
+        <RootLayout />
+      </>,
+    );
+    await act(async () => jest.advanceTimersByTime(2000));
+    expect(screen.getByTestId('splash')).toBeTruthy();
+    await act(async () => setHeld(false));
+    expect(screen.queryByTestId('splash')).toBeNull();
   });
 });

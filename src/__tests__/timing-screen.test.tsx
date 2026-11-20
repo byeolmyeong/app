@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import TimingScreen from '@/app/timing';
 import { strings } from '@/content/strings';
@@ -40,6 +41,8 @@ const storeReport = (r = report) => AsyncStorage.setItem(TIMING_REPORT_STORAGE_K
 const tick = (ms = TIMING_REPORT_POLL_MS) => act(async () => void (await jest.advanceTimersByTimeAsync(ms)));
 const bottomTabs = () => screen.queryAllByRole('tab').filter((t) => !t.props.testID?.startsWith('timing-chip-'));
 const chip = (c: string) => screen.getByTestId(`timing-chip-${c}`);
+/** 칩 줄의 자리: 칩 줄 칸의 위 여백(칩 줄 위에는 맨 위 카드 · 시각 모름 줄뿐이고 둘은 칩마다 같다) */
+const chipsTop = () => StyleSheet.flatten(screen.getByTestId('timing-chips-slot').props.style)?.marginTop;
 type NetListener = (state: { isConnected: boolean; isInternetReachable: boolean }) => void;
 let netListener: NetListener | null = null;
 const goOffline = () => act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
@@ -92,6 +95,17 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(screen.getByText(T.locked.life.title)).toBeTruthy();
     await fireEvent.press(within(screen.getByTestId('timing-locked')).getByRole('button', { name: T.detail.request }));
     expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('칩 줄은 이번 달 · 올해 · 인생에서 같은 자리 — 잠긴 칩을 골라도 내려가지 않는다(이번 달 기준, 소유자 지적 1)', async () => {
+    await render(<TimingScreen />);
+    await screen.findByTestId('timing-detail-card');
+    const top = chipsTop();
+    expect(top).toBeDefined();
+    await fireEvent.press(chip('year'));
+    expect(chipsTop()).toBe(top);
+    await fireEvent.press(chip('life'));
+    expect(chipsTop()).toBe(top);
   });
 
   it('받기 → 쓰는 중(14-7: 머리 · 아래 탭 없이 별명 짓는 중과 같은 그림 · 시기 문구) → 5초마다 확인 → 다 쓰면 올해 칩', async () => {
@@ -210,6 +224,18 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
 });
 
 describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)', () => {
+  it('받은 뒤에도 칩 줄은 세 칩에서 같은 자리(소유자 지적 1)', async () => {
+    await storeReport();
+    await render(<TimingScreen />);
+    await screen.findByTestId('timing-now-card');
+    const top = chipsTop();
+    expect(top).toBeDefined();
+    await fireEvent.press(chip('month'));
+    expect(chipsTop()).toBe(top);
+    await fireEvent.press(chip('life'));
+    expect(chipsTop()).toBe(top);
+  });
+
   it('맨 위 "지금 나의 시기"(대표 구간 이름 · 영역 · 기간 · 한 줄) · 처음 고른 칩은 올해 · 누르면 시기 자세히', async () => {
     await storeReport();
     mockApi.getTimingReport.mockResolvedValue(done);

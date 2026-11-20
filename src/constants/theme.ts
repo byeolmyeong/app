@@ -383,8 +383,8 @@ export const TimingLayout = {
   },
   /** 영역 · 칩 딱지(보드 14 — 키워드 칩과 같은 옅은 보라) */
   tag: { height: 24, padX: 9, radius: 12 },
-  /** 칩 셋: 맨 위 카드 아래 · 카드가 없을 때 머리 아래(잠긴 칩을 골랐을 때) · 높이 · 사이 */
-  chips: { top: 20, topBare: 4, topLocked: 8, height: 36, gap: 6 },
+  /** 칩 셋: 맨 위 카드 아래 · 카드가 없을 때 머리 아래(받기 전 — 세 칩 모두 같은 자리) · 높이 · 사이 */
+  chips: { top: 20, topBare: 4, height: 36, gap: 6 },
   timeUnknownTop: 12,
   contentTop: 24,
   contentBottom: 34,

@@ -321,7 +321,6 @@ export const strings = {
   },
   chart: {
     wheelLabel: '출생 차트 휠',
-    keyThreeHeading: '나를 이루는 세 가지',
     keySunCaption: '힘을 내는 방식',
     keyMoonCaption: '편안함을 느끼는 방식',
     keyAscCaption: '처음 보이는 모습',

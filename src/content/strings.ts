@@ -506,6 +506,8 @@ export const strings = {
   reason: {
     label: '이렇게 풀이한 이유',
     when: { BIRTH: '태어날 때', NOW: '지금', TODAY: '오늘', DAY: '그날' },
+    /** 홈 오늘의 하늘 카드의 짧은 이유 머리: "오늘은 달이 내 금성 자리를 지나요"(보드 11) */
+    brief: '오늘은',
     josa: { subject: ['이', '가'], with: ['과', '와'], object: ['을', '를'] },
     /** 지나가는 별이 닿는 내 별 앞: "내 나의 중심(해)" */
     mine: '내 ',

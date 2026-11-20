@@ -3,12 +3,13 @@
  * 홈을 열 때 · 알림함에서 돌아올 때(결정 052 의 4), 알림함을 열 때. 다시 묻는 동안에는 받아 둔 것을 그대로 둔다(처음에만 불러오는 중).
  * 로그인이 확인된 뒤에 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41). 기기에 보관하지 않는다.
  * 실패한 요청을 스스로 다시 하지 않는다("다시 보기" · 연결이 돌아왔을 때만). 요청마다 번호를 매겨 마지막 요청의 답만 쓴다.
- * 휴대폰 푸시가 쓰는 중에 오면(세션 6a 의 `onPushReceived`, 결정 066 의 5) 이 refresh 를 걸 자리다 — 그 모듈이 들어오면 잇는다.
+ * 휴대폰 푸시가 쓰는 중에 오면(`onPushReceived`, 결정 066 의 5) 다시 묻는다.
  */
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSession } from '@/features/auth/use-session';
+import { onPushReceived } from '@/features/push/push';
 import { api, type ApiErrorKind, type NotificationList } from '@/lib/api';
 
 export type NotificationsState =
@@ -39,6 +40,8 @@ export function useNotifications() {
   }, [signedIn]);
 
   useFocusEffect(fetchOnce);
+  // 쓰는 중에 푸시가 오면(배너 없이 홈 종에 점만 — 결정 066 의 5) 다시 묻는다
+  useEffect(() => onPushReceived(() => void fetchOnce()), [fetchOnce]);
 
   /** 실패 화면의 "다시 보기" · 연결이 돌아왔을 때 */
   const retry = useCallback(() => {

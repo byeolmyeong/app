@@ -5,6 +5,7 @@
 import type { Href } from 'expo-router';
 
 import { strings } from '@/content/strings';
+import { pushTarget, type PushData } from '@/features/push/push-data';
 import type { NotificationItem, NotificationList } from '@/lib/api';
 
 const N = strings.notifications;
@@ -19,24 +20,26 @@ const NOON = 12;
 
 const koreanDay = (ms: number) => Math.floor((ms + KOREA_OFFSET_MS) / DAY_MS);
 
-/**
- * 누르면 갈 곳. 휴대폰 푸시의 갈 곳(세션 6a 의 `features/push/push-data.ts` `pushTarget`, 결정 066 의 4)과 같은 표다 —
- * 그 모듈이 develop 에 들어오면 이 표를 그 함수 하나로 합친다. 문구가 없는 종류(궁합 리포트 — 1.0.0 에 없다, 결정 055) · 모르는 종류 ·
- * 문의 식별자가 없는 문의 답변은 null — 그 줄을 숨긴다.
- */
-export function notificationTarget(item: NotificationItem): Href | null {
+/** 알림함의 줄을 휴대폰 푸시의 data 모양으로 — 같은 갈 곳(pushTarget)을 쓰려고. 1.0.0 에 없는 궁합 리포트 · 모르는 종류 · 문의 식별자 없는 문의 답변은 null */
+function pushDataOf(item: NotificationItem): PushData | null {
   switch (item.kind) {
     case 'READING_DONE':
-      return '/reading';
+      return { type: 'READING_DONE' };
     case 'ME_REPORT_DONE':
-      return '/me';
+      return { type: 'ME_REPORT_DONE' };
     case 'TIMING_REPORT_DONE':
-      return '/timing';
+      return { type: 'TIMING_REPORT_DONE' };
     case 'INQUIRY_ANSWERED':
-      return item.inquiryId ? { pathname: '/my/inquiries/[id]', params: { id: item.inquiryId } } : null;
+      return item.inquiryId ? { type: 'INQUIRY_ANSWERED', inquiryId: item.inquiryId } : null;
     default:
       return null;
   }
+}
+
+/** 누르면 갈 곳 — 휴대폰 푸시와 같은 표(`features/push/push-data.ts` 의 pushTarget, 결정 066 의 4). 갈 곳이 없으면 null — 그 줄을 숨긴다 */
+export function notificationTarget(item: NotificationItem): Href | null {
+  const data = pushDataOf(item);
+  return data ? pushTarget(data) : null;
 }
 
 /** 보이는 줄만(갈 곳이 있는 것) — 받은 순서(새것부터) 그대로 */

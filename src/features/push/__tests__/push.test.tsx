@@ -255,8 +255,8 @@ describe('이 기기 등록 · 해제(서버 S10-2)', () => {
 
 describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
   it.each([
-    // /today 는 길 A 의 A④ 가 만든다 — 그 전에는 홈(오늘의 하늘 카드)
-    [{ type: 'TODAY_SKY', date: '2026-11-21' }, '/'],
+    // 오늘의 하늘은 /today(A④)
+    [{ type: 'TODAY_SKY', date: '2026-11-21' }, '/today'],
     [{ type: 'READING_DONE' }, '/reading'],
     [{ type: 'ME_REPORT_DONE' }, '/me'],
     [{ type: 'TIMING_REPORT_DONE' }, '/timing'],
@@ -264,6 +264,7 @@ describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
     [{ type: 'INQUIRY_ANSWERED', inquiryId: 42 }, { pathname: '/my/inquiries/[id]', params: { id: '42' } }],
     [{ type: 'EVENT', target: '/timing' }, '/timing'],
     [{ type: 'EVENT', target: '/my/inquiries' }, '/my/inquiries'],
+    [{ type: 'EVENT', target: '/today' }, '/today'],
   ])('%j → %j', (raw, href) => {
     const data = parsePushData(raw);
     expect(data).not.toBeNull();
@@ -280,7 +281,6 @@ describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
     [{ type: 'EVENT', target: '//example.com' }],
     // 없는 주소로는 보내지 않는다(길 잃은 화면)
     [{ type: 'EVENT', target: '/nowhere' }],
-    [{ type: 'EVENT', target: '/today' }],
   ])('모르는 종류 · 빠진 값 · 앱 밖 주소는 버린다: %j', (raw) => {
     expect(parsePushData(raw)).toBeNull();
   });

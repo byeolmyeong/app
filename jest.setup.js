@@ -15,3 +15,7 @@ Animated.timing = (value, config) => ({
 });
 Animated.spring = Animated.timing;
 Animated.loop = () => ({ start: () => {}, stop: () => {}, reset: () => {} });
+
+// 연결 상태(@react-native-community/netinfo)는 네이티브 모듈이라 라이브러리가 준 가짜를 쓴다(결정 061 의 4 — 연결 끊김).
+// 끊김 · 되살아남을 보는 시험은 그 파일에서 addEventListener 를 바꿔 끼운다.
+jest.mock('@react-native-community/netinfo', () => require('@react-native-community/netinfo/jest/netinfo-mock.js'));

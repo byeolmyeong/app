@@ -326,6 +326,23 @@ export type DaySky = {
   createdAt: string;
 };
 
+/** 알림함의 종류(결정 052 · 058, 서버 결정 035). 문구는 앱(`strings.notifications`)이 갖고 서버는 종류만 준다. 궁합 리포트는 1.0.0 앱이 숨긴다(결정 055) */
+export const NOTIFICATION_KINDS = ['READING_DONE', 'ME_REPORT_DONE', 'TIMING_REPORT_DONE', 'SYNASTRY_REPORT_DONE', 'INQUIRY_ANSWERED'] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+/** 알림 한 줄. 모르는 종류도 받아 두고 알림함이 그 줄만 숨긴다. synastryId · inquiryId 는 그 종류일 때만 있다. createdAt 은 UTC ISO-8601 */
+export type NotificationItem = {
+  id: string;
+  kind: NotificationKind | (string & {});
+  createdAt: string;
+  read: boolean;
+  synastryId?: string;
+  inquiryId?: string;
+};
+
+/** `GET /notifications`: 최근 30일 · 새것부터 · 100개까지. unread 는 30일 안의 안 읽은 수 */
+export type NotificationList = { unread: number; items: NotificationItem[] };
+
 /** 궁합의 관계 유형(결정 020). 서버가 유형마다 다른 가중치로 점수를 계산한다 */
 export const RELATIONS = ['LOVE', 'FRIEND', 'WORK', 'FAMILY'] as const;
 export type Relation = (typeof RELATIONS)[number];
@@ -1090,6 +1107,28 @@ const inquiryItemOf = (v: InquiryItemWire): InquiryItem => ({
   emailed: typeof v.replyEmail === 'string' && v.replyEmail.length > 0,
 });
 
+const isOptionalText = (v: unknown) => v === undefined || isText(v);
+
+const isNotificationItem = (v: unknown): v is NotificationItem =>
+  isObject(v) &&
+  isText(v.id) &&
+  isText(v.kind) &&
+  isText(v.createdAt) &&
+  typeof v.read === 'boolean' &&
+  isOptionalText(v.synastryId) &&
+  isOptionalText(v.inquiryId);
+
+/** 알림함: 안 읽은 수(0 이상 정수)와 줄. 종류는 비지 않은 글자면 받는다 — 모르는 종류는 알림함이 그 줄만 숨긴다(계획 "전역 제약") */
+export function isNotificationList(v: unknown): v is NotificationList {
+  return (
+    isObject(v) &&
+    Number.isInteger(v.unread) &&
+    (v.unread as number) >= 0 &&
+    Array.isArray(v.items) &&
+    v.items.every(isNotificationItem)
+  );
+}
+
 /** 하나라도 어긋나면 목록 전체를 받지 않는다. 계약에 없는 필드는 보지 않는다 */
 export function isFaqList(v: unknown): v is Faq[] {
   return (
@@ -1554,6 +1593,18 @@ export function createApi(config: ApiConfig) {
       if (config.useFixtures) return { ok: true, data: fixtures.inquiries };
       const res = await request('GET', '/inquiries', { validate: isInquiryList });
       return res.ok ? { ok: true, data: res.data.map(inquiryItemOf) } : res;
+    },
+
+    /** `GET /notifications` 알림함(결정 052) — 최근 30일의 줄과 안 읽은 수. 문구는 앱이 갖는다 */
+    async getNotifications(): Promise<ApiResult<NotificationList>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.notifications };
+      return request('GET', '/notifications', { validate: isNotificationList });
+    },
+
+    /** `POST /notifications/{id}/read` 읽음으로(204 — 이미 읽었어도). 남의 것 · 없는 것 · UUID 가 아닌 값은 404 `NOT_FOUND` */
+    async markNotificationRead(id: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('POST', `/notifications/${encodeURIComponent(id)}/read`, { validate: isEmpty });
     },
 
     /** `GET /inquiries/{id}` 내 문의 한 건과 답. 남의 것 · 없는 것은 404 `NOT_FOUND` */

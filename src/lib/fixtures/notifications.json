@@ -1,0 +1,30 @@
+{
+  "unread": 3,
+  "items": [
+    {
+      "id": "5c0e1a2b-7d3f-4e10-9a21-3b4c5d6e7f80",
+      "kind": "INQUIRY_ANSWERED",
+      "createdAt": "2026-11-20T05:10:00Z",
+      "read": false,
+      "inquiryId": "0b5d6c1e-3f0a-4d53-9a51-2f8f1f0f7a10"
+    },
+    {
+      "id": "1e2d3c4b-5a69-4788-9abc-def012345678",
+      "kind": "TIMING_REPORT_DONE",
+      "createdAt": "2026-11-20T03:30:00Z",
+      "read": false
+    },
+    {
+      "id": "0f9c3c1e-6a2b-4f3d-8c11-2d7e5b9a0c41",
+      "kind": "ME_REPORT_DONE",
+      "createdAt": "2026-11-20T00:12:00Z",
+      "read": false
+    },
+    {
+      "id": "9a8b7c6d-5e4f-4321-8fed-cba987654321",
+      "kind": "READING_DONE",
+      "createdAt": "2026-11-07T01:00:00Z",
+      "read": true
+    }
+  ]
+}

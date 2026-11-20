@@ -31,6 +31,8 @@ jest.mock('@/lib/api', () => ({
     createChart: jest.fn(),
     saveProfile: jest.fn(),
     getAccount: jest.fn(),
+    // 홈은 풀이를 부르지 않는다(POST /readings 는 옛 요약 해석만 있는 계정이면 새로 짓는다 — 서버 결정 030)
+    createReading: jest.fn(),
     // 기기가 비어 있으면 서버의 출생 정보로 되살려 본다(결정 029) — 이 테스트들에서는 저장된 것이 없다
     getProfile: jest.fn(async () => ({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' })),
   },
@@ -129,6 +131,32 @@ describe('홈', () => {
     await fireEvent.press(screen.getByText(M.readingCta));
     expect(router.push).toHaveBeenCalledWith('/reading');
     expect(screen.queryByText(fixtures.reading.headline)).toBeNull();
+  });
+
+  it('업데이트 직후: 기기에 옛 모양(근거 구조 없음 · 보완점 3)으로 받아 둔 풀이도 한 줄 별명은 홈에 보인다 — 서버를 부르지 않는다(PR #49 리뷰)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    const old = {
+      headline: '궁금한 것이 많고, 멀리 보는 사람',
+      sections: [{ title: '생각이 먼저 움직입니다', body: '본문', basis: ['태양', '쌍둥이', '6하우스'] }],
+      strengths: ['하나', '둘', '셋'],
+      cautions: ['하나', '둘', '셋'],
+    };
+    await storeReading(old);
+    await render(<HomeScreen />);
+    const card = await screen.findByTestId('nickname-card');
+    expect(await within(card).findByText(old.headline)).toBeTruthy();
+    expect(within(card).queryByText(M.readingEmpty)).toBeNull();
+    expect(within(card).getByText(strings.home.card.read)).toBeTruthy();
+    // 만든 때가 없는 옛 글이라 "받은 지 N일" 은 없다
+    expect(within(card).queryByText(/별명을 받은 지/)).toBeNull();
+    expect(mockApi.createReading).not.toHaveBeenCalled();
+  });
+
+  it('기기에 둔 것이 풀이 모양이 아니면(한 줄 별명이 없음) 받아 둔 것이 없는 것과 같다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading({ headline: '', sections: [] });
+    await render(<HomeScreen />);
+    expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
   });
 
   it('다른 출생 정보로 받은 풀이는 보여 주지 않는다', async () => {

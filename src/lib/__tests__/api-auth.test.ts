@@ -222,3 +222,60 @@ describe('api: 내 계정', () => {
     }
   });
 });
+
+// 마이 · 계정(결정 056, 서버 계약 `GET /account` · `PATCH /account`)
+describe('api: 마이의 내 계정', () => {
+  const app = (fetchFn: jest.MockedFunction<typeof fetch>) => createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' });
+  const account = {
+    nickname: '새벽별',
+    email: 'dawnstar@kakao.com',
+    provider: 'KAKAO',
+    marketingConsent: false,
+    marketingConsentAt: null,
+    pushConsent: true,
+    pushConsentAt: '2026-11-20T00:00:00Z',
+    avatar: 3,
+  };
+  const mine = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false };
+
+  it('GET /account 에서 닉네임 · 프로필 · 이메일 · 공급자 · 마케팅 동의만 읽는다(동의 일시 · 푸시 동의는 버린다)', async () => {
+    const fetchFn = fakeFetch(200, account);
+    const res = await app(fetchFn).getMyAccount();
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/account`);
+    expect(initOf(fetchFn).method).toBe('GET');
+    expect(res).toEqual({ ok: true, data: mine });
+  });
+
+  it('옛 계정의 null(닉네임 · 이메일 · 프로필)과 모르는 공급자도 받는다', async () => {
+    const res = await app(fakeFetch(200, { ...account, nickname: null, email: null, avatar: null, provider: 'NAVER' })).getMyAccount();
+    expect(res).toEqual({ ok: true, data: { ...mine, nickname: null, email: null, avatar: null, provider: 'NAVER' } });
+  });
+
+  it('이메일 · 공급자 · 마케팅 동의의 모양이 계약과 다르면 INVALID', async () => {
+    for (const bad of [{ ...account, email: 3 }, { ...account, provider: null }, { ...account, marketingConsent: 'false' }, { ...account, marketingConsent: undefined }]) {
+      expect(await app(fakeFetch(200, bad)).getMyAccount()).toMatchObject({ ok: false, error: 'INVALID' });
+    }
+  });
+
+  it('PATCH /account 에 보낸 칸만 싣고, 바뀐 계정을 받는다', async () => {
+    const fetchFn = fakeFetch(200, { ...account, nickname: '별빛' });
+    const res = await app(fetchFn).updateAccount({ nickname: '별빛' });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/account`);
+    expect(initOf(fetchFn).method).toBe('PATCH');
+    expect(bodyOf(fetchFn)).toEqual({ nickname: '별빛' });
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer t');
+    expect(res).toEqual({ ok: true, data: { ...mine, nickname: '별빛' } });
+
+    const avatar = fakeFetch(200, { ...account, avatar: 5 });
+    await app(avatar).updateAccount({ avatar: 5 });
+    expect(bodyOf(avatar)).toEqual({ avatar: 5 });
+  });
+
+  it.each([
+    [409, 'NICKNAME_TAKEN'],
+    [400, 'INVALID_NICKNAME'],
+    [400, 'INVALID_AVATAR'],
+  ])('PATCH /account 의 %i %s 를 code 로 돌려준다', async (status, code) => {
+    expect(await app(fakeFetch(status, { error: code })).updateAccount({ nickname: 'x' })).toEqual({ ok: false, error: 'SERVER', status, code });
+  });
+});

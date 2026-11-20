@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import MyScreen from '@/app/my';
+import DeleteAccountScreen from '@/app/my/delete';
 import { strings } from '@/content/strings';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
 import type { Session } from '@/features/auth/session-store';
@@ -26,6 +27,8 @@ jest.mock('expo-router', () => ({
     canDismiss: jest.fn(() => false),
     dismissAll: jest.fn(),
   },
+  Stack: { Screen: () => null },
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -36,6 +39,7 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     deleteAccount: jest.fn(),
     getAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -115,7 +119,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
       await home.unmount();
 
       const my = await render(<MyScreen />);
-      expect(await screen.findByText('2000. 6. 15. 오후 9:00')).toBeTruthy();
+      expect(await screen.findByText('2000년 6월 15일 · 오후 9:00')).toBeTruthy();
       await my.unmount();
 
       await render(<BirthScreen />);
@@ -217,11 +221,14 @@ describe('출생 정보 되살리기(결정 029)', () => {
   it('계정을 지운 뒤에는 입력 화면이 보인다: 세션이 비어 묻지 않고, 새 세션으로 물어도 서버에 없다', async () => {
     await saveBirth({ profile: { date: known.date, time: null, place: null }, chart: fixtures.chartTimeUnknown });
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
-    const my = await render(<MyScreen />);
-    await fireEvent.press(await screen.findByText(strings.settings.deleteAccount));
-    await fireEvent.press(await screen.findByText(strings.settings.deleteSheet.confirm));
+    const del = await render(<DeleteAccountScreen />);
+    await fireEvent.press(screen.getByRole('checkbox'));
+    await fireEvent.press(screen.getByRole('button', { name: strings.my.delete.confirm }));
     await waitFor(async () => expect(await loadBirth()).toBeNull());
-    await my.unmount();
+    // "계정을 지웠어요" 의 확인에서 세션을 비운다
+    await fireEvent.press(await screen.findByText(strings.my.delete.doneConfirm));
+    await waitFor(() => expect(mockSession.current.status).toBe('signedOut'));
+    await del.unmount();
 
     const first = await render(<HomeScreen />);
     expect(await formShown()).toBeTruthy();

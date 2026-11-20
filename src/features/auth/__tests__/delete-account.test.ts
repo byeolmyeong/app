@@ -26,13 +26,14 @@ beforeEach(async () => {
 });
 
 describe('계정 삭제', () => {
-  it('서버가 지우면 이 앱이 기기에 둔 것과 세션을 모두 비운다', async () => {
+  it('서버가 지우면 이 앱이 기기에 둔 것을 비운다. 세션은 "계정을 지웠어요" 의 확인 때 비우니 여기서는 둔다(보드 16-10)', async () => {
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
     expect(await deleteAccount()).toEqual({ ok: true, data: null });
     expect(mockApi.deleteAccount).toHaveBeenCalledTimes(1);
     // 이 앱의 키(byeolmyeong.)만 지운다
     expect(await AsyncStorage.getAllKeys()).toEqual(['other-app.key']);
-    expect(clearSession).toHaveBeenCalledTimes(1);
+    // 세션을 바로 비우면 루트 가드가 지웠어요 화면을 로그인으로 바꿔 버린다
+    expect(clearSession).not.toHaveBeenCalled();
   });
 
   it('서버가 지우지 못하면 기기의 것은 그대로 두고 실패를 돌려준다', async () => {

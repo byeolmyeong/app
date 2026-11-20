@@ -1,5 +1,5 @@
 /**
- * 공급자 로그인 버튼 한 모양(결정 042). 카카오 · 애플 · 구글 가이드의 바탕 · 문구 · 로고를 그대로 쓰고, 셋을 같은 줄에 맞춘다:
+ * 공급자 로그인 버튼 한 모양(결정 042). 카카오 · 애플 · 구글 가이드의 바탕 · 로고를 그대로 쓰고(문구는 셋 다 "○○로 로그인", 결정 044), 셋을 같은 줄에 맞춘다:
  * 높이 48 · 모서리 12, 로고 칸 20×20 은 바깥 왼쪽 16 에 고정, 문구는 버튼 전체 폭의 가운데 16px · 500.
  * 애플만 HIG 의 "제목 = 높이의 43%" 에서 벗어난다(소유자가 16px 통일을 골랐다). 심사에서 지적받으면 애플 글자만 되돌린다.
  */
@@ -12,7 +12,7 @@ export type SocialProvider = 'KAKAO' | 'APPLE' | 'GOOGLE';
 
 export type SocialButtonProps = {
   provider: SocialProvider;
-  /** 공급자 가이드의 문구(strings.login) */
+  /** 버튼 문구(strings.login, 결정 044) */
   label: string;
   onPress: () => void;
   disabled?: boolean;

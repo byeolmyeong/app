@@ -33,7 +33,7 @@ last_reviewed: 2026-11-20
 - 할 것: `docs/decisions/044-onboarding-v2.md`(번호는 모든 원격 브랜치에서 비어 있는지 다시 확인). 로그인 문구 셋(공식 문구와 다름, 심사 · 브랜드 지적 시 되돌릴 값), 최근 로그인 배지, 약관 보기의 동의하기, 별명 공개(가입 직후 한 번, 시각 모름이면 첫인상 없음). 042 앞머리에 "로그인 문구는 044 가 대체".
 - 검증: 번호 중복 0.
 
-### 2. login-texts · 상태: 대기
+### 2. login-texts · 상태: 완료
 - 할 것: `strings.login.kakao` "Kakao로 로그인" · `apple` "Apple로 로그인" · `google` "Google로 로그인". 웹 GIS `text: 'signin_with'`.
 - 검증: 버튼 테스트(문구 셋) 먼저 실패 → 통과. 옛 문구 grep 0건.
 
@@ -64,4 +64,5 @@ last_reviewed: 2026-11-20
 
 ## 실행 기록
 - 2026-11-20 승인. 워크트리 `.wt-app-onboarding`, 브랜치 `feat/onboarding-v2`(develop `29f9b6c` + 계획 `8564b0e`). 시작 상태: `npx jest` 71 묶음 937 통과, `npx tsc --noEmit` exit 0.
-- 태스크 1(결정 044): 전 — 042 의 5 "로그인 버튼 문구는 공급자 가이드 그대로", 최근 로그인 · 약관 보기의 동의하기 · 별명 공개 결정 없음 → 후 — `docs/decisions/044-onboarding-v2.md`(문구 셋과 되돌릴 공식 문구 · 최근 로그인 키 `byeolmyeong-device.lastProvider.v1` 공급자 이름만 · 약관 보기의 동의하기는 가입 중에만 · 별명 공개는 가입 직후 한 번, 시각 모름이면 첫인상 없음, 닉네임은 가입이 받은 값을 메모리에만), 042 앞머리 `superseded_by` 한 줄, DESIGN.md 의 첫 흐름 · 브랜드 자리 · 소셜 버튼 · 애니메이션 줄. 확인: `git fetch` 뒤 모든 ref(원격 · 로컬)의 `docs/decisions/` 에 044 0건 · `git log --all -- 'docs/decisions/044*'` 0줄, 번호 앞 세 자리 중복 0줄. 커밋: (다음 커밋에 적는다)
+- 태스크 1(결정 044): 전 — 042 의 5 "로그인 버튼 문구는 공급자 가이드 그대로", 최근 로그인 · 약관 보기의 동의하기 · 별명 공개 결정 없음 → 후 — `docs/decisions/044-onboarding-v2.md`(문구 셋과 되돌릴 공식 문구 · 최근 로그인 키 `byeolmyeong-device.lastProvider.v1` 공급자 이름만 · 약관 보기의 동의하기는 가입 중에만 · 별명 공개는 가입 직후 한 번, 시각 모름이면 첫인상 없음, 닉네임은 가입이 받은 값을 메모리에만), 042 앞머리 `superseded_by` 한 줄, DESIGN.md 의 첫 흐름 · 브랜드 자리 · 소셜 버튼 · 애니메이션 줄. 확인: `git fetch` 뒤 모든 ref(원격 · 로컬)의 `docs/decisions/` 에 044 0건 · `git log --all -- 'docs/decisions/044*'` 0줄, 번호 앞 세 자리 중복 0줄. 커밋: 7194deb
+- 태스크 2(로그인 문구): 전 — `strings.login` "카카오 로그인" · "Apple로 계속하기" · "Google로 계속하기", 웹 GIS `text: 'continue_with'` → 후 — "Kakao로 로그인" · "Apple로 로그인" · "Google로 로그인", 웹 GIS `text: 'signin_with'`(구글 한국어 "Google 계정으로 로그인"), 문구 주석을 결정 044 로. 확인: `social-button` 문구 셋 테스트 · 새 `google-web.test.tsx`(GIS 옵션) 먼저 2 실패 → `npx jest src/features/auth/providers src/__tests__/login-screen` 32 통과, `grep -rn "카카오 로그인'\|Apple로 계속하기\|Google로 계속하기\|continue_with" src` 0건, `npx tsc --noEmit` · `npx expo lint` exit 0. 커밋: (다음 커밋에 적는다)

@@ -1,6 +1,6 @@
 /**
  * 웹의 구글 로그인: 구글 공식 웹 버튼(Google Identity Services, 결정 034). 버튼은 구글이 그린다(구글 브랜드 규칙).
- * 시안(결정 042)의 다크 버튼(`filled_black`) · 로고 왼쪽 · 칸 폭에 맞춘다. GIS 는 높이(최대 40)와 글자 크기를 바꿀 수 없어
+ * 시안(결정 042)의 다크 버튼(`filled_black`) · 로고 왼쪽 · 칸 폭에 맞추고, 글자는 "로그인" 쪽 문구(`signin_with`, 결정 044)다. GIS 는 높이(최대 40)와 글자를 바꿀 수 없어
  * 웹에서만 다른 공급자 버튼(48 · 16px)보다 조금 작다(계획 "내 결정").
  * 누르면 구글이 ID 토큰(credential)을 콜백으로 준다. 클라이언트 ID(`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`)가 없으면 그리지 않는다.
  */
@@ -49,7 +49,7 @@ export function GoogleLoginButton({ onCredential, onError }: LoginButtonProps) {
           type: 'standard',
           theme: 'filled_black',
           size: 'large',
-          text: 'continue_with',
+          text: 'signin_with',
           shape: 'rectangular',
           logo_alignment: 'left',
           width,

@@ -774,8 +774,8 @@ export const Sizes = {
   /** 설명(물음표) 버튼의 지름 · 설명 시트에서 글이 굴러가는 영역의 최대 높이 */
   infoButton: 20,
   infoSheetHeight: 360,
-  /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기 · 공유 페이지 */
-  shareCardWidth: 220,
+  /** 공유 카드(9:16)의 너비: 공유 시트의 미리보기(보드 12-4 의 209 — 360 카드의 0.58) · 공유 페이지 */
+  shareCardWidth: 209,
   sharePageCardWidth: 280,
   /** 시트 위의 손잡이 줄(결정 042 시안) · 제목이 있는 시트의 위 여백(손잡이 위 10 + 4 + 제목까지 22) · 제목 줄의 뒤로 화살표 */
   handleWidth: 40,
@@ -888,4 +888,28 @@ export const InquiryLayout = {
    */
   skeleton: { rows: 3, line: 16, meta: 12, chip: 56, date: 64, bodyLines: 3 },
   sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
+} as const;
+
+/**
+ * 공유 카드 v2(결정 053, 보드 12-7 · 12-14 · 11-7 · 14-6)의 값 — 시안의 360×640 카드 기준이다. 미리보기 · 공유 페이지 · 저장 이미지는
+ * 이 값에 (카드 너비 / base)를 곱해 같은 모양으로 그린다. 위 · 옆 · 아래 여백, 해 별자리 그림(260×228), 영역 · 달 · 계단 그림(200, 위 14),
+ * 칩(위 16 · 안 여백 · 13/18), 이름표(위 28 · 14/20), 제목(위 10 · 23/34), 아래 줄(위 16 · 로고 높이 19 · 한 줄 소개 12/17), 바탕의 작은 별 셋.
+ */
+export const ShareCardLayout = {
+  base: 360,
+  padTop: 48,
+  padX: 28,
+  padBottom: 36,
+  sign: { width: 260, height: 228 },
+  art: 200,
+  artTop: 14,
+  chip: { top: 16, padV: 6, padH: 14, text: type(13, 18, FontWeight.medium) },
+  label: { top: 28, text: type(14, 20, FontWeight.medium) },
+  title: { top: 10, text: type(23, 34, FontWeight.semibold) },
+  foot: { padTop: 16, mark: 19, text: type(12, 17, FontWeight.regular) },
+  dots: [
+    { left: 28, top: 60, size: 2, opacity: 0.5 },
+    { right: 40, top: 300, size: 2, opacity: 0.4 },
+    { left: 60, top: 330, size: 3, opacity: 0.35 },
+  ],
 } as const;

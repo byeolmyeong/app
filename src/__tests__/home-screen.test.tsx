@@ -18,6 +18,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('expo-router', () => ({
+  // 홈의 종이 화면이 보일 때마다 알림함을 다시 묻는다(useNotifications)
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
 }));
 // 홈은 로그인한 사람만 온다(루트 가드) — 계정은 로그인이 확인된 뒤에 묻는다
@@ -32,6 +34,8 @@ jest.mock('@/lib/api', () => ({
     createChart: jest.fn(),
     saveProfile: jest.fn(),
     getMyAccount: jest.fn(),
+    getNotifications: jest.fn(),
+    markNotificationRead: jest.fn(),
     // 홈은 풀이를 부르지 않는다(POST /readings 는 옛 요약 해석만 있는 계정이면 새로 짓는다 — 서버 결정 030)
     createReading: jest.fn(),
     // 기기가 비어 있으면 서버의 출생 정보로 되살려 본다(결정 029) — 이 테스트들에서는 저장된 것이 없다
@@ -55,6 +59,7 @@ beforeEach(async () => {
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+  mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 0, items: [] } });
 });
 
 /** 기기 시계를 고정한 테스트가 쓴다(별명을 받은 지 N일) */
@@ -340,5 +345,45 @@ describe('출생 정보 바꾸기(/birth)', () => {
     expect(screen.getByText('오후 9:00')).toBeTruthy();
     // 칸에는 짧은 시 · 도 이름으로 적는다(결정 042 시안)
     expect(screen.getByText('서울 마포구')).toBeTruthy();
+  });
+});
+
+describe('홈 머리의 종(결정 052 의 4, 보드 11)', () => {
+  const unreadItem = { id: 'n1', kind: 'ME_REPORT_DONE', createdAt: '2026-11-20T00:12:00Z', read: false };
+
+  it('안 읽은 알림이 있으면 점, 누르면 알림함', async () => {
+    mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 1, items: [unreadItem] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-bell-dot')).toBeTruthy();
+    expect(screen.getByLabelText(strings.notifications.bellUnread)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('home-bell'));
+    expect(router.push).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('다 읽었거나 숨기는 종류(궁합 리포트)만 안 읽었으면 점이 없다', async () => {
+    mockApi.getNotifications.mockResolvedValue({
+      ok: true,
+      data: { unread: 1, items: [{ ...unreadItem, read: true }, { ...unreadItem, id: 'n2', kind: 'SYNASTRY_REPORT_DONE', synastryId: 's1' }] },
+    });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-bell')).toBeTruthy();
+    expect(screen.queryByTestId('home-bell-dot')).toBeNull();
+  });
+
+  it('못 받았으면 점 없이 종은 둔다. 서버에 알림함이 없으면(404 — S⑤ 전) 종을 숨긴다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    mockApi.getNotifications.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    const view = await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    expect(screen.getByTestId('home-bell')).toBeTruthy();
+    expect(screen.queryByTestId('home-bell-dot')).toBeNull();
+    await view.unmount();
+    mockApi.getNotifications.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => {});
+    expect(screen.queryByTestId('home-bell')).toBeNull();
   });
 });

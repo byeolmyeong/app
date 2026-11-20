@@ -16,12 +16,14 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('expo-router', () => ({
+  // 홈의 종이 화면이 보일 때마다 알림함을 다시 묻는다(useNotifications)
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
   useLocalSearchParams: jest.fn(() => ({})),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn(), getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })) },
+  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn(), getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })), getNotifications: jest.fn(async () => ({ ok: false, error: 'NETWORK' })) },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   getSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),

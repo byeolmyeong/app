@@ -23,6 +23,9 @@ import { markHomeReady } from '@/features/home/home-ready';
 import { MainTabs } from '@/features/home/main-tabs';
 import { NicknameCard } from '@/features/home/nickname-card';
 import { useAccount } from '@/features/home/use-account';
+import { HomeBell } from '@/features/notifications/home-bell';
+import { hasUnread } from '@/features/notifications/notification-rows';
+import { useNotifications } from '@/features/notifications/use-notifications';
 import { useStoredHeadline } from '@/features/reading/use-reading';
 import { HomeTimingCards } from '@/features/timing/home-timing-card';
 import { useTimingReport } from '@/features/timing/use-timing-report';
@@ -73,7 +76,13 @@ function Home({ onRetry }: { onRetry: () => void }) {
     if (timing.state.status === 'done') timing.refresh();
     else if (timing.state.status === 'unknown') timing.recheck();
   });
-  const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} />;
+  // 머리의 종(결정 052 의 4): 홈을 열 때 · 알림함에서 돌아올 때 다시 묻는다. 서버에 알림함이 없으면(404 — S⑤ 전) 종을 숨긴다
+  const notifications = useNotifications().state;
+  const bell =
+    notifications.status === 'failed' && notifications.httpStatus === 404 ? null : (
+      <HomeBell unread={notifications.status === 'ready' && hasUnread(notifications.list)} onPress={() => router.push('/notifications')} />
+    );
+  const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} right={bell} />;
   if (phase === 'timeout')
     return (
       <StateScreen

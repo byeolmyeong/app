@@ -519,6 +519,23 @@ export const TimingLayout = {
   locked: { height: 640, padX: 20, padBottom: 16, padTop: 24, cardPadTop: 24, cardPadX: 20, cardPadBottom: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18, fill: 'rgba(22,23,29,0.92)', ghostOpacity: 0.55 },
 } as const;
 
+/**
+ * 알림함(결정 052, 보드 11-3 · 11-3-1): 묶음 이름(위 · 아래) · 한 줄(안 여백 · 사이 · 아래 · 모서리 — 안 읽은 줄만 떠 있는 면) · 둥근 아이콘 칸 ·
+ * 글 줄 사이 · 때 위 · 안 읽음 점(자리 · 글이 점을 비켜 가는 폭) · 비었을 때(머리 아래 높이 640 칸의 가운데) · 처음 불러올 때 뼈대의 줄 수.
+ * 홈 머리의 종(보드 11): 누르는 칸 · 아이콘 · 점(바탕색 테두리) · 머리 오른쪽 끝에서 더 나간 거리.
+ */
+export const NotificationLayout = {
+  groupTop: 24,
+  groupBottom: 4,
+  row: { padV: 14, padX: 12, gap: 12, bottom: 8, radius: 14, textGap: 2, timeTop: 2, unreadRight: 14 },
+  icon: 40,
+  glyph: 20,
+  dot: { size: 8, top: 18, right: 12 },
+  empty: { height: 640, icon: 72, glyph: 34, titleTop: 20, bodyTop: 8 },
+  skeleton: { rows: 3 },
+  bell: { box: 40, icon: 24, inset: -8, dot: 8, dotBorder: 1.5, dotTop: 8, dotRight: 9 },
+} as const;
+
 /** 카드 하나만 못 불러왔을 때 그 카드 자리(보드 19-1, 결정 061 의 3): 카드 · 이름표 아래 제목 · 설명 · 작은 "다시 보기" 단추 */
 export const CardFailLayout = { padding: 20, radius: 20, titleTop: 10, bodyTop: 4, buttonTop: 14, button: 40, buttonPadX: 16, buttonRadius: 10 } as const;
 

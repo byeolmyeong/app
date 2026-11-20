@@ -114,9 +114,17 @@ function Home({ onRetry }: { onRetry: () => void }) {
       />
     );
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
-  // 웹이 시작할 때 서버에 닿지 못했다(결정 068 의 4): 받아 둔 홈이 없으면 볼 게 없는 화면(20-1) — 다시 시도는 세션을 다시 확인한다
+  // 웹이 시작할 때 서버에 닿지 못했다(결정 068 의 4): 받아 둔 홈이 없으면 볼 게 없는 화면 — 다시 시도는 세션을 다시 확인한다
+  // 인터넷은 되는데 서버만 닿지 않으면 끊김(20-1)이 아니라 "불러오지 못했어요"(19) — 소유자 2026-11-21
   if (unreachable && empty)
-    return (
+    return online ? (
+      <StateScreen
+        nav={nav}
+        title={strings.states.loadFail.title.home}
+        body={strings.states.loadFail.body}
+        primary={{ label: strings.states.loadFail.retry, onPress: () => void recheckSession() }}
+      />
+    ) : (
       <StateScreen
         nav={nav}
         title={strings.states.offlineEmpty.title}
@@ -146,7 +154,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
     return (
       <Screen nav={homeNav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>
-          {online && !unreachable ? null : <OfflineBanner />}
+          {/* "인터넷 연결이 끊겼어요" 띠는 정말 끊겼을 때만 — 서버만 닿지 않을 때는 받아 둔 것을 그대로 보인다 */}
+          {online ? null : <OfflineBanner />}
           <NicknameCard
             nickname={account?.nickname ?? null}
             avatar={account?.avatar ?? null}

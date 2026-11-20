@@ -1,3 +1,4 @@
+import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
@@ -288,11 +289,25 @@ describe('닉네임 단계: 늦은 확인', () => {
   });
 });
 
-// 리뷰 PR #57 제안 12: 서버에 닿지 못해 세션을 확인하지 못했는데(offline) 가입 주소로 열리면 "다음" 이 말없이 무시됐다 — 20-1
-it('세션을 확인하지 못했으면(offline) 가입 단계 대신 볼 게 없는 화면(20-1), 다시 시도는 세션을 다시 확인한다', async () => {
+// 리뷰 PR #57 제안 12: 서버에 닿지 못해 세션을 확인하지 못했는데(offline) 가입 주소로 열리면 "다음" 이 말없이 무시됐다.
+// 인터넷이 끊겼으면 20-1, 인터넷은 되는데 서버만 닿지 않으면 19 "불러오지 못했어요"(소유자 2026-11-21)
+it('세션을 확인하지 못했고 인터넷이 끊겼으면 가입 단계 대신 볼 게 없는 화면(20-1), 다시 시도는 세션을 다시 확인한다', async () => {
+  (NetInfo.addEventListener as jest.Mock).mockImplementationOnce((cb) => {
+    cb({ isConnected: false, isInternetReachable: false });
+    return () => {};
+  });
   (useAuth as jest.Mock).mockReturnValue({ status: 'offline', checkNickname });
   await render(<NicknameStep />);
   expect(screen.getByText(strings.states.offlineEmpty.title)).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: strings.states.offlineEmpty.retry }));
+  expect(recheckSession).toHaveBeenCalledTimes(1);
+});
+
+it('세션을 확인하지 못했지만 인터넷은 되면 19 "불러오지 못했어요" — 다시 보기는 세션을 다시 확인한다', async () => {
+  (useAuth as jest.Mock).mockReturnValue({ status: 'offline', checkNickname });
+  await render(<NicknameStep />);
+  expect(screen.getByText(strings.states.loadFail.title.page)).toBeTruthy();
+  expect(screen.queryByText(strings.states.offlineEmpty.title)).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: strings.states.loadFail.retry }));
   expect(recheckSession).toHaveBeenCalledTimes(1);
 });

@@ -1,23 +1,46 @@
 /**
  * 강제 업데이트의 문(결정 027). 루트 레이아웃이 화면 전체를 이것으로 감싼다.
- * 앱이 켜질 때와 앞으로 돌아올 때 설정을 묻고, 막아야 하면 화면들 대신 "업데이트가 필요해요" 만 보여 준다.
+ * 앱이 켜질 때와 앞으로 돌아올 때 설정을 묻고, 막아야 하면 화면들 대신 막는 화면("새 버전이 나왔어요")만 보여 준다.
  * 세션이 필요 없다. 웹과 가짜 서버에서는 막지 않는다(판정은 update-store.ts).
- * 점검(결정 030)도 여기서 본다: 점검 중이면 "점검 중이에요" 만 보여 주고(웹 포함, 업데이트보다 먼저), 끝나면 화면들이 돌아온다.
+ * 점검(결정 030 · 060)도 여기서 본다: 점검 중이면 점검 화면만 보여 주고(웹 포함, 업데이트보다 먼저), 끝나면 화면들이 돌아온다.
+ * 업데이트 권유(결정 059)도 여기서 띄운다: 권해도 되는 자리(canSuggest — 로그인한 홈)면 화면들 위에 가운데 창을 한 번.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
 import { MaintenanceNotice } from '@/features/update/maintenance-notice';
 import { UpdateRequired } from '@/features/update/update-required';
 import { createUpdateStore, type UpdateStore } from '@/features/update/update-store';
+import { UpdateSuggest } from '@/features/update/update-suggest';
 import { api, setMaintenanceHandler, setUpdateRequiredHandler } from '@/lib/api';
 import { appClient } from '@/lib/app-client';
 
 const UpdateContext = createContext<UpdateStore | null>(null);
 
-export function UpdateGate({ children }: { children: ReactNode }) {
-  const [store] = useState(() => createUpdateStore({ client: appClient, getAppConfig: () => api.getAppConfig() }));
+/**
+ * 업데이트를 권한 최신 버전(결정 059). 사람이 아니라 기기에 붙는 값이라 로그아웃 · 탈퇴의 `clearDeviceData` 가 지우지 않는
+ * `byeolmyeong-device.` 머리로 둔다(소개 기록과 같다) — 다시 로그인해도 같은 최신 버전은 묻지 않는다.
+ */
+const UPDATE_ASKED_KEY = 'byeolmyeong-device.updateAsked.v1';
+
+export type UpdateGateProps = {
+  children: ReactNode;
+  /** 업데이트를 권해도 되는 자리인가(로그인했고 홈이다 — 로그인 전 · 가입 중에는 묻지 않는다). 주지 않으면 권하지 않는다 */
+  canSuggest?: boolean;
+};
+
+export function UpdateGate({ children, canSuggest = false }: UpdateGateProps) {
+  const [store] = useState(() =>
+    createUpdateStore({
+      client: appClient,
+      getAppConfig: () => api.getAppConfig(),
+      loadAsked: () => AsyncStorage.getItem(UPDATE_ASKED_KEY),
+      saveAsked: (version) => AsyncStorage.setItem(UPDATE_ASKED_KEY, version),
+    }),
+  );
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const suggestion = useSyncExternalStore(store.subscribe, store.getSuggestion, store.getSuggestion);
 
   useEffect(() => {
     // 어느 호출이든 426 UPDATE_REQUIRED 를 받으면 바로 막는다.
@@ -25,7 +48,7 @@ export function UpdateGate({ children }: { children: ReactNode }) {
     // 어느 호출이든 503 MAINTENANCE 를 받으면 바로 점검 화면을 보여 준다.
     setMaintenanceHandler(store.maintain);
     void store.check();
-    // 쓰는 동안 시간 간격으로 묻지 않는다. 앞으로 돌아올 때만 다시 묻는다.
+    // 쓰는 동안 시간 간격으로 묻지 않는다. 앞으로 돌아올 때만 다시 묻는다(점검 화면이 떠 있는 동안만 그 화면이 1분마다 묻는다 — 결정 060).
     const subscription = AppState.addEventListener('change', (next) => {
       if (next === 'active') void store.check();
     });
@@ -39,11 +62,15 @@ export function UpdateGate({ children }: { children: ReactNode }) {
   return (
     <UpdateContext value={store}>
       {state.maintenance ? (
-        <MaintenanceNotice message={state.maintenance.message} onRetry={store.check} />
+        <MaintenanceNotice message={state.maintenance.message} onCheck={store.check} />
       ) : state.blocked ? (
         <UpdateRequired message={state.message} storeUrl={state.storeUrl} />
       ) : (
-        children
+        // 창은 화면들 위에 뜬다. 화면들은 늘 같은 자리에 두어 창이 뜨고 닫혀도 다시 그려지지 않는다. 스토어 주소가 없으면 묻지 않는다
+        <>
+          {children}
+          {canSuggest && suggestion && state.storeUrl ? <UpdateSuggest storeUrl={state.storeUrl} onDone={store.dismissSuggestion} /> : null}
+        </>
       )}
     </UpdateContext>
   );

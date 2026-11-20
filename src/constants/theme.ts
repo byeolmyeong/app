@@ -46,6 +46,13 @@ export const Colors = {
   primarySoft: '#1D2050',
   /** 오류 · 삭제. 대비 4.9, 그 위 ink 3.5 */
   danger: '#E5484D',
+  /** 연결 끊김 아이콘의 빗금(보드 20) · 짧은 알림의 실패 아이콘(보드 23-1) */
+  dangerSoft: '#FF8A8A',
+  /** 짧은 알림의 성공 체크(보드 23) */
+  success: '#7EE0B5',
+  /** 처음 불러올 때 뼈대 막대의 바탕과, 그 위를 지나가는 옅은 빛(보드 24 · 24-1) */
+  skeleton: '#1E1F27',
+  skeletonShine: '#2A2B35',
 } as const;
 
 export type ColorName = keyof typeof Colors;
@@ -201,6 +208,34 @@ export const IntroArtLayout = {
   artGap: 36,
   timeline: { width: 300, height: 14, line: 2, dot: 10, now: 14, gap: 10 },
 } as const;
+
+/** 공통 상태 화면(결정 061, 보드 19 · 20-1 · 17-1 · 점검): 그림 아래 제목 · 그 아래 설명 · 가운데 덩이를 위로 올림 · 주 버튼 아래(탭 없음 · 탭 위) */
+export const StateLayout = { titleTop: 32, bodyTop: 10, lift: 32, bottom: 34, aboveTabs: 16, laterGap: 12 } as const;
+
+/** 가운데 창(결정 061 의 6, 보드 17): 화면 양옆에서 · 안 여백(위 · 나머지) · 모서리 · 제목과 설명 사이 · 설명과 버튼 사이 · 버튼 사이 · 버튼 높이 */
+export const DialogLayout = { inset: 28, paddingTop: 26, padding: 20, radius: 20, bodyTop: 8, actionsTop: 22, actionGap: 8, button: 50 } as const;
+
+/**
+ * 짧은 알림(보드 23 · 23-1, 결정 065): 화면 좌우 · 감싼 것(아래 탭 · 주 버튼)과의 사이 · 안 여백(세로 · 가로) · 모서리 ·
+ * 아이콘(크기 · 선 굵기) · 아이콘과 글 사이 · 그림자
+ */
+export const ToastLayout = {
+  inset: 20,
+  above: 12,
+  paddingV: 14,
+  paddingH: 16,
+  radius: 14,
+  icon: 18,
+  iconStroke: 2.2,
+  gap: 10,
+  shadow: '0 8px 24px rgba(0,0,0,0.45)',
+} as const;
+
+/** 처음 불러올 때 뼈대(보드 24 · 24-1): 막대 모서리 · 카드 모서리(큰 카드) · 카드 안 여백 · 조각 사이 · 빛이 한 번 오가는 시간 */
+export const SkeletonLayout = { radius: 8, cardRadius: 20, bigCardRadius: 24, cardPadding: 20, gap: 12, shimmerMs: 1400 } as const;
+
+/** 연결 끊김 띠(결정 061 의 4, 보드 20) */
+export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, icon: 20, gap: 10 } as const;
 
 /** 홈 별명 카드(결정 047, 보드 11 · 11-1): 모서리 · 안 여백 · 프로필 그림 · 그림과 이름 사이 · 위와의 사이 · 빛 · 뒤의 별자리 그림 */
 export const NicknameCardLayout = {

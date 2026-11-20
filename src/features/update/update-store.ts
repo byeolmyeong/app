@@ -5,8 +5,11 @@
  *
  * 점검(결정 030)도 같은 설정으로 함께 판정한다. 웹에서도 보고, 바쁜 화면이 있으면 미루며, 서버의 503 알림(maintain)은 바로 알린다.
  * 업데이트와 달리 붙박이가 아니다: 그 뒤 성공한 확인이 점검이 끝났다고 하면 풀린다.
+ *
+ * 업데이트 권유(결정 059)도 여기서 정한다: 최신 버전보다 낮고 최소 이상이면 그 최신 버전을 한 번 권한다(getSuggestion).
+ * 막거나 점검 중이거나 바쁜 화면이 있으면 권하지 않는다. 같은 최신 버전은 한 번만 — 물은 버전은 기기에 적어 둔다.
  */
-import { isBelowVersion } from '@/features/update/version';
+import { isBelowVersion, shouldSuggestUpdate } from '@/features/update/version';
 import type { ApiResult, AppConfig } from '@/lib/api';
 import type { AppClient } from '@/lib/app-client';
 
@@ -25,6 +28,10 @@ export type UpdateStoreDeps = {
   /** 이 앱의 플랫폼과 버전. 웹은 null 이고, 그러면 버전으로는 막지 않는다(점검은 웹에서도 본다) */
   client: AppClient | null;
   getAppConfig: () => Promise<ApiResult<AppConfig>>;
+  /** 기기에 적어 둔 "업데이트를 권한 최신 버전"(없으면 null). 권할 수 있게 됐을 때 처음 한 번만 읽는다 */
+  loadAsked: () => Promise<string | null>;
+  /** 권유 창을 닫았을 때 그 최신 버전을 기기에 적는다 */
+  saveAsked: (version: string) => Promise<void>;
 };
 
 export function createUpdateStore(deps: UpdateStoreDeps) {
@@ -38,12 +45,20 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
   let storeUrl: string | null = null;
   /** 설정이 "점검 중" 이라고 했는가 */
   let maintenanceActive = false;
-  /** 서버가 503 으로 거절했는가. 그 뒤 성공한 확인(사용자가 누르거나 앞으로 돌아올 때)이 점검이 끝났다고 하면 풀린다 */
+  /** 서버가 503 으로 거절했는가. 그 뒤 성공한 확인(점검 화면의 1분마다 · 앞으로 돌아올 때)이 점검이 끝났다고 하면 풀린다 */
   let maintenanceForced = false;
   /** 503 알림이 온 횟수. 확인이 도는 동안 알림이 왔는지(그 확인의 답이 알림보다 옛것인지) 가린다 */
   let maintenanceSignals = 0;
   let maintenanceMessage: string | null = null;
+  /** 내 플랫폼의 최신 · 최소 버전(결정 059). 웹은 null 이다 */
+  let latest: string | null = null;
+  let min: string | null = null;
+  /** 기기에 적어 둔 "권한 최신 버전". undefined 는 아직 읽지 않았거나 읽지 못한 것(그동안 권하지 않는다) */
+  let asked: string | null | undefined;
+  let askedLoading = false;
   let state: UpdateState = { blocked: false, message, storeUrl, maintenance: null };
+  /** 권할 최신 버전. 권하지 않으면 null */
+  let suggestion: string | null = null;
   /** lifts: 이 확인의 답으로 503 표시를 풀어도 되는가(503 알림이 스스로 부른 확인은 풀지 않는다) */
   let checking: { promise: Promise<void>; lifts: boolean } | null = null;
   const listeners = new Set<() => void>();
@@ -52,22 +67,45 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
   function emit() {
     const blocked = forced || (required && (busy === 0 || state.blocked));
     const inMaintenance = maintenanceForced || (maintenanceActive && (busy === 0 || state.maintenance !== null));
-    if (
+    // 권유는 막지 않고 점검도 아니며 바쁜 화면이 없을 때만, 물은 버전을 읽은 뒤에만 한다
+    const nextSuggestion =
+      deps.client &&
+      !blocked &&
+      !inMaintenance &&
+      busy === 0 &&
+      asked !== undefined &&
+      shouldSuggestUpdate(deps.client.version, latest, min, asked)
+        ? latest
+        : null;
+    const same =
       blocked === state.blocked &&
       message === state.message &&
       storeUrl === state.storeUrl &&
       inMaintenance === (state.maintenance !== null) &&
-      (!inMaintenance || maintenanceMessage === state.maintenance?.message)
-    )
-      return;
-    state = { blocked, message, storeUrl, maintenance: inMaintenance ? { message: maintenanceMessage } : null };
+      (!inMaintenance || maintenanceMessage === state.maintenance?.message);
+    if (same && nextSuggestion === suggestion) return;
+    if (!same) state = { blocked, message, storeUrl, maintenance: inMaintenance ? { message: maintenanceMessage } : null };
+    suggestion = nextSuggestion;
     listeners.forEach((listener) => listener());
+  }
+
+  /** 권할 수 있게 되면 그때 한 번 기기에 적어 둔 "권한 최신 버전" 을 읽는다. 읽지 못하면 이번 실행에서는 권하지 않는다 */
+  function loadAsked() {
+    if (askedLoading || !deps.client || !shouldSuggestUpdate(deps.client.version, latest, min, null)) return;
+    askedLoading = true;
+    deps.loadAsked().then(
+      (value) => {
+        asked = value;
+        emit();
+      },
+      () => {},
+    );
   }
 
   /** 설정을 받아 판정한다. 받지 못하면 앞의 판정을 그대로 둔다. 겹쳐 불려도 서버는 한 번만 부른다 */
   function check(lifts = true): Promise<void> {
     if (checking) {
-      // 503 알림이 부른 확인이 도는 중에 사용자가 다시 확인하면, 그것이 끝난 뒤 풀 수 있는 확인을 새로 한다.
+      // 503 알림이 부른 확인이 도는 중에 다른 확인(1분마다 · 앞으로 돌아올 때)이 오면, 그것이 끝난 뒤 풀 수 있는 확인을 새로 한다.
       return lifts && !checking.lifts ? checking.promise.then(() => check()) : checking.promise;
     }
     const signals = maintenanceSignals;
@@ -83,6 +121,9 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
         required = isBelowVersion(deps.client.version, config.minVersion);
         message = config.message;
         storeUrl = config.storeUrl;
+        latest = config.latestVersion;
+        min = config.minVersion;
+        loadAsked();
       }
       emit();
     })().finally(() => {
@@ -95,6 +136,17 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
   return {
     getSnapshot: () => state,
 
+    /** 권할 최신 버전(결정 059). 권하지 않으면 null. 같은 subscribe 로 바뀜을 알린다 */
+    getSuggestion: () => suggestion,
+
+    /** 권유 창을 닫았다("나중에" · "업데이트"). 이 최신 버전은 다시 권하지 않고, 기기에 적는다(적지 못해도 이번 실행에서는 권하지 않는다) */
+    dismissSuggestion() {
+      if (suggestion === null) return;
+      asked = suggestion;
+      deps.saveAsked(suggestion).catch(() => {});
+      emit();
+    },
+
     subscribe(listener: () => void) {
       listeners.add(listener);
       return () => {
@@ -102,12 +154,14 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
       };
     },
 
-    /** 설정을 다시 받아 판정한다(켜질 때 · 앞으로 돌아올 때 · 점검 화면의 "다시 확인") */
+    /** 설정을 다시 받아 판정한다(켜질 때 · 앞으로 돌아올 때 · 점검 화면이 떠 있는 동안 1분마다) */
     check: () => check(),
 
     /** 하던 일이 있는 화면이 떠 있는 동안 부른다. 돌려준 함수를 화면에서 나올 때 부른다 */
     enterBusy(): () => void {
       busy += 1;
+      // 권유는 바쁘면 내지 않는다 — 들어갈 때도 알려 권유를 거둔다(리뷰 PR #44)
+      emit();
       let left = false;
       return () => {
         if (left) return;

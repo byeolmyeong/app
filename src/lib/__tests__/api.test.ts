@@ -954,6 +954,7 @@ describe('api: 문의하기', () => {
 describe('api: 앱 버전 헤더와 강제 업데이트(결정 027)', () => {
   const platformConfig = {
     minVersion: '1.2.0',
+    latestVersion: '1.3.0',
     storeUrl: 'https://store.example.test/app',
     message: null,
     blockNow: false,
@@ -1028,6 +1029,21 @@ describe('api: 앱 버전 헤더와 강제 업데이트(결정 027)', () => {
     expect(isAppConfig({ ...appConfig, android: withoutBlockNow })).toBe(false);
   });
 
+  it('latestVersion(결정 059)은 글자 또는 null 이고, 다른 값이면 설정 전체를 받지 않는다', () => {
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, latestVersion: null } })).toBe(true);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, latestVersion: 130 } })).toBe(false);
+    expect(isAppConfig({ ...appConfig, ios: { ...platformConfig, latestVersion: {} } })).toBe(false);
+  });
+
+  it('latestVersion 이 없는 옛 서버의 설정도 받고, 그 값은 null 로 읽는다(권하지 않는다)', async () => {
+    const { latestVersion: _latest, ...old } = platformConfig;
+    const api = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ios: old, android: old }), getToken: () => null });
+    expect(await api.getAppConfig()).toEqual({
+      ok: true,
+      data: { ios: { ...old, latestVersion: null }, android: { ...old, latestVersion: null } },
+    });
+  });
+
   it('모양이 다른 설정은 INVALID, 실패는 종류대로 돌려주고 다시 부르지 않는다', async () => {
     const bad = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { ios: {} }), getToken: () => null });
     expect(await bad.getAppConfig()).toEqual({ ok: false, error: 'INVALID', status: 200 });
@@ -1066,6 +1082,7 @@ describe('api: 앱 버전 헤더와 강제 업데이트(결정 027)', () => {
     const api = createApi({ baseUrl: BASE, fetchFn, getToken: () => null, useFixtures: true });
     const r = await api.getAppConfig();
     expect(r.ok && [r.data.ios.minVersion, r.data.android.minVersion]).toEqual([null, null]);
+    expect(r.ok && [r.data.ios.latestVersion, r.data.android.latestVersion]).toEqual([null, null]);
     expect(r.ok && isAppConfig(r.data)).toBe(true);
     expect(fetchFn).not.toHaveBeenCalled();
   });
@@ -1177,7 +1194,7 @@ describe('api: 서버에 저장된 출생 정보(결정 029)', () => {
 });
 
 describe('api: 점검(결정 030)', () => {
-  const platformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+  const platformConfig = { minVersion: null, latestVersion: null, storeUrl: null, message: null, blockNow: false };
   const base = { ios: platformConfig, android: platformConfig };
 
   it('GET /app-config 의 maintenance 를 함께 받는다', async () => {

@@ -2,11 +2,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { StatusView } from '@/components/status-view';
+import { OfflineBanner } from '@/components/offline-banner';
+import { StateScreen } from '@/components/state-screen';
 import { TextLink } from '@/components/text-link';
+import { useOnReconnect, useOnline } from '@/components/use-online';
 import { Txt } from '@/components/txt';
 import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -28,6 +29,8 @@ import { useGenerationBusy } from '@/features/update/update-gate';
 import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
+const ST = strings.states;
+const MF = strings.making.fail;
 
 /**
  * 요약 해석: 서버가 쓴 글(총평 · 문단 · 강점 · 보완점)을 보여 준다. 차트는 여기서 "내 차트 보기" 로 연다.
@@ -52,6 +55,12 @@ export default function ReadingScreen() {
   const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
   // 나 탭이 새 화면(/me)이 되기 전까지 글 화면이 나 탭의 자리다 — 받아 둔 글이든 방금 받은 글이든(결정 046 의 4)
   const tabs = <MainTabs active="me" />;
+  // 연결 끊김(결정 061 의 4): 받아 둔 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 다시 부른다
+  const online = useOnline();
+  useOnReconnect(online, () => {
+    if (state.status === 'failed' && state.error === 'NETWORK') retry();
+  });
+  const banner = online ? null : <OfflineBanner />;
 
   if (loaded && !profile)
     return (
@@ -78,6 +87,7 @@ export default function ReadingScreen() {
   if (stored.reading)
     return (
       <Screen nav={nav} footer={tabs}>
+        {banner}
         <ReadingBody reading={stored.reading} chart={chart} />
       </Screen>
     );
@@ -88,17 +98,37 @@ export default function ReadingScreen() {
   // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
   if (state.status === 'loading') return <MakingView nav={from === 'signup' ? undefined : nav} />;
 
+  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겼으면 보드 20-1, 가입 직후면 보드 9-1(머리 · 탭 없이 다시 짓기만),
+  // 그 밖에는 보드 19 — 요청이 많을 때만 그 안내로
   if (state.status === 'failed')
-    return (
-      <Screen nav={nav} footer={tabs}>
-        <StatusView state="error" title={state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}>
-          <Button label={S.retry} onPress={retry} />
-        </StatusView>
-      </Screen>
+    return state.error === 'NETWORK' && !online ? (
+      <StateScreen
+        // 가입 직후면 머리 · 아래 탭 없이 — 갈 곳이 없고 별명 공개(결정 044)를 놓치지 않게(결정 065 의 4)
+        nav={from === 'signup' ? undefined : nav}
+        tabs={from === 'signup' ? undefined : tabs}
+        title={ST.offlineEmpty.title}
+        body={ST.offlineEmpty.body}
+        primary={{ label: ST.offlineEmpty.retry, onPress: retry }}
+      />
+    ) : from === 'signup' ? (
+      <StateScreen
+        title={MF.title}
+        body={state.error === 'LIMIT' ? S.failed.LIMIT : MF.body}
+        primary={{ label: MF.retry, onPress: retry }}
+      />
+    ) : (
+      <StateScreen
+        nav={nav}
+        tabs={tabs}
+        title={ST.loadFail.title.reading}
+        body={state.error === 'LIMIT' ? S.failed.LIMIT : ST.loadFail.body}
+        primary={{ label: ST.loadFail.retry, onPress: retry }}
+      />
     );
 
   return (
     <Screen nav={nav} footer={tabs}>
+      {banner}
       <ReadingBody reading={state.reading} chart={chart} />
     </Screen>
   );

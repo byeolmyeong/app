@@ -15,3 +15,11 @@ Animated.timing = (value, config) => ({
 });
 Animated.spring = Animated.timing;
 Animated.loop = () => ({ start: () => {}, stop: () => {}, reset: () => {} });
+
+// 연결 상태(@react-native-community/netinfo)는 네이티브 모듈이라 라이브러리가 준 가짜를 쓴다(결정 061 의 4 — 연결 끊김).
+// 끊김 · 되살아남을 보는 시험은 그 파일에서 addEventListener 를 바꿔 끼운다.
+jest.mock('@react-native-community/netinfo', () => require('@react-native-community/netinfo/jest/netinfo-mock.js'));
+
+// 기기 저장소(AsyncStorage)도 네이티브 모듈이라 없으면 읽어 들이는 순간 던진다. 루트의 문(UpdateGate)이 업데이트를 권한 버전을 적어 두므로
+// (결정 059) 라이브러리가 준 가짜(메모리)를 모든 시험에 깐다. 파일마다 jest.mock 으로 같은 가짜를 다시 깔아도 된다.
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));

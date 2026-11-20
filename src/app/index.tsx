@@ -4,8 +4,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { NavBar } from '@/components/nav-bar';
+import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
+import { useOnline } from '@/components/use-online';
 import { Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
@@ -36,9 +38,11 @@ export default function HomeScreen() {
   // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   const { reading } = useStoredReading(input);
-  const account = useAccount();
   // "별명을 받은 지 N일" 의 오늘 — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
   const [now] = useState(Date.now);
+  // 연결 끊김(결정 061 의 4): 받아 둔 것은 그대로 보이고 머리 아래에 띠(보드 20)
+  const online = useOnline();
+  const account = useAccount(online);
   const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (empty && (!session.ready || (canRestore && !restoreSettled)))
@@ -57,6 +61,7 @@ export default function HomeScreen() {
     return (
       <Screen nav={nav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>
+          {online ? null : <OfflineBanner />}
           <NicknameCard
             nickname={account?.nickname ?? null}
             avatar={account?.avatar ?? null}

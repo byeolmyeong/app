@@ -6,10 +6,9 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Image, Platform, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 import { useReduceMotion } from '@/components/byeoli';
-import { GlowBackdrop } from '@/components/glow';
+import { GlowBackdrop, GlowOrb } from '@/components/glow';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
 import { BackdropShape, BrandColors, Colors, LineWidth, MakingTwinkles, Sizes, Spacing } from '@/constants/theme';
@@ -33,8 +32,6 @@ const GLOW_DIM = 0.55;
 const TWINKLE_DIM = 0.25;
 const TWINKLE_BRIGHT = 0.9;
 const LINE_RISE = 6;
-/** 뒤 빛 그림(0~100 칸)에서 빛이 퍼지는 반지름: 칸의 가장 먼 모서리까지(50√2) */
-const GLOW_RADIUS = 50 * Math.SQRT2;
 
 const ease = Easing.inOut(Easing.ease);
 
@@ -93,22 +90,6 @@ function useLine(run: boolean) {
   }, [run, shown]);
   // 동작 줄이기가 켜지면 첫 문구로 돌아가 머문다
   return { index: run ? index : 0, shown };
-}
-
-/** 별이 뒤의 둥근 빛(칸을 가득 채운다). 별명 공개(reveal-view)도 쓴다 — id 는 화면마다 다르게 */
-export function GlowOrb({ id }: { id: string }) {
-  return (
-    <Svg width="100%" height="100%" viewBox="0 0 100 100">
-      <Defs>
-        {/* 시안의 CSS radial-gradient(circle) 는 반지름이 가장 먼 모서리(50√2)까지라 그대로 맞춘다 */}
-        <RadialGradient id={id} cx={50} cy={50} r={GLOW_RADIUS} gradientUnits="userSpaceOnUse">
-          <Stop offset="0" stopColor={BrandColors.glowMid} stopOpacity={0.55} />
-          <Stop offset="0.7" stopColor={BrandColors.glowMid} stopOpacity={0} />
-        </RadialGradient>
-      </Defs>
-      <Circle cx={50} cy={50} r={50} fill={`url(#${id})`} />
-    </Svg>
-  );
 }
 
 export type MakingViewProps = {

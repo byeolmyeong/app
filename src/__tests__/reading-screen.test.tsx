@@ -1,5 +1,6 @@
 import { CONSTELLATIONS } from '@/features/chart/constellations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -32,6 +33,12 @@ const mockApi = api as jest.Mocked<typeof api>;
 const mockUseSession = useSession as jest.MockedFunction<typeof useSession>;
 const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 const R = strings.reading;
+const ST = strings.states;
+type NetListener = (state: { isConnected: boolean; isInternetReachable: boolean }) => void;
+let netListener: NetListener | null = null;
+const goOffline = () => act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
+const goOnline = () => act(async () => netListener?.({ isConnected: true, isInternetReachable: true }));
+
 const reading = fixtures.reading;
 
 beforeEach(async () => {
@@ -42,6 +49,11 @@ beforeEach(async () => {
   mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
   await saveBirth({ profile, chart: fixtures.chart });
+  netListener = null;
+  (NetInfo.addEventListener as jest.Mock).mockImplementation((cb: NetListener) => {
+    netListener = cb;
+    return () => {};
+  });
 });
 
 describe('요약 해석 화면', () => {
@@ -119,7 +131,7 @@ describe('요약 해석 화면', () => {
   it('글을 받지 못한 화면에도 아래 탭이 있다(리뷰 PR #41)', async () => {
     mockApi.createReading.mockResolvedValue({ ok: false, error: 'SERVER', status: 502 });
     await render(<ReadingScreen />);
-    expect(await screen.findByText(R.retry)).toBeTruthy();
+    expect(await screen.findByText(ST.loadFail.retry)).toBeTruthy();
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
   });
 
@@ -147,37 +159,111 @@ describe('요약 해석 화면', () => {
     expect(screen.queryAllByRole('link')).toHaveLength(2);
   });
 
-  it('실패하면 안내와 "다시 시도" 를 보여 주고, 누르면 한 번 더 요청한다', async () => {
+  it('못 받으면 실패 화면(보드 19: "내 별명을 불러오지 못했어요" · 다시 보기)을 보여 주고, 누르면 한 번 더 요청한다(결정 061 의 1 · 3)', async () => {
     mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502 });
     await render(<ReadingScreen />);
-    expect(await screen.findByText(R.failed.OTHER)).toBeTruthy();
-    expect(screen.getByTestId('byeoli-face-error', { includeHiddenElements: true })).toBeTruthy();
+    expect(await screen.findByText(ST.loadFail.title.reading)).toBeTruthy();
+    expect(screen.getByText(ST.loadFail.body)).toBeTruthy();
+    expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByText(reading.headline)).toBeNull();
     expect(mockApi.createReading).toHaveBeenCalledTimes(1);
-    await fireEvent.press(screen.getByText(R.retry));
+    await fireEvent.press(screen.getByText(ST.loadFail.retry));
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     expect(mockApi.createReading).toHaveBeenCalledTimes(2);
   });
 
-  it('인터넷이 끊겼을 때와 요청이 많을 때는 그에 맞는 안내를 보여 준다', async () => {
+  it('끊겨서 못 받으면 보드 20-1("인터넷에 연결되어 있지 않아요" · 다시 시도), 요청이 많으면 그 안내(결정 061 의 4)', async () => {
     mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     const first = await render(<ReadingScreen />);
-    expect(await screen.findByText(R.failed.NETWORK)).toBeTruthy();
+    await goOffline();
+    expect(await screen.findByText(ST.offlineEmpty.title)).toBeTruthy();
+    expect(screen.getByText(ST.offlineEmpty.retry)).toBeTruthy();
     await first.unmount();
     mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.failed.LIMIT)).toBeTruthy();
   });
 
+  it('가입 직후(from=signup) 별명을 짓지 못하면 보드 9-1: "별명을 짓지 못했어요" · 다시 짓기 하나, 머리 · 아래 탭 · 나중에 하기는 없다 — 누르면 처음부터 다시 짓는다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502 });
+    await render(<ReadingScreen />);
+    expect(await screen.findByRole('header', { name: '별명을 짓지 못했어요' })).toBeTruthy();
+    expect(screen.getByText('잠깐 문제가 생겼어요.\n다시 짓기를 누르면 처음부터 다시 지어요.')).toBeTruthy();
+    expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByText(ST.loadFail.title.reading)).toBeNull();
+    expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
+    expect(screen.queryByTestId('bottom-tabs')).toBeNull();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+
+    await fireEvent.press(screen.getByRole('button', { name: '다시 짓기' }));
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(mockApi.createReading).toHaveBeenCalledTimes(2);
+  });
+
+  it('가입 직후여도 끊겨서 못 받으면 보드 20-1 그대로(연결은 됐는데 서버에 닿지 못하면 9-1), 요청이 많으면 9-1 에 그 안내', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    const first = await render(<ReadingScreen />);
+    expect(await screen.findByText('별명을 짓지 못했어요')).toBeTruthy();
+    await goOffline();
+    expect(await screen.findByText(ST.offlineEmpty.title)).toBeTruthy();
+    expect(screen.queryByText('별명을 짓지 못했어요')).toBeNull();
+    await first.unmount();
+
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.failed.LIMIT)).toBeTruthy();
+    expect(screen.getByText('별명을 짓지 못했어요')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '다시 짓기' })).toBeTruthy();
+  });
+
+  it('끊겨서 못 받았으면 연결이 돌아올 때 저절로 다시 부른다(결정 061 의 4)', async () => {
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await render(<ReadingScreen />);
+    await goOffline();
+    expect(await screen.findByText(ST.offlineEmpty.title)).toBeTruthy();
+    await goOnline();
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(mockApi.createReading).toHaveBeenCalledTimes(2);
+  });
+
+  it('받아 둔 글이 있는데 끊기면 글은 그대로 두고 위에 띠, 돌아오면 띠가 사라진다(보드 20)', async () => {
+    await AsyncStorage.setItem(
+      READING_STORAGE_KEY,
+      JSON.stringify({ key: JSON.stringify([profile.date, profile.time, profile.place.id]), reading }),
+    );
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(screen.queryByTestId('offline-banner')).toBeNull();
+    await goOffline();
+    expect(screen.getByTestId('offline-banner')).toBeTruthy();
+    expect(screen.getByText(reading.headline)).toBeTruthy();
+    await goOnline();
+    expect(screen.queryByTestId('offline-banner')).toBeNull();
+  });
+
+  it('가입 직후(from=signup) 끊겨서 못 지으면 20-1 도 머리 · 아래 탭 없이 — 별명 공개를 놓치지 않게(결정 065 의 4, 리뷰 PR #44)', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await render(<ReadingScreen />);
+    await goOffline();
+    expect(await screen.findByText(ST.offlineEmpty.title)).toBeTruthy();
+    expect(screen.queryByLabelText(strings.common.backLabel)).toBeNull();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+  });
+
   it('"다시 시도" 를 연달아 눌러도 요청은 하나다', async () => {
     mockApi.createReading.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     await render(<ReadingScreen />);
-    const retry = await screen.findByText(R.retry);
+    await goOffline();
+    const retry = await screen.findByText(ST.offlineEmpty.retry);
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     await fireEvent.press(retry);
     // 생성 중에는 "다시 시도" 가 사라져 또 누를 수 없다
-    expect(screen.queryByText(R.retry)).toBeNull();
+    expect(screen.queryByText(ST.offlineEmpty.retry)).toBeNull();
     expect(screen.getByText(R.generating)).toBeTruthy();
     await act(async () => resolve({ ok: true, data: reading }));
     expect(await screen.findByText(reading.headline)).toBeTruthy();

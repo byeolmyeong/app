@@ -278,10 +278,12 @@ export type Faq = { id: string; question: string; answer: string };
 
 /**
  * `GET /app-config` 의 한 플랫폼 몫(결정 027). minVersion 은 점으로 나눈 숫자("1.2.0")이고 null 이면 아무도 막지 않는다.
+ * latestVersion 은 최신 버전(결정 059) — 이보다 낮으면 한 번 업데이트를 권한다. 이 칸을 내기 전의 옛 서버 응답에는 없어 null 로 읽는다.
  * message 는 관리자가 적은 안내(그냥 글자). blockNow 는 서버가 426 으로 바로 거절할지의 스위치다(앱은 판정에 쓰지 않는다).
  */
 export type PlatformConfig = {
   minVersion: string | null;
+  latestVersion: string | null;
   storeUrl: string | null;
   message: string | null;
   blockNow: boolean;
@@ -692,9 +694,14 @@ export function isFaqList(v: unknown): v is Faq[] {
 
 const isNullableString = (v: unknown): v is string | null => typeof v === 'string' || v === null;
 
-const isPlatformConfig = (v: unknown): v is PlatformConfig =>
+/** 서버가 보내는 한 플랫폼 몫: latestVersion 은 옛 서버 응답에 없을 수 있다(결정 059). getAppConfig 가 null 로 채운다 */
+type PlatformConfigBody = Omit<PlatformConfig, 'latestVersion'> & { latestVersion?: string | null };
+type AppConfigBody = Omit<AppConfig, 'ios' | 'android'> & { ios: PlatformConfigBody; android: PlatformConfigBody };
+
+const isPlatformConfig = (v: unknown): v is PlatformConfigBody =>
   isObject(v) &&
   isNullableString(v.minVersion) &&
+  (v.latestVersion === undefined || isNullableString(v.latestVersion)) &&
   isNullableString(v.storeUrl) &&
   isNullableString(v.message) &&
   typeof v.blockNow === 'boolean';
@@ -702,8 +709,8 @@ const isPlatformConfig = (v: unknown): v is PlatformConfig =>
 const isMaintenance = (v: unknown): v is Maintenance =>
   isObject(v) && typeof v.active === 'boolean' && isNullableString(v.message);
 
-/** maintenance 는 키가 없을 때만 넘어간다. 있는데 모양이 다르면 응답 전체를 받지 않는다 */
-export function isAppConfig(v: unknown): v is AppConfig {
+/** maintenance · latestVersion 은 키가 없을 때만 넘어간다. 있는데 모양이 다르면 응답 전체를 받지 않는다 */
+export function isAppConfig(v: unknown): v is AppConfigBody {
   return (
     isObject(v) &&
     isPlatformConfig(v.ios) &&
@@ -779,7 +786,13 @@ const UPDATE_REQUIRED = 'UPDATE_REQUIRED';
 const MAINTENANCE = 'MAINTENANCE';
 
 /** 가짜 서버의 설정. 아무도 막지 않는다 */
-const FIXTURE_PLATFORM_CONFIG: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
+  minVersion: null,
+  latestVersion: null,
+  storeUrl: null,
+  message: null,
+  blockNow: false,
+};
 
 /** 가짜 서버가 주는 세션 토큰 */
 const FIXTURE_TOKEN = 'fixture-session';
@@ -857,7 +870,7 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/places', { validate: isPlaceList, auth: false });
     },
 
-    /** `GET /app-config` 플랫폼별 최소 버전 · 스토어 주소 · 안내(결정 027)와 점검 여부(결정 030). 세션이 필요 없다 */
+    /** `GET /app-config` 플랫폼별 최소 · 최신 버전 · 스토어 주소 · 안내(결정 027 · 059)와 점검 여부(결정 030). 세션이 필요 없다 */
     async getAppConfig(): Promise<ApiResult<AppConfig>> {
       if (config.useFixtures)
         return {
@@ -868,7 +881,10 @@ export function createApi(config: ApiConfig) {
             maintenance: { active: false, message: null },
           },
         };
-      return request('GET', '/app-config', { validate: isAppConfig, auth: false });
+      const res = await request('GET', '/app-config', { validate: isAppConfig, auth: false });
+      if (!res.ok) return res;
+      const withLatest = (p: PlatformConfigBody): PlatformConfig => ({ ...p, latestVersion: p.latestVersion ?? null });
+      return { ok: true, data: { ...res.data, ios: withLatest(res.data.ios), android: withLatest(res.data.android) } };
     },
 
     /** `GET /faqs` 자주 묻는 질문(결정 028). 공개된 것만, 보여 줄 순서대로 온다(빈 목록일 수 있다). 세션이 필요 없다 */

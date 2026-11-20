@@ -11,12 +11,12 @@ import { Animated, Easing, Image, Platform, ScrollView, StyleSheet, View } from 
 
 import { Button } from '@/components/button';
 import { reduceMotionNow, useReduceMotion } from '@/components/byeoli';
-import { GlowBackdrop } from '@/components/glow';
+import { GlowBackdrop, GlowOrb } from '@/components/glow';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
 import { BackdropShape, BrandColors, RevealLayout as L, ScreenPaddingX, Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { GlowOrb, usePulse } from '@/features/reading/making-view';
+import { usePulse } from '@/features/reading/making-view';
 
 const R = strings.reveal;
 const useNativeDriver = Platform.OS !== 'web';

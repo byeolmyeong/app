@@ -59,7 +59,7 @@ const I = strings.inquiry;
 const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 const made = fixtures.synastry;
 const { overlay: _overlay, ...storedSynastry } = made;
-const open: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+const open: PlatformConfig = { minVersion: null, latestVersion: null, storeUrl: null, message: null, blockNow: false };
 const openConfig: ApiResult<AppConfig> = { ok: true, data: { ios: open, android: open } };
 const required: ApiResult<AppConfig> = { ok: true, data: { ios: { ...open, minVersion: '9.0.0' }, android: open } };
 

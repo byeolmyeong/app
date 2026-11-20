@@ -4,8 +4,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
+import { OfflineBanner } from '@/components/offline-banner';
+import { StateScreen } from '@/components/state-screen';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
+import { useOnReconnect, useOnline } from '@/components/use-online';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
@@ -21,6 +24,7 @@ import { useGenerationBusy, useUpdateBusy } from '@/features/update/update-gate'
 import { REPORT_AREAS } from '@/lib/api';
 
 const S = strings.report;
+const ST = strings.states;
 /** 주소의 area 로 고를 수 있는 탭 */
 const TABS: ReportTab[] = [...REPORT_AREAS, TIMING_TAB];
 
@@ -35,7 +39,7 @@ export default function ReportScreen() {
   const { loaded, profile } = useBirthProfile();
   // 세션 확인과 기기 저장소 읽기가 끝난 뒤에 서버를 부른다.
   const input = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
-  const { state, start } = useReport(input);
+  const { state, start, recheck } = useReport(input);
   // 쓰는 중이거나 방금 다 쓰인 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
   useGenerationBusy(state.status === 'writing', state.status === 'done');
   // 시기 탭의 방향성(미래) 글을 기다리는 동안에도 미룬다.
@@ -46,6 +50,11 @@ export default function ReportScreen() {
   // 고른 칸은 지금 보는 영역을 따른다(시기면 시기, 아니면 나)
   const [shownArea, setShownArea] = useState<string | undefined>(area);
   const tabs = <MainTabs active={shownArea === 'TIMING' ? 'timing' : 'me'} />;
+  // 연결 끊김(결정 061 의 4): 다 쓴 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 다시 부른다
+  const online = useOnline();
+  useOnReconnect(online, () => {
+    if (state.status === 'failed' && state.error === 'NETWORK') recheck();
+  });
 
   if (loaded && !profile)
     return (
@@ -87,20 +96,43 @@ export default function ReportScreen() {
       </Screen>
     );
 
-  if (state.status === 'failed')
+  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겨서면 보드 20-1, 서버가 끝내 못 썼으면(FAILED) "다시 쓰기", 그 밖에는 보드 19.
+  // "다시 보기" 와 연결이 돌아왔을 때는 상태만 다시 확인한다 — 만들기(POST)는 사람이 누를 때만(리뷰 PR #44)
+  if (state.status === 'failed') {
+    if (state.error === 'NETWORK' && !online)
+      return (
+        <StateScreen
+          nav={nav}
+          tabs={tabs}
+          title={ST.offlineEmpty.title}
+          body={ST.offlineEmpty.body}
+          primary={{ label: ST.offlineEmpty.retry, onPress: recheck }}
+        />
+      );
+    if (state.error === 'FAILED')
+      return (
+        <StateScreen
+          nav={nav}
+          tabs={tabs}
+          title={ST.writeFail.title.report}
+          body={ST.writeFail.body}
+          primary={{ label: ST.writeFail.retry, onPress: start }}
+        />
+      );
     return (
-      <Screen nav={nav} footer={tabs}>
-        <View style={styles.status}>
-          <Txt variant="body">
-            {state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}
-          </Txt>
-          <Button label={S.retry} onPress={start} />
-        </View>
-      </Screen>
+      <StateScreen
+        nav={nav}
+        tabs={tabs}
+        title={ST.loadFail.title.report}
+        body={state.error === 'LIMIT' ? S.failed.LIMIT : ST.loadFail.body}
+        primary={{ label: ST.loadFail.retry, onPress: recheck }}
+      />
     );
+  }
 
   return (
     <Screen nav={nav} footer={tabs}>
+      {online ? null : <OfflineBanner />}
       <ReportView
         report={state.report}
         initialArea={TABS.find((a) => a === area)}

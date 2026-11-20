@@ -138,7 +138,11 @@ export type SkyDetail = {
   sign: SkyTerm;
   /** 시각 "모름" 이면 null */
   house: SkyTerm | null;
-  relations: SkyRelation[];
+  /**
+   * 그 별이 낀 각도. 상승점 · 중천은 서버가 각도를 내지 않으면(지금 서버는 천체끼리만 낸다) null 이다 —
+   * "큰 각도가 없다" 고 단정하지 않으려고 관계 칸을 통째로 뺀다
+   */
+  relations: SkyRelation[] | null;
 };
 
 type GlossaryAspect = { phrase: string; meaning: string };
@@ -201,7 +205,7 @@ export function skyDetail(chart: Chart, key: string): SkyDetail | null {
             tip: `${S.houseTipPrefix}${S.ordinals[head.house - 1]}${S.houseTipSuffix}`,
           }
         : null,
-    relations,
+    relations: isAngle(key) && relations.length === 0 ? null : relations,
   };
 }
 

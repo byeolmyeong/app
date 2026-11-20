@@ -33,8 +33,13 @@ describe('skyDetail: 별을 눌렀을 때 시트에 적는 것(시안 13-1)', ()
       subtitle: `${G.angles.ASC.name}${S.separator}${G.angles.ASC.meaning}`,
       sign: { name: signFull('CAPRICORN') },
       house: { name: `1${S.houseSuffix}` },
-      relations: [],
+      // 서버는 상승점 · 중천의 각도를 내지 않는다: "없어요" 라고 단정하지 않게 관계 칸을 뺀다
+      relations: null,
     });
+    expect(skyDetail(fixtures.chart, 'MC')!.relations).toBeNull();
+    // 서버가 상승점이 낀 각도를 내면 그대로 보여 준다
+    const withAsc: Chart = { ...fixtures.chart, aspects: [{ a: 'SUN', b: 'ASC', type: 'TRINE', orb: 1, applying: true }] };
+    expect(skyDetail(withAsc, 'ASC')!.relations!.map((r) => [r.key, r.phrase])).toEqual([['SUN', G.aspects.TRINE.phrase]]);
     expect(skyDetail(fixtures.chart, 'MC')).toMatchObject({ house: { name: `10${S.houseSuffix}` } });
     expect(skyDetail(fixtures.chartTimeUnknown, 'ASC')).toBeNull();
     expect(skyDetail({ ...fixtures.chart, timeKnown: false }, 'MC')).toBeNull();
@@ -54,12 +59,12 @@ describe('skyDetail: 별을 눌렀을 때 시트에 적는 것(시안 13-1)', ()
         { a: 'SUN', b: 'MOON', type: 'OPPOSITION', orb: 3, applying: false },
       ],
     };
-    expect(skyDetail(chart, 'SUN')!.relations.map((r) => [r.key, r.phrase])).toEqual([
+    expect(skyDetail(chart, 'SUN')!.relations!.map((r) => [r.key, r.phrase])).toEqual([
       ['ASC', G.aspects.OPPOSITION.phrase],
       ['MOON', G.aspects.OPPOSITION.phrase],
     ]);
-    expect(skyDetail(chart, 'SUN')!.relations[0].name).toBe(G.angles.ASC.nickname);
-    expect(skyDetail({ ...chart, timeKnown: false }, 'SUN')!.relations.map((r) => r.key)).toEqual(['MOON']);
+    expect(skyDetail(chart, 'SUN')!.relations![0].name).toBe(G.angles.ASC.nickname);
+    expect(skyDetail({ ...chart, timeKnown: false }, 'SUN')!.relations!.map((r) => r.key)).toEqual(['MOON']);
   });
 
   it('사전에 없는 식별자는 없다', () => {
@@ -111,6 +116,13 @@ describe('SkySheet: 별을 누르면 올라오는 시트(시안 13-1 · 13-2)', 
     await render(<SkySheet chart={{ ...fixtures.chart, aspects: [] }} selected="SUN" visible onClose={jest.fn()} />);
     expect(screen.getByText(S.noRelations)).toBeTruthy();
     expect(screen.queryAllByTestId('sky-relation')).toHaveLength(0);
+  });
+
+  it('첫인상의 자리 시트에는 관계 칸이 없다(서버가 상승점의 각도를 내지 않는다)', async () => {
+    await render(<SkySheet chart={fixtures.chart} selected="ASC" visible onClose={jest.fn()} />);
+    expect(screen.getByText(G.angles.ASC.nickname)).toBeTruthy();
+    expect(screen.queryByText(S.relations)).toBeNull();
+    expect(screen.queryByText(S.noRelations)).toBeNull();
   });
 
   it('바깥을 누르면 닫으라고 알린다', async () => {

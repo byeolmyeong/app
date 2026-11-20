@@ -35,7 +35,7 @@ export default function SynastryResultScreen() {
   // 방금 계산한 결과(겹친 휠은 그때만 있다)가 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027).
   useUpdateBusy(state.status === 'done' && state.synastry.overlay !== undefined);
   const [deleting, setDeleting] = useState(false);
-  const nav = <NavBar title={strings.synastry.title} onBack={goBackOrHome} />;
+  const nav = <NavBar title={strings.synastry.title} onBack={goBackOrHome} chevron />;
 
   if (state.status === 'loading')
     return (

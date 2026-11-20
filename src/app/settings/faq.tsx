@@ -20,7 +20,7 @@ const F = strings.faq;
  */
 export default function FaqScreen() {
   const { state, retry } = useFaqs();
-  const nav = <NavBar title={F.title} onBack={goBackOrHome} />;
+  const nav = <NavBar title={F.title} onBack={goBackOrHome} chevron />;
 
   if (state.status === 'loading')
     return (

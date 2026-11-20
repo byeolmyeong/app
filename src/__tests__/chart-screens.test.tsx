@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import ChartDetailScreen from '@/app/chart/detail';
 import ChartScreen from '@/app/chart/index';
@@ -458,6 +459,19 @@ describe('차트 자세히', () => {
     expect(screen.getByText(strings.bodyMeanings.SUN)).toBeTruthy();
     expect(screen.getByText(strings.bodyMeanings.VERTEX)).toBeTruthy();
     expect(screen.getByText('2000. 6. 15. 오후 9:00 · 서울특별시 마포구')).toBeTruthy();
+  });
+
+  it('행성 표는 머리 줄 · 칸 · 천체 칸의 쉬운 말과 역행까지 가운데, 뒤로 가기는 다른 화면과 같은 꺾쇠(소유자 2026-11-21)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<ChartDetailScreen />);
+    await screen.findByText(strings.bodies.SUN);
+    // 같은 글자가 탭 등 다른 곳에도 있어 표 안의 것(가운데 맞춘 것)이 있는지로 본다
+    const centered = (text: string) => screen.getAllByText(text).some((n) => StyleSheet.flatten(n.props.style).textAlign === 'center');
+    for (const title of [D.columns.body, D.columns.sign, D.columns.degree, D.columns.house]) expect(centered(title)).toBe(true);
+    expect(centered(strings.bodies.SUN)).toBe(true);
+    expect(centered(strings.bodyMeanings.SUN)).toBe(true);
+    expect(screen.queryByText(strings.common.back)).toBeNull();
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
   });
 
   it('하우스 탭은 경계 12줄, 각도 탭은 서버가 준 각도 수만큼의 줄', async () => {

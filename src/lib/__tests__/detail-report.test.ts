@@ -128,3 +128,95 @@ describe('useDetailReport', () => {
     expect(result.current.state).toEqual({ status: 'unknown', error: 'SERVER' });
   });
 });
+
+// 받기 전 · 쓰는 중이라는 상태도 기기에 둔다(시기 탭 — 기억이 있으면 뼈대 없이 곧바로 그 화면, 뒤에서 확인해 바뀌면 바꾼다. 소유자 지적 2026-11-21)
+describe('useDetailReport · rememberStatus', () => {
+  const REMEMBER: DetailReportConfig<Fake> = { ...CONFIG, storageKey: 'test.remember.v1', rememberStatus: true };
+  const stored = async () => JSON.parse((await AsyncStorage.getItem('test.remember.v1')) ?? 'null');
+  const remember = (status: 'NONE' | 'WRITING', k = key) => AsyncStorage.setItem('test.remember.v1', JSON.stringify({ key: k, status }));
+
+  it('확인한 상태를 출생 정보별로 둔다: 받기 전 NONE → 쓰는 중 WRITING → 다 쓰면 풀이', async () => {
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'none' }));
+    expect(await stored()).toEqual({ key, status: 'NONE' });
+    get.mockResolvedValueOnce(got('WRITING')).mockResolvedValueOnce(done);
+    await act(async () => result.current.start());
+    expect(await stored()).toEqual({ key, status: 'WRITING' });
+    await tick();
+    await tick();
+    expect(result.current.state).toEqual({ status: 'done', report });
+    expect(await stored()).toEqual({ key, report });
+  });
+
+  it('끝내 못 썼으면(FAILED) 받기 전으로 기억한다 — 다음에 열 때 서버도 받기 전이라고 한다', async () => {
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'none' }));
+    get.mockResolvedValueOnce(got('FAILED'));
+    await act(async () => result.current.start());
+    await tick();
+    expect(result.current.state).toEqual({ status: 'failed', error: 'FAILED', stage: 'poll' });
+    expect(await stored()).toEqual({ key, status: 'NONE' });
+  });
+
+  it('기억한 받기 전은 곧바로 받기 전(확인 중을 거치지 않음) — 뒤에서 물어 같으면 그대로, 못 물었어도 그대로', async () => {
+    await remember('NONE');
+    get.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await act(async () => {});
+    expect(result.current.state).toEqual({ status: 'none' });
+    expect(get).toHaveBeenCalledTimes(1);
+    await tick(REQUEST_TIMEOUT_MS);
+    expect(result.current.state).toEqual({ status: 'none' });
+  });
+
+  it('기억한 받기 전이라도 서버에 그 경로가 없으면(404) 처음 확인처럼 "모름"(상태 번호와 함께 — 홈은 칸을 숨긴다)', async () => {
+    await remember('NONE');
+    get.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404 });
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'unknown', error: 'SERVER', code: 404 }));
+  });
+
+  it('기억한 받기 전인데 서버가 다 썼다고 하면 다 쓴 풀이로 바꾼다', async () => {
+    await remember('NONE');
+    get.mockResolvedValueOnce(done);
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', report }));
+    expect(await stored()).toEqual({ key, report });
+  });
+
+  it('뒤에서 묻는 동안 받기를 누르면 막히지 않고, 늦게 온 "받기 전" 이 쓰는 중을 덮지 않는다', async () => {
+    await remember('NONE');
+    let late: (r: ApiResult<DetailReportState<Fake>>) => void = () => {};
+    get.mockReturnValueOnce(new Promise((r) => (late = r)));
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await act(async () => {});
+    expect(result.current.state).toEqual({ status: 'none' });
+    await act(async () => result.current.start());
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toEqual({ status: 'writing' });
+    await act(async () => late(got('NONE')));
+    expect(result.current.state).toEqual({ status: 'writing' });
+  });
+
+  it('기억한 쓰는 중은 곧바로 쓰는 중이고 5초마다 확인한다', async () => {
+    await remember('WRITING');
+    get.mockResolvedValueOnce(got('WRITING')).mockResolvedValueOnce(done);
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await act(async () => {});
+    expect(result.current.state).toEqual({ status: 'writing' });
+    await tick();
+    expect(result.current.state).toEqual({ status: 'done', report });
+  });
+
+  it('다른 출생 정보의 기억 · rememberStatus 가 없는 풀이의 기억은 쓰지 않는다(처음 확인부터)', async () => {
+    await remember('NONE', JSON.stringify(['1990-01-01', '09:00', 1]));
+    get.mockReturnValue(new Promise(() => {}));
+    const other = await renderHook(() => useDetailReport(REMEMBER, input));
+    await act(async () => {});
+    expect(other.result.current.state).toEqual({ status: 'checking' });
+    await AsyncStorage.setItem('test.fake.v1', JSON.stringify({ key, status: 'NONE' }));
+    const plain = await renderHook(() => useDetailReport(CONFIG, input));
+    await act(async () => {});
+    expect(plain.result.current.state).toEqual({ status: 'checking' });
+  });
+});

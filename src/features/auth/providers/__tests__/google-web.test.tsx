@@ -2,6 +2,7 @@ import { render, waitFor } from '@testing-library/react-native';
 
 import { strings } from '@/content/strings';
 import { GoogleLoginButton } from '@/features/auth/providers/google.web';
+import { loadScript } from '@/features/auth/providers/load-script';
 
 jest.mock('@/features/auth/providers/load-script', () => ({ loadScript: jest.fn(async () => {}) }));
 
@@ -39,5 +40,24 @@ describe('구글(웹): 최근 로그인', () => {
 
     const plain = await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} />);
     expect(plain.queryByTestId('recent-badge')).toBeNull();
+  });
+});
+
+// 리뷰 1: 구글 버튼이 그려지지 않았으면(스크립트 실패 · GIS 없음) 배지도 없다 — 결정 044 의 2 "버튼이 보이지 않으면 배지도 없다"
+describe('구글(웹): 버튼이 없으면 배지도 없다', () => {
+  it('GIS 스크립트를 불러오지 못하면 실패를 알리고 배지를 두지 않는다', async () => {
+    (loadScript as jest.Mock).mockRejectedValueOnce(new Error('blocked'));
+    const onError = jest.fn();
+    const view = await render(<GoogleLoginButton onCredential={jest.fn()} onError={onError} recent />);
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(view.queryByTestId('recent-badge')).toBeNull();
+  });
+
+  it('스크립트는 왔는데 GIS 가 없으면(그리지 못함) 배지를 두지 않는다', async () => {
+    delete (globalThis as { google?: unknown }).google;
+    const view = await render(<GoogleLoginButton onCredential={jest.fn()} onError={jest.fn()} recent />);
+    await waitFor(() => expect(loadScript).toHaveBeenCalled());
+    expect(renderButton).not.toHaveBeenCalled();
+    expect(view.queryByTestId('recent-badge')).toBeNull();
   });
 });

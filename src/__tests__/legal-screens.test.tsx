@@ -65,6 +65,18 @@ describe('약관 글 화면의 모양(보드 6-2)', () => {
     const agree = screen.getByRole('button', { name: L.agree });
     expect(L.agree).toBe('동의하기');
     expect(flat(agree)).toMatchObject({ height: 56, backgroundColor: '#4752FF' });
+    // 리뷰 5: 시안의 가림막은 높이 130(위 40 · 버튼 56 · 아래 34)의 32% 에서 다 찬다. 앱은 아래 34 를 화면 여백으로 두므로 위 96 칸에서 같은 자리(41.6)
+    type Node = { type?: string; props?: Record<string, any>; children?: (Node | string)[] | null };
+    const stops: number[] = [];
+    const walk = (node: Node | string | null) => {
+      if (!node || typeof node === 'string') return;
+      if (node.props?.name === 'legalAgreeFade') stops.push(node.props.gradient[2]);
+      node.children?.forEach(walk);
+    };
+    const tree = screen.toJSON() as Node | Node[];
+    (Array.isArray(tree) ? tree : [tree]).forEach(walk);
+    expect(stops).toHaveLength(1);
+    expect(stops[0] * (40 + 56)).toBeCloseTo(0.32 * (40 + 56 + 34), 1);
   });
 });
 

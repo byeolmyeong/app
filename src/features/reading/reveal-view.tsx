@@ -4,9 +4,10 @@
  * 움직임: 그림이 아래에서 떠오르고(0.9초, 150 아래 · 1.15배에서), 별이 둥실(3.2초) · 빛(3.2초) · 반짝임(2.4초)이 돌며,
  * 글 · 별명 · 칸 · 버튼이 차례로 떠오른다(0.6초, 0.7 · 1.0 · 1.4 · 1.7초 뒤). 기기의 "동작 줄이기" 가 켜져 있으면 멈춘 마지막 장면만 보인다.
  * 값은 화면(`app/reading.tsx`)이 서버가 준 것(풀이 · 차트)과 가입이 받은 닉네임으로 채운다 — 이 부품은 계산하지 않는다.
+ * 작은 화면 · 큰 글자에서 별명이 길어도 이 화면의 유일한 출구인 "풀이 읽기" 는 아래에 붙어 있고 위쪽만 굴러간다.
  */
 import { useEffect, useState } from 'react';
-import { Animated, Easing, Image, Platform, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Image, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { reduceMotionNow, useReduceMotion } from '@/components/byeoli';
@@ -110,54 +111,55 @@ export function RevealView({ nickname, headline, signs, onRead }: RevealViewProp
     <Screen scroll={false} bottomInset={Sizes.stepBottom}>
       <View style={styles.body}>
         <GlowBackdrop color={BrandColors.backdropDim} extent={BackdropShape.reveal.extent} centerY={BackdropShape.reveal.centerY} />
-        <View style={styles.header} />
-        <Animated.View testID="reveal-art" aria-hidden importantForAccessibility="no-hide-descendants" style={[styles.art, artMotion]}>
-          <Animated.View
-            testID="reveal-glow"
-            style={[
-              styles.glow,
-              {
-                opacity: run ? glow.interpolate({ inputRange: [0, 1], outputRange: [GLOW_DIM, 1] }) : 1,
-                transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [1, GLOW_SCALE] }) }],
-              },
-            ]}>
-            <GlowOrb id="revealGlow" />
-          </Animated.View>
-          {L.twinkles.map(({ size, ...at }, i) => (
+        <ScrollView testID="reveal-scroll" style={styles.fill} showsVerticalScrollIndicator={false}>
+          <View style={styles.header} />
+          <Animated.View testID="reveal-art" aria-hidden importantForAccessibility="no-hide-descendants" style={[styles.art, artMotion]}>
             <Animated.View
-              key={i}
-              testID={`reveal-twinkle-${i}`}
-              style={[styles.twinkle, at, { width: size, height: size, borderRadius: size / 2, opacity: twinkle(twinkles[i]) }]}
-            />
-          ))}
-          <Animated.View
-            style={[styles.byeoli, { transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -FLOAT_DISTANCE] }) }] }]}>
-            <Image source={BYEOLI} accessible={false} style={styles.byeoliImage} />
-          </Animated.View>
-        </Animated.View>
-        <View style={styles.text}>
-          <Animated.View testID="reveal-up-0" style={up(0)}>
-            <Txt variant="kicker" color="gray">{`${nickname} ${R.nicknameSuffix}`}</Txt>
-          </Animated.View>
-          <Animated.View testID="reveal-up-1" style={[styles.headline, up(1)]}>
-            <Txt variant="hero" accessibilityRole="header" keepAll style={styles.center}>
-              {headline}
-            </Txt>
-          </Animated.View>
-        </View>
-        <Animated.View testID="reveal-up-2" style={up(2)}>
-          <View testID="reveal-cells" style={styles.cells}>
-            {signs.map((sign) => (
-              <View key={sign.label} testID="reveal-cell" style={styles.cell}>
-                <Txt variant="statLabel" color="hint">
-                  {sign.label}
-                </Txt>
-                <Txt variant="stat">{sign.value}</Txt>
-              </View>
+              testID="reveal-glow"
+              style={[
+                styles.glow,
+                {
+                  opacity: run ? glow.interpolate({ inputRange: [0, 1], outputRange: [GLOW_DIM, 1] }) : 1,
+                  transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [1, GLOW_SCALE] }) }],
+                },
+              ]}>
+              <GlowOrb id="revealGlow" />
+            </Animated.View>
+            {L.twinkles.map(({ size, ...at }, i) => (
+              <Animated.View
+                key={i}
+                testID={`reveal-twinkle-${i}`}
+                style={[styles.twinkle, at, { width: size, height: size, borderRadius: size / 2, opacity: twinkle(twinkles[i]) }]}
+              />
             ))}
+            <Animated.View
+              style={[styles.byeoli, { transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -FLOAT_DISTANCE] }) }] }]}>
+              <Image source={BYEOLI} accessible={false} style={styles.byeoliImage} />
+            </Animated.View>
+          </Animated.View>
+          <View style={styles.text}>
+            <Animated.View testID="reveal-up-0" style={up(0)}>
+              <Txt variant="kicker" color="gray">{`${nickname} ${R.nicknameSuffix}`}</Txt>
+            </Animated.View>
+            <Animated.View testID="reveal-up-1" style={[styles.headline, up(1)]}>
+              <Txt variant="hero" accessibilityRole="header" keepAll style={styles.center}>
+                {headline}
+              </Txt>
+            </Animated.View>
           </View>
-        </Animated.View>
-        <View style={styles.fill} />
+          <Animated.View testID="reveal-up-2" style={up(2)}>
+            <View testID="reveal-cells" style={styles.cells}>
+              {signs.map((sign) => (
+                <View key={sign.label} testID="reveal-cell" style={styles.cell}>
+                  <Txt variant="statLabel" color="hint">
+                    {sign.label}
+                  </Txt>
+                  <Txt variant="stat">{sign.value}</Txt>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        </ScrollView>
         <Animated.View testID="reveal-up-3" style={up(3)}>
           <Button label={R.read} onPress={onRead} />
         </Animated.View>

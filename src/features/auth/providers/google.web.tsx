@@ -74,7 +74,8 @@ export function GoogleLoginButton({ onCredential, onError, recent }: LoginButton
     <View style={styles.row}>
       <View style={[styles.frame, buttonWidth !== null && { width: buttonWidth }]}>
         <View ref={container} style={styles.gis} />
-        {recent ? <RecentBadge /> : null}
+        {/* 구글이 버튼을 그린 뒤에만(스크립트를 못 불러오거나 GIS 가 없으면 버튼도 배지도 없다, 결정 044) */}
+        {recent && buttonWidth !== null ? <RecentBadge /> : null}
       </View>
     </View>
   );

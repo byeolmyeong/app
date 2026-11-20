@@ -60,7 +60,7 @@ export function TextPage({ doc, onBack, onAgree }: TextPageProps) {
               <Defs>
                 <LinearGradient id="legalAgreeFade" x1="0" y1="0" x2="0" y2="1">
                   <Stop offset="0" stopColor={Colors.paper} stopOpacity={0} />
-                  <Stop offset={String(LegalLayout.agreeFadeSolid)} stopColor={Colors.paper} stopOpacity={1} />
+                  <Stop offset={String(FADE_SOLID)} stopColor={Colors.paper} stopOpacity={1} />
                 </LinearGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="url(#legalAgreeFade)" />
@@ -136,6 +136,9 @@ function Block({ block }: { block: LegalBlock }) {
 }
 
 const BACK_LEFT = ScreenPaddingX + StepLayout.backInset;
+/** 가림막은 버튼 위 칸(위 40 · 버튼 56)만 그린다(아래 34 는 화면 여백). 시안의 가림막 전체에서 다 차는 자리를 이 칸의 비율로 옮긴다 */
+const FADE_HEIGHT = LegalLayout.agreeFade + Sizes.buttonHeight;
+const FADE_SOLID = (LegalLayout.agreeFadeSolid * (FADE_HEIGHT + Sizes.stepBottom)) / FADE_HEIGHT;
 
 const styles = StyleSheet.create({
   header: {

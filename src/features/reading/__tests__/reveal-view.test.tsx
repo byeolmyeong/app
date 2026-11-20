@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 
 import { strings } from '@/content/strings';
@@ -85,5 +85,17 @@ describe('RevealView', () => {
     for (const i of [0, 1, 2, 3]) expect(flat(screen.getByTestId(`reveal-up-${i}`))).toMatchObject({ opacity: 1 });
     for (const id of ['reveal-glow', 'reveal-twinkle-0', 'reveal-twinkle-1', 'reveal-twinkle-2', 'reveal-twinkle-3'])
       expect(flat(screen.getByTestId(id, hidden)).opacity).toBe(1);
+  });
+});
+
+// 리뷰 2: 작은 화면 · 큰 글자에서도 이 화면의 유일한 출구인 "풀이 읽기" 가 밀려나지 않게 — 위쪽만 굴러가고 버튼은 아래에 붙는다
+describe('RevealView: 작은 화면', () => {
+  it('그림 · 글 · 칸은 굴러가는 칸 안에, 풀이 읽기는 그 밖 아래에', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    await show();
+    const scroll = screen.getByTestId('reveal-scroll');
+    expect(within(scroll).getByRole('header', { name: headline })).toBeTruthy();
+    expect(within(scroll).queryByRole('button', { name: R.read })).toBeNull();
+    expect(screen.getByRole('button', { name: R.read })).toBeTruthy();
   });
 });

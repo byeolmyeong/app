@@ -279,6 +279,36 @@ export const SkyMapLayout = {
  * 이름 옆의 작은 물음표와 그 위에 뜨는 말풍선(시안 13-2, 내 하늘 지도 · 나 탭): 물음표의 지름 · 테두리 · 이름과의 틈,
  * 말풍선의 최대 폭 · 안쪽 여백(가로 · 세로) · 줄 사이 · 꼬리 · 물음표와 말풍선 사이
  */
+/**
+ * "이렇게 풀이한 이유" 줄(보드 12 · 12-1, 결정 054): 접힌 상자(안쪽 여백 · 모서리 · 이름과 문장 사이 · 꺾쇠)와 펼친 안(작은 지도 · 용어 줄 · 하늘 지도 보기 단추).
+ * 작은 지도는 하늘 지도의 휠을 지름 120 으로 줄이고 그 근거의 별 · 칸만 빛낸다.
+ */
+export const ReasonLayout = {
+  top: 16,
+  padTop: 12,
+  padRight: 12,
+  padBottom: 12,
+  padBottomOpen: 14,
+  padLeft: 14,
+  radius: 12,
+  textGap: 4,
+  rowGap: 8,
+  chevron: 18,
+  wheel: 120,
+  wheelTop: 18,
+  wheelDot: 5,
+  wheelRing: 9,
+  wheelRingWidth: 1.5,
+  wheelRingOpacity: 0.45,
+  wheelSectorOpacity: 0.22,
+  termsTop: 18,
+  termsGap: 14,
+  termGap: 2,
+  button: 44,
+  buttonRadius: 10,
+  buttonTop: 18,
+} as const;
+
 export const TipLayout = {
   button: 20,
   border: 1.5,
@@ -347,6 +377,10 @@ export const Typography = {
   lead: type(15, 23, FontWeight.regular),
   /** 시트 안의 한 줄 뜻(내 하늘 지도 시트, 시안 13-1) */
   desc: type(14, 21, FontWeight.regular),
+  /** 이유 줄의 한 문장(보드 12 — 굵은 자리는 semibold) */
+  reason: type(14, 22, FontWeight.regular),
+  /** 이유 펼침의 용어 이름 · 하늘 지도 보기 단추(보드 12-1) */
+  term: type(14, 20, FontWeight.semibold),
   /** 약관의 "모두 동의"(결정 042 시안) · 약관 글 화면의 머리 제목(결정 044 시안) */
   emphasis: type(17, 24, FontWeight.semibold),
   /** 약관 글의 조항 제목(결정 044 시안) */

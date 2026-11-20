@@ -29,14 +29,15 @@ const isAngle = (key: string): key is Angle => (ANGLES as readonly string[]).inc
 /** 지나가는 별이 내 별과 이루는 각도 중 각도 이름을 함께 적고 굵게 하는 것(시안 14-3 "부딪히는 각도(사분)", 14-4 는 "잘 어울리는 자리" 만) */
 const NAMED_TRANSITS = ['SQUARE', 'OPPOSITION'];
 const KNOWN_KINDS = ['PLACEMENT', 'CLUSTER', 'ASPECT', 'RULER', 'TRANSIT'];
-const isKnown = (item: BasisItem): item is KnownBasisItem => KNOWN_KINDS.includes(item.kind);
+/** 이 앱이 아는 근거 종류인가(모르는 kind 는 그 줄을 숨긴다) */
+export const isKnown = (item: BasisItem): item is KnownBasisItem => KNOWN_KINDS.includes(item.kind);
 
 const HANGUL_FIRST = 0xac00;
 const HANGUL_LAST = 0xd7a3;
 const JONG_COUNT = 28;
 
 /** 괄호 앞 말의 마지막 글자 받침으로 조사를 고른다 */
-function josa(word: string, pair: Josa): string {
+export function josa(word: string, pair: Josa): string {
   const code = word.charCodeAt(word.length - 1);
   const hasFinal = code >= HANGUL_FIRST && code <= HANGUL_LAST && (code - HANGUL_FIRST) % JONG_COUNT !== 0;
   return hasFinal ? pair[0] : pair[1];

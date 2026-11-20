@@ -2,22 +2,22 @@ import { render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import GoogleReturn from '@/app/auth/google';
-import { clearUrlFragment, takeGoogleRequest, urlFragment } from '@/features/auth/providers/web-redirect';
+import { takeGoogleRequest, takeUrlFragment } from '@/features/auth/providers/web-redirect';
 import { useAuth } from '@/features/auth/use-session';
 
 jest.mock('expo-router', () => ({ router: { replace: jest.fn(), setParams: jest.fn() } }));
 jest.mock('@/features/auth/providers/web-redirect', () => ({
   ...jest.requireActual('@/features/auth/providers/web-redirect'),
-  urlFragment: jest.fn(() => ''),
-  clearUrlFragment: jest.fn(),
+  takeUrlFragment: jest.fn(() => ''),
   takeGoogleRequest: jest.fn(() => ({ state: 'st-1', nonce: 'n-1' })),
 }));
 const mockSignIn = jest.fn();
 jest.mock('@/features/auth/use-session', () => ({
   useAuth: jest.fn(() => ({ status: 'signedOut', lastError: null, signIn: mockSignIn })),
+  whenSessionChecked: jest.fn(async () => {}),
 }));
 
-const mockFragment = urlFragment as jest.Mock;
+const mockFragment = takeUrlFragment as jest.Mock;
 /** 시험용 ID 토큰(가운데 조각만 진짜 모양 — 앱은 nonce 만 읽고 서명은 서버가 본다). tag 로 토큰마다 다른 주소를 만든다 */
 const idToken = (nonce: string, tag: string) =>
   `h.${btoa(JSON.stringify({ nonce, tag }))
@@ -77,16 +77,21 @@ describe('/auth/google', () => {
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  // 라우터도 조각을 경로 값('#')으로 들고 있다가 주소를 다시 쓴다(헤드리스 확인) — 브라우저 주소와 라우터 값을 함께 지운다
-  it('읽은 주소 조각은 서버를 부르기 전에 브라우저 주소와 라우터의 값에서 지운다(기다리는 동안 주소창에 토큰이 남지 않게)', async () => {
+  // 조각은 처음 그릴 때(첫 effect 보다 앞) 꺼내면서 주소에서 지운다. 라우터도 조각을 경로 값('#')으로 들고 있다가 주소를 다시 쓴다(헤드리스 확인)
+  it('주소 조각은 처음 그릴 때 꺼내며 지우고(effect 보다 앞), 라우터의 값도 서버를 부르기 전에 지운다', async () => {
     mockFragment.mockReturnValue(`#id_token=${idToken('n-1', 'clear')}&state=st-1`);
+    let takenBeforeEffects = false;
+    (router.setParams as jest.Mock).mockImplementationOnce(() => {
+      takenBeforeEffects = mockFragment.mock.calls.length === 1;
+    });
     mockSignIn.mockImplementation(() => {
-      expect(clearUrlFragment).toHaveBeenCalledTimes(1);
       expect(router.setParams).toHaveBeenCalledWith({ '#': undefined });
       return new Promise(() => {});
     });
     await render(<GoogleReturn />);
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledTimes(1));
+    expect(takenBeforeEffects).toBe(true);
+    expect(mockFragment).toHaveBeenCalledTimes(1);
     expect(takeGoogleRequest).toHaveBeenCalledTimes(1);
   });
 });

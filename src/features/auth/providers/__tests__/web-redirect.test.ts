@@ -6,6 +6,7 @@ import {
   readGoogleReturn,
   readKakaoReturn,
   takeGoogleRequest,
+  takeUrlFragment,
 } from '@/features/auth/providers/web-redirect';
 
 // 웹 로그인의 주소 만들기 · 돌아온 값 읽기(결정 034)
@@ -137,5 +138,37 @@ describe('구글 웹: 요청 한 번의 state · nonce', () => {
     expect(takeGoogleRequest()).toBeNull();
     store.set('byeolmyeong.googleRequest.v1', 'not json');
     expect(takeGoogleRequest()).toBeNull();
+  });
+});
+
+// 돌아온 조각은 꺼내면서 바로 주소에서 지운다(결정 070 — 뒤로 가기 · 화면 공유에 토큰이 덜 보이게). 경로 · 검색값 · 라우터의 기록 상태는 그대로
+describe('웹: 주소 조각 꺼내기', () => {
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  afterEach(() => {
+    if (saved) Object.defineProperty(globalThis, 'window', saved);
+    else delete (globalThis as { window?: unknown }).window;
+  });
+
+  it('조각을 돌려주고 주소에서는 조각만 지운다(경로 · 검색값 · 기록 상태 유지)', () => {
+    const replaceState = jest.fn();
+    const state = { id: 'route-1' };
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: { location: { pathname: '/auth/google', search: '?x=1', hash: '#id_token=t&state=s' }, history: { state, replaceState } },
+    });
+    expect(takeUrlFragment()).toBe('#id_token=t&state=s');
+    expect(replaceState).toHaveBeenCalledWith(state, '', '/auth/google?x=1');
+  });
+
+  it('조각이 없거나 웹이 아니면 빈 글자이고 주소를 건드리지 않는다', () => {
+    const replaceState = jest.fn();
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: { location: { pathname: '/auth/google', search: '', hash: '' }, history: { state: null, replaceState } },
+    });
+    expect(takeUrlFragment()).toBe('');
+    expect(replaceState).not.toHaveBeenCalled();
+    delete (globalThis as { window?: unknown }).window;
+    expect(takeUrlFragment()).toBe('');
   });
 });

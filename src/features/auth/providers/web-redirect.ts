@@ -154,13 +154,13 @@ export function webOrigin(): string {
   return typeof window !== 'undefined' ? window.location.origin : '';
 }
 
-/** 웹: 지금 열린 주소의 조각(`#…`). 웹이 아니면 빈 글자 */
-export function urlFragment(): string {
-  return typeof window !== 'undefined' && window.location ? window.location.hash : '';
-}
-
-/** 웹: 주소의 조각을 기록에서 지운다(토큰이 주소창 · 뒤로 가기 기록에 남지 않게). 라우터가 둔 기록 상태는 그대로 둔다 */
-export function clearUrlFragment(): void {
-  if (typeof window === 'undefined' || !window.location?.hash) return;
+/**
+ * 웹: 지금 주소의 조각(`#…`)을 꺼내면서 바로 주소에서 지운다(토큰이 주소창 · 뒤로 가기 · 화면 공유에 덜 보이게, 결정 070).
+ * 경로 · 검색값과 라우터가 둔 기록 상태는 그대로 둔다. 브라우저 방문 기록에 이미 적힌 것은 지울 수 없다. 조각이 없거나 웹이 아니면 빈 글자
+ */
+export function takeUrlFragment(): string {
+  if (typeof window === 'undefined' || !window.location?.hash) return '';
+  const fragment = window.location.hash;
   window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+  return fragment;
 }

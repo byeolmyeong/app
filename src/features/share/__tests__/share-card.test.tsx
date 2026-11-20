@@ -168,3 +168,14 @@ describe('공유 카드 v2(결정 053 의 2 — 보드 12-7 · 12-14 · 11-7 · 
     for (const id of ['share-byeoli-default', 'share-byeoli-happy', 'share-byeoli-think']) expect(hidden(id)).toBeNull();
   });
 });
+
+describe('공유 카드 v2 글자 굵기(시안 12-7: 칩 500 · 이름표 500 · 제목 600 · 한 줄 소개 400)', () => {
+  it('글마다 ShareCardLayout 의 굵기로 그린다', async () => {
+    await render(<ShareCardView card={C.nickname} />);
+    const weight = (text: string) => StyleSheet.flatten(screen.getByText(text).props.style).fontWeight;
+    expect(weight('물병자리')).toBe('500');
+    expect(weight('새벽별 님의 별명')).toBe('500');
+    expect(weight(C.nickname.headline)).toBe('600');
+    expect(weight(S.cards.taglines.me)).toBe('400');
+  });
+});

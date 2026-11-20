@@ -1,5 +1,5 @@
 import type { ComponentRef, Ref } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View, type TextStyle } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { Skeleton } from '@/components/skeleton';
@@ -145,11 +145,12 @@ function storyText(card: StoryCard): { chip: string; subject: string; tagline: s
   }
 }
 
-/** 시안의 360 카드 값을 이 카드 너비로 */
-const scaled = (k: number, text: { fontSize: number; lineHeight: number; letterSpacing: number }) => ({
+/** 시안의 360 카드 글을 이 카드 너비로(굵기는 그대로) */
+const scaled = (k: number, text: { fontSize: number; lineHeight: number; letterSpacing: number; fontWeight: TextStyle['fontWeight'] }) => ({
   fontSize: text.fontSize * k,
   lineHeight: text.lineHeight * k,
   letterSpacing: text.letterSpacing * k,
+  fontWeight: text.fontWeight,
 });
 
 /**

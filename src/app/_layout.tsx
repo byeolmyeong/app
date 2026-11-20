@@ -10,6 +10,7 @@ import { SplashView, useSplashDone } from '@/components/splash-view';
 import { Colors, FontFamily } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { resumeStep } from '@/features/auth/signup-resume';
+import { useSuspensionGate } from '@/features/auth/suspension-gate';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { useHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
@@ -63,6 +64,10 @@ export default function RootLayout() {
     },
   ]);
   const fontsDone = loaded || !!error;
+  // 이용 정지 문(결정 065 의 5): 로그인이 확인되면 정지인지 답이 올 때까지 가리고, 정지면 정지 화면으로. 그동안 스플래시도 둔다
+  const [gateBlocked, setGateBlocked] = useState(false);
+  const signedIn = session.status === 'signedIn';
+  const suspensionCovers = useSuspensionGate(signedIn, fontsDone && !gateBlocked);
   // 웹이 시작할 때 서버에 닿지 못했으면(결정 068 의 4) 30초마다 다시 확인한다 — 살아 있으면 로그인, 401 이면 로그인 화면
   const unreachable = session.status === 'offline';
   useEffect(() => {
@@ -73,31 +78,30 @@ export default function RootLayout() {
 
   // ── 스플래시: 걷는 때는 splashDone 한 곳에서 정한다(결정 067 의 3 · 068).
   // 처음 열 때 글꼴 · 세션 확인 · (로그인 전이면) 소개 기록 확인이 끝나 보낼 곳에 간 뒤에 걷는다.
-  // 로그인한 홈이면 홈의 첫 데이터까지(home-ready) 둔다. 루트에 걸리는 문(예: 이용 정지 확인)의 가림막은 그 조건을 여기에 더한다.
+  // 로그인한 홈이면 홈의 첫 데이터까지(home-ready), 이용 정지 확인이 가리는 동안도 둔다.
   // 문이 막는 화면을 띄우면 화면들이 빠져 보낼 수 없으니 바로 걷는다. 공유 페이지(/s/…)에는 스플래시가 아예 없다.
   // 웹은 앱이 그리고(최소 0.8초), 앱은 네이티브 스플래시를 그때까지(최대 5초) 둔다.
-  const [gateBlocked, setGateBlocked] = useState(false);
   const homeReady = useHomeReady();
   const waitHome = first === undefined && (session.status === 'signedIn' || session.status === 'offline') && !homeReady;
   const splashDone = useSplashDone(
-    fontsDone && (gateBlocked || (!covered && !waitHome && (first === 's' || session.ready))),
+    fontsDone && (gateBlocked || (!covered && !suspensionCovers && !waitHome && (first === 's' || session.ready))),
     first === 's',
   );
   useEffect(() => {
     if (splashDone) SplashScreen.hideAsync();
   }, [splashDone]);
   // 웹에서 스플래시 · 가드 가림막이 덮은 동안 아래 화면들은 누름 · 포커스 · 화면 읽기를 받지 않는다
-  const screensHidden = Platform.OS === 'web' && (covered || !splashDone);
+  const screensHidden = Platform.OS === 'web' && (covered || suspensionCovers || !splashDone);
   const screensRef = useInert(screensHidden);
 
-  // ── 화면들: 문(UpdateGate) 안에 화면 쌓기(덮인 동안 inert 인 칸) · 루트에 걸리는 문(예: 이용 정지 확인 — 그 칸 뒤, 위에 덮이게) · 가드 가림막.
+  // ── 화면들: 문(UpdateGate) 안에 화면 쌓기(덮인 동안 inert 인 칸) · 이용 정지 확인 가림막(그 칸 뒤, 위에 덮이게) · 가드 가림막.
   // 최소 버전보다 낮은 앱은 화면들 대신 막는 화면만 본다(결정 027). 세션과 상관없다.
   // 최신 버전보다 낮으면 로그인한 홈에서만 한 번 권한다 — 로그인 전 · 가입 중에는 묻지 않는다(결정 059).
   // 웹 스플래시는 글꼴을 받는 동안과 받은 뒤 같은 자리(맨 위)에 둬 다시 그려지지 않게 한다.
   return (
     <>
       {fontsDone ? (
-        <UpdateGate canSuggest={session.status === 'signedIn' && first === undefined} onBlockedChange={setGateBlocked}>
+        <UpdateGate canSuggest={signedIn && first === undefined && !suspensionCovers} onBlockedChange={setGateBlocked}>
           <View testID="screens" ref={screensRef} aria-hidden={screensHidden} style={styles.screens}>
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
               {SLIDE_UP_ROUTES.map((name) => (
@@ -108,6 +112,7 @@ export default function RootLayout() {
               ))}
             </Stack>
           </View>
+          {suspensionCovers ? <View testID="suspension-cover" style={styles.cover} /> : null}
           {covered ? <View testID="guard-cover" style={styles.cover} /> : null}
         </UpdateGate>
       ) : null}

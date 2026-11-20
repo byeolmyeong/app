@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useSegments } from 'expo-router';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import * as SplashScreen from 'expo-splash-screen';
 import type { ReactNode } from 'react';
 import { Platform } from 'react-native';
@@ -9,6 +10,7 @@ import { strings } from '@/content/strings';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
+import { api } from '@/lib/api';
 
 // Stack.Screen 은 받은 화면 옵션을 mockScreen 에 남긴다(약관 글이 아래에서 올라오는지 본다)
 const mockScreen = jest.fn();
@@ -20,7 +22,7 @@ jest.mock('expo-router', () => ({
     },
   }),
   useSegments: jest.fn(() => []),
-  router: { replace: jest.fn() },
+  router: { replace: jest.fn(), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
 }));
 // 글꼴을 받았는지는 시험이 정한다(기본: 받음)
 let mockFontsLoaded = true;
@@ -42,13 +44,34 @@ jest.mock('@/components/splash-view', () => {
   };
 });
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() }));
-jest.mock('@/features/auth/use-session', () => ({
-  useSession: jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null })),
-  recheckSession: jest.fn(async () => {}),
-}));
+jest.mock('@/features/auth/use-session', () => {
+  const current = jest.fn(() => ({ status: 'checking' as const, token: null, ready: false, lastError: null }));
+  // 정지 알림이 왔을 때 문이 지금 로그인 상태인지 보는 곳(getSession) — 화면이 받는 세션과 같다
+  return { useSession: current, getSession: () => current(), recheckSession: jest.fn(async () => {}) };
+});
+// 이용 정지 문(결정 065 의 5)이 로그인 뒤 계정을 묻는다. lib/api 가 403 · suspended 를 받으면 부르는 알림은 문이 건 것을 잡아 둔다
+const mockSuspendedHandler: { current: (() => void) | null } = { current: null };
+jest.mock('@/lib/api', () => {
+  const actual = jest.requireActual('@/lib/api');
+  return {
+    ...actual,
+    setSuspendedHandler: (handler: (() => void) | null) => {
+      mockSuspendedHandler.current = handler;
+    },
+    api: { ...actual.api, getMyAccount: jest.fn() },
+  };
+});
 jest.mock('@/features/onboarding/intro-seen', () => ({ useIntroSeen: jest.fn(() => true) }));
 
 const mockSegments = useSegments as jest.Mock;
+const mockGetMyAccount = api.getMyAccount as jest.Mock;
+const myAccount = { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false };
+/** 진짜 lib/api 처럼: 정지면 문이 건 알림을 부른 뒤 답한다 */
+const accountAnswer = (suspended: boolean) => {
+  if (suspended) mockSuspendedHandler.current?.();
+  return { ok: true as const, data: { ...myAccount, suspended } };
+};
+beforeEach(() => mockGetMyAccount.mockImplementation(async () => accountAnswer(false)));
 
 describe('루트 레이아웃의 세션', () => {
   it('공유 페이지(/s/…)에서는 세션을 시작하지 않는다', async () => {
@@ -334,5 +357,61 @@ describe('덮인 동안 아래 화면', () => {
     await view.rerender(<RootLayout />);
     await act(async () => jest.advanceTimersByTime(1000));
     expect(screen.getByTestId('screens').props['aria-hidden']).toBe(false);
+  });
+});
+
+describe('루트 레이아웃의 이용 정지 문(결정 065 의 5)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSegments.mockReturnValue([]);
+    // 로그인한 홈의 첫 데이터(결정 068 의 2)는 이 묶음 밖 — 끝난 것으로 두고 정지 문만 본다
+    markHomeReady();
+  });
+  afterEach(() => {
+    jest.requireActual<typeof import('@/features/auth/suspension')>('@/features/auth/suspension').clearSuspended();
+    (useSession as jest.Mock).mockReturnValue(session('checking'));
+  });
+
+  it('로그인한 계정이 정지면 답이 오기 전에는 가리고, 정지 알림이 오면 정지 화면(/suspended)으로 보낸다', async () => {
+    let answer: () => void = () => {};
+    mockGetMyAccount.mockReturnValue(new Promise((resolve) => (answer = () => resolve(accountAnswer(true)))));
+    (useSession as jest.Mock).mockReturnValue(session('signedIn'));
+    await render(<RootLayout />);
+    expect(screen.getByTestId('suspension-cover')).toBeTruthy();
+    expect(router.replace).not.toHaveBeenCalledWith('/suspended');
+    await act(async () => answer());
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/suspended'));
+  });
+
+  it.each([
+    ['로그인 전', ['login'], 'signedOut'],
+    ['세션 확인 중', [], 'checking'],
+    ['가입 중', ['signup', 'terms'], 'signingUp'],
+    ['공유 페이지', ['s', '[shareId]'], 'checking'],
+  ] as const)('%s 에는 묻지도 가리지도 않는다', async (_, segments, status) => {
+    mockSegments.mockReturnValue([...segments]);
+    (useSession as jest.Mock).mockReturnValue(session(status));
+    await render(<RootLayout />);
+    expect(screen.queryByTestId('suspension-cover')).toBeNull();
+    expect(mockGetMyAccount).not.toHaveBeenCalled();
+  });
+
+  it('앱: 로그인한 채 켜면 네이티브 스플래시는 정지인지 답이 온 뒤에 걷는다(걷고 나서 빈 바탕이 비치지 않게, 결정 067 의 3)', async () => {
+    let answer: () => void = () => {};
+    mockGetMyAccount.mockReturnValue(new Promise((resolve) => (answer = () => resolve(accountAnswer(false)))));
+    (useSession as jest.Mock).mockReturnValue(session('signedIn'));
+    await render(<RootLayout />);
+    expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
+    await act(async () => answer());
+    await waitFor(() => expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId('suspension-cover')).toBeNull();
+  });
+
+  it('1.0.0 은 루트에서 음악을 틀지 않는다(결정 069)', async () => {
+    (useSession as jest.Mock).mockReturnValue(session('signedIn'));
+    await render(<RootLayout />);
+    await waitFor(() => expect(mockGetMyAccount).toHaveBeenCalledTimes(1));
+    expect(createAudioPlayer).not.toHaveBeenCalled();
+    expect(setAudioModeAsync).not.toHaveBeenCalled();
   });
 });

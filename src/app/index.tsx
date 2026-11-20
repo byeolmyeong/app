@@ -23,14 +23,19 @@ import { markHomeReady } from '@/features/home/home-ready';
 import { MainTabs } from '@/features/home/main-tabs';
 import { NicknameCard } from '@/features/home/nickname-card';
 import { useAccount } from '@/features/home/use-account';
+import { HomeBell } from '@/features/notifications/home-bell';
+import { hasUnread } from '@/features/notifications/notification-rows';
+import { useNotifications } from '@/features/notifications/use-notifications';
 import { useStoredHeadline } from '@/features/reading/use-reading';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
 import { HomeTimingCards } from '@/features/timing/home-timing-card';
+import { HomeTodayCard } from '@/features/timing/home-today-card';
+import { useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 
 /**
  * 홈 v2(결정 047 · 055, 보드 11 · 11-1 · 11-2). 출생 정보가 있으면 머리(로고) · 별명 카드 · 지금 나의 시기 · 작은 실천 · 아래 탭 넷을 보여 주고
- * (오늘의 하늘 칸은 계획 묶음 A④ 가 더한다), 없으면 출생 정보 입력부터 받는다. 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
+ * 머리 오른쪽에 알림 종, 별명 카드 아래 오늘의 하늘 카드(A④), 없으면 출생 정보 입력부터 받는다. 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
  * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
  * 기기에 출생 정보가 없고 세션이 있으면 서버에 저장된 것으로 한 번 되살려 본다(결정 029). 그동안에는 불러오는 중만 보여 주고,
  * 되살리지 못하면 입력부터 받는다. 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts).
@@ -74,7 +79,24 @@ function Home({ onRetry }: { onRetry: () => void }) {
     if (timing.state.status === 'done') timing.refresh();
     else if (timing.state.status === 'unknown') timing.recheck();
   });
+  // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
+  const today = useTodaySky(asking);
+  const todayLoading = asking !== null && today.state.status === 'loading';
+  const todayPhase = useLoadingPhase(todayLoading);
+  const todayWriting = useWritingAfter(todayLoading);
+  // 끊겨서 못 받았을 때만 연결이 돌아오면 다시 묻는다 — 못 쓴(502) · 한도(429)는 사람이 "다시 쓰기" 를 누를 때만(리뷰 #66)
+  useOnReconnect(online, () => {
+    if (today.state.status === 'failed' && today.state.error === 'NETWORK') today.retry();
+  });
+  // 머리의 종(결정 052 의 4): 홈을 열 때 · 알림함에서 돌아올 때 다시 묻는다. 서버에 알림함이 없으면(404 — S⑤ 전) 종을 숨긴다.
+  // 종은 출생 정보가 있는 홈에만 — 입력 · 되살리는 중 · 실패 화면의 머리에는 두지 않는다(리뷰 #66)
+  const notifications = useNotifications().state;
+  const bell =
+    notifications.status === 'failed' && notifications.httpStatus === 404 ? null : (
+      <HomeBell unread={notifications.status === 'ready' && hasUnread(notifications.list)} onPress={() => router.push('/notifications')} />
+    );
   const nav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} />;
+  const homeNav = <NavBar tall left={<BrandMark height={Sizes.brandMarkHeight} />} right={bell} />;
   if (phase === 'timeout')
     return (
       <StateScreen
@@ -110,7 +132,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
     // 해 별자리는 서버 차트의 SUN 그대로(날짜로 셈하지 않는다, 결정 006)
     const sun = chart.positions.find((p) => p.body === 'SUN');
     return (
-      <Screen nav={nav} footer={<MainTabs active="home" />}>
+      <Screen nav={homeNav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>
           {online && !unreachable ? null : <OfflineBanner />}
           <NicknameCard
@@ -120,6 +142,15 @@ function Home({ onRetry }: { onRetry: () => void }) {
             days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
             headline={reading?.headline ?? null}
             onOpen={() => router.push('/reading')}
+          />
+          <HomeTodayCard
+            state={today.state}
+            skeleton={todayPhase === 'skeleton' || todayPhase === 'timeout'}
+            making={todayWriting}
+            online={online}
+            timeKnown={chart.timeKnown}
+            onOpen={() => router.push('/today')}
+            onRetry={today.retry}
           />
           {/* 누르면 시기 탭 — 탭을 바꾸는 것과 같이 쌓지 않는다(결정 046 의 2) */}
           <HomeTimingCards

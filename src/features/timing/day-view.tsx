@@ -21,6 +21,8 @@ const FLOW: (keyof DaySky['flow'])[] = ['people', 'work', 'mind'];
  * 이렇게 풀이한 이유(그날 지나가는 별 — 오늘이면 "오늘", 작은 지도 없음) · 그날의 작은 실천 셋. 면책 문구는 두지 않는다(결정 064).
  */
 export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | null; today: string }) {
+  // 오늘이면 "오늘의 흐름" · "오늘의 작은 실천"(오늘의 하늘 11-4, 결정 051 의 3)
+  const isToday = sky.date === today;
   return (
     <View>
       <View testID="day-hero" style={styles.hero}>
@@ -39,7 +41,7 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
       </View>
       <View style={styles.section}>
         <Txt testID="day-section-title" variant="emphasis" accessibilityRole="header">
-          {T.day.flow}
+          {isToday ? strings.today.flow : T.day.flow}
         </Txt>
         <View style={styles.flow}>
           {FLOW.map((key, i) => (
@@ -55,11 +57,11 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
         </View>
       </View>
       <View testID="day-reason" style={styles.reason}>
-        <ReasonLine reason={sky.reason} chart={chart} today={sky.date === today} />
+        <ReasonLine reason={sky.reason} chart={chart} today={isToday} />
       </View>
       <View style={styles.section}>
         <Txt testID="day-section-title" variant="emphasis" accessibilityRole="header">
-          {T.day.practices}
+          {isToday ? strings.today.practices : T.day.practices}
         </Txt>
         <View style={styles.todos}>
           <TodoList items={sky.practices} />
@@ -70,12 +72,13 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
 }
 
 /** 그날의 하늘의 뼈대(결정 071): 머리 카드(날짜 · 제목) · 그날의 흐름 셋 · 이유 상자 · 그날의 작은 실천 셋 — 다 그려진 그날과 같은 배치 */
-export function DaySkeleton() {
+export function DaySkeleton({ titleLines = 1 }: { titleLines?: number }) {
   return (
     <SkeletonGroup testID="day-skeleton">
       <SkBlock of="day-hero" style={styles.hero}>
         <SkeletonText widths={['34%']} variant="captionStrong" />
-        <SkeletonText widths={['60%']} variant="title" style={styles.title} />
+        {/* 제목 줄 수는 그 화면의 시안대로(14-4 한 줄 · 11-4 세 줄) — 다 그려진 머리 카드와 같은 높이 */}
+        <SkeletonText widths={titleLines === 1 ? ['60%'] : [...Array<string>(titleLines - 1).fill('64%'), '30%']} variant="title" style={styles.title} />
       </SkBlock>
       <View style={styles.section}>
         <SkBlock of="day-section-title">

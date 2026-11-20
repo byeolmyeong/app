@@ -18,6 +18,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('expo-router', () => ({
+  // 홈의 종이 화면이 보일 때마다 알림함을 다시 묻는다(useNotifications)
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
 }));
 // 홈은 로그인한 사람만 온다(루트 가드) — 계정은 로그인이 확인된 뒤에 묻는다
@@ -32,6 +34,10 @@ jest.mock('@/lib/api', () => ({
     createChart: jest.fn(),
     saveProfile: jest.fn(),
     getMyAccount: jest.fn(),
+    getNotifications: jest.fn(),
+    // 오늘의 하늘 칸(결정 051)
+    postDaySky: jest.fn(),
+    markNotificationRead: jest.fn(),
     // 홈은 풀이를 부르지 않는다(POST /readings 는 옛 요약 해석만 있는 계정이면 새로 짓는다 — 서버 결정 030)
     createReading: jest.fn(),
     // 기기가 비어 있으면 서버의 출생 정보로 되살려 본다(결정 029) — 이 테스트들에서는 저장된 것이 없다
@@ -55,6 +61,8 @@ beforeEach(async () => {
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+  mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 0, items: [] } });
+  mockApi.postDaySky.mockResolvedValue({ ok: true, data: fixtures.daySky });
 });
 
 /** 기기 시계를 고정한 테스트가 쓴다(별명을 받은 지 N일) */
@@ -340,5 +348,141 @@ describe('출생 정보 바꾸기(/birth)', () => {
     expect(screen.getByText('오후 9:00')).toBeTruthy();
     // 칸에는 짧은 시 · 도 이름으로 적는다(결정 042 시안)
     expect(screen.getByText('서울 마포구')).toBeTruthy();
+  });
+});
+
+describe('홈 머리의 종(결정 052 의 4, 보드 11)', () => {
+  const unreadItem = { id: 'n1', kind: 'ME_REPORT_DONE', createdAt: '2026-11-20T00:12:00Z', read: false };
+
+  it('안 읽은 알림이 있으면 점, 누르면 알림함', async () => {
+    mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 1, items: [unreadItem] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-bell-dot')).toBeTruthy();
+    expect(screen.getByLabelText(strings.notifications.bellUnread)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('home-bell'));
+    expect(router.push).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('다 읽었거나 숨기는 종류(궁합 리포트)만 안 읽었으면 점이 없다', async () => {
+    mockApi.getNotifications.mockResolvedValue({
+      ok: true,
+      data: { unread: 1, items: [{ ...unreadItem, read: true }, { ...unreadItem, id: 'n2', kind: 'SYNASTRY_REPORT_DONE', synastryId: 's1' }] },
+    });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-bell')).toBeTruthy();
+    expect(screen.queryByTestId('home-bell-dot')).toBeNull();
+  });
+
+  it('출생 정보를 넣기 전(입력 화면)에는 종이 없다 — 종은 출생 정보가 있는 홈에만(리뷰 #66)', async () => {
+    await render(<HomeScreen />);
+    await screen.findByPlaceholderText(strings.home.datePlaceholder);
+    expect(screen.queryByTestId('home-bell')).toBeNull();
+  });
+
+  it('못 받았으면 점 없이 종은 둔다. 서버에 알림함이 없으면(404 — S⑤ 전) 종을 숨긴다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    mockApi.getNotifications.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    const view = await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    expect(screen.getByTestId('home-bell')).toBeTruthy();
+    expect(screen.queryByTestId('home-bell-dot')).toBeNull();
+    await view.unmount();
+    mockApi.getNotifications.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => {});
+    expect(screen.queryByTestId('home-bell')).toBeNull();
+  });
+});
+
+describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)', () => {
+  /** 보드 11 의 글 — 한국 날짜 2026-11-19 */
+  const sky = {
+    ...fixtures.daySky,
+    date: '2026-11-19',
+    title: '마음이 가는 사람에게 먼저 안부를 건네 보기 좋은 날',
+    reason: { when: 'DAY', items: [{ kind: 'TRANSIT', mover: 'MOON', target: 'VENUS', type: 'CONJUNCTION' }] },
+  };
+  beforeEach(() => {
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-19T01:00:00Z'));
+    mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky });
+  });
+
+  it('"오늘의 하늘 · 11월 19일" · 제목 · 짧은 이유 — 별명 카드 바로 아래, 누르면 /today', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    const card = await screen.findByTestId('home-today-card');
+    expect(within(card).getByText('오늘의 하늘 · 11월 19일')).toBeTruthy();
+    expect(within(card).getByText(sky.title)).toBeTruthy();
+    expect(within(card).getByText('오늘은 달이 내 금성 자리를 지나요')).toBeTruthy();
+    expect(mockApi.postDaySky).toHaveBeenCalledWith();
+    await fireEvent.press(card);
+    expect(router.push).toHaveBeenCalledWith('/today');
+  });
+
+  it('못 썼으면 그 자리에 작은 안내와 다시 쓰기(19-1) — 누르면 다시 부른다', async () => {
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    expect(await screen.findByText(strings.today.fail)).toBeTruthy();
+    await fireEvent.press(screen.getByText(strings.states.writeFail.retry));
+    expect(await screen.findByTestId('home-today-card')).toBeTruthy();
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+  });
+
+  it('처음 묻는 중: 0.3초 뒤 다 그려질 카드를 본뜬 뼈대(결정 071), 3초가 넘으면 쓰는 중 카드(보드 11 쓰는 중)', async () => {
+    let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
+    await saveBirth({ profile, chart: fixtures.chart });
+    jest.useFakeTimers();
+    await render(<HomeScreen />);
+    await act(async () => {});
+    expect(screen.getByTestId('nickname-card')).toBeTruthy();
+    expect(screen.queryByTestId('sk-home-today-card')).toBeNull();
+    await act(async () => jest.advanceTimersByTime(300));
+    expect(screen.getByTestId('sk-home-today-card')).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(3000));
+    expect(screen.getByTestId('home-today-making')).toBeTruthy();
+    expect(screen.getByText(strings.today.making.card)).toBeTruthy();
+    await act(async () => finish({ ok: true, data: sky }));
+    expect(screen.getByTestId('home-today-card')).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it('연결이 돌아오면 끊겨서 못 받은 것만 다시 묻는다 — 못 쓴 것(502)은 다시 쓰기를 누를 때만(리뷰 #66)', async () => {
+    let listener: ((s: { isConnected: boolean; isInternetReachable: boolean }) => void) | null = null;
+    (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
+      listener = cb;
+      return () => {};
+    });
+    await saveBirth({ profile, chart: fixtures.chart });
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
+    const view = await render(<HomeScreen />);
+    expect(await screen.findByText(strings.today.fail)).toBeTruthy();
+    await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
+    await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    await view.unmount();
+    mockApi.postDaySky.mockClear();
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
+    await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
+    expect(await screen.findByTestId('home-today-card')).toBeTruthy();
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+  });
+
+  it('서버에 그 경로가 없으면(404 — S④ 전) 칸을 숨긴다', async () => {
+    mockApi.postDaySky.mockResolvedValue({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'SERVER', status: 500 });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => {});
+    expect(screen.queryByTestId('home-today-card')).toBeNull();
+    expect(screen.queryByTestId('card-fail')).toBeNull();
   });
 });

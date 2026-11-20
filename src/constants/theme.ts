@@ -519,6 +519,29 @@ export const TimingLayout = {
   locked: { height: 640, padX: 20, padBottom: 16, padTop: 24, cardPadTop: 24, cardPadX: 20, cardPadBottom: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18, fill: 'rgba(22,23,29,0.92)', ghostOpacity: 0.55 },
 } as const;
 
+/**
+ * 홈의 오늘의 하늘 카드(보드 11 · 11 쓰는 중): 이름표 아래 제목 · 쓰는 중 줄(위 · 그림과 글 사이 · 글 줄 사이) · 작은 그림(칸 · 빛이 칸에서 들어간 거리 ·
+ * 궤도의 점 · 별이 · 둥실 높이 · 빛이 가장 흐릴 때). 카드 모양 · 꺾쇠 · 짧은 이유 위는 홈의 시기 칸(TimingLayout.home)과 같다.
+ */
+export const TodayCardLayout = { titleTop: 10, rowTop: 14, rowGap: 14, textGap: 4, art: 56, glowInset: 9, dot: 8, byeoli: 33, float: 8, glowDim: 0.55 } as const;
+
+/**
+ * 알림함(결정 052, 보드 11-3 · 11-3-1): 묶음 이름(위 · 아래) · 한 줄(안 여백 · 사이 · 아래 · 모서리 — 안 읽은 줄만 떠 있는 면) · 둥근 아이콘 칸 ·
+ * 글 줄 사이 · 때 위 · 안 읽음 점(자리 · 글이 점을 비켜 가는 폭) · 비었을 때(머리 아래 높이 640 칸의 가운데) · 처음 불러올 때 뼈대의 줄 수.
+ * 홈 머리의 종(보드 11): 누르는 칸 · 아이콘 · 점(바탕색 테두리) · 머리 오른쪽 끝에서 더 나간 거리.
+ */
+export const NotificationLayout = {
+  groupTop: 24,
+  groupBottom: 4,
+  row: { padV: 14, padX: 12, gap: 12, bottom: 8, radius: 14, textGap: 2, timeTop: 2, unreadRight: 14 },
+  icon: 40,
+  glyph: 20,
+  dot: { size: 8, top: 18, right: 12 },
+  empty: { height: 640, icon: 72, glyph: 34, titleTop: 20, bodyTop: 8 },
+  skeleton: { rows: 3 },
+  bell: { box: 40, icon: 24, inset: -8, dot: 8, dotBorder: 1.5, dotTop: 8, dotRight: 9 },
+} as const;
+
 /** 카드 하나만 못 불러왔을 때 그 카드 자리(보드 19-1, 결정 061 의 3): 카드 · 이름표 아래 제목 · 설명 · 작은 "다시 보기" 단추 */
 export const CardFailLayout = { padding: 20, radius: 20, titleTop: 10, bodyTop: 4, buttonTop: 14, button: 40, buttonPadX: 16, buttonRadius: 10 } as const;
 
@@ -673,6 +696,8 @@ export const Typography = {
   item: type(15, 22, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
+  /** 알림 줄의 본문(보드 11-3) */
+  notice: type(14, 20, FontWeight.regular),
   /** 입력칸 아래 도움말 · 오류, "보기"(결정 042 시안) */
   caption: type(13, 18, FontWeight.regular),
   /** 로그인 버튼의 "최근 로그인" 배지(결정 044 시안) */
@@ -685,6 +710,8 @@ export const Typography = {
   label: type(12, 17, FontWeight.medium),
   /** 소개 둘째 장(시기)의 시기 줄 글자(결정 042 시안) */
   micro: type(12, 16, FontWeight.medium),
+  /** 알림 줄의 때(보드 11-3) */
+  meta: type(12, 16, FontWeight.regular),
   /** 숫자만 있는 작은 글자(날짜, 도수) */
   mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
   /** 점수, 순위 */

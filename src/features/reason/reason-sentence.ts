@@ -234,3 +234,30 @@ export function reasonSentence(reason: Reason, { timeKnown, today = false }: Rea
   }
   return { text, bold };
 }
+
+/**
+ * 홈 오늘의 하늘 카드의 짧은 이유(보드 11 — "오늘은 달이 내 금성 자리를 지나요"): 그날(DAY)의 지나가는 별 하나를 별 이름만으로.
+ * 하우스는 그 자리의 별명으로 적는다. 펼침 · 용어는 오늘의 하늘 화면의 이유 줄(reasonSentence)이 맡는다.
+ * 지나가는 별이 아니거나 사전에 없는 값 · 시각을 몰라 그릴 수 없는 근거면 null — 카드에서 그 줄만 숨긴다.
+ */
+export function reasonBrief(reason: Reason, { timeKnown }: { timeKnown: boolean }): string | null {
+  const item = reason.items[0];
+  if (reason.when !== 'DAY' || !item || !isKnown(item) || item.kind !== 'TRANSIT') return null;
+  if (!timeKnown && needsTime(item)) return null;
+  const mover = bodyTerm(item.mover);
+  if (!mover || isAngle(item.mover)) return null;
+  const head = `${R.brief} ${mover.name}${josa(mover.name, R.josa.subject)} ${R.mine}`;
+  const end = ` ${R.passes.end}`;
+  if (item.target !== undefined && item.type !== undefined) {
+    const target = bodyTerm(item.target);
+    const aspect = aspectTerm(item.type);
+    if (!target || !aspect) return null;
+    if (item.type === 'CONJUNCTION')
+      return isAngle(item.target)
+        ? `${head}${target.name}${josa(target.name, R.josa.object)}${end}`
+        : `${head}${target.name} ${R.place}${josa(R.place, R.josa.object)}${end}`;
+    return `${head}${target.name}${josa(target.name, R.josa.with)} ${aspect.transitPhrase}${josa(aspect.transitPhrase, R.josa.object)}${end}`;
+  }
+  const house = item.house !== undefined ? houseTerm(item.house) : undefined;
+  return house ? `${head}${house.nick}${josa(house.nick, R.josa.object)}${end}` : null;
+}

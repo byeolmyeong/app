@@ -14,9 +14,9 @@ export type PushData =
 
 /**
  * 광고(어드민 이벤트) 푸시가 보낼 수 있는 앱 안 주소의 첫 조각 — 홈 · 나 · 시기 · 내 별명 · 하늘 지도 · 마이 · 설정. 없는 주소로 보내
- * 길 잃은 화면이 뜨지 않게, 앱 밖으로 보내지 않게 이 목록으로 거른다(#64 리뷰). 길 A 의 A④ 가 `/today` 를 만들면 더한다.
+ * 길 잃은 화면이 뜨지 않게, 앱 밖으로 보내지 않게 이 목록으로 거른다(#64 리뷰). 오늘의 하늘 `/today` 는 A④ 가 더했다.
  */
-const APP_ROUTES = new Set(['', 'me', 'timing', 'reading', 'chart', 'my', 'settings']);
+const APP_ROUTES = new Set(['', 'me', 'timing', 'today', 'reading', 'chart', 'my', 'settings']);
 const isAppPath = (v: string) => v.startsWith('/') && !v.startsWith('//') && !v.includes('://') && APP_ROUTES.has(v.slice(1).split(/[/?#]/)[0]);
 
 /** 받은 data 를 읽는다. 모르는 종류이거나 함께 와야 할 값이 없으면 null(버린다) */
@@ -43,12 +43,12 @@ export function parsePushData(raw: unknown): PushData | null {
 
 /**
  * 누르면 갈 곳(결정 066 의 4): 오늘의 하늘 · 별명 공개(10) · 나 탭(12-8) · 시기 탭(14) · 그 문의의 답변 보기(16-8) · 광고는 어드민이 고른
- * 앱 안 주소. 오늘의 하늘(11-4) 화면 `/today` 는 길 A 의 A④ 가 만든다 — 그 전에는 홈(오늘의 하늘 카드가 있다)으로 보낸다.
+ * 앱 안 주소. 오늘의 하늘은 11-4 화면 `/today`(A④). 알림함(`features/notifications`)도 이 표를 쓴다.
  */
 export function pushTarget(data: PushData): Href {
   switch (data.type) {
     case 'TODAY_SKY':
-      return '/';
+      return '/today';
     case 'READING_DONE':
       return '/reading';
     case 'ME_REPORT_DONE':

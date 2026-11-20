@@ -3,7 +3,7 @@
  * 근거 구조의 식별자를 용어 사전(`strings.glossary`)의 말로 옮기기만 한다. 사전에 없는 값은 건너뛴다.
  */
 import { strings } from '@/content/strings';
-import { isKnown, needsTime } from '@/features/reason/reason-sentence';
+import { isKnown, lookup, needsTime } from '@/features/reason/reason-sentence';
 import type { KnownBasisItem, Reason } from '@/lib/api';
 
 const G = strings.glossary;
@@ -24,17 +24,17 @@ function bodyTerm(key: string, transit = false): ReasonTerm | undefined {
     const a = G.angles[key];
     return { key, nickname: a.nickname, name: a.name, meaning: a.meaning, tip: { title: a.name, text: a.tip } };
   }
-  const b = (G.bodies as Record<string, GlossaryBody | undefined>)[key];
+  const b = lookup<GlossaryBody>(G.bodies, key);
   if (!b) return undefined;
-  const full = (strings.bodies as Record<string, string | undefined>)[key];
+  const full = lookup<string>(strings.bodies, key);
   // 별명이 일상의 이름과 다르면 함께 적는다: "해 (태양)"
   const title = full && full !== b.name ? `${b.name} (${full})` : b.name;
   return { key, nickname: transit ? b.transitName : b.reasonName, name: b.name, meaning: b.meaning, tip: { title, text: b.tip } };
 }
 
 function signTerm(sign: string): ReasonTerm | undefined {
-  const g = (G.signs as Record<string, { nickname: string; meaning: string } | undefined>)[sign];
-  const short = (strings.signs as Record<string, string | undefined>)[sign];
+  const g = lookup<{ nickname: string; meaning: string }>(G.signs, sign);
+  const short = lookup<string>(strings.signs, sign);
   const order = SIGN_KEYS.indexOf(sign);
   if (!g || !short || order < 0) return undefined;
   const name = short + strings.chart.signSuffix;
@@ -42,23 +42,23 @@ function signTerm(sign: string): ReasonTerm | undefined {
 }
 
 function houseTerm(n: number): ReasonTerm | undefined {
-  const g = (G.houses as Record<number, { nickname: string; meaning: string } | undefined>)[n];
+  const g = lookup<{ nickname: string; meaning: string }>(G.houses, n);
   if (!g) return undefined;
   const name = `${n}${S.houseSuffix}`;
   return { key: `house-${n}`, nickname: g.nickname, name, meaning: g.meaning, tip: { title: name, text: `${S.houseTipPrefix}${S.ordinals[n - 1]}${S.houseTipSuffix}` } };
 }
 
 function aspectTerm(type: string): ReasonTerm | undefined {
-  const g = (G.aspects as Record<string, { phrase: string; meaning: string } | undefined>)[type];
-  const name = (strings.aspects as Record<string, string | undefined>)[type];
+  const g = lookup<{ phrase: string; meaning: string }>(G.aspects, type);
+  const name = lookup<string>(strings.aspects, type);
   return g && name ? { key: `aspect-${type}`, nickname: g.phrase, name, meaning: g.meaning, tip: { title: name, text: S.relationsTip } } : undefined;
 }
 
 function clusterTerm(bodies: string[]): ReasonTerm | undefined {
-  const count = G.counts[bodies.length];
+  const count = lookup<string>(G.counts, bodies.length);
   if (!count) return undefined;
   const nickname = `${R.starsPrefix}${count}`;
-  const names = bodies.map((b) => (G.bodies as Record<string, { name: string } | undefined>)[b]?.name).filter(Boolean);
+  const names = bodies.map((b) => lookup<{ name: string }>(G.bodies, b)?.name).filter(Boolean);
   return {
     key: `cluster-${bodies.join('-')}`,
     nickname,
@@ -112,7 +112,7 @@ export function reasonFocus(reason: Reason, timeKnown: boolean): { bodies: strin
   const houses: number[] = [];
   const addBody = (key: string) => {
     if (bodies.includes(key) || (!timeKnown && isAngle(key))) return;
-    if (isAngle(key) || key in G.bodies) bodies.push(key);
+    if (isAngle(key) || lookup(G.bodies, key) !== undefined) bodies.push(key);
   };
   const addHouse = (n: number | undefined) => {
     if (timeKnown && n !== undefined && !houses.includes(n)) houses.push(n);

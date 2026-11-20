@@ -115,6 +115,18 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     expect(screen.getAllByTestId('reason-term')).toHaveLength(3);
   });
 
+  it('펼친 용어 줄 · 작은 지도도 사전의 제 키로만 찾는다(리뷰 #49)', async () => {
+    const odd: Reason = {
+      when: 'BIRTH',
+      items: [{ kind: 'CLUSTER', house: 6, bodies: ['SUN', 'toString', 'MARS'] }],
+    };
+    await render(<ReasonLine reason={odd} chart={fixtures.chart} />);
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${R.label}`) }));
+    // 하우스 모임의 별 이름에 사전 밖의 이름은 빠지고, 작은 지도에도 그 별은 없다
+    expect(screen.getByText(`${G.bodies.SUN.name}${R.separator}${G.bodies.MARS.name}`)).toBeTruthy();
+    expect(screen.getAllByTestId('mini-wheel-dot')).toHaveLength(2);
+  });
+
   it('문장을 만들 수 없는 근거(모르는 kind)면 아무것도 그리지 않는다', async () => {
     const view = await render(<ReasonLine reason={{ when: 'BIRTH', items: [{ kind: 'MIDPOINT' }] }} chart={fixtures.chart} />);
     expect(view.toJSON()).toBeNull();

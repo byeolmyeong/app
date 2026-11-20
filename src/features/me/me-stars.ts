@@ -4,6 +4,7 @@
  * 하우스 하나 → 하우스 별명 + "4하우스". 시각을 모르면 하우스 · 상승점 · 중천이 든 별은 그리지 않는다(이중 안전).
  */
 import { strings } from '@/content/strings';
+import { lookup } from '@/features/reason/reason-sentence';
 import type { Star } from '@/lib/api';
 
 const G = strings.glossary;
@@ -17,21 +18,21 @@ const isAngle = (key: string): key is 'ASC' | 'MC' => key === 'ASC' || key === '
 function labelOf(star: Star): StarLabel | null {
   const body = star.body;
   if (body !== undefined) {
-    const sign = star.sign !== undefined ? (strings.signs as Record<string, string | undefined>)[star.sign] : undefined;
+    const sign = star.sign !== undefined ? lookup<string>(strings.signs, star.sign) : undefined;
     if (star.sign !== undefined && !sign) return null;
     if (isAngle(body)) {
       const a = G.angles[body];
       return sign ? { key: body, strong: a.short, rest: sign + strings.chart.signSuffix } : { key: body, strong: a.nickname, rest: a.name };
     }
-    const b = (G.bodies as Record<string, { name: string; reasonName: string } | undefined>)[body];
+    const b = lookup<{ name: string; reasonName: string }>(G.bodies, body);
     if (!b) return null;
     return { key: body, strong: b.reasonName, rest: sign ? sign + strings.chart.signSuffix : b.name };
   }
   if (star.house === undefined) return null;
-  const house = (G.houses as Record<number, { nickname: string } | undefined>)[star.house];
+  const house = lookup<{ nickname: string }>(G.houses, star.house);
   if (!house) return null;
   if (star.count === undefined) return { key: `house-${star.house}`, strong: house.nickname, rest: `${star.house}${R.houseSuffix}` };
-  const count = G.counts[star.count];
+  const count = lookup<string>(G.counts, star.count);
   return count ? { key: `house-${star.house}`, strong: house.nickname, rest: `${R.starsPrefix}${count}` } : null;
 }
 

@@ -8,7 +8,7 @@ import { Txt } from '@/components/txt';
 import { Colors, FontWeight, ReasonLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { MiniWheel } from '@/features/chart/ChartWheel';
-import { josa, reasonSentence, type ReasonSentence } from '@/features/reason/reason-sentence';
+import { josa, lookup, reasonSentence, type ReasonSentence } from '@/features/reason/reason-sentence';
 import { reasonFocus, reasonTerms, type ReasonTerm } from '@/features/reason/reason-terms';
 import type { Chart, Reason } from '@/lib/api';
 
@@ -84,7 +84,7 @@ function TermRow({ term, open, onToggle }: { term: ReasonTerm; open: boolean; on
 
 /** 작은 지도의 읽기 이름에 적는 별 · 칸의 이름 */
 const focusName = (key: string) =>
-  key === 'ASC' || key === 'MC' ? G.angles[key].nickname : ((G.bodies as Record<string, { name: string } | undefined>)[key]?.name ?? key);
+  key === 'ASC' || key === 'MC' ? G.angles[key].nickname : (lookup<{ name: string }>(G.bodies, key)?.name ?? key);
 
 /**
  * "이렇게 풀이한 이유" 줄(보드 12 · 12-1~12-3 · 11-5, 결정 054 의 4): 접힌 상자에 한 문장, 누르면 그 자리에서 펼친다 —

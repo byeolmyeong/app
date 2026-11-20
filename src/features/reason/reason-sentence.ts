@@ -32,6 +32,14 @@ const KNOWN_KINDS = ['PLACEMENT', 'CLUSTER', 'ASPECT', 'RULER', 'TRANSIT'];
 /** 이 앱이 아는 근거 종류인가(모르는 kind 는 그 줄을 숨긴다) */
 export const isKnown = (item: BasisItem): item is KnownBasisItem => KNOWN_KINDS.includes(item.kind);
 
+/**
+ * 사전에서 그 키의 값을 찾는다 — 객체의 제 키만(서버가 준 낱말이 `toString` 같은 이름이어도 사전 밖의 값이다, 리뷰 #49).
+ * 이유 줄 · 쓰인 별(features/me)이 함께 쓴다.
+ */
+export function lookup<T>(dict: object, key: string | number): T | undefined {
+  return Object.prototype.hasOwnProperty.call(dict, key) ? (dict as Record<string | number, T>)[key] : undefined;
+}
+
 const HANGUL_FIRST = 0xac00;
 const HANGUL_LAST = 0xd7a3;
 const JONG_COUNT = 28;
@@ -57,27 +65,27 @@ function bodyTerm(key: string): Term | undefined {
     const a = G.angles[key];
     return { reason: a.nickname, transit: a.nickname, name: a.name };
   }
-  const b = (G.bodies as Record<string, { name: string; reasonName: string; transitName: string } | undefined>)[key];
+  const b = lookup<{ name: string; reasonName: string; transitName: string }>(G.bodies, key);
   return b ? { reason: b.reasonName, transit: b.transitName, name: b.name } : undefined;
 }
 
 /** "자유로운" · "물병자리" */
 function signTerm(sign: string): { adjective: string; full: string } | undefined {
-  const g = (G.signs as Record<string, { adjective: string } | undefined>)[sign];
-  const short = (strings.signs as Record<string, string | undefined>)[sign];
+  const g = lookup<{ adjective: string }>(G.signs, sign);
+  const short = lookup<string>(strings.signs, sign);
   return g && short ? { adjective: g.adjective, full: short + strings.chart.signSuffix } : undefined;
 }
 
 /** "즐거움의 자리" · "5하우스" */
 function houseTerm(n: number): { nick: string; name: string } | undefined {
-  const g = (G.houses as Record<number, { nickname: string } | undefined>)[n];
+  const g = lookup<{ nickname: string }>(G.houses, n);
   return g ? { nick: g.nickname, name: `${n}${R.houseSuffix}` } : undefined;
 }
 
 type GlossaryAspect = { reasonPhrase: string; transitPhrase: string };
 const aspectTerm = (type: string) => {
-  const g = (G.aspects as Record<string, GlossaryAspect | undefined>)[type];
-  const name = (strings.aspects as Record<string, string | undefined>)[type];
+  const g = lookup<GlossaryAspect>(G.aspects, type);
+  const name = lookup<string>(strings.aspects, type);
   return g && name ? { ...g, name } : undefined;
 };
 
@@ -111,7 +119,7 @@ function clauseOf(item: KnownBasisItem, timeKnown: boolean): Clause | null {
       };
     }
     case 'CLUSTER': {
-      const count = G.counts[item.bodies.length];
+      const count = lookup<string>(G.counts, item.bodies.length);
       const house = houseTerm(item.house);
       if (!count || !house) return null;
       const stars = `${R.starsPrefix}${count}`;

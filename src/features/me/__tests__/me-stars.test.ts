@@ -24,5 +24,7 @@ describe('이 풀이에 쓰인 별(결정 054 의 5): 서버의 stars 를 용어
   it('시각을 모르면 하우스 · 상승점 · 중천이 든 별은 빼고, 사전에 없는 값도 뺀다', () => {
     expect(text(starLabels(fixtures.meReport.areas[0].stars, false))).toEqual(['나의 중심 · 쌍둥이자리']);
     expect(starLabels([{ body: 'CHIRON', sign: 'ARIES' }, { house: 6, count: 12 }, {}], true)).toEqual([]);
+    // 사전을 제 키로만 찾는다(리뷰 #49)
+    expect(starLabels([{ body: 'toString' }, { body: 'SUN', sign: 'constructor' }], true)).toEqual([]);
   });
 });

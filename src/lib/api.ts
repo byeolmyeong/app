@@ -108,14 +108,12 @@ export type Reading = {
   createdAt?: string;
 };
 
-/** `GET /account` 에서 앱이 쓰는 값: 닉네임 · 프로필 그림(계약은 1~8). 옛 계정은 둘 다 null(서버 결정 025 · 028) */
-export type Account = { nickname: string | null; avatar: number | null };
-
 /**
- * 마이 · 계정 화면이 쓰는 `GET /account` · `PATCH /account` 의 값(결정 056): 홈의 둘에 더해 이메일(옛 계정 null) · 공급자 ·
- * 마케팅 수신 동의. 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
+ * `GET /account` · `PATCH /account` 에서 앱이 쓰는 값 — 홈 별명 카드와 마이 · 계정 화면이 함께 쓴다(결정 047 · 056):
+ * 닉네임 · 프로필 그림(계약은 1~8, 옛 계정은 둘 다 null — 서버 결정 025 · 028) · 이메일(옛 계정 null) · 공급자 · 마케팅 수신 동의.
+ * 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
  */
-export type MyAccount = Account & { email: string | null; provider: string; marketingConsent: boolean };
+export type MyAccount = { nickname: string | null; avatar: number | null; email: string | null; provider: string; marketingConsent: boolean };
 
 /** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028). 마케팅 · 푸시 동의는 알림 화면(계획 A8-2)이 더한다 */
 export type AccountPatch = { nickname?: string; avatar?: number };
@@ -421,22 +419,15 @@ export function isReading(v: unknown): v is Reading {
   );
 }
 
-export function isAccount(v: unknown): v is Account {
+export function isMyAccount(v: unknown): v is MyAccount {
   return (
     isObject(v) &&
     (v.nickname === null || typeof v.nickname === 'string') &&
     // 계약은 1~8 이지만 모르는 번호여도 닉네임은 받는다 — 모르는 그림은 그리는 쪽이 숨긴다(isAvatarId)
-    (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar)))
-  );
-}
-
-export function isMyAccount(v: unknown): v is MyAccount {
-  return (
-    isObject(v) &&
+    (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar))) &&
     (v.email === null || typeof v.email === 'string') &&
     typeof v.provider === 'string' &&
-    typeof v.marketingConsent === 'boolean' &&
-    isAccount(v)
+    typeof v.marketingConsent === 'boolean'
   );
 }
 
@@ -1075,14 +1066,7 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/reports/me', { validate: isReportState });
     },
 
-    /** `GET /account` 내 닉네임 · 프로필 그림(홈 별명 카드, 결정 047). 응답의 다른 칸(이메일 · 동의 …)은 앱이 쓰지 않아 버린다 */
-    async getAccount(): Promise<ApiResult<Account>> {
-      if (config.useFixtures) return { ok: true, data: { nickname: '새벽별', avatar: 3 } };
-      const res = await request('GET', '/account', { validate: isAccount });
-      return res.ok ? { ok: true, data: { nickname: res.data.nickname, avatar: res.data.avatar } } : res;
-    },
-
-    /** `GET /account` 마이 · 계정 화면의 내 계정(결정 056). 동의 일시 · 푸시 동의는 앱이 쓰지 않아 버린다 */
+    /** `GET /account` 내 계정 — 홈 별명 카드(닉네임 · 프로필, 결정 047)와 마이 · 계정 화면(결정 056)이 함께 쓴다. 동의 일시 · 푸시 동의는 앱이 쓰지 않아 버린다 */
     async getMyAccount(): Promise<ApiResult<MyAccount>> {
       if (config.useFixtures) return { ok: true, data: FIXTURE_MY_ACCOUNT };
       const res = await request('GET', '/account', { validate: isMyAccount });

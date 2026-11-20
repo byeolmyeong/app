@@ -40,7 +40,6 @@ jest.mock('@/lib/api', () => ({
     listPlaces: jest.fn(),
     saveProfile: jest.fn(),
     deleteAccount: jest.fn(),
-    getAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
     getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
   },
 }));

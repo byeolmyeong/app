@@ -8,25 +8,16 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { shiftMonth } from '@/features/timing/dates';
 import { api, type ApiErrorKind, type ApiResult, type BirthInput, type MonthSky } from '@/lib/api';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout';
 
-/** 한 번의 요청을 기다리는 한도(처음 불러올 때의 10초 — 결정 065 의 2) */
-export const MONTH_TIMEOUT_MS = 10_000;
+/** 한 번의 요청을 기다리는 한도(처음 불러올 때의 10초 — 결정 065 의 2, 공용 withTimeout 의 값) */
+export const MONTH_TIMEOUT_MS = REQUEST_TIMEOUT_MS;
 
 const NO_PROFILE_STATUS = 404;
 
 export type MonthState = { status: 'loading' } | { status: 'done'; sky: MonthSky } | { status: 'failed'; error: ApiErrorKind };
 
 const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
-
-function withTimeout<T>(promise: Promise<ApiResult<T>>): Promise<ApiResult<T>> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve({ ok: false, error: 'SERVER' }), MONTH_TIMEOUT_MS);
-    void promise.then((r) => {
-      clearTimeout(timer);
-      resolve(r);
-    });
-  });
-}
 
 async function load(month: string | undefined, input: BirthInput): Promise<ApiResult<MonthSky>> {
   let r = await withTimeout(api.getMonth(month));

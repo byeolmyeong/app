@@ -6,7 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import TimingScreen from '@/app/timing';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
-import { TIMING_REPORT_POLL_MS, TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
+import { TIMING_REPORT_MAX_WRITING_MS, TIMING_REPORT_POLL_MS, TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { api, type ApiResult, type MonthSky, type TimingReportState } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -135,6 +135,57 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     await tick();
     await fireEvent.press(screen.getByRole('button', { name: T.later }));
     expect(screen.getByTestId('timing-detail-card')).toBeTruthy();
+  });
+
+  it('쓰는 중 확인이 끊기면 보드 19(아래 탭 있음) — 다시 보기는 상태만 다시 묻는다(만들기는 다시 하지 않는다)', async () => {
+    jest.useFakeTimers();
+    await render(<TimingScreen />);
+    await tick(0);
+    mockApi.getTimingReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 500 });
+    await fireEvent.press(await screen.findByRole('button', { name: T.detail.request }));
+    await tick();
+    expect(screen.getByText(T.loadFail.report)).toBeTruthy();
+    expect(bottomTabs()).toHaveLength(4);
+    mockApi.getTimingReport.mockResolvedValueOnce(got('WRITING'));
+    const before = mockApi.getTimingReport.mock.calls.length;
+    await fireEvent.press(screen.getByRole('button', { name: ST.loadFail.retry }));
+    await tick(0);
+    expect(mockApi.getTimingReport.mock.calls.length).toBe(before + 1);
+    expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(T.making.title)).toBeTruthy();
+  });
+
+  it('쓰는 중이 3분을 넘으면 확인을 멈추고 보드 19 — 다시 보기는 상태만', async () => {
+    jest.useFakeTimers();
+    await render(<TimingScreen />);
+    await tick(0);
+    mockApi.getTimingReport.mockResolvedValue(got('WRITING'));
+    await fireEvent.press(await screen.findByRole('button', { name: T.detail.request }));
+    await tick(TIMING_REPORT_MAX_WRITING_MS + TIMING_REPORT_POLL_MS);
+    expect(screen.getByText(T.loadFail.report)).toBeTruthy();
+    expect(bottomTabs()).toHaveLength(4);
+    expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('받기가 생성 한도(429)에 걸리면 14-8 에 한도 문구 — 다시 쓰기는 다시 요청한다', async () => {
+    mockApi.requestTimingReport.mockResolvedValueOnce({ ok: false, error: 'LIMIT', status: 429 });
+    await render(<TimingScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: T.detail.request }));
+    expect(await screen.findByText(T.writeFail)).toBeTruthy();
+    expect(screen.getByText(T.limit)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ST.writeFail.retry }));
+    expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(2);
+  });
+
+  it('받기를 누른 채 연결이 끊겼으면 보드 20-1 — 다시 시도는 받기(POST)를 다시 한다', async () => {
+    await render(<TimingScreen />);
+    const request = await screen.findByRole('button', { name: T.detail.request });
+    await goOffline();
+    mockApi.requestTimingReport.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await fireEvent.press(request);
+    expect(await screen.findByText(ST.offlineEmpty.title)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ST.offlineEmpty.retry }));
+    expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(2);
   });
 
   it('서버가 지금은 받을 수 없다고 하면(402 PURCHASE_REQUIRED) 버튼 위에 한 줄(결정 050 의 4)', async () => {

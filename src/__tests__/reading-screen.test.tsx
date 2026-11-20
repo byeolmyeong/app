@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import ReadingScreen from '@/app/reading';
 import { strings } from '@/content/strings';
 import { clearDraft, finishDraft, setDraft, signedUpNickname } from '@/features/auth/signup-draft';
+import { pendingReveal, revealNextReading } from '@/features/reading/reveal-once';
 import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { useSession } from '@/features/auth/use-session';
 import { keyThree } from '@/features/chart/chart-rows';
@@ -413,6 +414,29 @@ describe('별명 공개', () => {
     expect(screen.queryByText(`새벽별 ${V.nicknameSuffix}`)).toBeNull();
     // 한 번 쓰면 메모리의 닉네임을 지운다
     expect(signedUpNickname()).toBeNull();
+  });
+
+  it('출생 정보를 바꾸고 오면(from=birth) 새 풀이가 지어진 뒤 별명 공개를 한 번 보이고, 풀이 읽기로 글(소유자 2026-11-20)', async () => {
+    revealNextReading('새벽별');
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'birth' });
+    let resolve: (r: ApiResult<Reading>) => void = () => {};
+    mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    await act(async () => resolve({ ok: true, data: reading }));
+    expect(await screen.findByText(`새벽별 ${V.nicknameSuffix}`)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: V.read }));
+    expect(screen.getByText(reading.sections[0].title)).toBeTruthy();
+    // 한 번 쓰면 지운다 — 다시 열면 글로 바로 간다
+    expect(pendingReveal()).toBeNull();
+  });
+
+  it('출생 정보 바꾸기에서 온 표시만 있고 넘겨받은 닉네임이 없으면(앱을 다시 켰다) 글로 바로 간다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'birth' });
+    mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.sections[0].title)).toBeTruthy();
+    expect(screen.queryByText(`새벽별 ${V.nicknameSuffix}`)).toBeNull();
   });
 
   it('다시 열면(가입 직후가 아니면) 풀이 글로 바로 간다', async () => {

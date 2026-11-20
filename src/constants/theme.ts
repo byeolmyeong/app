@@ -662,6 +662,8 @@ export const MyLayout = {
   account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 18, badgeGlyph: 11, badgeGap: 6 },
   delete: { headingTop: 8, gap: 22, notePadding: 18, noteGap: 12, dot: 4, dotTop: 10, dotGap: 10, checkGap: 10, checkPadV: 4, checkPadH: 2 },
   done: { icon: 72, iconGlyph: 32, titleTop: 24, bodyTop: 10, lift: 40 },
+  /** 출생 정보 바꾸기(16-4): 안내 칸(안 여백 · 모서리 · 아이콘 · 아이콘과 글 사이) · 묶음 사이 */
+  birth: { noticePadV: 14, noticePadH: 16, noticeRadius: 14, noticeIcon: 20, noticeIconTop: 1, noticeGap: 10, gap: 22 },
 } as const;
 
 /**

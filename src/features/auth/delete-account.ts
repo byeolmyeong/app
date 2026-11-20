@@ -14,7 +14,7 @@ import { api, type ApiResult } from '@/lib/api';
  */
 export const DEVICE_STORAGE_PREFIX = 'byeolmyeong.';
 
-/** 이 앱이 기기에 둔 사람의 것(출생 정보 · 차트 · 받은 글)을 모두 지운다. 기기에 붙는 값(`byeolmyeong-device.`)은 남긴다. 계정 삭제와 로그아웃(`sign-out.ts`)이 쓴다 */
+/** 이 앱이 기기에 둔 사람의 것(출생 정보 · 차트 · 받은 글)을 모두 지운다. 기기에 붙는 값(`byeolmyeong-device.`)은 남긴다. 계정 삭제 · 로그아웃(`sign-out.ts`) · 출생 정보 바꾸기(`/my/birth` — 옛 출생 정보로 만든 보관을 지우고 새 것만 둔다)가 쓴다. 그래서 출생 정보와 상관없이 남아야 할 사람 값은 이 머리에 두지 않는다 */
 export async function clearDeviceData(): Promise<void> {
   // 키를 하나씩 적지 않고 머리로 찾아 지운다. 기능이 새 키를 더해도 빠지지 않는다.
   const keys = await AsyncStorage.getAllKeys();

@@ -72,7 +72,7 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(chip('year').props.accessibilityLabel).toBe(`${T.chips.year}${T.lockedSuffix}`);
     expect(chip('life').props.accessibilityLabel).toBe(`${T.chips.life}${T.lockedSuffix}`);
     expect(screen.getByText('2026년 11월')).toBeTruthy();
-    expect(screen.getByText(T.month.days)).toBeTruthy();
+    expect(screen.getByText(`${T.month.thisMonth}${T.month.daysSuffix}`)).toBeTruthy();
     expect(screen.getByText(T.detail.title)).toBeTruthy();
     // 받기 전에는 작은 실천이 없다(대표 구간이 없다)
     expect(screen.queryByText(T.practices)).toBeNull();
@@ -229,7 +229,7 @@ describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)',
     await storeReport();
     mockApi.getTimingReport.mockResolvedValue(done);
     await render(<TimingScreen />);
-    expect(await screen.findByText(T.month.days)).toBeTruthy();
+    expect(await screen.findByText(`${T.month.thisMonth}${T.month.daysSuffix}`)).toBeTruthy();
     expect(chip('month').props.accessibilityState).toMatchObject({ selected: true });
     expect(screen.getAllByTestId('timing-practice')).toHaveLength(3);
     expect(screen.queryByTestId('timing-detail-card')).toBeNull();

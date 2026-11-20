@@ -52,8 +52,8 @@ describe('이번 달(결정 049 의 2, 캔버스 14-1)', () => {
     for (const d of nov.days) expect(screen.getByTestId(`dot-${d.date}`)).toBeTruthy();
     expect(screen.queryByTestId('dot-2026-11-20')).toBeNull();
     expect(screen.getAllByTestId('month-theme')).toHaveLength(2);
-    expect(screen.getByText(`${T.month.allMonth} · ${nov.themes[0].title}`)).toBeTruthy();
-    expect(screen.getByText(T.month.days)).toBeTruthy();
+    expect(screen.getByText(`이번 달 내내 · ${nov.themes[0].title}`)).toBeTruthy();
+    expect(screen.getByText('이번 달 눈여겨볼 날')).toBeTruthy();
     expect(screen.getAllByTestId('month-day')).toHaveLength(3);
     expect(screen.getByText(nov.days[0].text)).toBeTruthy();
     expect(screen.getAllByText(T.categories.PEOPLE).length).toBeGreaterThan(0);
@@ -93,7 +93,11 @@ describe('이번 달(결정 049 의 2, 캔버스 14-1)', () => {
     await screen.findByText('2026년 11월');
     await fireEvent.press(screen.getByTestId('month-next'));
     expect(await screen.findByTestId('month-quiet')).toBeTruthy();
-    expect(screen.getByText(T.month.quiet.title)).toBeTruthy();
+    // 다른 달을 볼 때는 그 달의 이름으로, 없는 알림을 약속하지 않는다(리뷰 #63)
+    expect(screen.getByText('12월은 큰 움직임 없이 흘러가요')).toBeTruthy();
+    expect(screen.getByText('12월 눈여겨볼 날')).toBeTruthy();
+    expect(screen.getByText('12월 내내 · 일의 방식을 새로 다지는 시기')).toBeTruthy();
+    expect(screen.queryByText(/다음 달 1일/)).toBeNull();
     expect(screen.queryAllByTestId('month-day')).toHaveLength(0);
     expect(screen.queryByTestId(/^dot-/)).toBeNull();
   });

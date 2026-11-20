@@ -71,7 +71,7 @@ function Swatch({ first }: { first: boolean }) {
   );
 }
 
-function Calendar({ sky, base, today, onDay }: { sky: MonthSky; base: string; today: string; onDay: (date: string) => void }) {
+function Calendar({ sky, base, label, today, onDay }: { sky: MonthSky; base: string; label: string; today: string; onDay: (date: string) => void }) {
   const dots = new Map(knownDays(sky).map((d) => [d.date, d.category]));
   const themes = sky.themes.filter((t) => areaLabel(t.area) !== null);
   return (
@@ -122,7 +122,7 @@ function Calendar({ sky, base, today, onDay }: { sky: MonthSky; base: string; to
             <View key={`${t.title}${i}`} testID="month-theme" style={styles.legendRow}>
               <Swatch first={i === 0} />
               <Txt variant="label" color="gray" style={[styles.flex, styles.regular]} keepAll>
-                {`${T.month.allMonth}${T.date.separator}${t.title}`}
+                {`${label}${T.month.allMonthSuffix}${T.date.separator}${t.title}`}
               </Txt>
             </View>
           ))}
@@ -164,6 +164,8 @@ function DayRow({ day, pressable, onPress }: { day: MonthDay; pressable: boolean
  * 점은 서버의 눈여겨볼 날) · 이번 달 내내 줄 · 눈여겨볼 날 목록(없으면 안내 한 장). 날짜나 눈여겨볼 날을 누르면 그날의 하늘 — 범위 밖은 못 누른다.
  */
 export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetry, today, onDay }: MonthViewProps) {
+  // 처음 받은 달은 "이번 달", 앞뒤 달은 그 달의 이름("12월") — 다른 달을 볼 때 "이번 달" 이라 부르지 않는다(리뷰 #63)
+  const label = shown === base ? T.month.thisMonth : `${Number(shown.slice(5, 7))}${T.date.monthSuffix}`;
   const head = (
     <View testID="month-head" style={styles.head}>
       <Txt variant="paragraphTitle" accessibilityRole="header">
@@ -201,15 +203,15 @@ export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetr
       <View>
         {head}
         <View style={styles.calendarTop}>
-          <Calendar sky={sky} base={base} today={today} onDay={onDay} />
+          <Calendar sky={sky} base={base} label={label} today={today} onDay={onDay} />
         </View>
       </View>
       <View style={styles.list}>
-        <SectionTitle title={T.month.days} />
+        <SectionTitle title={`${label}${T.month.daysSuffix}`} />
         {days.length === 0 ? (
           <View testID="month-quiet" style={styles.quiet}>
             <Txt variant="stat" keepAll>
-              {T.month.quiet.title}
+              {`${label}${T.month.quiet.titleSuffix}`}
             </Txt>
             <Txt variant="reason" color="gray" keepAll>
               {T.month.quiet.body}

@@ -33,7 +33,9 @@ describe('시기 탭 문구(strings.timing)', () => {
     expect(T.writeFail).toBe('시기 풀이를 끝까지 쓰지 못했어요');
     expect(T.day.making.title).toBe('그날의 하늘을 읽고 있어요');
     expect(T.day.fail).toBe('그날의 하늘을 읽지 못했어요');
-    expect(T.month.quiet.title).toBe('이번 달은 큰 움직임 없이 흘러가요');
+    expect(`${T.month.thisMonth}${T.month.quiet.titleSuffix}`).toBe('이번 달은 큰 움직임 없이 흘러가요');
+    // 없는 알림을 약속하지 않는다(결정 061 의 2 와 같은 까닭, 리뷰 #63)
+    expect(T.month.quiet.body).not.toMatch(/알려 드려요|알림/);
   });
 
   it('카테고리는 사람 · 일 · 마음, 영역은 넷, 요일은 일요일부터 일곱', () => {

@@ -475,6 +475,8 @@ export const TimingLayout = {
     labels: 15,
     sectionTitleTop: 4,
     sectionBodyTop: 10,
+    /** 01 · 02 · 03 의 자간(0.04em) */
+    numberTracking: 0.48,
   },
   day: {
     heroTop: 16,
@@ -489,6 +491,7 @@ export const TimingLayout = {
     rowPadV: 14,
     rowGap: 12,
     rowLabel: 44,
+    rowLabelLine: 24,
     reasonTop: 20,
     todosTop: 8,
     todo: 44,

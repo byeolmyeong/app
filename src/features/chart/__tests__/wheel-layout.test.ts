@@ -1,4 +1,4 @@
-import { wheelLayout, wheelPolar } from '@/features/chart/wheel-layout';
+import { spreadLabels, wheelLayout, wheelPolar } from '@/features/chart/wheel-layout';
 import type { Chart, Position } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -135,6 +135,35 @@ describe('wheelLayout: 시각을 아는 차트', () => {
     for (let i = 0; i < labels.length; i++)
       for (let j = i + 1; j < labels.length; j++)
         expect(dist(labels[i], labels[j])).toBeGreaterThanOrEqual(layout.labelFontSize);
+  });
+});
+
+describe('spreadLabels: 몰린 이름 벌리기(내 하늘 지도 · 궁합 휠이 같이 쓴다)', () => {
+  it('같은 거리를 받으면 붙은 무리를 그 거리씩 띄우고 무리의 가운데는 제자리에 둔다', () => {
+    const out = spreadLabels(
+      [
+        { body: 'A', lon: 100 },
+        { body: 'B', lon: 101 },
+        { body: 'C', lon: 102 },
+        { body: 'D', lon: 200 },
+      ],
+      5,
+    );
+    const at = (b: string) => out.find((p) => p.body === b)!.labelLon;
+    expect([at('A'), at('B'), at('C')]).toEqual([96, 101, 106]);
+    expect(at('D')).toBe(200);
+    expect(out.find((p) => p.body === 'A')!.lon).toBe(100);
+  });
+
+  it('거리를 함수로 받으면 이웃한 둘마다 다르게 띄운다(긴 이름 옆은 더 넓게)', () => {
+    const list = [
+      { body: 'A', lon: 10, w: 1 },
+      { body: 'B', lon: 10, w: 3 },
+    ];
+    const out = spreadLabels(list, (a, b) => a.w + b.w);
+    const [a, b] = ['A', 'B'].map((n) => out.find((p) => p.body === n)!.labelLon);
+    expect(b - a).toBeCloseTo(4, 5);
+    expect((a + b) / 2).toBeCloseTo(10, 5);
   });
 });
 

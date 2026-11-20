@@ -3,7 +3,7 @@
  * 위치·각도를 여기서 계산하지 않는다(docs/decisions/006-server-side-chart.md). 선은 서버가 점수에 쓴 것만 긋는다.
  * 내 점은 별자리 고리 안쪽에, 상대 점은 고리 바깥에 놓아 두 사람을 자리로 가른다.
  */
-import { aspectDashed, ringMarks, wheelPolar, WHEEL_SIZE } from '@/features/chart/wheel-layout';
+import { aspectDashed, ringMarks, spreadLabels, wheelPolar, WHEEL_SIZE } from '@/features/chart/wheel-layout';
 import type { SynastryOverlay } from '@/lib/api';
 
 type Pt = { x: number; y: number };
@@ -36,48 +36,6 @@ export type OverlayLayout = {
 const LABEL_APART = 2;
 /** 이름이 이만큼(도) 넘게 벌어졌으면 점과 잇는 선을 긋는다 */
 const LEADER_FROM_DEGREES = 1.5;
-
-/**
- * 가까이 몰린 점의 이름을 고리를 따라 옆으로 벌린다. 점의 자리(황경)는 건드리지 않고 이름을 적을 방향만 정한다.
- * 황경 순으로 세운 뒤, 붙은 것끼리 한 묶음으로 [gap] 도씩 띄우고 묶음을 원래 자리의 가운데에 맞춘다.
- */
-export function spreadLabels(list: { body: string; lon: number }[], gap: number) {
-  const sorted = [...list].sort((p, q) => p.lon - q.lon);
-  if (sorted.length === 0) return [];
-  // 가장 넓게 빈 곳 다음에서 시작해 한 줄로 편다(0도를 사이에 둔 이웃도 이어진다).
-  let start = 0;
-  let widest = -1;
-  sorted.forEach((p, i) => {
-    const prev = sorted[(i - 1 + sorted.length) % sorted.length];
-    const space = (p.lon - prev.lon + 360) % 360 || (sorted.length === 1 ? 360 : 0);
-    if (space > widest) {
-      widest = space;
-      start = i;
-    }
-  });
-  const line = sorted.map((_, k) => sorted[(start + k) % sorted.length]);
-  const flat = line.map((p) => (p.lon - line[0].lon + 360) % 360);
-  // 묶음: first 번째부터 count 개가 at, at+gap, at+2*gap … 에 놓인다. at 은 원래 자리와의 차이가 가장 작은 값(평균)이다.
-  const blocks: { first: number; count: number; sum: number; at: number }[] = [];
-  flat.forEach((x, i) => {
-    let block = { first: i, count: 1, sum: x, at: x };
-    while (blocks.length > 0) {
-      const prev = blocks[blocks.length - 1];
-      if (prev.at + prev.count * gap <= block.at) break;
-      blocks.pop();
-      const sum = prev.sum + block.sum - block.count * prev.count * gap;
-      const count = prev.count + block.count;
-      block = { first: prev.first, count, sum, at: sum / count };
-    }
-    blocks.push(block);
-  });
-  return blocks.flatMap((b) =>
-    Array.from({ length: b.count }, (_, k) => {
-      const p = line[b.first + k];
-      return { body: p.body, lon: p.lon, labelLon: p.lon + (b.at + k * gap - flat[b.first + k]) };
-    }),
-  );
-}
 
 export function overlayLayout(overlay: SynastryOverlay, size: number = WHEEL_SIZE): OverlayLayout {
   const center = size / 2;

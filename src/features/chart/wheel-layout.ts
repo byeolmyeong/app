@@ -121,14 +121,19 @@ export function ringMarks({ at, line }: ReturnType<typeof wheelPolar>, rSign: nu
 }
 
 /**
- * 붙은 별의 이름을 같은 원 위에서 양옆으로 벌린다(그림의 자리만 정한다. 별의 위치는 서버 값 그대로).
- * 황경 순서는 지키고, 이웃한 두 이름의 중심이 원 위에서 (두 이름 폭의 반씩 + gap) 보다 가까우면 둘을 반씩 밀어낸다.
- * 무리의 가운데는 제자리에 남는다. 반환: 식별자 → 이름을 놓을 황경
+ * 가까이 몰린 점의 이름을 고리를 따라 양옆으로 벌린다(내 하늘 지도 · 궁합의 겹친 휠이 같이 쓴다).
+ * 점의 자리(서버의 황경)는 건드리지 않고 이름을 적을 방향만 정한다. 황경 순서는 지키고,
+ * 이웃한 두 이름은 apart(앞, 뒤) 도 넘게 떨어지게 하면서 원래 자리에서 가장 덜 움직인다(제곱 합이 가장 작다).
+ * 붙은 것끼리 한 묶음으로 띄우고 묶음의 가운데는 원래 자리의 가운데에 남는다.
  */
-export function spreadLabels(list: { body: string; lon: number; width: number }[], r: number, gap: number): Map<string, number> {
-  const n = list.length;
+export function spreadLabels<T extends { body: string; lon: number }>(
+  list: readonly T[],
+  apart: number | ((a: T, b: T) => number),
+): { body: string; lon: number; labelLon: number }[] {
   const sorted = [...list].sort((p, q) => p.lon - q.lon);
-  // 가장 넓게 빈 곳 다음에서 세기 시작해 한 줄로 편다(0도를 사이에 둔 이웃도 이어지게)
+  const n = sorted.length;
+  if (n === 0) return [];
+  // 가장 넓게 빈 곳 다음에서 시작해 한 줄로 편다(0도를 사이에 둔 이웃도 이어진다).
   let start = 0;
   let widest = -1;
   sorted.forEach((p, i) => {
@@ -139,23 +144,29 @@ export function spreadLabels(list: { body: string; lon: number; width: number }[
       start = i;
     }
   });
-  const line = Array.from({ length: n }, (_, k) => sorted[(start + k) % n]);
-  const base = line[0]?.lon ?? 0;
-  const pos = line.map((p) => base + ((p.lon - base + 360) % 360));
-  const need = (a: number, b: number) => (((line[a].width + line[b].width) / 2 + gap) / r) * (180 / Math.PI);
-  for (let round = 0; round < 500; round++) {
-    let moved = false;
-    for (let i = 0; i + 1 < n; i++) {
-      const short = need(i, i + 1) - (pos[i + 1] - pos[i]);
-      if (short > 1e-6) {
-        pos[i] -= short / 2;
-        pos[i + 1] += short / 2;
-        moved = true;
-      }
+  const line = sorted.map((_, k) => sorted[(start + k) % n]);
+  const flat = line.map((p) => (p.lon - line[0].lon + 360) % 360);
+  const gap = typeof apart === 'number' ? () => apart : (i: number) => apart(line[i], line[i + 1]);
+  // 앞에서부터 쌓은 최소 거리. 이름 자리 = shift[i] + (줄지 않는 값) 이 되도록 바꿔 풀면, 묶음마다 평균을 내는 것으로 끝난다.
+  const shift = [0];
+  for (let i = 0; i + 1 < n; i++) shift.push(shift[i] + gap(i));
+  const blocks: { first: number; count: number; mean: number }[] = [];
+  flat.forEach((x, i) => {
+    let block = { first: i, count: 1, mean: x - shift[i] };
+    while (blocks.length > 0 && blocks[blocks.length - 1].mean > block.mean) {
+      const prev = blocks.pop()!;
+      const count = prev.count + block.count;
+      block = { first: prev.first, count, mean: (prev.mean * prev.count + block.mean * block.count) / count };
     }
-    if (!moved) break;
-  }
-  return new Map(line.map((p, i) => [p.body, ((pos[i] % 360) + 360) % 360]));
+    blocks.push(block);
+  });
+  return blocks.flatMap((b) =>
+    Array.from({ length: b.count }, (_, k) => {
+      const i = b.first + k;
+      const p = line[i];
+      return { body: p.body, lon: p.lon, labelLon: p.lon + (b.mean + shift[i] - flat[i]) };
+    }),
+  );
 }
 
 /** 두 반지름 사이에서 황경 from 부터 to 까지(황경이 느는 쪽, 화면에서는 시계 반대 방향)의 칸 모양 */
@@ -205,10 +216,12 @@ export function wheelLayout(chart: Chart, size: number = SKY_WHEEL_SIZE): WheelL
 
   // 이름의 폭: 한 글자가 고른 별의 글자 크기만큼(한글은 네모꼴이다)
   const nameWidth = (body: string) => ((strings.bodiesShort as Record<string, string>)[body] ?? body).length * SKY.selectedLabel * u;
-  const labelLon = spreadLabels(
-    chart.positions.map((p) => ({ body: p.body, lon: p.longitude, width: nameWidth(p.body) })),
-    SKY.rLabel * u,
-    SKY.labelGap * u,
+  const labelLon = new Map(
+    spreadLabels(
+      chart.positions.map((p) => ({ body: p.body, lon: p.longitude, width: nameWidth(p.body) })),
+      // 이웃한 두 이름의 중심 사이에 둘 각도: 두 이름 폭의 반씩 + 틈
+      (a, b) => (((a.width + b.width) / 2 + SKY.labelGap * u) / (SKY.rLabel * u)) * (180 / Math.PI),
+    ).map((p) => [p.body, ((p.labelLon % 360) + 360) % 360]),
   );
   const bodies: WheelLayout['bodies'] = chart.positions.map((p) => {
     const lon = labelLon.get(p.body) ?? p.longitude;

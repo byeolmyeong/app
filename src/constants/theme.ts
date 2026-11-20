@@ -50,6 +50,9 @@ export const Colors = {
   dangerSoft: '#FF8A8A',
   /** 짧은 알림의 성공 체크(보드 23) */
   success: '#7EE0B5',
+  /** 처음 불러올 때 뼈대 막대의 바탕과, 그 위를 지나가는 옅은 빛(보드 24 · 24-1) */
+  skeleton: '#1E1F27',
+  skeletonShine: '#2A2B35',
 } as const;
 
 export type ColorName = keyof typeof Colors;
@@ -227,6 +230,9 @@ export const ToastLayout = {
   gap: 10,
   shadow: '0 8px 24px rgba(0,0,0,0.45)',
 } as const;
+
+/** 처음 불러올 때 뼈대(보드 24 · 24-1): 막대 모서리 · 카드 모서리(큰 카드) · 카드 안 여백 · 조각 사이 · 빛이 한 번 오가는 시간 */
+export const SkeletonLayout = { radius: 8, cardRadius: 20, bigCardRadius: 24, cardPadding: 20, gap: 12, shimmerMs: 1400 } as const;
 
 /** 연결 끊김 띠(결정 061 의 4, 보드 20) */
 export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, icon: 20, gap: 10 } as const;

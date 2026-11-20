@@ -669,9 +669,9 @@ export const MyLayout = {
   birth: { noticePadV: 14, noticePadH: 16, noticeRadius: 14, noticeIcon: 20, noticeIconTop: 1, noticeGap: 10, gap: 22 },
   /**
    * 알림 설정(16-2 · 16-2-2): 푸시를 끄면 오늘의 하늘 묶음을 흐리게(불투명도) · 그 아래 안내 글의 가로 여백 ·
-   * 처음 불러올 때 뼈대(이름 · 설명 막대의 높이 · 너비, 둘 사이 — 22 줄 안의 16 과 18 줄 안의 12 사이가 글자 줄 사이 2 와 같게. 스위치 크기는 list.switch)
+   * 처음 불러올 때 뼈대(이름 · 설명 막대의 높이 · 너비 — 막대는 글자 줄 높이 칸 가운데에 둔다. 스위치 크기는 list.switch)
    */
-  notifications: { dim: 0.4, hintPadH: 4, skeleton: { label: 16, desc: 12, gap: 8, labelWidth: '40%', descWidth: '70%' } },
+  notifications: { dim: 0.4, hintPadH: 4, skeleton: { label: 16, desc: 12, labelWidth: '40%', descWidth: '70%' } },
 } as const;
 
 /**

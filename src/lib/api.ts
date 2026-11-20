@@ -644,10 +644,7 @@ export function isMyAccount(v: unknown): v is MyAccount {
     (v.email === null || typeof v.email === 'string') &&
     typeof v.provider === 'string' &&
     typeof v.marketingConsent === 'boolean' &&
-    (v.suspended === undefined || typeof v.suspended === 'boolean') &&
-    (v.pushConsent === undefined || typeof v.pushConsent === 'boolean') &&
-    (v.todaySkyPush === undefined || typeof v.todaySkyPush === 'boolean') &&
-    (v.todaySkyTime === undefined || isTodaySkyTime(v.todaySkyTime))
+    (v.suspended === undefined || typeof v.suspended === 'boolean')
   );
 }
 
@@ -658,9 +655,9 @@ const myAccountOf = (v: MyAccount): MyAccount => ({
   provider: v.provider,
   marketingConsent: v.marketingConsent,
   suspended: v.suspended === true,
-  // 알림 칸은 서버가 줄 때만 둔다(없는 옛 서버를 알림 화면이 알아보게)
-  ...(v.pushConsent !== undefined ? { pushConsent: v.pushConsent } : {}),
-  ...(v.todaySkyPush !== undefined && v.todaySkyTime !== undefined ? { todaySkyPush: v.todaySkyPush, todaySkyTime: v.todaySkyTime } : {}),
+  // 알림 칸은 꼴이 맞을 때만 둔다 — 없거나 틀리면 그 칸만 없는 것으로(홈 · 마이 · 정지 문이 같은 계정을 쓰니 계정 전체를 버리지 않는다, #59 리뷰)
+  ...(typeof v.pushConsent === 'boolean' ? { pushConsent: v.pushConsent } : {}),
+  ...(typeof v.todaySkyPush === 'boolean' && isTodaySkyTime(v.todaySkyTime) ? { todaySkyPush: v.todaySkyPush, todaySkyTime: v.todaySkyTime } : {}),
 });
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -1348,7 +1345,7 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/me-report', { validate: isMeReportState });
     },
 
-    /** `GET /account` 내 계정 — 홈 별명 카드(닉네임 · 프로필, 결정 047)와 마이 · 계정 화면(결정 056)이 함께 쓴다. 동의 일시 · 푸시 동의는 앱이 쓰지 않아 버린다 */
+    /** `GET /account` 내 계정 — 홈 별명 카드(닉네임 · 프로필, 결정 047)와 마이 · 계정 화면(결정 056)이 함께 쓴다. 동의 일시는 버리고, 알림 칸(푸시 동의 · 오늘의 하늘)은 꼴이 맞을 때만 둔다 */
     async getMyAccount(): Promise<ApiResult<MyAccount>> {
       if (config.useFixtures) return { ok: true, data: FIXTURE_MY_ACCOUNT };
       const res = await request('GET', '/account', { validate: isMyAccount });

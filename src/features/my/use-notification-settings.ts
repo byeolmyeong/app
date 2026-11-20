@@ -27,7 +27,8 @@ const readyOf = (account: MyAccount): NotificationState => {
  * 알림 설정(16-2): 로그인이 확인된 뒤, 화면이 보일 때마다 내 계정(`GET /account`)을 다시 묻는다. 기기에 보관하지 않는다.
  * 바꾸기(`change`)는 누른 즉시 화면에 보이고(`PATCH /account` 에는 바꾼 칸만), 답이 오면 서버가 준 값으로 다시 그린다 — 직접 정한 적 없는
  * 오늘의 하늘은 서버가 푸시 동의를 따라 바꿔 주기 때문이다. 못 바꾸면 마지막으로 서버가 준 값으로 되돌리고 false 를 돌려준다(화면이 짧은 알림).
- * 요청마다 번호를 매겨 마지막 요청의 답만 화면에 쓴다 — 빨리 여러 번 눌러도 늦게 온 앞 요청의 답이 뒤 것을 덮지 않게.
+ * 바꾸기가 여럿 겹치면 모두 답이 온 뒤에 서버가 가장 나중에 준 값으로 맞춘다 — 뒤 요청이 먼저 실패해도 앞 요청의 성공이 화면에 남고,
+ * 늦게 온 앞 요청의 답이 뒤 것을 덮지 않는다(요청 번호, #59 리뷰). 기다리는 동안 온 읽기의 답도 화면을 바꾸지 않는다.
  */
 export function useNotificationSettings() {
   const signedIn = useSession().status === 'signedIn';
@@ -38,13 +39,15 @@ export function useNotificationSettings() {
   const latest = useRef(0);
   /** 서버가 마지막으로 준 계정과 그 요청의 번호 — 못 바꿨을 때 되돌릴 곳 */
   const confirmed = useRef<Confirmed | null>(null);
+  /** 답을 기다리는 바꾸기의 수 */
+  const inflight = useRef(0);
 
   const load = useCallback(() => {
     if (!signedIn) return;
     const mine = ++latest.current;
     void api.getMyAccount().then((res) => {
       if (res.ok) keepNewer(confirmed, mine, res.data);
-      if (latest.current !== mine) return;
+      if (latest.current !== mine || inflight.current > 0) return;
       if (res.ok) setState(readyOf(res.data));
       // 받아 둔 것이 있으면 실패해도 그대로 둔다(다시 볼 때의 끊김)
       else setState((prev) => (prev.status === 'ready' ? prev : { status: 'failed', error: res.error }));
@@ -79,13 +82,13 @@ export function useNotificationSettings() {
       };
     });
     const mine = ++latest.current;
+    inflight.current++;
     const res = await api.updateAccount(patch);
+    inflight.current--;
     if (res.ok) keepNewer(confirmed, mine, res.data);
-    if (latest.current === mine) {
-      const back = confirmed.current?.account;
-      if (res.ok) setState(readyOf(res.data));
-      else if (back) setState(readyOf(back));
-    }
+    // 기다리는 바꾸기가 없을 때만 서버가 마지막으로 준 값으로 맞춘다(못 바꾼 것은 이때 되돌아간다)
+    const last = confirmed.current?.account;
+    if (inflight.current === 0 && last) setState(readyOf(last));
     return res.ok;
   }, []);
 

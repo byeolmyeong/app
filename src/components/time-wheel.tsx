@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ScrollPicker } from '@/components/scroll-picker';
@@ -53,10 +54,12 @@ export function TimeWheel({
   minuteStep = 1,
 }: {
   value: WheelTime;
-  onChange: (next: WheelTime) => void;
+  /** 이전 값에서 바꾼다(열 하나를 굴리다 멈추는 사이 다른 열을 눌러도 앞 열의 값을 덮지 않게) */
+  onChange: Dispatch<SetStateAction<WheelTime>>;
   minuteStep?: number;
 }) {
-  const minute = value.minute - (value.minute % minuteStep);
+  const snap = (m: number) => m - (m % minuteStep);
+  const minute = snap(value.minute);
   return (
     <View style={styles.pickers}>
       <View pointerEvents="none" style={styles.band} />
@@ -65,7 +68,7 @@ export function TimeWheel({
         band={false}
         items={PERIODS}
         value={value.period}
-        onChange={(period) => onChange({ ...value, minute, period })}
+        onChange={(period) => onChange((prev) => ({ ...prev, minute: snap(prev.minute), period }))}
       />
       <ScrollPicker
         testID="time-hour"
@@ -73,7 +76,7 @@ export function TimeWheel({
         loop
         items={HOURS}
         value={value.hour}
-        onChange={(hour) => onChange({ ...value, minute, hour })}
+        onChange={(hour) => onChange((prev) => ({ ...prev, minute: snap(prev.minute), hour }))}
       />
       <Txt variant="pickerOn">{strings.common.timeColon}</Txt>
       <ScrollPicker
@@ -82,7 +85,7 @@ export function TimeWheel({
         loop
         items={minutesOf(minuteStep)}
         value={minute}
-        onChange={(next) => onChange({ ...value, minute: next })}
+        onChange={(next) => onChange((prev) => ({ ...prev, minute: next }))}
       />
     </View>
   );

@@ -76,6 +76,9 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
     await waitFor(() => expect(isOn(N.todaySky.label)).toBe(false));
     expect(screen.getByTestId('today-sky').props.accessibilityState).toEqual({ disabled: true });
     expect(screen.getByTestId('today-sky').props.pointerEvents).toBe('none');
+    // 웹 키보드 · 화면 낭독기에도 누를 수 없다고 알린다(줄 자체가 disabled, #59 리뷰)
+    expect(sw(N.todaySky.label).props.accessibilityState).toMatchObject({ disabled: true });
+    expect(screen.getByRole('button', { name: N.time }).props.accessibilityState).toMatchObject({ disabled: true });
     // 흐린 동안 눌러도 보내지 않는다
     await fireEvent.press(sw(N.todaySky.label));
     await fireEvent.press(screen.getByRole('button', { name: N.time }));
@@ -112,6 +115,24 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
     await fireEvent.press(sw(N.marketing.label));
     await waitFor(() => expect(mockApi.updateAccount).toHaveBeenCalledTimes(2));
     await act(async () => first({ ok: true, data: { ...full, marketingConsent: true } }));
+    expect(isOn(N.marketing.label)).toBe(false);
+  });
+
+  it('서로 다른 칸을 빨리 바꿨는데 뒤 요청이 먼저 실패해도, 앞 요청의 성공이 화면에 남는다(모두 답이 온 뒤 서버 값으로, #59 리뷰)', async () => {
+    let pushDone: (r: ApiResult<MyAccount>) => void = () => {};
+    mockApi.updateAccount
+      .mockReturnValueOnce(new Promise((resolve) => (pushDone = resolve)))
+      .mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await render(<NotificationsScreen />);
+    await screen.findByText(N.marketing.label);
+    await fireEvent.press(sw(N.push.label));
+    await fireEvent.press(sw(N.marketing.label));
+    // 뒤 요청(마케팅)이 먼저 실패 — 앞 요청이 아직이라 화면은 그대로 둔다
+    expect(await screen.findByText(N.saveFailed)).toBeTruthy();
+    expect(isOn(N.push.label)).toBe(false);
+    await act(async () => pushDone({ ok: true, data: { ...full, pushConsent: false, todaySkyPush: false } }));
+    // 서버: 푸시 끔(성공) · 마케팅 그대로 끔(실패)
+    expect(isOn(N.push.label)).toBe(false);
     expect(isOn(N.marketing.label)).toBe(false);
   });
 

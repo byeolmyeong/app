@@ -240,15 +240,18 @@ describe('api: 마이의 내 계정', () => {
     expect(res.ok && 'pushConsent' in res.data).toBe(false);
   });
 
-  it('알림 칸의 모양이 계약과 다르면 INVALID(받는 시간은 5분 단위 HH:mm)', async () => {
+  it('알림 칸의 꼴이 틀리면 계정은 받고 그 칸만 없는 것으로 본다(받는 시간은 5분 단위 HH:mm — 홈 · 마이 · 정지 문이 같은 계정을 쓴다)', async () => {
+    const { pushConsent: _p, ...rest } = mine;
+    const noPush = await app(fakeFetch(200, { ...account, pushConsent: 'true' })).getMyAccount();
+    expect(noPush).toEqual({ ok: true, data: rest });
     for (const bad of [
-      { ...account, pushConsent: 'true' },
       { ...account, todaySkyPush: 1, todaySkyTime: '08:00' },
       { ...account, todaySkyPush: true, todaySkyTime: '08:03' },
       { ...account, todaySkyPush: true, todaySkyTime: '8:00' },
       { ...account, todaySkyPush: true, todaySkyTime: '24:00' },
+      { ...account, todaySkyPush: true, todaySkyTime: null },
     ]) {
-      expect(await app(fakeFetch(200, bad)).getMyAccount()).toMatchObject({ ok: false, error: 'INVALID' });
+      expect(await app(fakeFetch(200, bad)).getMyAccount()).toEqual({ ok: true, data: mine });
     }
   });
 

@@ -108,7 +108,7 @@ describe('약관 단계', () => {
     expect(screen.getAllByRole('link')).toHaveLength(3);
     // 가입 중에 연 것을 글 화면이 알아 맨 아래에 동의하기를 둔다(결정 044, 보드 6-2)
     expect((router.push as jest.Mock).mock.calls).toEqual(
-      ['/settings/terms', '/settings/privacy', '/settings/marketing'].map((pathname) => [{ pathname, params: { from: 'signup' } }]),
+      ['/settings/terms', '/settings/privacy-consent', '/settings/marketing'].map((pathname) => [{ pathname, params: { from: 'signup' } }]),
     );
   });
 

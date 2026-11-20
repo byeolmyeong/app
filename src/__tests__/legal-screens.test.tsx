@@ -4,8 +4,9 @@ import { StyleSheet } from 'react-native';
 
 import MarketingScreen from '@/app/settings/marketing';
 import PrivacyScreen from '@/app/settings/privacy';
+import PrivacyConsentScreen from '@/app/settings/privacy-consent';
 import TermsScreen from '@/app/settings/terms';
-import { legalInfo, marketing, privacy, terms } from '@/content/legal';
+import { legalInfo, marketing, privacy, privacyConsent, terms } from '@/content/legal';
 import { strings } from '@/content/strings';
 
 const L = strings.legal;
@@ -54,6 +55,7 @@ describe('약관 글 화면의 모양(보드 6-2)', () => {
     ['이용약관', TermsScreen],
     ['개인정보 처리방침', PrivacyScreen],
     ['마케팅 정보 수신 동의 약관', MarketingScreen],
+    ['개인정보 수집 · 이용 동의', PrivacyConsentScreen],
   ])('%s: 마이에서 연 글(가입 중이 아님)에는 동의하기가 없다', async (_name, Component) => {
     await render(<Component />);
     expect(screen.queryByRole('button', { name: L.agree })).toBeNull();
@@ -86,6 +88,7 @@ describe('약관 글 화면', () => {
     ['이용약관', TermsScreen, terms],
     ['개인정보 처리방침', PrivacyScreen, privacy],
     ['마케팅 정보 수신 동의 약관', MarketingScreen, marketing],
+    ['개인정보 수집 · 이용 동의(결정 045)', PrivacyConsentScreen, privacyConsent],
   ])('%s: 제목 · 머리말 · 모든 조항 제목(heading) · 문단 · 목록 · 표 머리와 칸 · 마지막 시행 문구를 그린다', async (_name, Component, doc) => {
     await render(<Component />);
     expect(screen.getByText(doc.title)).toBeTruthy();
@@ -135,5 +138,22 @@ describe('약관 글 화면', () => {
     expect(screen.getAllByText(legalInfo.contact, { exact: false }).length).toBeGreaterThan(0);
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/mailto/);
     expect(screen.queryAllByRole('link')).toHaveLength(0);
+  });
+});
+
+// 개인정보 수집 · 이용 동의(결정 045): 약관 단계의 동의는 이 글에서 받고, 처리방침은 알리는 글로 남는다
+describe('개인정보 수집 · 이용 동의와 처리방침', () => {
+  it('가입 약관 단계에서 연 개인정보 수집 · 이용 동의에는 동의하기가 있다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    await render(<PrivacyConsentScreen />);
+    expect(screen.getByText(privacyConsent.title)).toBeTruthy();
+    expect(screen.getByRole('button', { name: L.agree })).toBeTruthy();
+  });
+
+  it('처리방침은 from=signup 이어도 동의하기가 없다(동의받는 글이 아니다)', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    await render(<PrivacyScreen />);
+    expect(screen.getByText(privacy.title)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: L.agree })).toBeNull();
   });
 });

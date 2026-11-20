@@ -24,10 +24,10 @@ const T = strings.terms;
 
 type Key = keyof Agreements;
 
-/** 줄의 순서 · 필수 여부 · "보기" 가 여는 화면(마케팅은 마케팅 정보 수신 동의 약관, 결정 043) */
-const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '/settings/privacy' | '/settings/marketing'; label: string } }[] = [
+/** 줄의 순서 · 필수 여부 · "보기" 가 여는 화면(개인정보는 수집 · 이용 동의 글 — 결정 045, 마케팅은 마케팅 정보 수신 동의 약관 — 결정 043) */
+const ITEMS: { key: Key; required: boolean; view?: { href: '/settings/terms' | '/settings/privacy-consent' | '/settings/marketing'; label: string } }[] = [
   { key: 'terms', required: true, view: { href: '/settings/terms', label: T.viewLabels.terms } },
-  { key: 'privacy', required: true, view: { href: '/settings/privacy', label: T.viewLabels.privacy } },
+  { key: 'privacy', required: true, view: { href: '/settings/privacy-consent', label: T.viewLabels.privacy } },
   { key: 'push', required: false },
   { key: 'marketing', required: false, view: { href: '/settings/marketing', label: T.viewLabels.marketing } },
 ];

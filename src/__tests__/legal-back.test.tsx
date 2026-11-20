@@ -5,9 +5,10 @@ import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import MyScreen from '@/app/my';
 import MarketingScreen from '@/app/settings/marketing';
 import PrivacyScreen from '@/app/settings/privacy';
+import PrivacyConsentScreen from '@/app/settings/privacy-consent';
 import TermsScreen from '@/app/settings/terms';
 import TermsStep from '@/app/signup/terms';
-import { marketing, privacy, terms } from '@/content/legal';
+import { marketing, privacy, privacyConsent, terms } from '@/content/legal';
 import { strings } from '@/content/strings';
 import { clearDraft } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
@@ -32,6 +33,7 @@ const routes = {
   'signup/terms': TermsStep,
   'settings/terms': TermsScreen,
   'settings/privacy': PrivacyScreen,
+  'settings/privacy-consent': PrivacyConsentScreen,
   'settings/marketing': MarketingScreen,
 };
 
@@ -57,7 +59,8 @@ describe('약관 글에서 뒤로 가기', () => {
 
   it.each([
     ['terms', '/settings/terms', terms],
-    ['privacy', '/settings/privacy', privacy],
+    // 개인정보 수집 · 이용의 "보기" 는 처리방침이 아니라 개인정보 수집 · 이용 동의 글을 연다(결정 045)
+    ['privacy', '/settings/privacy-consent', privacyConsent],
     ['marketing', '/settings/marketing', marketing],
   ] as const)('가입 약관 단계의 %s "보기" 로 연 글에서 뒤로 가면 약관 단계로 돌아가고, 켜 둔 동의는 그대로다', async (key, path, doc) => {
     const T = strings.terms;
@@ -93,7 +96,7 @@ describe('약관 글의 동의하기', () => {
 
   it.each([
     ['terms', '/settings/terms'],
-    ['privacy', '/settings/privacy'],
+    ['privacy', '/settings/privacy-consent'],
     ['marketing', '/settings/marketing'],
   ] as const)('%s: 보기 → 동의하기 → 약관 단계에서 그 항목만 켜져 있다', async (key, path) => {
     await renderRouter(routes, { initialUrl: '/signup/terms' });

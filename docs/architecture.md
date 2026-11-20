@@ -32,11 +32,11 @@ flowchart LR
 ## 디렉터리 구조 (src/)
 ```
 app/                 화면(Expo Router, 파일이 곧 라우트). 화면은 얇게: features 의 훅·부품을 조립만 한다
-  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 · 소개 안 봄 /intro, 로그인 전 /login, 가입 중 /signup/terms(가입 단계와 이용약관 · 처리방침 · 마케팅 수신 동의 약관은 열림), /s · /auth 는 열림, 결정 034 · 042)
+  _layout.tsx        루트: 글꼴 · 강제 업데이트 문 · 로그인 전 가드(features/auth/guard.ts — 로그인 전 · 소개 안 봄 /intro, 로그인 전 /login, 가입 중 /signup/terms(가입 단계와 이용약관 · 개인정보 수집 · 이용 동의 · 처리방침 · 마케팅 수신 동의 약관은 열림), /s · /auth 는 열림, 결정 034 · 042)
   index.tsx          홈(출생 정보가 없으면 입력 · 서버의 것으로 되살리기)
   intro.tsx · login.tsx · auth/kakao.tsx   소개 3장(이 기기에서 처음 한 번) · 로그인(공급자 버튼) · 카카오 웹 로그인에서 돌아오는 화면(결정 034 · 042)
   signup/            단계식 가입(결정 042): terms.tsx(약관 동의) → nickname.tsx(닉네임 · 프로필) → birth.tsx(출생 정보, 여기서 POST /auth/signup 한 번)
-  reading.tsx · report.tsx · direction.tsx · chart/(index 내 하늘 지도 · detail 차트 자세히 표) · synastry/ · invite/[id].tsx · s/[shareId].tsx · my.tsx(마이: 출생 정보 · 도움 · 약관 · 정보 · 로그아웃 · 계정 삭제, 결정 038) · settings/(자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 마케팅 수신 동의 약관 — 목록 화면은 없다. 약관 글은 결정 043)
+  reading.tsx · report.tsx · direction.tsx · chart/(index 내 하늘 지도 · detail 차트 자세히 표) · synastry/ · invite/[id].tsx · s/[shareId].tsx · my.tsx(마이: 출생 정보 · 도움 · 약관 · 정보 · 로그아웃 · 계정 삭제, 결정 038) · settings/(자주 묻는 질문 · 문의하기 · 처리방침 · 약관 · 마케팅 수신 동의 약관 · 개인정보 수집 · 이용 동의(privacy-consent — 약관 단계의 보기 · 동의하기, 결정 045) — 목록 화면은 없다. 약관 글은 결정 043)
 features/            기능별 로직과 기능 전용 부품
   auth/              세션(session-store · use-session 의 useAuth — 소셜 로그인 · 가입 · 닉네임 확인 · 가입 그만두기 · 로그아웃, 개발용 세션), 공급자 버튼(providers/ — `google`·`apple`·`kakao` 의 기본(앱) · `.ios` · `.web` 파일, 같은 이름의 버튼, 모양은 social-button.tsx 하나 — 웹 구글만 GIS), 최근 로그인(last-provider.ts — 마지막에 로그인한 공급자 이름만 AsyncStorage `byeolmyeong-device.lastProvider.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 044), 세션 토큰 보관, 로그인 전 가드(guard.ts), 가입 단계 뼈대(signup-step.tsx) · 초안(signup-draft.ts, 메모리만) · 닉네임 규칙(nickname-rule.ts) · 프로필 고르기 시트(avatar-sheet.tsx), 로그아웃(sign-out.ts — 기기 저장도 비움), 계정 삭제(확인 시트 · 기기 저장 비움)
   onboarding/        소개 3장의 그림(intro-art.tsx)과 이 기기에서 봤는지(intro-seen.ts — AsyncStorage `byeolmyeong-device.introSeen.v1`, 로그아웃 · 탈퇴가 지우지 않는다, 결정 042)

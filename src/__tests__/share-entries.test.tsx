@@ -28,7 +28,7 @@ jest.mock('@/lib/api', () => ({
     getSynastryRanking: jest.fn(),
     getMeReport: jest.fn(),
     requestMeReport: jest.fn(),
-    getAccount: jest.fn(),
+    getMyAccount: jest.fn(),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -63,7 +63,7 @@ beforeEach(async () => {
   }));
   mockApi.createReading.mockResolvedValue({ ok: true, data: fixtures.reading });
   mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } as MeReportState });
-  mockApi.getAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
+  mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   mockApi.getSynastry.mockResolvedValue({ ok: true, data: fixtures.synastryList[0] });
   mockApi.getSynastryRanking.mockImplementation(async (relation) => ({
     ok: true,

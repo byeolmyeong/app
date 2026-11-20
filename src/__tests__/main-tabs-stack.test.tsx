@@ -25,7 +25,7 @@ const routes = {
   index: page('home', 'home'),
   me: page('me', 'me'),
   reading: page('reading', 'me', true),
-  report: page('report', 'timing'),
+  timing: page('timing', 'timing'),
   my: page('my', 'my'),
   birth: () => <Text>birth</Text>,
 };

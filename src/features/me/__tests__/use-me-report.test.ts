@@ -1,7 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
-import { ME_REPORT_POLL_MS, ME_REPORT_STORAGE_KEY, useMeReport } from '@/features/me/use-me-report';
+import {
+  ME_REPORT_MAX_WRITING_MS,
+  ME_REPORT_POLL_MS,
+  ME_REPORT_STORAGE_KEY,
+  ME_REPORT_TIMEOUT_MS,
+  useMeReport,
+} from '@/features/me/use-me-report';
 import { api, type ApiResult, type MeReportRequest, type MeReportState } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -182,6 +188,42 @@ describe('useMeReport(결정 048 의 4 · 8)', () => {
     mockApi.getMeReport.mockResolvedValue(got('NONE'));
     const second = await renderHook(() => useMeReport(input));
     await waitFor(() => expect(second.result.current.state).toEqual({ status: 'none' }));
+  });
+
+  it('응답이 10초 넘게 오지 않으면 기다리지 않는다: 처음 확인은 "모름", 받기는 요청 단계의 실패(리뷰 — 쓰는 중 화면에 갇히지 않게)', async () => {
+    expect(ME_REPORT_TIMEOUT_MS).toBe(10_000);
+    mockApi.getMeReport.mockReturnValueOnce(new Promise(() => {}));
+    const { result } = await renderHook(() => useMeReport(input));
+    await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_TIMEOUT_MS - 1)));
+    expect(result.current.state).toEqual({ status: 'checking' });
+    await act(async () => void (await jest.advanceTimersByTimeAsync(1)));
+    expect(result.current.state).toEqual({ status: 'unknown', error: 'SERVER' });
+    // 다시 보기는 막히지 않는다
+    await act(async () => result.current.recheck());
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'none' }));
+    mockApi.requestMeReport.mockReturnValueOnce(new Promise(() => {}));
+    await act(async () => result.current.start());
+    expect(result.current.state).toEqual({ status: 'writing' });
+    await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_TIMEOUT_MS)));
+    expect(result.current.state).toEqual({ status: 'failed', error: 'SERVER', stage: 'request' });
+  });
+
+  it('쓰는 중이 3분을 넘으면 확인을 멈추고 확인 단계의 실패로 둔다 — 다시 보기는 상태만 다시 묻는다', async () => {
+    expect(ME_REPORT_MAX_WRITING_MS).toBe(180_000);
+    mockApi.getMeReport.mockResolvedValue(got('WRITING'));
+    const { result } = await renderHook(() => useMeReport(input));
+    // 열었을 때 이미 쓰는 중이다(전에 받기를 눌렀다)
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'writing' }));
+    await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_MAX_WRITING_MS - ME_REPORT_POLL_MS)));
+    expect(result.current.state).toEqual({ status: 'writing' });
+    await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_POLL_MS * 2)));
+    expect(result.current.state).toEqual({ status: 'failed', error: 'SERVER', stage: 'poll' });
+    const calls = mockApi.getMeReport.mock.calls.length;
+    await tick(3);
+    expect(mockApi.getMeReport).toHaveBeenCalledTimes(calls);
+    await act(async () => result.current.recheck());
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'writing' }));
+    expect(mockApi.requestMeReport).not.toHaveBeenCalled();
   });
 
   it('다른 출생 정보의 보관본은 쓰지 않는다', async () => {

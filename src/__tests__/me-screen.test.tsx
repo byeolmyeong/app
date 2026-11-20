@@ -136,6 +136,21 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
   });
 
+  it('내 별명은 있는데 상태를 10초 넘게 묻지 못하면 빈 화면이 아니라 카드 자리 안내(19-1, 결정 065 의 2 — 리뷰)', async () => {
+    jest.useFakeTimers();
+    await storeReading();
+    mockApi.getMeReport.mockReturnValueOnce(new Promise(() => {}));
+    await render(<MeScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(500)));
+    expect(screen.getByTestId('me-skeleton')).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(10_000)));
+    expect(screen.getByTestId('card-fail')).toBeTruthy();
+    expect(screen.getByText(reading.headline)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ST.loadFail.retry }));
+    await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
+    expect(screen.getByTestId('me-detail-card')).toBeTruthy();
+  });
+
   it('처음 불러올 때 0.3초가 넘으면 뼈대(24-1), 머리 · 아래 탭은 그대로 보인다', async () => {
     jest.useFakeTimers();
     mockApi.createReading.mockReturnValue(new Promise(() => {}));

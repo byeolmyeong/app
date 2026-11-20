@@ -3,7 +3,7 @@
  * 근거 구조의 식별자를 용어 사전(`strings.glossary`)의 말로 옮기기만 한다. 사전에 없는 값은 건너뛴다.
  */
 import { strings } from '@/content/strings';
-import { isKnown } from '@/features/reason/reason-sentence';
+import { isKnown, needsTime } from '@/features/reason/reason-sentence';
 import type { KnownBasisItem, Reason } from '@/lib/api';
 
 const G = strings.glossary;
@@ -88,11 +88,14 @@ function termsOf(item: KnownBasisItem, timeKnown: boolean): (ReasonTerm | undefi
   }
 }
 
+/** 문장에 쓰인 근거만(아는 종류, 시각을 모르면 하우스 · 상승점 · 중천만으로 된 근거는 뺀다 — 문장과 같은 기준) */
+const usable = (reason: Reason, timeKnown: boolean) => reason.items.filter(isKnown).filter((item) => timeKnown || !needsTime(item));
+
 /** 용어 줄: 근거의 차례대로, 같은 것은 한 번, 셋까지 */
 export function reasonTerms(reason: Reason, timeKnown: boolean): ReasonTerm[] {
   const seen = new Set<string>();
   const terms: ReasonTerm[] = [];
-  for (const t of reason.items.filter(isKnown).flatMap((item) => termsOf(item, timeKnown))) {
+  for (const t of usable(reason, timeKnown).flatMap((item) => termsOf(item, timeKnown))) {
     if (!t || seen.has(t.key)) continue;
     seen.add(t.key);
     terms.push(t);
@@ -115,7 +118,7 @@ export function reasonFocus(reason: Reason, timeKnown: boolean): { bodies: strin
     if (timeKnown && n !== undefined && !houses.includes(n)) houses.push(n);
   };
   if (reason.when !== 'BIRTH') return { bodies, houses };
-  for (const item of reason.items.filter(isKnown)) {
+  for (const item of usable(reason, timeKnown)) {
     if (item.kind === 'PLACEMENT') {
       addBody(item.body);
       addHouse(item.house);

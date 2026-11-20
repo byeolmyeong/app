@@ -90,6 +90,22 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     expect(screen.queryByText(G.houses[6].meaning)).toBeNull();
   });
 
+  it('시각 "모름" 이면 문장에서 빠진 근거(상승점 · 중천 · 하우스 모임)는 용어 줄 · 작은 지도에도 없다(리뷰)', async () => {
+    const mixed: Reason = {
+      when: 'BIRTH',
+      items: [
+        { kind: 'PLACEMENT', body: 'ASC', sign: 'LIBRA' },
+        { kind: 'PLACEMENT', body: 'MOON', sign: 'SAGITTARIUS', house: 11 },
+      ],
+    };
+    await render(<ReasonLine reason={mixed} chart={fixtures.chartTimeUnknown} />);
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${R.label}`) }));
+    expect(screen.queryByText(G.signs.LIBRA.meaning)).toBeNull();
+    expect(screen.queryByText(G.angles.ASC.meaning)).toBeNull();
+    expect(screen.getAllByTestId('reason-term')).toHaveLength(2);
+    expect(screen.getAllByTestId('mini-wheel-dot')).toHaveLength(1);
+  });
+
   it('지나가는 별(TRANSIT)의 펼침에는 작은 지도와 하늘 지도 보기가 없다(태어난 하늘이 아니다)', async () => {
     const transit: Reason = { when: 'NOW', items: [{ kind: 'TRANSIT', mover: 'SATURN', target: 'SUN', type: 'SQUARE' }] };
     await render(<ReasonLine reason={transit} chart={fixtures.chart} />);

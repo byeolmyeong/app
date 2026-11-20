@@ -1257,7 +1257,6 @@ export function createApi(config: ApiConfig) {
       return request('POST', '/readings', { validate: isReading });
     },
 
-
     /**
      * `POST /directions` 의 궁합 주제: 직접 입력 궁합 한 건(`synastryId`)에 대한 글. birth 는 상대의 출생 정보이고
      * 그 궁합의 글을 처음 만들 때만 필요하다(서버에 없어 다시 보낸다). 글이 없는데 보내지 않으면 400 `BIRTH_REQUIRED`,
@@ -1286,7 +1285,6 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/reports/me', { validate: isReportState });
     },
 
-    /** `GET /account` 내 닉네임 · 프로필 그림(홈 별명 카드, 결정 047). 응답의 다른 칸(이메일 · 동의 …)은 앱이 쓰지 않아 버린다 */
     /** `POST /me-report` 나 탭 풀이를 쓰기 시작한다(결정 048). 202 로 바로 답하고 글은 뒤에서 쓴다. 402 `PURCHASE_REQUIRED` 는 1.1.0 예약 */
     async requestMeReport(): Promise<ApiResult<MeReportRequest>> {
       if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
@@ -1299,6 +1297,7 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/me-report', { validate: isMeReportState });
     },
 
+    /** `GET /account` 내 닉네임 · 프로필 그림(홈 별명 카드, 결정 047). 응답의 다른 칸(이메일 · 동의 …)은 앱이 쓰지 않아 버린다 */
     async getAccount(): Promise<ApiResult<Account>> {
       if (config.useFixtures) return { ok: true, data: { nickname: '새벽별', avatar: 3 } };
       const res = await request('GET', '/account', { validate: isAccount });

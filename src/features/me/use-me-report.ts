@@ -7,12 +7,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { api, isMeReport, type ApiErrorKind, type BirthInput, type MeReport } from '@/lib/api';
+import { api, isMeReport, type ApiErrorKind, type ApiResult, type BirthInput, type MeReport } from '@/lib/api';
 
 export const ME_REPORT_STORAGE_KEY = 'byeolmyeong.meReport.v1';
 
 /** 쓰는 중일 때 상태를 묻는 주기 */
 export const ME_REPORT_POLL_MS = 5000;
+
+/**
+ * 한 번의 요청을 기다리는 한도(처음 불러올 때의 10초 — 결정 065 의 2). 넘으면 못 받은 것으로 보고, 늦게 온 답은 버린다.
+ * 쓰는 중 화면에는 머리 · 아래 탭이 없어(보드 11-8) 응답이 멈추면 갇히므로 끝없이 기다리지 않는다(리뷰).
+ */
+export const ME_REPORT_TIMEOUT_MS = 10_000;
+
+/** 쓰는 중을 기다리는 한도(서버의 생성은 1분 안팎, 멈춘 생성은 2분 뒤 FAILED). 넘으면 확인을 멈추고 보드 19(다시 보기 = 상태만)로 */
+export const ME_REPORT_MAX_WRITING_MS = 180_000;
 
 /** 서버에 저장된 출생 정보가 없을 때(`NO_PROFILE`) · 받을 수 없을 때(`PURCHASE_REQUIRED`, 1.1.0 예약) */
 const NO_PROFILE_STATUS = 404;
@@ -31,6 +40,17 @@ export type MeReportView =
   | { status: 'failed'; error: ApiErrorKind | 'FAILED'; stage: 'request' | 'poll' };
 
 const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
+
+/** 한도 안에 오지 않으면 서버 실패로 본다 */
+function withTimeout<T>(promise: Promise<ApiResult<T>>): Promise<ApiResult<T>> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve({ ok: false, error: 'SERVER' }), ME_REPORT_TIMEOUT_MS);
+    void promise.then((r) => {
+      clearTimeout(timer);
+      resolve(r);
+    });
+  });
+}
 
 /** 이 출생 정보로 받아 둔 풀이. 없거나 다른 출생 정보의 것이거나 옛 모양이면 null */
 async function loadReport(key: string): Promise<MeReport | null> {
@@ -63,18 +83,21 @@ type Run = {
   busy: boolean;
   /** 쓰는 중을 본 뒤의 확인인가(그때의 FAILED 는 "끝내 못 씀", 처음 확인의 FAILED 는 받기 전) */
   polling: boolean;
+  /** 쓰는 중을 처음 본 때(기다리는 한도를 잰다). 쓰는 중이 아니면 null */
+  writingSince: number | null;
   timer: ReturnType<typeof setTimeout> | null;
   set: (state: MeReportView) => void;
 };
 
 function settle(run: Run, state: MeReportView) {
   run.busy = false;
+  run.writingSince = null;
   run.set(state);
 }
 
 /** `GET /me-report` 를 한 번 부르고 상태를 옮긴다. 쓰는 중이면 주기 뒤에 다시 묻는다 */
 async function check(run: Run): Promise<void> {
-  const r = await api.getMeReport();
+  const r = await withTimeout(api.getMeReport());
   if (!run.alive) return;
   if (!r.ok) return settle(run, run.polling ? { status: 'failed', error: r.error, stage: 'poll' } : { status: 'unknown', error: r.error });
   const { data } = r;
@@ -84,6 +107,7 @@ async function check(run: Run): Promise<void> {
   } else if (data.status === 'WRITING') {
     run.busy = true;
     run.polling = true;
+    run.writingSince ??= Date.now();
     run.set({ status: 'writing' });
     waitAndCheck(run);
   } else if (data.status === 'FAILED' && run.polling) settle(run, { status: 'failed', error: 'FAILED', stage: 'poll' });
@@ -91,6 +115,9 @@ async function check(run: Run): Promise<void> {
 }
 
 function waitAndCheck(run: Run) {
+  // 너무 오래 쓰는 중이면 확인을 멈춘다 — 서버는 계속 쓰고 있을 수 있어 "다시 보기" 는 상태만 묻는다
+  if (run.writingSince !== null && Date.now() - run.writingSince >= ME_REPORT_MAX_WRITING_MS)
+    return settle(run, { status: 'failed', error: 'SERVER', stage: 'poll' });
   run.timer = setTimeout(() => {
     run.timer = null;
     void check(run);
@@ -99,7 +126,7 @@ function waitAndCheck(run: Run) {
 
 /** 보관본을 보여 준 뒤 뒤에서 새로 묻는다. 다 쓴 풀이가 아니면(받지 못했어도) 보관본을 그대로 둔다 */
 async function refresh(run: Run): Promise<void> {
-  const r = await api.getMeReport();
+  const r = await withTimeout(api.getMeReport());
   if (!run.alive || !r.ok || r.data.status !== 'DONE') return;
   await saveReport(run.key, r.data.report);
   if (run.alive) run.set({ status: 'done', report: r.data.report });
@@ -110,10 +137,12 @@ async function request(run: Run): Promise<void> {
   if (!run.alive || run.busy) return;
   run.busy = true;
   run.polling = true;
+  run.writingSince = Date.now();
   run.set({ status: 'writing' });
-  let r = await api.requestMeReport();
+  let r = await withTimeout(api.requestMeReport());
+  if (!run.alive) return;
   // 서버에 출생 정보가 없으면(이 기능 전에 입력했거나 서버 저장이 비워진 경우) 저장하고 한 번만 더 요청한다
-  if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(run.input)).ok) r = await api.requestMeReport();
+  if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(run.input)).ok) r = await withTimeout(api.requestMeReport());
   if (!run.alive) return;
   if (!r.ok) {
     // 받을 수 있는지는 서버가 판정한다(결정 050 의 4) — 1.0.0 에서는 한 줄만 보인다
@@ -145,6 +174,7 @@ export function useMeReport(input: BirthInput | null) {
       alive: true,
       busy: false,
       polling: false,
+      writingSince: null,
       timer: null,
       set: (state) => setSettled({ key, state }),
     };

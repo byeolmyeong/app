@@ -73,8 +73,8 @@ function Hero({ area, nickname, timeKnown }: { area: MeAreaReport; nickname: str
         {area.title}
       </Txt>
       <View style={styles.keywords}>
-        {area.keywords.map((k) => (
-          <View key={k} testID="me-keyword" style={styles.keyword}>
+        {area.keywords.map((k, i) => (
+          <View key={i} testID="me-keyword" style={styles.keyword}>
             <Txt variant="captionStrong" color="keywordText">
               {k}
             </Txt>
@@ -87,8 +87,8 @@ function Hero({ area, nickname, timeKnown }: { area: MeAreaReport; nickname: str
             {S.stars}
           </Txt>
           <View style={styles.starList}>
-            {stars.map((s) => (
-              <View key={s.key} testID="me-star" style={styles.star}>
+            {stars.map((s, i) => (
+              <View key={`${s.key}-${i}`} testID="me-star" style={styles.star}>
                 <Svg width={H.starIcon} height={H.starIcon} viewBox="-1 -1 2 2">
                   <Path d={STAR} fill={Colors.accentText} />
                 </Svg>
@@ -117,8 +117,8 @@ function Glance({ glance }: { glance: NonNullable<MeAreaReport['glance']> }) {
       <Txt variant="captionStrong" color={accent ? 'accentText' : 'gray'} style={styles.strongOnly}>
         {title}
       </Txt>
-      {items.map((t) => (
-        <Txt key={t} variant="desc" color="inkSoft" keepAll>
+      {items.map((t, i) => (
+        <Txt key={i} variant="desc" color="inkSoft" keepAll>
           {t}
         </Txt>
       ))}

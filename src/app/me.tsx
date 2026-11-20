@@ -57,7 +57,8 @@ export default function MeScreen() {
   // 연결이 돌아오면 상태만 다시 묻는다(GET) — 만들기(POST)는 사람이 누를 때만(결정 061 의 4)
   useOnReconnect(online, () => {
     const s = me.state;
-    if (s.status === 'unknown' || (s.status === 'failed' && s.stage === 'poll' && s.error === 'NETWORK')) me.recheck();
+    // 다 쓴 풀이를 보던 중이면 새로 받고, 못 물었거나 쓰는 중 확인이 끊겼으면 다시 묻는다
+    if (s.status === 'done' || s.status === 'unknown' || (s.status === 'failed' && s.stage === 'poll' && s.error === 'NETWORK')) me.recheck();
     if (!reading && readingState.status === 'failed' && readingState.error === 'NETWORK') retryReading();
   });
   // 처음 불러올 때: 내 별명이 아직 없거나 나 탭 풀이의 상태를 처음 묻는 중(기기에 받아 둔 것이 없다)
@@ -157,7 +158,9 @@ export default function MeScreen() {
     if (phase === 'timeout') return <MakingView />;
   }
 
-  if (!reading || s.status === 'checking')
+  // 상태를 10초 넘게 묻지 못하면 빈 화면 대신 카드 자리 안내(결정 065 의 2) — 기다리던 요청은 훅이 같은 10초에 끊는다
+  const checkTimedOut = s.status === 'checking' && phase === 'timeout';
+  if (!reading || (s.status === 'checking' && !checkTimedOut))
     return (
       <Screen nav={afterNav} footer={tabs}>
         {phase === 'skeleton' ? <MeSkeleton /> : null}
@@ -171,7 +174,7 @@ export default function MeScreen() {
       {banner}
       <View>
         <ReadingView reading={reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
-        {s.status === 'unknown' && online ? (
+        {(s.status === 'unknown' && online) || checkTimedOut ? (
           <View style={styles.cardFail}>
             <CardFail
               kicker={S.detail.kicker}

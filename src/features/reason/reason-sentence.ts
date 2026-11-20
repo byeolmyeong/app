@@ -178,8 +178,8 @@ function clauseOf(item: KnownBasisItem, timeKnown: boolean): Clause | null {
   }
 }
 
-/** 시각을 모를 때 그릴 수 없는 근거(하우스 · 상승점 · 중천만으로 된 것) */
-function needsTime(item: KnownBasisItem): boolean {
+/** 시각을 모를 때 그릴 수 없는 근거(하우스 · 상승점 · 중천만으로 된 것) — 문장 · 용어 줄 · 작은 지도가 같은 기준으로 거른다 */
+export function needsTime(item: KnownBasisItem): boolean {
   switch (item.kind) {
     case 'PLACEMENT':
     case 'RULER':

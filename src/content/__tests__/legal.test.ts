@@ -19,6 +19,11 @@ describe('약관 글의 시행일과 약관 버전', () => {
     for (const doc of [terms, privacy, marketing, privacyConsent]) expect(doc.closing).toContain(legalInfo.effective);
   });
 
+  // 랜딩이 약관에서 궁합(1.1.0)을 뺀 판(랜딩 main 4eaca8e, 시행일 2026-11-20)과 같은 글이다 — 궁합을 다시 넣으면 랜딩 · 앱 글과 버전을 함께 올린다
+  it('네 글 어디에도 궁합이 없다', () => {
+    for (const doc of [terms, privacy, marketing, privacyConsent]) expect(JSON.stringify(doc)).not.toContain('궁합');
+  });
+
   // 개인정보 수집 · 이용 동의(결정 045): 동의받을 때 알릴 네 가지(개인정보 보호법 제15조 제2항)만 담은 글
   it('개인정보 수집 · 이용 동의는 목적 · 항목 · 보유 기간 · 거부할 권리 네 조항이다', () => {
     expect(privacyConsent.title).toBe('개인정보 수집 · 이용 동의');

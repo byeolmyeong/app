@@ -12,7 +12,6 @@ export const strings = {
     timeColon: ':',
     none: '—',
   },
-  /** 홈(카테고리 화면). 구성은 docs/decisions/019-home-categories.md */
   /** 로그인(결정 034 · 042 · 044). 버튼 문구는 셋 다 영문 이름 + "로 로그인"(결정 044 — 카카오 · 구글은 공급자 가이드 문구와 다르다) */
   login: {
     /** 로고 아래 한 줄 */
@@ -240,47 +239,10 @@ export const strings = {
       back: '돌아가기',
     },
   },
+  /** 홈 별명 카드에서 받아 둔 풀이가 아직 없을 때(결정 047) */
   main: {
-    soon: '준비 중',
-    readingLabel: '나의 별명',
-    readingMore: '풀이 읽기',
     readingEmpty: '아직 별명을 짓지 않았어요.',
     readingCta: '내 별명 읽기',
-    categories: [
-      {
-        key: 'me',
-        title: '나',
-        items: [
-          { label: '요약 풀이', path: '/reading' },
-          { label: '내 차트', path: '/chart' },
-          { label: '심층 리포트', path: '/report' },
-        ],
-      },
-      {
-        key: 'relation',
-        title: '관계',
-        items: [
-          { label: '사람을 대하는 성향', path: '/report?area=RELATIONSHIP' },
-          { label: '연애에서 해 볼 만한 것', path: '/direction' },
-        ],
-      },
-      {
-        key: 'synastry',
-        title: '궁합',
-        items: [
-          { label: '상대와 궁합 보기', path: '/synastry' },
-          { label: '궁합 랭킹', path: '/synastry/ranking' },
-        ],
-      },
-      {
-        key: 'timing',
-        title: '시기',
-        items: [
-          { label: '지금 나의 구간', path: '/report?area=TIMING' },
-          { label: '다가오는 변곡점', path: '/report?area=TIMING' },
-        ],
-      },
-    ],
   },
   birth: {
     title: '출생 정보',

@@ -1,12 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import MyScreen from '@/app/my';
-import { Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -21,159 +19,106 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn() },
+  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn(), getAccount: jest.fn() },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 const M = strings.main;
+type Profile = { date: string; time: string | null; place: { id: number; name: string } | null };
+/** 그 출생 정보로 받아 둔 풀이를 기기에 넣는다(use-reading 의 열쇠: 날짜 · 시각 · 곳) */
+const storeReading = (reading: object, p: Profile = profile) =>
+  AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: JSON.stringify([p.date, p.time, p.place?.id ?? null]), reading }));
 
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
+  mockApi.getAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3 } });
+});
+
+/** 기기 시계를 고정한 테스트가 쓴다(별명을 받은 지 N일) */
+let nowSpy: jest.SpyInstance | null = null;
+afterEach(() => {
+  nowSpy?.mockRestore();
+  nowSpy = null;
 });
 
 describe('홈', () => {
   it('출생 정보가 없으면 입력부터 받는다', async () => {
     await render(<HomeScreen />);
     expect(await screen.findByPlaceholderText(strings.home.datePlaceholder)).toBeTruthy();
-    expect(screen.queryByTestId('home-category')).toBeNull();
+    expect(screen.queryByTestId('nickname-card')).toBeNull();
   });
 
-  it('출생 정보가 있으면 카테고리 네 칸을 이 순서로 보여 준다: 나 · 관계 · 궁합 · 시기(결정 022)', async () => {
+  it('출생 정보가 있으면 머리의 로고와 별명 카드 — 프로필 그림 · "새벽별 님" · "쌍둥이자리 · 별명을 받은 지 12일" · 한 줄 별명 · 풀이 읽기(결정 047, 보드 11). 카테고리 · 궁합 칸은 없다(결정 055)', async () => {
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-11-20T01:00:00Z').getTime());
     await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading({ ...fixtures.reading, createdAt: '2026-11-09T01:00:00Z' });
     await render(<HomeScreen />);
-    expect(await screen.findAllByTestId('home-category')).toHaveLength(4);
-    expect(screen.getAllByTestId('home-category').map((c) => c.props.accessibilityLabel)).toEqual([
-      '나',
-      '관계',
-      '궁합',
-      '시기',
-    ]);
-    // 입력 칸도, 제목이나 출생 정보 줄도 없다. 맨 위부터 타일이다(출생 정보는 마이에 있다)
-    expect(screen.queryByPlaceholderText(strings.home.datePlaceholder)).toBeNull();
-    expect(screen.queryByText('2000. 6. 15. 오후 9:00 · 서울특별시 마포구')).toBeNull();
-  });
-
-  it('카테고리는 아이콘과 그 아래 이름만 있고 한 줄에 넷씩 놓인다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findAllByTestId('home-category');
-    expect(screen.getAllByTestId('home-category-icon')).toHaveLength(4);
-    // 네 타일이 한 줄의 네 자리를 채운다
-    expect(screen.getByTestId('home-category-row').props.children).toHaveLength(4);
-    // 타일마다 아이콘 그림이 있다(빈 아이콘이 아니다)
-    for (const icon of screen.getAllByTestId('home-category-icon'))
-      expect(JSON.stringify(icon.toJSON())).toMatch(/RNSVG(Path|Circle)/);
-    // 한 줄에 넷, 줄의 양끝이 화면 여백에 맞는다(첫 아이콘의 왼쪽 끝이 머리의 표식과 같은 선)
-    const rows = screen.getAllByTestId('home-category-row');
-    expect(rows).toHaveLength(1);
-    expect(StyleSheet.flatten(rows[0].props.style).justifyContent).toBe('space-between');
-    // 아이콘 자리에 좌우 여백이 없어야 끝이 맞는다
-    const icon = StyleSheet.flatten(screen.getAllByTestId('home-category-icon')[0].props.style);
-    expect(icon.width).toBe(Sizes.homeTile);
-    // 설명 글이나 "준비 중" 딱지는 타일에 없다
-    expect(screen.queryByText(M.soon)).toBeNull();
-  });
-
-  it('머리에 로고가 있고, 칸마다 빛나는 모양이 있다: 나 별 · 관계 불꽃 · 궁합 하트 · 시기 달(결정 035)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findAllByTestId('home-category');
+    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(screen.getByText('쌍둥이자리 · 별명을 받은 지 12일')).toBeTruthy();
+    expect(screen.getByText(fixtures.reading.headline)).toBeTruthy();
+    expect(screen.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
     expect(screen.getByTestId('brand-mark')).toBeTruthy();
-    const hidden = { includeHiddenElements: true };
-    const shapes = screen.getAllByTestId(/^glow-/, hidden).map((node) => node.props.testID);
-    expect(shapes).toEqual(['glow-star', 'glow-flame', 'glow-heart', 'glow-moon']);
-  });
-
-  it('"나" 타일을 누르면 그 칸의 항목이 시트로 올라오고, 거기서 풀이 글과 차트로 간다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    // 타일을 누르기 전에는 항목이 보이지 않는다
-    await screen.findAllByTestId('home-category');
-    expect(screen.queryByText('요약 풀이')).toBeNull();
-    await fireEvent.press(screen.getAllByTestId('home-category')[0]);
-    await fireEvent.press(await screen.findByText('요약 풀이'));
+    expect(screen.queryByTestId('home-category')).toBeNull();
+    expect(screen.queryByText(/궁합/)).toBeNull();
+    await fireEvent.press(screen.getByTestId('nickname-card'));
     expect(router.push).toHaveBeenCalledWith('/reading');
-    // 고르면 시트가 닫힌다
-    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
-    await fireEvent.press(screen.getAllByTestId('home-category')[0]);
-    await fireEvent.press(await screen.findByText('내 차트'));
-    expect(router.push).toHaveBeenCalledWith('/chart');
   });
 
-  it('"나" 의 심층 리포트는 /report 로 간다', async () => {
+  it('만든 때(createdAt)가 없는 옛 풀이면 해 별자리만 적는다(결정 047 의 3)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
     await render(<HomeScreen />);
-    await screen.findAllByTestId('home-category');
-    await fireEvent.press(screen.getAllByTestId('home-category')[0]);
-    await fireEvent.press(await screen.findByText('심층 리포트'));
-    expect(router.push).toHaveBeenCalledWith('/report');
+    expect(within(await screen.findByTestId('nickname-card')).getByText('쌍둥이자리')).toBeTruthy();
+    expect(screen.queryByText(/별명을 받은 지/)).toBeNull();
   });
 
-  it('"시기" 타일을 누르면 두 항목이 시트로 올라오고, 둘 다 리포트의 시기 탭(/report?area=TIMING)으로 간다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
+  it('시각 "모름" 이어도 같은 카드다 — 해 별자리는 서버 차트의 값(결정 047 의 4)', async () => {
+    const unknown = { date: '2000-06-15', time: null, place: null };
+    await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });
+    await storeReading(fixtures.reading, unknown);
     await render(<HomeScreen />);
-    await screen.findAllByTestId('home-category');
-    // 타일은 순서로 고른다: 나 · 관계 · 궁합 · 시기. 넷 다 누를 수 있다
-    expect(screen.getAllByTestId('home-category').map((t) => t.props.accessibilityState.disabled)).toEqual([
-      false,
-      false,
-      false,
-      false,
-    ]);
-    for (const label of ['지금 나의 구간', '다가오는 변곡점']) {
-      (router.push as jest.Mock).mockClear();
-      await fireEvent.press(screen.getAllByTestId('home-category')[3]);
-      await fireEvent.press(await screen.findByText(label));
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith('/report?area=TIMING');
+    expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
+    expect(screen.getByText('새벽별 님')).toBeTruthy();
+    expect(within(screen.getByTestId('nickname-card')).getByText('쌍둥이자리')).toBeTruthy();
+  });
+
+  it('계정을 받지 못했거나 옛 계정(닉네임 · 프로필 null)이면 이름 줄 없이 그린다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
+    for (const result of [{ ok: false, error: 'NETWORK' } as const, { ok: true, data: { nickname: null, avatar: null } } as const]) {
+      mockApi.getAccount.mockResolvedValueOnce(result);
+      const view = await render(<HomeScreen />);
+      expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
+      expect(screen.queryByText(/ 님$/)).toBeNull();
+      expect(screen.queryByRole('image')).toBeNull();
+      expect(within(screen.getByTestId('nickname-card')).getByText('쌍둥이자리')).toBeTruthy();
+      await view.unmount();
     }
-    expect(screen.queryByText(M.soon)).toBeNull();
   });
 
-  it('"관계" 의 "사람을 대하는 성향" 은 심층 리포트의 관계 영역으로, "연애에서 해 볼 만한 것" 은 /direction 으로 간다', async () => {
+  it('받아 둔 풀이가 없으면 "아직 별명을 짓지 않았어요" 와 "내 별명 읽기" — 누르면 /reading(풀이를 부르지 않는다)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    await screen.findAllByTestId('home-category');
-    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
-    await fireEvent.press(await screen.findByText('사람을 대하는 성향'));
-    expect(router.push).toHaveBeenCalledWith('/report?area=RELATIONSHIP');
-    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
-    await fireEvent.press(screen.getAllByTestId('home-category')[1]);
-    // 관계 칸에는 준비 중인 항목이 없다
-    expect(screen.queryByText(M.soon)).toBeNull();
-    await fireEvent.press(await screen.findByText('연애에서 해 볼 만한 것'));
-    expect(router.push).toHaveBeenCalledWith('/direction');
+    expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
+    await fireEvent.press(screen.getByText(M.readingCta));
+    expect(router.push).toHaveBeenCalledWith('/reading');
+    expect(screen.queryByText(fixtures.reading.headline)).toBeNull();
   });
 
-  it('"궁합" 의 "상대와 궁합 보기" 는 /synastry 로, "궁합 랭킹" 은 /synastry/ranking 으로 간다', async () => {
+  it('다른 출생 정보로 받은 풀이는 보여 주지 않는다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading, { date: '1990-01-01', time: null, place: { id: 1, name: 'x' } });
     await render(<HomeScreen />);
-    await screen.findAllByTestId('home-category');
-    await fireEvent.press(screen.getAllByTestId('home-category')[2]);
-    await fireEvent.press(await screen.findByText('상대와 궁합 보기'));
-    expect(router.push).toHaveBeenCalledWith('/synastry');
-    await waitFor(() => expect(screen.queryByTestId('sheet-dim')).toBeNull());
-    await fireEvent.press(screen.getAllByTestId('home-category')[2]);
-    await fireEvent.press(await screen.findByText('궁합 랭킹'));
-    expect(router.push).toHaveBeenCalledWith('/synastry/ranking');
-  });
-
-  it('홈의 항목이 가는 곳: 나 3 · 관계 2 · 궁합 2 · 시기 2(리포트의 시기 탭)', () => {
-    expect(M.categories.map((c) => [c.key, c.items.map((item) => item.path as string | null)])).toEqual([
-      ['me', ['/reading', '/chart', '/report']],
-      ['relation', ['/report?area=RELATIONSHIP', '/direction']],
-      ['synastry', ['/synastry', '/synastry/ranking']],
-      ['timing', ['/report?area=TIMING', '/report?area=TIMING']],
-    ]);
+    expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
   });
 
   it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /reading, 시기는 /report?area=TIMING(결정 046 의 4)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    await screen.findAllByTestId('home-category');
+    await screen.findByTestId('nickname-card');
     const tabs = screen.getAllByRole('tab');
     expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
     expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
@@ -193,59 +138,6 @@ describe('홈', () => {
     await render(<HomeScreen />);
     await screen.findByPlaceholderText(strings.home.datePlaceholder);
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
-  });
-});
-
-describe('홈의 내용(아이콘 줄 아래)', () => {
-  const key = JSON.stringify([profile.date, profile.time, profile.place.id]);
-
-  it('받아 둔 풀이가 있으면 한 줄 총평을 보여 주고, 누르면 풀이 글로 간다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key, reading: fixtures.reading }));
-    await render(<HomeScreen />);
-    expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
-    // 카드에 그 사람의 하늘 그림이 작게 들어간다
-    expect(screen.getByTestId('chart-picture')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('home-reading'));
-    expect(router.push).toHaveBeenCalledWith('/reading');
-  });
-
-  it('받아 둔 풀이가 없으면 읽으러 가는 버튼을 보여 준다(서버를 부르지 않는다)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await fireEvent.press(await screen.findByText(M.readingCta));
-    expect(router.push).toHaveBeenCalledWith('/reading');
-    expect(screen.queryByText(fixtures.reading.headline)).toBeNull();
-    // 아직 없을 때는 쉬는 중 별이가 카드에 있다(결정 035)
-    expect(screen.getByTestId('byeoli-face-empty', { includeHiddenElements: true })).toBeTruthy();
-  });
-
-  it('다른 출생 정보로 받은 풀이는 보여 주지 않는다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await AsyncStorage.setItem(
-      READING_STORAGE_KEY,
-      JSON.stringify({ key: JSON.stringify(['1990-01-01', null, 1]), reading: fixtures.reading }),
-    );
-    await render(<HomeScreen />);
-    expect(await screen.findByText(M.readingCta)).toBeTruthy();
-  });
-
-  it('시각 "모름" 이라 곳이 없는 출생 정보로도 홈을 그리고, 그 출생 정보로 받아 둔 풀이를 찾는다', async () => {
-    await saveBirth({ profile: { date: '2000-06-15', time: null, place: null }, chart: fixtures.chartTimeUnknown });
-    await AsyncStorage.setItem(
-      READING_STORAGE_KEY,
-      JSON.stringify({ key: JSON.stringify(['2000-06-15', null, null]), reading: fixtures.reading }),
-    );
-    await render(<HomeScreen />);
-    expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
-  });
-
-  it('나를 이루는 세 가지(중심 · 마음 · 첫인상)를 보여 준다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    expect(await screen.findByText(strings.chart.keySun)).toBeTruthy();
-    expect(screen.getByText(strings.chart.keyMoon)).toBeTruthy();
-    expect(screen.getByText(strings.chart.keyAsc)).toBeTruthy();
   });
 });
 

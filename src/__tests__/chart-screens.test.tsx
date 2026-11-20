@@ -20,7 +20,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn() },
+  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn(), getAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })) },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   getSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),

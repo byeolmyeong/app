@@ -140,16 +140,18 @@ export type GlowBackdropProps = {
   extent: number;
   /** 원의 가운데 높이(0 위 ~ 1 아래) */
   centerY?: number;
+  /** 원의 가운데 가로 자리(0 왼쪽 ~ 1 오른쪽). 홈 별명 카드는 오른쪽 위(결정 047, 보드 11) */
+  centerX?: number;
 };
 
 /**
  * 브랜드 자리 바탕의 옅은 빛(결정 042 시안의 `radial-gradient(circle at 50% y, color 0%, 투명 extent)`). 칸을 가득 채워 뒤에 깔고,
  * 크기를 잰 뒤에 그린다. 장식이라 화면 읽기에서 숨긴다.
  */
-export function GlowBackdrop({ color, extent, centerY = 0.5 }: GlowBackdropProps) {
+export function GlowBackdrop({ color, extent, centerY = 0.5, centerX = 0.5 }: GlowBackdropProps) {
   const id = `backdrop${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
-  const cx = size ? size.width / 2 : 0;
+  const cx = size ? size.width * centerX : 0;
   const cy = size ? size.height * centerY : 0;
   const r = size ? Math.hypot(Math.max(cx, size.width - cx), Math.max(cy, size.height - cy)) : 0;
   return (

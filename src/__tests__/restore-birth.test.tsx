@@ -44,6 +44,7 @@ jest.mock('@/lib/api', () => ({
     // 홈의 시기 칸(결정 047 의 1-4)이 시기 풀이 상태를 묻는다
     getTimingReport: jest.fn(async () => ({ ok: true, data: { status: 'NONE' } })),
     getNotifications: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    postDaySky: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({

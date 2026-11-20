@@ -225,6 +225,8 @@ describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)',
   });
 
   it('`?tab=month` 로 이번 달을 고르고, 맨 아래에 이 시기의 작은 실천 · 날짜를 누르면 그날의 하늘', async () => {
+    // 달력의 오늘(한국 날짜 2026-11-20) — 누르는 날(11-21)이 오늘이 아니게
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
     mockParams.mockReturnValue({ tab: 'month' });
     await storeReport();
     mockApi.getTimingReport.mockResolvedValue(done);
@@ -237,6 +239,19 @@ describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)',
     expect(router.push).toHaveBeenCalledWith('/timing/day?date=2026-11-21');
     await fireEvent.press(chip('life'));
     expect(screen.getByText(T.life.title)).toBeTruthy();
+    nowSpy.mockRestore();
+  });
+
+  it('달력에서 오늘을 누르면 오늘의 하늘 /today(결정 051 의 3, 계획 A④)', async () => {
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T03:00:00Z'));
+    mockParams.mockReturnValue({ tab: 'month' });
+    await storeReport();
+    mockApi.getTimingReport.mockResolvedValue(done);
+    await render(<TimingScreen />);
+    expect(await screen.findByText(T.month.days)).toBeTruthy();
+    await fireEvent.press(screen.getAllByTestId('month-day')[0]);
+    expect(router.push).toHaveBeenCalledWith('/today');
+    nowSpy.mockRestore();
   });
 
   it('인생 칩: 다음 큰 변화 카드 오른쪽 위 공유 아이콘 → 다음 큰 변화 카드 시트(제목 없음), 열 때 한 번 만든다(결정 053 — 보드 14 인생 · 14-5)', async () => {

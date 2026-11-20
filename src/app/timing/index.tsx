@@ -178,7 +178,8 @@ export default function TimingScreen() {
             onMove={month.go}
             onRetry={month.retry}
             today={today}
-            onDay={(date) => router.push(`/timing/day?date=${date}`)}
+            // 오늘을 누르면 오늘의 하늘(결정 051 의 3), 다른 날은 그날의 하늘
+            onDay={(date) => router.push(date === today ? '/today' : `/timing/day?date=${date}`)}
           />
         ) : (
           <CardFail

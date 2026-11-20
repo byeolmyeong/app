@@ -35,6 +35,8 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     getMyAccount: jest.fn(),
     getNotifications: jest.fn(),
+    // 오늘의 하늘 칸(결정 051)
+    postDaySky: jest.fn(),
     markNotificationRead: jest.fn(),
     // 홈은 풀이를 부르지 않는다(POST /readings 는 옛 요약 해석만 있는 계정이면 새로 짓는다 — 서버 결정 030)
     createReading: jest.fn(),
@@ -60,6 +62,7 @@ beforeEach(async () => {
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
   mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 0, items: [] } });
+  mockApi.postDaySky.mockResolvedValue({ ok: true, data: fixtures.daySky });
 });
 
 /** 기기 시계를 고정한 테스트가 쓴다(별명을 받은 지 N일) */
@@ -385,5 +388,71 @@ describe('홈 머리의 종(결정 052 의 4, 보드 11)', () => {
     await screen.findByTestId('nickname-card');
     await act(async () => {});
     expect(screen.queryByTestId('home-bell')).toBeNull();
+  });
+});
+
+describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)', () => {
+  /** 보드 11 의 글 — 한국 날짜 2026-11-19 */
+  const sky = {
+    ...fixtures.daySky,
+    date: '2026-11-19',
+    title: '마음이 가는 사람에게 먼저 안부를 건네 보기 좋은 날',
+    reason: { when: 'DAY', items: [{ kind: 'TRANSIT', mover: 'MOON', target: 'VENUS', type: 'CONJUNCTION' }] },
+  };
+  beforeEach(() => {
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-19T01:00:00Z'));
+    mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky });
+  });
+
+  it('"오늘의 하늘 · 11월 19일" · 제목 · 짧은 이유 — 별명 카드 바로 아래, 누르면 /today', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    const card = await screen.findByTestId('home-today-card');
+    expect(within(card).getByText('오늘의 하늘 · 11월 19일')).toBeTruthy();
+    expect(within(card).getByText(sky.title)).toBeTruthy();
+    expect(within(card).getByText('오늘은 달이 내 금성 자리를 지나요')).toBeTruthy();
+    expect(mockApi.postDaySky).toHaveBeenCalledWith();
+    await fireEvent.press(card);
+    expect(router.push).toHaveBeenCalledWith('/today');
+  });
+
+  it('못 썼으면 그 자리에 작은 안내와 다시 쓰기(19-1) — 누르면 다시 부른다', async () => {
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    expect(await screen.findByText(strings.today.fail)).toBeTruthy();
+    await fireEvent.press(screen.getByText(strings.states.writeFail.retry));
+    expect(await screen.findByTestId('home-today-card')).toBeTruthy();
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+  });
+
+  it('처음 묻는 중: 0.3초 뒤 다 그려질 카드를 본뜬 뼈대(결정 071), 3초가 넘으면 쓰는 중 카드(보드 11 쓰는 중)', async () => {
+    let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
+    await saveBirth({ profile, chart: fixtures.chart });
+    jest.useFakeTimers();
+    await render(<HomeScreen />);
+    await act(async () => {});
+    expect(screen.getByTestId('nickname-card')).toBeTruthy();
+    expect(screen.queryByTestId('sk-home-today-card')).toBeNull();
+    await act(async () => jest.advanceTimersByTime(300));
+    expect(screen.getByTestId('sk-home-today-card')).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(3000));
+    expect(screen.getByTestId('home-today-making')).toBeTruthy();
+    expect(screen.getByText(strings.today.making.card)).toBeTruthy();
+    await act(async () => finish({ ok: true, data: sky }));
+    expect(screen.getByTestId('home-today-card')).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it('서버에 그 경로가 없으면(404 — S④ 전) 칸을 숨긴다', async () => {
+    mockApi.postDaySky.mockResolvedValue({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
+    mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'SERVER', status: 500 });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    await act(async () => {});
+    expect(screen.queryByTestId('home-today-card')).toBeNull();
+    expect(screen.queryByTestId('card-fail')).toBeNull();
   });
 });

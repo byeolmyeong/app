@@ -1,8 +1,8 @@
 /**
  * 강제 업데이트의 문(결정 027). 루트 레이아웃이 화면 전체를 이것으로 감싼다.
- * 앱이 켜질 때와 앞으로 돌아올 때 설정을 묻고, 막아야 하면 화면들 대신 "업데이트가 필요해요" 만 보여 준다.
+ * 앱이 켜질 때와 앞으로 돌아올 때 설정을 묻고, 막아야 하면 화면들 대신 막는 화면("새 버전이 나왔어요")만 보여 준다.
  * 세션이 필요 없다. 웹과 가짜 서버에서는 막지 않는다(판정은 update-store.ts).
- * 점검(결정 030)도 여기서 본다: 점검 중이면 "점검 중이에요" 만 보여 주고(웹 포함, 업데이트보다 먼저), 끝나면 화면들이 돌아온다.
+ * 점검(결정 030 · 060)도 여기서 본다: 점검 중이면 점검 화면만 보여 주고(웹 포함, 업데이트보다 먼저), 끝나면 화면들이 돌아온다.
  * 업데이트 권유(결정 059)도 여기서 띄운다: 권해도 되는 자리(canSuggest — 로그인한 홈)면 화면들 위에 가운데 창을 한 번.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -45,7 +45,7 @@ export function UpdateGate({ children, canSuggest = false }: UpdateGateProps) {
     // 어느 호출이든 503 MAINTENANCE 를 받으면 바로 점검 화면을 보여 준다.
     setMaintenanceHandler(store.maintain);
     void store.check();
-    // 쓰는 동안 시간 간격으로 묻지 않는다. 앞으로 돌아올 때만 다시 묻는다.
+    // 쓰는 동안 시간 간격으로 묻지 않는다. 앞으로 돌아올 때만 다시 묻는다(점검 화면이 떠 있는 동안만 그 화면이 1분마다 묻는다 — 결정 060).
     const subscription = AppState.addEventListener('change', (next) => {
       if (next === 'active') void store.check();
     });
@@ -59,7 +59,7 @@ export function UpdateGate({ children, canSuggest = false }: UpdateGateProps) {
   return (
     <UpdateContext value={store}>
       {state.maintenance ? (
-        <MaintenanceNotice message={state.maintenance.message} onRetry={store.check} />
+        <MaintenanceNotice message={state.maintenance.message} onCheck={store.check} />
       ) : state.blocked ? (
         <UpdateRequired message={state.message} storeUrl={state.storeUrl} />
       ) : (

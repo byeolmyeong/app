@@ -45,7 +45,7 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
   let storeUrl: string | null = null;
   /** 설정이 "점검 중" 이라고 했는가 */
   let maintenanceActive = false;
-  /** 서버가 503 으로 거절했는가. 그 뒤 성공한 확인(사용자가 누르거나 앞으로 돌아올 때)이 점검이 끝났다고 하면 풀린다 */
+  /** 서버가 503 으로 거절했는가. 그 뒤 성공한 확인(점검 화면의 1분마다 · 앞으로 돌아올 때)이 점검이 끝났다고 하면 풀린다 */
   let maintenanceForced = false;
   /** 503 알림이 온 횟수. 확인이 도는 동안 알림이 왔는지(그 확인의 답이 알림보다 옛것인지) 가린다 */
   let maintenanceSignals = 0;
@@ -105,7 +105,7 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
   /** 설정을 받아 판정한다. 받지 못하면 앞의 판정을 그대로 둔다. 겹쳐 불려도 서버는 한 번만 부른다 */
   function check(lifts = true): Promise<void> {
     if (checking) {
-      // 503 알림이 부른 확인이 도는 중에 사용자가 다시 확인하면, 그것이 끝난 뒤 풀 수 있는 확인을 새로 한다.
+      // 503 알림이 부른 확인이 도는 중에 다른 확인(1분마다 · 앞으로 돌아올 때)이 오면, 그것이 끝난 뒤 풀 수 있는 확인을 새로 한다.
       return lifts && !checking.lifts ? checking.promise.then(() => check()) : checking.promise;
     }
     const signals = maintenanceSignals;
@@ -154,7 +154,7 @@ export function createUpdateStore(deps: UpdateStoreDeps) {
       };
     },
 
-    /** 설정을 다시 받아 판정한다(켜질 때 · 앞으로 돌아올 때 · 점검 화면의 "다시 확인") */
+    /** 설정을 다시 받아 판정한다(켜질 때 · 앞으로 돌아올 때 · 점검 화면이 떠 있는 동안 1분마다) */
     check: () => check(),
 
     /** 하던 일이 있는 화면이 떠 있는 동안 부른다. 돌려준 함수를 화면에서 나올 때 부른다 */

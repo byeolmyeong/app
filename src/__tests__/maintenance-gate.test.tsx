@@ -66,6 +66,14 @@ function BusyScreen() {
   );
 }
 
+/** 점검 화면이 떠 있는 동안 설정을 다시 받는 간격(결정 060) */
+const MINUTE = 60 * 1000;
+/** 가짜 시계를 앞으로 돌린다 */
+const advance = (ms: number) =>
+  act(async () => {
+    jest.advanceTimersByTime(ms);
+  });
+
 function spyAppState() {
   const handlers: ((next: AppStateStatus) => void)[] = [];
   jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, handler) => {
@@ -82,24 +90,25 @@ beforeEach(() => {
   mockApi.getAppConfig.mockResolvedValue(calm);
 });
 
-describe('점검 안내(결정 030)', () => {
-  it('점검 중이면 막는 화면만 보인다: 제목 · 기본 문구 · "다시 확인" 하나, 뒤로 가기는 없다', async () => {
+describe('점검 안내(결정 030 · 060)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('점검 중이면 막는 화면만 보인다(보드 18): 별이 · 제목 · 기본 문구 한 줄, 버튼 · 뒤로 가기는 없다', async () => {
     mockApi.getAppConfig.mockResolvedValue(down);
     await render(<UpdateGate>{app}</UpdateGate>);
-    expect(screen.getByText(M.title)).toBe(screen.getByText('점검 중이에요'));
-    expect(screen.getByText(M.body)).toBeTruthy();
+    expect(screen.getByTestId('state-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByRole('header', { name: '지금 별명을 손보고 있어요' })).toBeTruthy();
+    expect(screen.getByText('끝나면 저절로 이어서 볼 수 있어요.')).toBe(screen.getByText(M.body));
     expect(screen.queryByText('앱의 화면들')).toBeNull();
     expect(screen.queryByLabelText(strings.common.backLabel)).toBeNull();
-    expect(screen.getAllByRole('button')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: '다시 확인' })).toBeTruthy();
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
   });
 
-  it('관리자가 적은 안내가 있으면 기본 문구 대신 그대로(줄바꿈 · 기호도 글자로) 보여 준다. 빈 글이면 기본 문구다', async () => {
-    const message = '새벽 2시까지 점검해요.\n<b>조금만</b> 기다려 주세요.';
-    mockApi.getAppConfig.mockResolvedValue(configOf({ active: true, message }));
+  it('관리자가 적은 안내가 있으면 그 줄 다음에 기본 문구를 둘째 줄로 보여 준다. 빈 글이면 기본 문구 한 줄이다', async () => {
+    mockApi.getAppConfig.mockResolvedValue(configOf({ active: true, message: '오전 2:00 ~ 오전 4:00 동안 점검해요.' }));
     const first = await render(<UpdateGate>{app}</UpdateGate>);
-    expect(screen.getByText(message)).toBeTruthy();
-    expect(screen.queryByText(M.body)).toBeNull();
+    expect(screen.getByText('오전 2:00 ~ 오전 4:00 동안 점검해요.\n끝나면 저절로 이어서 볼 수 있어요.')).toBeTruthy();
     await first.unmount();
 
     mockApi.getAppConfig.mockResolvedValue(configOf({ active: true, message: '  ' }));
@@ -107,56 +116,65 @@ describe('점검 안내(결정 030)', () => {
     expect(screen.getByText(M.body)).toBeTruthy();
   });
 
-  it('"다시 확인" 은 설정을 다시 받고, 점검이 끝났으면 스스로 풀려 앱이 돌아온다', async () => {
+  it('떠 있는 동안 60초마다 설정을 다시 받고, 점검이 끝나면 스스로 풀려 앱이 돌아온다. 풀린 뒤에는 간격으로 묻지 않는다', async () => {
+    jest.useFakeTimers();
     mockApi.getAppConfig.mockResolvedValue(down);
     await render(<UpdateGate>{app}</UpdateGate>);
     expect(mockApi.getAppConfig).toHaveBeenCalledTimes(1);
 
-    // 아직 점검 중이면 그대로이고, 아직이라는 한 줄이 보인다.
-    await fireEvent.press(screen.getByRole('button', { name: M.retry }));
+    await advance(MINUTE - 1);
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(1);
+    // 아직 점검 중이면 그대로다.
+    await advance(1);
     expect(mockApi.getAppConfig).toHaveBeenCalledTimes(2);
     expect(screen.getByText(M.title)).toBeTruthy();
-    expect(screen.getByText(M.still)).toBeTruthy();
 
-    // 확인하지 못해도 그대로다(스스로 다시 부르지 않는다).
+    // 확인하지 못해도 그대로다.
     mockApi.getAppConfig.mockResolvedValue({ ok: false, error: 'NETWORK' });
-    await fireEvent.press(screen.getByRole('button', { name: M.retry }));
+    await advance(MINUTE);
     expect(mockApi.getAppConfig).toHaveBeenCalledTimes(3);
     expect(screen.getByText(M.title)).toBeTruthy();
 
     mockApi.getAppConfig.mockResolvedValue(calm);
-    await fireEvent.press(screen.getByRole('button', { name: M.retry }));
+    await advance(MINUTE);
     expect(mockApi.getAppConfig).toHaveBeenCalledTimes(4);
     expect(screen.queryByText(M.title)).toBeNull();
     expect(screen.getByText('앱의 화면들')).toBeTruthy();
+
+    await advance(10 * MINUTE);
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(4);
   });
 
-  it('확인하는 동안에는 버튼을 누를 수 없다', async () => {
+  it('확인이 오래 걸려도 겹쳐 부르지 않는다', async () => {
+    jest.useFakeTimers();
     mockApi.getAppConfig.mockResolvedValue(down);
     await render(<UpdateGate>{app}</UpdateGate>);
     mockApi.getAppConfig.mockReturnValue(new Promise(() => {}));
-    await fireEvent.press(screen.getByRole('button', { name: M.retry }));
-    expect(screen.getByRole('button', { name: M.checking }).props.accessibilityState.disabled).toBe(true);
-    await fireEvent.press(screen.getByRole('button', { name: M.checking }));
+    await advance(MINUTE);
+    await advance(MINUTE);
     expect(mockApi.getAppConfig).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(M.title)).toBeTruthy();
   });
 
-  it('앞으로 돌아올 때의 확인으로도 켜지고 풀린다', async () => {
+  it('앞으로 돌아올 때 설정을 다시 받아 켜지고 풀린다', async () => {
     const appState = spyAppState();
     await render(<UpdateGate>{app}</UpdateGate>);
     expect(screen.getByText('앱의 화면들')).toBeTruthy();
 
     mockApi.getAppConfig.mockResolvedValue(down);
     await appState.emit('active');
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(2);
     expect(screen.getByText(M.title)).toBeTruthy();
 
     mockApi.getAppConfig.mockResolvedValue(calm);
     await appState.emit('active');
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(3);
     expect(screen.queryByText(M.title)).toBeNull();
     expect(screen.getByText('앱의 화면들')).toBeTruthy();
   });
 
   it('점검이 업데이트보다 먼저다: 둘 다면 점검 화면이고, 점검이 풀리면 업데이트 화면이 보인다', async () => {
+    const appState = spyAppState();
     const old = { minVersion: '1.2.0', storeUrl: 'https://store.example.test/app' };
     mockApi.getAppConfig.mockResolvedValue(configOf({ active: true, message: null }, old));
     await render(<UpdateGate>{app}</UpdateGate>);
@@ -164,20 +182,21 @@ describe('점검 안내(결정 030)', () => {
     expect(screen.queryByText(U.title)).toBeNull();
 
     mockApi.getAppConfig.mockResolvedValue(configOf({ active: false, message: null }, old));
-    await fireEvent.press(screen.getByRole('button', { name: M.retry }));
+    await appState.emit('active');
     expect(screen.queryByText(M.title)).toBeNull();
     expect(screen.getByText(U.title)).toBeTruthy();
     expect(screen.queryByText('앱의 화면들')).toBeNull();
   });
 
-  it('웹에서도 점검 화면을 보여 준다(버전으로는 막지 않는다)', async () => {
+  it('웹에서도 점검 화면을 보여 주고 1분마다 확인한다(버전으로는 막지 않는다)', async () => {
+    jest.useFakeTimers();
     mockClient.current = null;
     mockApi.getAppConfig.mockResolvedValue(configOf({ active: true, message: null }, { minVersion: '9.0.0' }));
     await render(<UpdateGate>{app}</UpdateGate>);
     expect(screen.getByText(M.title)).toBeTruthy();
 
     mockApi.getAppConfig.mockResolvedValue(configOf({ active: false, message: null }, { minVersion: '9.0.0' }));
-    await fireEvent.press(screen.getByRole('button', { name: M.retry }));
+    await advance(MINUTE);
     expect(screen.getByText('앱의 화면들')).toBeTruthy();
     expect(screen.queryByText(U.title)).toBeNull();
   });
@@ -209,7 +228,7 @@ describe('점검 안내(결정 030)', () => {
     mockApi.getAppConfig.mockResolvedValue(configOf({ active: true, message: '곧 돌아올게요' }));
     await act(async () => onMaintenance());
     expect(screen.getByText(M.title)).toBeTruthy();
-    expect(screen.getByText('곧 돌아올게요')).toBeTruthy();
+    expect(screen.getByText(`곧 돌아올게요\n${M.body}`)).toBeTruthy();
     expect(screen.queryByText('글을 짓는 중')).toBeNull();
 
     await view.unmount();
@@ -227,6 +246,20 @@ describe('점검 안내(결정 030)', () => {
 
     mockApi.getAppConfig.mockResolvedValue(calm);
     await appState.emit('active');
+    expect(screen.queryByText(M.title)).toBeNull();
+    expect(screen.getByText('앱의 화면들')).toBeTruthy();
+  });
+
+  it('503 알림이 스스로 부른 한 번의 확인으로는 풀지 않고, 1분 뒤의 확인이 끝났다고 하면 풀린다', async () => {
+    jest.useFakeTimers();
+    await render(<UpdateGate>{app}</UpdateGate>);
+    // 설정은 점검 전이라고 하지만 서버가 503 MAINTENANCE 로 답했다(둘이 어긋난다).
+    await act(async () => onMaintenance());
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(M.title)).toBeTruthy();
+
+    await advance(MINUTE);
+    expect(mockApi.getAppConfig).toHaveBeenCalledTimes(3);
     expect(screen.queryByText(M.title)).toBeNull();
     expect(screen.getByText('앱의 화면들')).toBeTruthy();
   });
@@ -262,6 +295,7 @@ describe('점검 안내(결정 030)', () => {
   });
 
   it('공유 페이지: 카드를 받다가 503 MAINTENANCE 가 오면 로그인 없이 같은 점검 화면을 보여 주고, 풀리면 카드를 다시 받는다', async () => {
+    const appState = spyAppState();
     // api 는 503 MAINTENANCE 를 받으면 등록된 처리기를 부르고 실패를 돌려준다(lib/api.ts).
     mockApi.getSharedCard.mockImplementation(async () => {
       // 답은 화면이 뜬 뒤에 온다.
@@ -279,7 +313,7 @@ describe('점검 안내(결정 030)', () => {
     expect(mockApi.getSharedCard).toHaveBeenCalledTimes(1);
 
     mockApi.getSharedCard.mockResolvedValue({ ok: true, data: fixtures.shareCards.reading });
-    await fireEvent.press(screen.getByRole('button', { name: M.retry }));
+    await appState.emit('active');
     expect(await screen.findByTestId('share-card')).toBeTruthy();
     expect(screen.queryByText(M.title)).toBeNull();
   });

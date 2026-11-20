@@ -101,11 +101,15 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     expect(mockApi.postDaySky).not.toHaveBeenCalled();
   });
 
-  it('기기에 둔 오늘 것을 바로 그리고 서버를 부르지 않는다', async () => {
+  it('기기에 둔 오늘 것을 바로 그리고 뒤에서 한 번 새로 받는다', async () => {
     await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key: KEY, sky }));
+    let answer: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (answer = r)));
     await render(<TodayScreen />);
     expect(await screen.findByText(sky.title)).toBeTruthy();
-    expect(mockApi.postDaySky).not.toHaveBeenCalled();
+    expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    // 기다리던 요청을 끝내 둔다(다음 시험이 같은 요청을 함께 기다리지 않게)
+    await act(async () => answer({ ok: true, data: sky }));
   });
 
   it('처음 묻는 중: 0.3초 뒤 뼈대(다 그려진 배치 — 탭 있음), 3초가 넘으면 쓰는 중(머리만 · 탭 없음, 결정 061 의 2)', async () => {

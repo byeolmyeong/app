@@ -10,6 +10,7 @@ import { MyLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { birthInputOf, formatBirthLine } from '@/features/chart/birth-input';
 import { signFullName } from '@/features/chart/chart-rows';
+import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { daysSince } from '@/features/home/days-since';
 import { MainTabs } from '@/features/home/main-tabs';
@@ -48,6 +49,8 @@ export default function MyScreen() {
           nickname={account?.nickname ?? null}
           avatar={account?.avatar ?? null}
           sunSign={sun ? signFullName(sun.sign) : null}
+          // 오른쪽 위 그림도 해 별자리(서버 값)로 고른다 — 홈 카드와 같다
+          art={sun && CONSTELLATIONS[sun.sign] ? { sign: sun.sign, ...CONSTELLATIONS[sun.sign] } : null}
           days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
           headline={reading?.headline ?? null}
           birthLine={profile ? formatBirthLine(profile) : null}

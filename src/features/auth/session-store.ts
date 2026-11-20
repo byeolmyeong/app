@@ -267,6 +267,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
     /** 서버가 401 을 주었을 때. 개발용이면 새로 받고(새 세션이 생겼으면 true), 아니면 로그인 전이 된다(false) */
     async refresh(): Promise<boolean> {
       if (deps.devSession) return fetchDevSession();
+      // 켤 때의 확인 중(401 은 그 확인의 답)이면 start 가 판정한다 — 여기서 로그인 전으로 바꾸면 이어 할 가입권까지 지운다(결정 068)
+      if (state.status === 'checking') return false;
       await signedOut();
       return false;
     },

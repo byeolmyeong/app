@@ -501,3 +501,25 @@ describe('켤 때: 살아 있는 세션이 이어 하기보다 먼저', () => {
     expect(deps.getSession).not.toHaveBeenCalled();
   });
 });
+
+// 켤 때의 세션 확인이 401 이면 api 가 세션 다시 받기(refresh)를 부른다 — 확인 중에는 그 refresh 가 로그인 전으로 바꾸며
+// 이어 할 가입권까지 지우지 않게 start 가 판정한다(웹 새로 고침 뒤 이어 하기가 로그인으로 가던 것)
+describe('켤 때: 세션 확인의 401 과 세션 다시 받기', () => {
+  it('확인 중에 refresh 가 불려도 가입권을 지우지 않고 이어 한다', async () => {
+    const s = setup({ cookieSession: true, loadSignup: jest.fn(async () => ({ signupToken: 'kept-ticket', provider: 'KAKAO' as const })) });
+    (s.deps.getSession as jest.Mock).mockImplementation(async () => {
+      expect(await s.store.refresh()).toBe(false);
+      return fail('LOGIN_REQUIRED', 401);
+    });
+    await s.store.start();
+    expect(s.store.getSnapshot().status).toBe('signingUp');
+    expect(s.deps.clearSignup).not.toHaveBeenCalled();
+  });
+
+  it('확인이 끝난 뒤의 refresh 는 지금처럼 로그인 전으로', async () => {
+    const s = setup({ cookieSession: true });
+    await s.store.start();
+    await s.store.refresh();
+    expect(s.store.getSnapshot().status).toBe('signedOut');
+  });
+});

@@ -46,7 +46,7 @@ const mockSetHandler = setUpdateRequiredHandler as jest.Mock;
 const mockOpenURL = Linking.openURL as jest.Mock;
 const U = strings.update;
 const STORE_URL = 'https://store.example.test/app';
-const open: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+const open: PlatformConfig = { minVersion: null, latestVersion: null, storeUrl: null, message: null, blockNow: false };
 
 const configOf = (ios: Partial<PlatformConfig>): ApiResult<AppConfig> => ({
   ok: true,

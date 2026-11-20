@@ -43,7 +43,7 @@ const mockApi = api as jest.Mocked<typeof api>;
 const mockSetHandler = setMaintenanceHandler as jest.Mock;
 const M = strings.maintenance;
 const U = strings.update;
-const open: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+const open: PlatformConfig = { minVersion: null, latestVersion: null, storeUrl: null, message: null, blockNow: false };
 
 const configOf = (maintenance: AppConfig['maintenance'], ios: Partial<PlatformConfig> = {}): ApiResult<AppConfig> => ({
   ok: true,

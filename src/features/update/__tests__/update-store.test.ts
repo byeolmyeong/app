@@ -3,7 +3,7 @@ import type { ApiResult, AppConfig, PlatformConfig } from '@/lib/api';
 import type { AppClient } from '@/lib/app-client';
 
 const STORE_URL = 'https://store.example.test/app';
-const open: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+const open: PlatformConfig = { minVersion: null, latestVersion: null, storeUrl: null, message: null, blockNow: false };
 const ios: AppClient = { platform: 'ios', version: '1.0.0' };
 
 const configOf = (mine: Partial<PlatformConfig>, other: Partial<PlatformConfig> = {}): ApiResult<AppConfig> => ({

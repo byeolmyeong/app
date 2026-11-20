@@ -213,7 +213,7 @@ export function IntervalRow({ interval, meta, onPress }: { interval: TimingInter
         <Txt variant="stat" keepAll>
           {interval.title}
         </Txt>
-        <View style={styles.meta}>
+        <View style={styles.rowMeta}>
           {area ? <Tag label={area} /> : null}
           <Txt variant="caption" color="gray">
             {meta}
@@ -397,6 +397,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.raised,
   },
   rowText: { flex: 1, gap: L.year.itemGap },
+  rowMeta: { flexDirection: 'row', alignItems: 'center', gap: H.metaGap },
   detail: {
     overflow: 'hidden',
     paddingTop: D.padTop,

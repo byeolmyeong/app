@@ -148,6 +148,7 @@ export default function TimingScreen() {
   const timeKnown = report ? report.timeKnown : month.state.status === 'done' ? month.state.sky.timeKnown : true;
   const blocked = s.status === 'none' && s.blocked === true;
 
+  const locked = !report && chip !== 'month';
   let content: React.ReactNode;
   if (chip === 'month')
     content = (
@@ -195,10 +196,11 @@ export default function TimingScreen() {
             {T.timeUnknown}
           </Txt>
         )}
-        <View style={main ? styles.chips : styles.chipsBare}>
+        <View style={main ? styles.chips : locked ? styles.chipsLocked : styles.chipsBare}>
           <ChipRow value={chip} locked={!report} onChange={setPicked} />
         </View>
-        <View style={styles.content}>{content}</View>
+        {/* 잠긴 자리는 칩 바로 아래부터(보드 14 잠긴 칩 — 흐린 미리보기가 제 여백을 갖는다) */}
+        <View style={locked ? null : styles.content}>{content}</View>
       </View>
     </Screen>
   );
@@ -208,5 +210,6 @@ const styles = StyleSheet.create({
   timeUnknown: { marginTop: L.timeUnknownTop },
   chips: { marginTop: L.chips.top },
   chipsBare: { marginTop: L.chips.topBare },
+  chipsLocked: { marginTop: L.chips.topLocked },
   content: { paddingTop: L.contentTop, gap: L.sectionGap },
 });

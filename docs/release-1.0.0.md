@@ -24,7 +24,7 @@ last_reviewed: 2026-11-20
 - 푸시 알림: 이벤트 알림만(초대 수락, 리포트 완성).
 - 앱 이름: "별명" 그대로(별이 지어 준 이름). 대표 문구는 새로 정한다. 결정: docs/decisions/032-keep-name-byeolmyeong.md
 - 디자인: 어두운 밤하늘 바탕 · 푸른 보라 하나 · Pretendard(400·500·600). 빛·유리는 브랜드 자리에만. 차트는 눈금 원과 가는 선(016). 결정: docs/decisions/033-brand-dark-design-system.md · 원칙: DESIGN.md
-- 1.1.0: 광고(결과 전 15초)와 990원 광고 제거, 인앱결제, 자세한 풀이 유료화(결정 050), 투두·조각·레벨업(F11)과 대표 문구 "조각을 모은다", 친구창, 친구끼리 3~5명 그룹 궁합. 결정: docs/decisions/007-friends-chat-shared-room.md, docs/decisions/008-ads-and-ad-removal.md, docs/decisions/015-ad-before-results-15s.md
+- 1.1.0: 광고(결과 전 15초)와 990원 광고 제거, 인앱결제, 음악 세 곡(결정 062 · 069 — 코드는 1.0.0 에 꺼진 채 있다), 자세한 풀이 유료화(결정 050), 투두·조각·레벨업(F11)과 대표 문구 "조각을 모은다", 친구창, 친구끼리 3~5명 그룹 궁합. 결정: docs/decisions/007-friends-chat-shared-room.md, docs/decisions/008-ads-and-ad-removal.md, docs/decisions/015-ad-before-results-15s.md
 
 ## 계산과 글의 역할 분담
 - 수치와 시기는 서버의 코드가 계산한다: 행성·하우스·각도, 변곡점이 오는 연도. AI 는 계산하지 않는다. 이유: AI 에게 계산을 맡기면 도수와 시기가 틀린다.

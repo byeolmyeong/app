@@ -106,7 +106,8 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     let resolve: (r: ApiResult<typeof fixtures.reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     const view = await render(gate(<ReadingScreen />));
-    expect(await screen.findByText(strings.reading.generating)).toBeTruthy();
+    // 홈에서 들어와 기기에 글이 없으면 받아 오는 동안 뼈대(결정 071) — 그동안도 미룬다
+    expect(await screen.findByTestId('reading-skeleton')).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
 

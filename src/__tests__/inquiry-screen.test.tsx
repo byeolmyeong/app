@@ -1,10 +1,12 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import InquiryDetailScreen from '@/app/my/inquiries/[id]';
 import InquiriesScreen from '@/app/my/inquiries/index';
 import NewInquiryScreen from '@/app/my/inquiries/new';
 import OldInquiryScreen from '@/app/settings/inquiry';
+import { ScreenPaddingX } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { api, type InquiryItem } from '@/lib/api';
 
@@ -170,6 +172,9 @@ describe('문의 내역 — 다시 받기 · 불러오기 · 끊김(결정 061 �
       expect(screen.queryByLabelText(strings.states.loading)).toBeNull();
       await act(async () => jest.advanceTimersByTime(350));
       expect(screen.getByLabelText(strings.states.loading)).toBeTruthy();
+      // 다 그려진 목록과 같은 카드 하나에 줄 셋, 줄마다 상태 칩 자리(결정 065 의 뼈대 규칙)
+      expect(screen.getAllByTestId('skeleton-row')).toHaveLength(3);
+      expect(screen.getAllByTestId('skeleton-chip')).toHaveLength(3);
       await act(async () => jest.advanceTimersByTime(10_000));
       expect(screen.getByText(I.loadFail.title)).toBeTruthy();
     } finally {
@@ -274,6 +279,25 @@ describe('새 문의(/my/inquiries/new, 보드 16-8)', () => {
 });
 
 describe('답변 보기(/my/inquiries/[id], 보드 16-8)', () => {
+  it('0.3초가 넘으면 다 그려진 화면과 같은 자리의 뼈대 — 내 문의 카드(머리 + 글 줄) + 아래 안내 한 줄', async () => {
+    jest.useFakeTimers();
+    try {
+      mockApi.getInquiry.mockReturnValue(new Promise(() => {}));
+      await render(<InquiryDetailScreen />);
+      expect(screen.queryByLabelText(strings.states.loading)).toBeNull();
+      await act(async () => jest.advanceTimersByTime(350));
+      expect(screen.getByLabelText(strings.states.loading)).toBeTruthy();
+      // 실제 화면처럼 좌우 여백은 한 번(화면 바깥 20)뿐, 글 줄 사이에는 카드 간격이 끼지 않는다
+      expect(StyleSheet.flatten(screen.getByLabelText(strings.states.loading).props.style).paddingHorizontal).toBe(ScreenPaddingX);
+      expect(StyleSheet.flatten(screen.getByTestId('skeleton-body').props.style)?.gap).toBeUndefined();
+      expect(screen.getByTestId('skeleton-card')).toBeTruthy();
+      expect(screen.getAllByTestId('skeleton-body-line')).toHaveLength(3);
+      expect(screen.getByTestId('skeleton-note')).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('내 문의 카드(종류 · 날짜 · 글)와 별명 답변 카드(날짜 · 글)를 보인다', async () => {
     mockApi.getInquiry.mockResolvedValue({ ok: true, data: answered });
     await render(<InquiryDetailScreen />);

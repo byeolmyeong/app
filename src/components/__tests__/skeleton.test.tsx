@@ -1,9 +1,9 @@
 import { act, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 
-import { Skeleton, SkeletonCard } from '@/components/skeleton';
+import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
 import { useLoadingPhase } from '@/components/use-loading-phase';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 function Phase({ loading }: { loading: boolean }) {
@@ -73,27 +73,52 @@ describe('뼈대 조각', () => {
     expect(StyleSheet.flatten(circle.props.style)).toMatchObject({ width: 44, height: 44, borderRadius: 22 });
     expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
   });
+});
 
-  it('카드: 떠 있는 면 · 테두리 · 모서리 20(큰 카드 24) · 안 여백 20 · 사이 12, 화면 읽기에는 "불러오는 중이에요" 한 번', async () => {
-    const view = await render(
-      <SkeletonCard>
-        <Skeleton width="44%" height={13} />
-      </SkeletonCard>,
+// 뼈대는 그 화면이 다 그려졌을 때의 배치 그대로(결정 071): 글 한 줄은 그 글자 단계의 줄 높이 칸에 글자 크기 막대 하나
+describe('글 줄 자리 SkeletonText', () => {
+  const lines = () => screen.queryAllByTestId('skeleton-line', { includeHiddenElements: true });
+  const bars = () => screen.getAllByTestId('skeleton', { includeHiddenElements: true });
+
+  it('widths 의 길이가 줄 수 — 줄마다 줄 높이 칸(본문 26)에 글자 크기(16) 막대, 폭은 widths 그대로', async () => {
+    await render(<SkeletonText variant="paragraph" widths={['100%', '64%']} />);
+    expect(lines()).toHaveLength(2);
+    for (const line of lines()) expect(StyleSheet.flatten(line.props.style)).toMatchObject({ height: Typography.paragraph.lineHeight, justifyContent: 'center' });
+    expect(bars().map((b) => StyleSheet.flatten(b.props.style))).toEqual([
+      expect.objectContaining({ width: '100%', height: Typography.paragraph.fontSize }),
+      expect.objectContaining({ width: '64%', height: Typography.paragraph.fontSize }),
+    ]);
+  });
+
+  it('글자 단계가 다르면 칸 · 막대도 그 단계대로(한 줄 별명 36 칸 · 26 막대)', async () => {
+    await render(<SkeletonText variant="hero" widths={[120]} />);
+    expect(StyleSheet.flatten(lines()[0].props.style)).toMatchObject({ height: 36 });
+    expect(StyleSheet.flatten(bars()[0].props.style)).toMatchObject({ width: 120, height: 26 });
+  });
+
+  it('줄이 없으면 아무것도 그리지 않는다', async () => {
+    const view = await render(<SkeletonText variant="paragraph" widths={[]} />);
+    expect(lines()).toHaveLength(0);
+    expect(view.toJSON()).toBeNull();
+  });
+
+  it('가운데 맞춘 글의 자리는 막대도 가운데, 감싼 칸이 가운데 맞춤이어도 폭을 다 쓴다(퍼센트 폭이 0 이 되지 않게)', async () => {
+    const view = await render(<SkeletonText variant="caption" widths={['50%']} />);
+    expect(StyleSheet.flatten(lines()[0].props.style).alignItems).toBeUndefined();
+    await view.rerender(<SkeletonText variant="caption" widths={['50%']} center />);
+    expect(StyleSheet.flatten(lines()[0].props.style)).toMatchObject({ alignItems: 'center' });
+    expect(StyleSheet.flatten(lines()[0].parent?.props.style)).toMatchObject({ alignSelf: 'stretch' });
+  });
+});
+
+describe('뼈대 묶음 SkeletonGroup', () => {
+  it('화면 하나의 뼈대를 묶어 화면 읽기에는 "불러오는 중이에요" 를 한 번 읽는다', async () => {
+    await render(
+      <SkeletonGroup testID="x-skeleton">
+        <SkeletonText variant="paragraph" widths={['100%']} />
+      </SkeletonGroup>,
     );
-    const card = screen.getByLabelText(strings.states.loading);
-    expect(StyleSheet.flatten(card.props.style)).toMatchObject({
-      backgroundColor: Colors.raised,
-      borderColor: Colors.hair,
-      borderWidth: 1,
-      borderRadius: 20,
-      padding: 20,
-      gap: 12,
-    });
-    await view.rerender(
-      <SkeletonCard big>
-        <Skeleton width="44%" height={13} />
-      </SkeletonCard>,
-    );
-    expect(StyleSheet.flatten(screen.getByLabelText(strings.states.loading).props.style)).toMatchObject({ borderRadius: 24 });
+    expect(screen.getAllByLabelText(strings.states.loading)).toHaveLength(1);
+    expect(screen.getByLabelText(strings.states.loading).props.testID).toBe('x-skeleton');
   });
 });

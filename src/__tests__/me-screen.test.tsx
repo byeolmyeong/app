@@ -155,14 +155,18 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     expect(screen.getByTestId('me-detail-card')).toBeTruthy();
   });
 
-  it('처음 불러올 때 0.3초가 넘으면 뼈대(24-1), 머리 · 아래 탭은 그대로 보인다', async () => {
+  it('처음 불러올 때 0.3초가 넘으면 뼈대(받기 전 배치, 결정 071), 머리 · 아래 탭은 그대로 보인다', async () => {
     jest.useFakeTimers();
     mockApi.createReading.mockReturnValue(new Promise(() => {}));
     await render(<MeScreen />);
     await act(async () => void (await jest.advanceTimersByTimeAsync(100)));
     expect(screen.queryByTestId('me-skeleton')).toBeNull();
+    // 0.3초 전 빈 단계에도 뼈대와 같은 머리(받기 전 "내 별명") · 아래 탭 — 중간에 바뀌지 않게(결정 071 의 6)
+    expect(screen.getByText(strings.reading.title)).toBeTruthy();
+    expect(tabs()).toHaveLength(4);
     await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
     expect(screen.getByTestId('me-skeleton')).toBeTruthy();
+    expect(screen.getByText(strings.reading.title)).toBeTruthy();
     expect(screen.getAllByLabelText(strings.states.loading).length).toBeGreaterThan(0);
     expect(tabs()).toHaveLength(4);
   });

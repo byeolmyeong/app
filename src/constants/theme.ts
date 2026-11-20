@@ -245,8 +245,8 @@ export const ToastLayout = {
   shadow: '0 8px 24px rgba(0,0,0,0.45)',
 } as const;
 
-/** 처음 불러올 때 뼈대(보드 24 · 24-1): 막대 모서리 · 카드 모서리(큰 카드) · 카드 안 여백 · 조각 사이 · 빛이 한 번 오가는 시간 */
-export const SkeletonLayout = { radius: 8, cardRadius: 20, bigCardRadius: 24, cardPadding: 20, gap: 12, shimmerMs: 1400 } as const;
+/** 처음 불러올 때 뼈대(보드 24 · 24-1): 막대 모서리 · 빛이 한 번 오가는 시간. 카드는 그 부품의 틀을 쓴다(결정 071) */
+export const SkeletonLayout = { radius: 8, shimmerMs: 1400 } as const;
 
 /** 연결 끊김 띠(결정 061 의 4, 보드 20) */
 export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, icon: 20, gap: 10 } as const;
@@ -342,8 +342,15 @@ export const MeLayout = {
     buttonTop: 18,
     glow: { x: 0.85, y: 0.1, extent: 0.58 },
   },
-  /** 처음 불러올 때 뼈대(보드 24-1): 막대의 높이 · 칩의 폭 */
-  skeleton: { gap: 14, avatar: 56, rowGap: 12, namesGap: 8, lineTop: 8, chipsGap: 8, chip: 36, chips: [58, 58, 58, 48, 58], name: 18, sub: 12, title: 16, line: 14 },
+  /**
+   * 처음 불러올 때 뼈대(결정 071 — 모양은 보드 24-1, 자리 · 줄 수는 12 · 12-8): 받은 뒤 별명 카드(이름 · 한 줄 별명 · 풀이 읽기) ·
+   * 영역 카드(이름표 · 제목 세 줄 · 키워드 셋 · 쓰인 별 이름과 셋) · 받기 전 자세한 풀이 카드(이름표 · 제목 · 설명 · 영역 이름)의 막대 폭
+   */
+  skeleton: {
+    card: { label: 84, headline: '86%', read: 64 },
+    hero: { kicker: 91, title: ['100%', '96%', '30%'], keywords: [74, 78, 78], stars: 88, star: [122, 108, 126] },
+    detail: { kicker: 64, title: ['74%'], body: ['96%'], icon: 23 },
+  },
 } as const;
 
 /** 카드 하나만 못 불러왔을 때 그 카드 자리(보드 19-1, 결정 061 의 3): 카드 · 이름표 아래 제목 · 설명 · 작은 "다시 보기" 단추 */
@@ -364,6 +371,21 @@ export const ReadingLayout = {
   listGap: 12,
   itemGap: 8,
   card: { radius: 20, padTop: 24, padX: 16, padBottom: 20, picture: 154, nameTop: 12, gridTop: 20, gridPadV: 20, gridGap: 8, cellGap: 4, mapRow: 52, chevron: 18 },
+  /**
+   * 처음 불러올 때 뼈대(결정 071 — 보드 12 의 줄 수): 한 줄 별명 두 줄 · 문단 다섯(제목 한 줄 · 본문 다섯 줄) · 강점 셋 · 보완점 둘의 막대 폭,
+   * 별자리 카드의 이름 · 셋 칸(이름 · 별자리 · 뜻) · "내 하늘 지도 보기" 막대 폭
+   */
+  skeleton: {
+    headline: ['100%', '58%'],
+    sections: 5,
+    title: ['46%'],
+    body: ['100%', '100%', '100%', '100%', '62%'],
+    strengthsTitle: 34,
+    strengths: ['46%', '52%', '60%'],
+    cautionsTitle: 48,
+    cautions: ['56%', '44%'],
+    card: { name: 76, label: 52, value: 64, caption: 72, map: 102 },
+  },
 } as const;
 
 /**
@@ -394,6 +416,8 @@ export const ReasonLayout = {
   button: 44,
   buttonRadius: 10,
   buttonTop: 18,
+  /** 처음 불러올 때 뼈대(결정 071): 접힌 상자의 이름 · 문장 두 줄의 막대 폭 */
+  skeleton: { label: 95, sentence: ['100%', '72%'] },
 } as const;
 
 export const TipLayout = {
@@ -696,7 +720,10 @@ export const InquiryLayout = {
   answer: { fill: 'rgba(71,82,255,0.10)', border: 'rgba(154,163,255,0.28)', label: '#C9CEFF' },
   /** 비었을 때: 머리 아래 높이 560 칸의 가운데(보드 16-8 비었을 때) */
   empty: { height: 560, icon: 72, glyph: 32, titleTop: 20, bodyTop: 8 },
-  /** 처음 불러올 때 뼈대 줄 수 · 줄 높이(보드 24 의 카드 줄) */
-  skeleton: { rows: 3, line: 16, meta: 12 },
+  /**
+   * 처음 불러올 때 뼈대(다 그려진 화면과 같은 카드 · 같은 줄, 결정 065): 내역 줄 수 · 첫 줄 막대 높이 · 날짜 · 머리 막대 높이 · 상태 칩 너비 ·
+   * 날짜 너비 · 답변 보기의 본문 줄 수
+   */
+  skeleton: { rows: 3, line: 16, meta: 12, chip: 56, date: 64, bodyLines: 3 },
   sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
 } as const;

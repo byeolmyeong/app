@@ -7,6 +7,7 @@ import { MakingView } from '@/components/making-view';
 import { NavBar } from '@/components/nav-bar';
 import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
+import { SkeletonGroup } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
@@ -16,14 +17,14 @@ import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty } from '@/features/chart/chart-empty';
-import { SignCard } from '@/features/chart/sign-card';
+import { SignCard, SignCardSkeleton } from '@/features/chart/sign-card';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { useAccount } from '@/features/home/use-account';
-import { AreaView } from '@/features/me/area-view';
-import { AreaChips, DetailCard, MeNicknameCard, MeSkeleton } from '@/features/me/me-parts';
+import { AreaView, AreaViewSkeleton } from '@/features/me/area-view';
+import { AreaChips, AreaChipsSkeleton, DetailCard, DetailCardSkeleton, MeNicknameCard, MeNicknameCardSkeleton } from '@/features/me/me-parts';
 import { useMeReport } from '@/features/me/use-me-report';
-import { ReadingView } from '@/features/reading/reading-view';
+import { ReadingSkeleton, ReadingView } from '@/features/reading/reading-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
 import { ShareEntry } from '@/features/share/share-entry';
 import { useGenerationBusy } from '@/features/update/update-gate';
@@ -33,10 +34,10 @@ const S = strings.me;
 const ST = strings.states;
 
 /**
- * 나 탭(결정 048 · 050 · 061 · 065, 보드 12 받기 전 · 12-8~12-12 · 11-8 · 11-9 · 24-1).
+ * 나 탭(결정 048 · 050 · 061 · 065 · 071, 보드 12 받기 전 · 12-8~12-12 · 11-8 · 11-9 · 24-1).
  * - 나 탭 풀이가 다 쓰이지 않았으면: 내 별명 내용(ReadingView) + 맨 아래 "자세한 풀이" 카드. 받기 → 쓰는 중(11-8) → 다 쓰면 성격 칩.
  * - 다 쓰였으면: 맨 위 별명 카드(→ 내 별명) + 칩 다섯(`/me?area=LOVE` 로 고를 수 있다) + 고른 칩의 풀이.
- * - 처음 불러올 때 0.3초가 넘으면 뼈대, 한 번 받은 풀이는 기기의 것을 먼저 보인다. 못 불러옴 · 끊김은 결정 061 의 틀.
+ * - 처음 불러올 때 0.3초가 넘으면 다 그려질 화면과 같은 배치의 뼈대(받기 전 · 칩을 골라 들어오면 받은 뒤), 한 번 받은 풀이는 기기의 것을 먼저 보인다. 못 불러옴 · 끊김은 결정 061 의 틀.
  * 탭의 첫 화면이라 뒤로 가기가 없고 아래 탭이 있다(결정 046 의 2). 면책 문구는 두지 않는다(결정 064).
  */
 export default function MeScreen() {
@@ -52,7 +53,8 @@ export default function MeScreen() {
   const online = useOnline();
   const account = useAccount(online);
   const [picked, setPicked] = useState<MeArea | null>(null);
-  const selected = picked ?? ME_AREAS.find((a) => a === area) ?? 'PERSONALITY';
+  const askedArea = ME_AREAS.find((a) => a === area) ?? null;
+  const selected = picked ?? askedArea ?? 'PERSONALITY';
   // 쓰는 중이거나 방금 다 쓰인 풀이가 떠 있는 동안 강제 업데이트를 미룬다(결정 027)
   useGenerationBusy(me.state.status === 'writing', me.state.status === 'done');
   // 연결이 돌아오면 상태만 다시 묻는다(GET) — 만들기(POST)는 사람이 누를 때만(결정 061 의 4)
@@ -165,12 +167,36 @@ export default function MeScreen() {
 
   // 상태를 10초 넘게 묻지 못하면 빈 화면 대신 카드 자리 안내(결정 065 의 2) — 기다리던 요청은 훅이 같은 10초에 끊는다
   const checkTimedOut = s.status === 'checking' && phase === 'timeout';
-  if (!reading || (s.status === 'checking' && !checkTimedOut))
+  if (!reading || (s.status === 'checking' && !checkTimedOut)) {
+    // 뼈대는 다 그려질 화면의 배치 그대로(결정 071). 기기에 받아 둔 풀이가 없어 대개 받기 전이다 — 칩을 골라 들어왔고
+    // (`?area=` — 푸시 "자세한 풀이가 다 됐어요" 는 12-8 로 연다, 결정 066) 아직 상태를 묻는 중이면 받은 뒤 배치.
+    // 0.3초 전 빈 단계에도 그 배치의 머리 · 아래 탭을 둔다(중간에 바뀌지 않게, 071 의 6)
+    const afterLayout = askedArea !== null && s.status === 'checking';
+    const loadingNav = afterLayout ? afterNav : <NavBar title={strings.reading.title} chevron />;
+    if (phase !== 'skeleton') return <Screen nav={loadingNav} footer={tabs}>{null}</Screen>;
+    if (afterLayout)
+      return (
+        <Screen nav={loadingNav} footer={tabs}>
+          <SkeletonGroup testID="me-after-skeleton">
+            <View>
+              <MeNicknameCardSkeleton />
+              <AreaChipsSkeleton />
+              <AreaViewSkeleton />
+            </View>
+          </SkeletonGroup>
+        </Screen>
+      );
     return (
-      <Screen nav={afterNav} footer={tabs}>
-        {phase === 'skeleton' ? <MeSkeleton /> : null}
+      <Screen nav={loadingNav} footer={tabs}>
+        <SkeletonGroup testID="me-skeleton">
+          <View>
+            <ReadingSkeleton card={chart ? <SignCardSkeleton chart={chart} /> : null} />
+            <DetailCardSkeleton />
+          </View>
+        </SkeletonGroup>
       </Screen>
     );
+  }
 
   // 받기 전(보드 12 받기 전): 내 별명 내용 + 맨 아래 "자세한 풀이" 카드(상태를 못 물었으면 그 자리에 19-1, 끊겼으면 띠)
   const beforeNav = <NavBar title={strings.reading.title} chevron right={<ShareEntry target={{ kind: 'READING' }} trigger="icon" />} />;

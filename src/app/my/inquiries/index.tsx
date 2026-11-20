@@ -6,12 +6,12 @@ import Svg, { Path } from 'react-native-svg';
 import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { Skeleton, SkeletonCard } from '@/components/skeleton';
+import { Skeleton } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
-import { Colors, FontWeight, InquiryLayout as L, LineWidth, MyLayout, ScreenPaddingX, StateLayout } from '@/constants/theme';
+import { Colors, FontWeight, InquiryLayout as L, LineWidth, MyLayout, ScreenPaddingX, StateLayout, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatInquiryDate } from '@/features/support/inquiry';
 import { useInquiries } from '@/features/support/use-inquiries';
@@ -34,17 +34,32 @@ function StatusChip({ item }: { item: InquiryItem }) {
   );
 }
 
-/** 처음 불러올 때 0.3초가 넘으면 보이는 뼈대(보드 24 의 카드 줄) */
+/**
+ * 처음 불러올 때 0.3초가 넘으면 보이는 뼈대 — 다 그려진 목록과 같은 카드 · 같은 줄(첫 줄 / 상태 칩 · 날짜 / 오른쪽 화살표, 결정 065).
+ * 막대는 글자 줄 높이 칸 가운데에 둬 줄 높이가 실제와 같다.
+ */
 function ListSkeleton() {
   return (
-    <SkeletonCard>
+    <View accessible accessibilityLabel={strings.states.loading} style={styles.card}>
       {Array.from({ length: L.skeleton.rows }, (_, i) => (
-        <View key={i} style={styles.skeletonRow}>
-          <Skeleton width="70%" height={L.skeleton.line} />
-          <Skeleton width="35%" height={L.skeleton.meta} />
+        <View key={i} testID="skeleton-row" style={[styles.row, i > 0 && styles.divided]}>
+          <View style={styles.rowText}>
+            <View style={styles.lineBox}>
+              <Skeleton width="70%" height={L.skeleton.line} />
+            </View>
+            <View style={styles.meta}>
+              <View testID="skeleton-chip">
+                <Skeleton width={L.skeleton.chip} height={L.status.height} pill />
+              </View>
+              <View style={styles.metaBox}>
+                <Skeleton width={L.skeleton.date} height={L.skeleton.meta} />
+              </View>
+            </View>
+          </View>
+          <Skeleton width={MyLayout.list.chevron} height={MyLayout.list.chevron} />
         </View>
       ))}
-    </SkeletonCard>
+    </View>
   );
 }
 
@@ -165,7 +180,8 @@ const styles = StyleSheet.create({
   chipAnsweredText: { color: L.status.answeredText },
   /** 비었을 때: 둥근 그림 칸 · 제목 · 설명 두 줄을 머리 아래 560 칸의 가운데에(보드 16-8 비었을 때) */
   empty: { height: L.empty.height, alignItems: 'center', justifyContent: 'center' },
-  skeletonRow: { gap: L.row.gap },
+  lineBox: { height: Typography.item.lineHeight, justifyContent: 'center' },
+  metaBox: { height: Typography.statLabel.lineHeight, justifyContent: 'center' },
   emptyIcon: {
     width: L.empty.icon,
     height: L.empty.icon,

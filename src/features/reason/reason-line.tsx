@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 import Svg, { Path } from 'react-native-svg';
 
 import { InfoTip } from '@/components/info-tip';
+import { SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { Colors, FontWeight, ReasonLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -102,7 +103,7 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
   const map = chart !== null && focus.bodies.length + focus.houses.length > 0 ? chart : null;
   const first = focus.bodies[0] ?? null;
   return (
-    <View style={[styles.box, open && styles.boxOpen, style]}>
+    <View testID="reason-line" style={[styles.box, open && styles.boxOpen, style]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${R.label}, ${sentence.text}`}
@@ -146,6 +147,21 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
   );
 }
 
+/** 접힌 이유 상자의 뼈대(결정 071): 같은 상자 · 이름 한 줄 · 문장 두 줄(꺾쇠 자리는 비운다) */
+export function ReasonLineSkeleton({ style }: { style?: StyleProp<ViewStyle> }) {
+  return (
+    <View testID="reason-line-skeleton" style={[styles.box, style]}>
+      <View style={styles.head}>
+        <View style={styles.texts}>
+          <SkeletonText variant="label" widths={[L.skeleton.label]} />
+          <SkeletonText variant="reason" widths={L.skeleton.sentence} />
+        </View>
+        <View style={styles.chevronSpace} />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   box: {
     paddingTop: L.padTop,
@@ -157,6 +173,7 @@ const styles = StyleSheet.create({
   },
   boxOpen: { paddingBottom: L.padBottomOpen },
   head: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
+  chevronSpace: { width: L.chevron },
   texts: { flex: 1, gap: L.textGap },
   bold: { color: Colors.ink, fontWeight: FontWeight.semibold },
   regular: { fontWeight: FontWeight.regular },

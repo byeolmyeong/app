@@ -60,38 +60,79 @@ beforeEach(async () => {
   });
 });
 
+afterEach(() => jest.useRealTimers());
+
 describe('요약 해석 화면', () => {
-  it('짓는 중에도 홈에서 들어왔으면 뒤로 가기(화면 머리)가 있다. 가입 직후에만 머리 없이(보드 9, 리뷰 A6)', async () => {
+  it('홈 · 나 탭에서 들어와 기기에 글이 없으면 0.3초 뒤 뼈대(머리 뒤로 가기 · 아래 탭은 진짜), 10초가 넘으면 별명 짓는 중(결정 071 · 065 의 2)', async () => {
+    jest.useFakeTimers();
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
-    const view = await render(<ReadingScreen />);
-    expect(await screen.findByText(R.generating)).toBeTruthy();
-    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
-    await view.unmount();
-
-    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
     await render(<ReadingScreen />);
-    expect(await screen.findByText(R.generating)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
-    (useLocalSearchParams as jest.Mock).mockReturnValue({});
+    await act(async () => void (await jest.advanceTimersByTimeAsync(100)));
+    expect(screen.queryByTestId('reading-skeleton')).toBeNull();
+    expect(screen.queryByText(R.generating)).toBeNull();
+    // 0.3초 전 빈 단계에도 뼈대와 같은 머리 · 아래 탭(결정 071 의 6)
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
+    expect(screen.getByTestId('reading-skeleton')).toBeTruthy();
+    expect(screen.getByLabelText(ST.loading)).toBeTruthy();
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(screen.queryByText(R.generating)).toBeNull();
+    // 10초가 넘도록 오지 않으면 서버가 새로 짓는 중이다(옛 요약 해석만 있던 계정 — 나 탭과 같다, 리뷰 #49)
+    await act(async () => void (await jest.advanceTimersByTimeAsync(10_000)));
+    expect(screen.getByText(R.generating)).toBeTruthy();
+    expect(screen.queryByTestId('reading-skeleton')).toBeNull();
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    // 아래 탭도 그대로 — 그동안 다른 탭으로 갈 수 있다(나 탭과 같다, 결정 061 · 065 의 2)
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
     await act(async () => resolve({ ok: true, data: reading }));
-    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(screen.getByText(reading.headline)).toBeTruthy();
+    jest.useRealTimers();
   });
 
-  it('짓는 동안만 기다릴 때 음악을 청한다(결정 062 의 1) — 글이 오면 내려놓는다', async () => {
+  it('가입 직후 · 출생 정보를 바꾼 직후는 서버가 새로 짓는 중이라 뼈대 없이 바로 별명 짓는 중 — 가입 직후에만 머리 없이(보드 9, 리뷰 A6)', async () => {
+    // 끝나지 않는 요청을 남기면 같은 출생 정보의 다음 시험이 그 요청을 함께 기다린다(use-reading 의 inflight) — 끝에 답한다
+    let resolve: (r: ApiResult<Reading>) => void = () => {};
+    mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+    const view = await render(<ReadingScreen />);
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    expect(screen.queryByTestId('reading-skeleton')).toBeNull();
+    expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
+    await view.unmount();
+
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'birth' });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(R.generating)).toBeTruthy();
+    expect(screen.queryByTestId('reading-skeleton')).toBeNull();
+    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    await act(async () => resolve({ ok: true, data: reading }));
+  });
+
+  it('짓는 동안(별명 짓는 중이 보일 때)만 기다릴 때 음악을 청한다(결정 062 의 1) — 뼈대일 때는 아니고, 글이 오면 내려놓는다', async () => {
+    jest.useFakeTimers();
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     await render(<ReadingScreen />);
-    expect(await screen.findByText(R.generating)).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
+    expect(screen.getByTestId('reading-skeleton')).toBeTruthy();
+    expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', false);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(10_000)));
+    expect(screen.getByText(R.generating)).toBeTruthy();
     expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', true);
     await act(async () => resolve({ ok: true, data: reading }));
-    expect(await screen.findByText(reading.headline)).toBeTruthy();
+    expect(screen.getByText(reading.headline)).toBeTruthy();
     expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', false);
+    jest.useRealTimers();
   });
 
   it('생성 중에는 진행 상태를 보여 주고, 받으면 서버가 준 글을 그대로 보여 준다', async () => {
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+    // 가입 직후(새로 짓는 중) — 방금 가입한 닉네임이 없어 별명 공개 없이 글로 간다
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.generating)).toBeTruthy();
     // 기다리는 동안 "별명 짓는 중"(결정 042 보드 9): 움직이는 그림과 안내 문구, "길면 1분쯤" 은 없다
@@ -291,9 +332,9 @@ describe('요약 해석 화면', () => {
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     await fireEvent.press(retry);
-    // 생성 중에는 "다시 시도" 가 사라져 또 누를 수 없다
+    // 생성 중에는 "다시 시도" 가 사라져 또 누를 수 없고, 0.3초 뒤 뼈대가 보인다(결정 071)
     expect(screen.queryByText(ST.offlineEmpty.retry)).toBeNull();
-    expect(screen.getByText(R.generating)).toBeTruthy();
+    expect(await screen.findByTestId('reading-skeleton')).toBeTruthy();
     await act(async () => resolve({ ok: true, data: reading }));
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     expect(mockApi.createReading).toHaveBeenCalledTimes(2);
@@ -311,7 +352,7 @@ describe('요약 해석 화면', () => {
   it('세션 확인이 끝나기 전에는 요청하지 않는다', async () => {
     mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
     await render(<ReadingScreen />);
-    expect(await screen.findByText(R.generating)).toBeTruthy();
+    expect(await screen.findByTestId('reading-skeleton')).toBeTruthy();
     await act(async () => {});
     expect(mockApi.createReading).not.toHaveBeenCalled();
   });
@@ -342,6 +383,7 @@ describe('요약 해석 화면', () => {
   it('기기에서 글을 찾는 동안에는 "짓는 중" 을 보여 주지 않는다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     mockUseSession.mockReturnValue({ status: 'checking' as const, token: null, ready: false, lastError: null });
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
     const view = await render(<ReadingScreen />);
     // 받아 둔 글이 없다는 것을 확인한 뒤에야 "짓는 중" 이 나온다
     expect(await screen.findByText(R.generating)).toBeTruthy();

@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { OfflineBanner } from '@/components/offline-banner';
+import { SkeletonGroup } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
+import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
 import { strings } from '@/content/strings';
 import { clearSignedUp, signedUpNickname } from '@/features/auth/signup-draft';
@@ -13,11 +15,11 @@ import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { keyThree } from '@/features/chart/chart-rows';
-import { SignCard } from '@/features/chart/sign-card';
+import { SignCard, SignCardSkeleton } from '@/features/chart/sign-card';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { MakingView } from '@/components/making-view';
-import { ReadingView } from '@/features/reading/reading-view';
+import { ReadingSkeleton, ReadingView } from '@/features/reading/reading-view';
 import { clearPendingReveal, pendingReveal } from '@/features/reading/reveal-once';
 import { RevealView } from '@/features/reading/reveal-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
@@ -50,8 +52,13 @@ export default function ReadingScreen() {
   // 짓는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027). 받아 둔 글을 다시 연 것은 아니다.
   const generating = profile !== null && stored.checked && !stored.reading && state.status === 'loading';
   useGenerationBusy(generating, !stored.reading && state.status === 'done');
+  // 가입 직후 · 출생 정보를 바꾼 직후는 서버가 새로 짓는 중이라 바로 별명 짓는 중(보드 9). 그 밖(홈 · 나 탭에서 들어옴)은 대개 지어 둔 글을
+  // 받아 오므로 0.3초 뒤 뼈대, 10초가 넘으면 새로 짓는 것으로 보고 별명 짓는 중(결정 071 · 065 의 2 — 나 탭과 같다, 리뷰 #49)
+  const fresh = from === 'signup' || from === 'birth';
+  const phase = useLoadingPhase(!fresh && profile !== null && !stored.reading && state.status === 'loading');
+  const making = generating && (fresh || phase === 'timeout');
   // 짓는 동안(별명 짓는 중 화면)만 기다릴 때 음악(결정 062 의 1). 글이 오거나 못 지으면 배경으로
-  useSoundtrack('waiting', generating);
+  useSoundtrack('waiting', making);
   const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
   // 글이 보일 때만 머리 오른쪽에 공유하기(지금의 요약 해석 카드 — 공유 v2 는 계획 A⑤)
   const readNav = <NavBar title={S.title} onBack={goBackOrHome} chevron right={<ShareEntry target={{ kind: 'READING' }} trigger="icon" />} />;
@@ -96,10 +103,23 @@ export default function ReadingScreen() {
     );
 
   // 기기를 찾아보는 동안에는 아무것도 그리지 않는다("짓는 중" 이 잠깐 비치지 않게).
-  if (!stored.checked) return <Screen nav={nav}>{null}</Screen>;
+  // 홈 · 나 탭에서 들어왔으면 뼈대와 같은 아래 탭도(중간에 탭이 생기지 않게, 결정 071 의 6)
+  if (!stored.checked) return <Screen nav={nav} footer={fresh ? undefined : tabs}>{null}</Screen>;
 
-  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다
-  if (state.status === 'loading') return <MakingView nav={from === 'signup' ? undefined : nav} />;
+  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다. 받아 오다 10초가 넘은 것이면
+  // 머리 · 아래 탭이 있는 틀에 보여 그동안 다른 탭으로 갈 수 있게 한다(나 탭과 같다, 결정 061 · 065 의 2)
+  if (making) return <MakingView nav={from === 'signup' ? undefined : nav} tabs={fresh ? undefined : tabs} />;
+  // 받아 오는 동안은 글과 같은 배치의 뼈대(결정 071) — 머리 · 아래 탭은 진짜
+  if (state.status === 'loading')
+    return (
+      <Screen nav={nav} footer={tabs}>
+        {phase === 'skeleton' ? (
+          <SkeletonGroup testID="reading-skeleton">
+            <ReadingSkeleton card={chart ? <SignCardSkeleton chart={chart} /> : null} />
+          </SkeletonGroup>
+        ) : null}
+      </Screen>
+    );
 
   // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겼으면 보드 20-1, 가입 직후면 보드 9-1(머리 · 탭 없이 다시 짓기만),
   // 그 밖에는 보드 19 — 요청이 많을 때만 그 안내로

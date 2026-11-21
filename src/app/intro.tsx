@@ -61,6 +61,8 @@ export default function IntroScreen() {
       }),
     [scrollX, width],
   );
+  // 장들은 ScrollView 의 바로 아래 자식이어야 한다(웹의 pagingEnabled 가 자식마다 넘김 칸을 씌운다). 장 번호가 바뀌어도 같은 요소라 다시 그리지 않는다
+  const pages = useMemo(() => S.slides.map((slide, i) => <Page key={slide.title} index={i} width={width} />), [width]);
   /** 장 위치(0 ~ COUNT - 1) — 막대가 따라간다 */
   const progress = useMemo(() => Animated.divide(scrollX, width > 0 ? width : 1), [scrollX, width]);
 
@@ -84,7 +86,7 @@ export default function IntroScreen() {
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         style={styles.pager}
         contentContainerStyle={styles.pages}>
-        <Pages width={width} />
+        {pages}
       </Animated.ScrollView>
       <View style={styles.bottom}>
         <View accessible accessibilityLabel={`${index + 1}${strings.steps.separator}${COUNT}`} style={styles.dots}>
@@ -98,10 +100,11 @@ export default function IntroScreen() {
   );
 }
 
-/** 장들. 장 번호가 바뀌어도 다시 그리지 않는다(폭이 바뀔 때만) */
-const Pages = memo(function Pages({ width }: { width: number }) {
-  return S.slides.map((slide, i) => (
-    <View key={slide.title} style={[styles.page, width > 0 && { width }]}>
+/** 장 하나. 장 번호가 바뀌어도 다시 그리지 않는다(폭이 바뀔 때만) */
+const Page = memo(function Page({ index: i, width }: { index: number; width: number }) {
+  const slide = S.slides[i];
+  return (
+    <View style={[styles.page, width > 0 && { width }]}>
       <View style={styles.art}>
         <GlowBackdrop color={BrandColors.backdrop} extent={GLOW.extent} centerY={GLOW.centerY[i]} />
         <IntroArt index={i} />
@@ -113,7 +116,7 @@ const Pages = memo(function Pages({ width }: { width: number }) {
         </Txt>
       </View>
     </View>
-  ));
+  );
 });
 
 /**

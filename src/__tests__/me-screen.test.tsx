@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
 import MeScreen from '@/app/me';
 import { strings } from '@/content/strings';
@@ -297,11 +298,15 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
-  it('맨 위 별명 카드의 오른쪽은 꺾쇠 › 만 — "풀이 읽기" 글자는 없고 화면 읽기 이름에 남는다(소유자, 빌드 11)', async () => {
+  it('맨 위 별명 카드의 오른쪽은 꺾쇠 › 만(카드 오른쪽 세로 가운데) — "풀이 읽기" 글자는 없고 화면 읽기 이름에 남는다(소유자, 빌드 11 · 결정 078 정정)', async () => {
     await render(<MeScreen />);
     const card = await screen.findByTestId('me-nickname-card');
     expect(within(card).queryByText(M.card.read)).toBeNull();
+    // 꺾쇠는 가로 줄의 맨 끝(한 줄 별명 칸이 남은 폭을 다 씀)이고, 줄은 세로 가운데 맞춤
     expect(within(card).getByTestId('me-nickname-card-chevron')).toBeTruthy();
+    const last = card.children[card.children.length - 1];
+    expect(typeof last === 'string' ? last : last.props.testID).toBe('me-nickname-card-chevron');
+    expect(StyleSheet.flatten(card.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
     expect(screen.getByRole('button', { name: [`새벽별${M.card.suffix}`, reading.headline, M.card.read].join(', ') })).toBe(card);
     await fireEvent.press(card);
     expect(router.push).toHaveBeenCalledWith('/reading');

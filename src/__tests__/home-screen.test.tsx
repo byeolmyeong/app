@@ -129,17 +129,15 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
-  it('별명 카드 아래 줄은 꺾쇠 › 만 — "풀이 읽기" 글자는 없고 화면 읽기 이름에 남는다. 카드 전체를 누르면 /reading(소유자, 빌드 11)', async () => {
-    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-11-20T01:00:00Z').getTime());
+  it('홈 별명 카드 아래 줄은 "풀이 읽기 ›" 그대로 — 꺾쇠만 두는 것은 나 탭 카드뿐(결정 078 정정, 소유자 2026-11-21)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading({ ...fixtures.reading, createdAt: '2026-11-09T01:00:00Z' });
+    await storeReading(fixtures.reading);
     await render(<HomeScreen />);
     const card = await screen.findByTestId('nickname-card');
     await within(card).findByText(fixtures.reading.headline);
-    expect(within(card).queryByText(strings.home.card.read)).toBeNull();
-    expect(within(card).getByTestId('nickname-card-chevron')).toBeTruthy();
-    const name = ['새벽별 님', '쌍둥이자리 · 별명을 받은 지 12일', fixtures.reading.headline, strings.home.card.read].join(', ');
-    expect(screen.getByRole('button', { name })).toBe(card);
+    expect(within(card).getByText(strings.home.card.read)).toBeTruthy();
+    // 화면 읽기는 #108 전처럼 카드 안의 글을 읽는다(이름을 따로 덮지 않음)
+    expect(card.props.accessibilityLabel).toBeUndefined();
     await fireEvent.press(card);
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
@@ -222,7 +220,7 @@ describe('홈', () => {
     const card = await screen.findByTestId('nickname-card');
     expect(await within(card).findByText(old.headline)).toBeTruthy();
     expect(within(card).queryByText(M.readingEmpty)).toBeNull();
-    expect(card.props.accessibilityLabel).toMatch(new RegExp(`${strings.home.card.read}$`));
+    expect(within(card).getByText(strings.home.card.read)).toBeTruthy();
     // 만든 때가 없는 옛 글이라 "받은 지 N일" 은 없다
     expect(within(card).queryByText(/별명을 받은 지/)).toBeNull();
     expect(mockApi.createReading).not.toHaveBeenCalled();

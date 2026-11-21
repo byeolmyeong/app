@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import type { PushData } from '@/features/push/push-data';
+import { DAY_SKY_MADE_STORAGE_KEY } from '@/features/timing/day-sky-made';
 import { DAY_SKY_STORAGE_KEY, useTodaySky } from '@/features/timing/use-today-sky';
 import { api, type BirthInput, type DaySky } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -135,6 +136,16 @@ describe('오늘의 하늘(결정 051 의 2)', () => {
     await act(async () => resolve({ ok: true, data: sky('2026-11-19') }));
     await waitFor(() => expect(result.current.state.status).toBe('done'));
     expect(await AsyncStorage.getItem(DAY_SKY_STORAGE_KEY)).toBeNull();
+  });
+
+  it('받은 적 없는 오늘은 made=false, 받으면 그 날을 기억해 다음에는 made=true(결정 075)', async () => {
+    const first = await renderHook(() => useTodaySky(birth));
+    await waitFor(() => expect(first.result.current.state.status).toBe('done'));
+    expect(first.result.current.made).toBe(false);
+    expect(JSON.parse((await AsyncStorage.getItem(DAY_SKY_MADE_STORAGE_KEY))!)).toEqual({ key: KEY, dates: ['2026-11-19'] });
+    await first.unmount();
+    const again = await renderHook(() => useTodaySky(birth));
+    await waitFor(() => expect(again.result.current.made).toBe(true));
   });
 
   it('출생 정보를 읽는 중(null)이면 부르지 않는다', async () => {

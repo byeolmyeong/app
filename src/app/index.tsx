@@ -200,7 +200,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
           />
           <HomeTodayCard
             state={today.state}
-            making={todayWriting}
+            making={todayWriting || today.made === false}
             online={online}
             timeKnown={chart.timeKnown}
             onOpen={() => router.push('/today')}

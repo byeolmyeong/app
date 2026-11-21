@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
+import { daySkyMadeGeneration, markDaySkyMade, wasDaySkyMade } from '@/features/timing/day-sky-made';
 import { api, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
 import { withTimeout } from '@/lib/with-timeout';
 
@@ -23,9 +24,14 @@ export type DaySkyState =
 
 const keyOf = (date: string, input: BirthInput) => JSON.stringify([date, input.date, input.time, input.placeId]);
 
+const birthKeyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
+
 async function load(date: string, input: BirthInput): Promise<ApiResult<DaySky>> {
+  const gen = await daySkyMadeGeneration();
   let r = await withTimeout(api.postDaySky(date), DAY_SKY_MAX_WAIT_MS);
   if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await withTimeout(api.postDaySky(date), DAY_SKY_MAX_WAIT_MS);
+  // 받은 날을 기억한다 — 다음에 열면 만든 적 있는 날이라 늦을 때만 뼈대(결정 075 의 2)
+  if (r.ok) await markDaySkyMade(birthKeyOf(input), date, gen);
   return r;
 }
 
@@ -37,6 +43,19 @@ export function useDaySky(date: string | null, input: BirthInput | null) {
   const key = date === null || birthDate === undefined || time === undefined || placeId === undefined ? null : keyOf(date, { date: birthDate, time, placeId });
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<{ key: string; attempt: number; state: DaySkyState } | null>(null);
+  /** 이 날을 이 기기에서 받은 적이 있는가(결정 075 — 없으면 뼈대 없이 곧바로 만드는 중). 읽기 전에는 null */
+  const [made, setMade] = useState<{ key: string; made: boolean } | null>(null);
+
+  useEffect(() => {
+    if (key === null || date === null || birthDate === undefined || time === undefined || placeId === undefined) return;
+    let alive = true;
+    void wasDaySkyMade(birthKeyOf({ date: birthDate, time, placeId }), date).then((m) => {
+      if (alive) setMade({ key, made: m });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key, date, birthDate, time, placeId]);
 
   useEffect(() => {
     if (key === null || date === null || birthDate === undefined || time === undefined || placeId === undefined) return;
@@ -56,5 +75,5 @@ export function useDaySky(date: string | null, input: BirthInput | null) {
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   const state: DaySkyState = result && result.key === key && result.attempt === attempt ? result.state : { status: 'loading' };
-  return { state, retry };
+  return { state, retry, made: made && made.key === key ? made.made : null };
 }

@@ -1,9 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { act, renderHook } from '@testing-library/react-native';
 
 import { clearDeviceData, deleteAccount } from '@/features/auth/delete-account';
 import { clearResume } from '@/features/auth/signup-resume';
 import { clearSession } from '@/features/auth/use-session';
-import { api } from '@/lib/api';
+import { setAccountLocal, useStoredAccount } from '@/lib/account-store';
+import { api, type MyAccount } from '@/lib/api';
+import { peekStored, setMemoryOnly, setStored } from '@/lib/device-memory';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -51,5 +54,25 @@ describe('기기 비우기', () => {
   it('이어 하던 가입의 보관도 지운다', async () => {
     await clearDeviceData();
     expect(clearResume).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('기기를 지우면 이번 실행의 메모리도(개인정보 경계 — 다음 사람의 첫 그림에 앞사람 것이 없게)', () => {
+  const A: MyAccount = { nickname: '앞사람', avatar: 3, email: 'a@x.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
+
+  it('메모리 층(출생 정보 · 메모리에만 둔 것)과 계정 기억이 모두 빈다', async () => {
+    await setStored('byeolmyeong.birth.v1', JSON.stringify({ profile: { date: '1990-01-01' } }));
+    setMemoryOnly('byeolmyeong.notifications.memory', '[]');
+    await setAccountLocal(A);
+    expect(peekStored('byeolmyeong.birth.v1')).toContain('1990-01-01');
+
+    await clearDeviceData();
+
+    expect(peekStored('byeolmyeong.birth.v1')).toBeUndefined();
+    expect(peekStored('byeolmyeong.notifications.memory')).toBeUndefined();
+    const { result } = await renderHook(() => useStoredAccount());
+    await act(async () => {});
+    expect(result.current).toBeUndefined();
+    expect(await AsyncStorage.getItem('byeolmyeong.account.v1')).toBeNull();
   });
 });

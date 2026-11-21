@@ -44,7 +44,7 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
       <View style={styles.row}>
         {accountPending ? <PlaceholderCircle testID="avatar-placeholder" size={L.avatar} /> : isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>
-          {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="heading" width={96} /> : null}
+          {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="heading" width={L.namePlaceholder} /> : null}
           {nickname ? (
             <Txt variant="heading">
               {nickname}

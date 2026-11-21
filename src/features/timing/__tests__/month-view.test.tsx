@@ -22,12 +22,12 @@ const quiet = (month: string): MonthSky => ({ ...nov, month, days: [] });
 /** 시기 탭과 같은 짝: 이번 달 훅 + 이번 달 화면 */
 function Harness({ onDay }: { onDay: (date: string) => void }) {
   const month = useMonth(input);
-  if (!month.base || !month.shown) return null;
+  if (!month.base || !month.drawn.month) return null;
   return (
     <MonthView
       base={month.base}
-      shown={month.shown}
-      state={month.state}
+      shown={month.drawn.month}
+      state={month.drawn.state}
       canPrev={month.canPrev}
       canNext={month.canNext}
       onMove={month.go}
@@ -108,7 +108,8 @@ describe('이번 달(결정 049 의 2, 캔버스 14-1)', () => {
     expect(screen.getByTestId('month-prev').props.accessibilityState).toMatchObject({ disabled: true });
     await fireEvent.press(screen.getByTestId('month-prev'));
     expect(screen.getByText('2026년 10월')).toBeTruthy();
-    expect(mockApi.getMonth.mock.calls.map((c) => c[0])).toEqual([undefined, '2026-12', '2026-10']);
+    // 앞뒤 달은 이번 달을 그릴 때 미리 한 번씩 받아 둔다(빌드 11) — 넘길 때 다시 부르지 않는다
+    expect(mockApi.getMonth.mock.calls.map((c) => c[0]).sort()).toEqual(['2026-10', '2026-12', undefined]);
   });
 
   it('눈여겨볼 날이 없는 달은 점 없이 안내 한 장(결정 065 의 3)', async () => {
@@ -151,14 +152,20 @@ describe('이번 달(결정 049 의 2, 캔버스 14-1)', () => {
   });
 
   it('그달만 못 받으면 그 자리에 안내(19-1), 다시 보기로 다시 부른다', async () => {
+    // 그달은 미리 받기도 넘길 때도 못 받는다(미리 받기의 실패는 조용히 — 넘길 때 다시 불러 실패하면 안내)
+    mockApi.getMonth.mockImplementation(async (month?: string): Promise<ApiResult<MonthSky>> =>
+      month === '2026-12' ? { ok: false, error: 'NETWORK' } : { ok: true, data: month ? quiet(month) : nov },
+    );
     await render(<Harness onDay={jest.fn()} />);
     await screen.findByText('2026년 11월');
-    mockApi.getMonth.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     await fireEvent.press(screen.getByTestId('month-next'));
     expect(await screen.findByTestId('card-fail')).toBeTruthy();
+    mockApi.getMonth.mockImplementation(async (month?: string): Promise<ApiResult<MonthSky>> => ({ ok: true, data: month ? quiet(month) : nov }));
     expect(screen.getByText(T.month.loadFail.title)).toBeTruthy();
     await act(async () => fireEvent.press(screen.getByRole('button', { name: strings.states.loadFail.retry })));
     await waitFor(() => expect(screen.queryByTestId('card-fail')).toBeNull());
     expect(screen.getByTestId('month-quiet')).toBeTruthy();
+    // 다시 본 달은 그 달의 자리(이전 달로 돌아갔다 오지 않는다)
+    expect(screen.getByText('2026년 12월')).toBeTruthy();
   });
 });

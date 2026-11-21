@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { MONTH_SKY_STORAGE_KEY, MONTH_TIMEOUT_MS, useMonth } from '@/features/timing/use-month';
 import { api, type ApiResult, type MonthSky } from '@/lib/api';
+import { forgetMemory } from '@/lib/device-memory';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@/lib/api', () => ({
@@ -14,10 +15,15 @@ const mockApi = api as jest.Mocked<typeof api>;
 const input = { date: '2000-06-15', time: '21:00', placeId: 1841277 };
 const nov = fixtures.monthSky;
 const monthOf = (month: string): MonthSky => ({ ...nov, month, days: [] });
+/** 이번 달(달 없이) 부른 횟수 — 앞뒤 달 미리 받기는 세지 않는다 */
+const baseCalls = () => mockApi.getMonth.mock.calls.filter((c) => c[0] === undefined).length;
+const callsFor = (month: string) => mockApi.getMonth.mock.calls.filter((c) => c[0] === month).length;
 
 beforeEach(async () => {
   // 이번 달은 기기에 둔다(결정 074) — 시험마다 비운다
   await AsyncStorage.clear();
+  // 이번 실행 메모리(lib/device-memory)도 — 시험마다 새 실행처럼
+  forgetMemory();
   jest.clearAllMocks();
   mockApi.getMonth.mockImplementation(async (month?: string): Promise<ApiResult<MonthSky>> => ({ ok: true, data: month ? monthOf(month) : nov }));
   mockApi.saveProfile.mockImplementation(async (i) => ({ ok: true, data: i }));
@@ -41,7 +47,7 @@ describe('useMonth(결정 049 의 2)', () => {
     expect(result.current.shown).toBe('2026-11');
   });
 
-  it('‹ › 는 기준의 지난달 · 다음 달에서 멈춘다. 넘길 때 그 달을 부르고, 한 번 받은 달은 다시 부르지 않는다', async () => {
+  it('‹ › 는 기준의 지난달 · 다음 달에서 멈춘다. 그 달은 한 번만 부른다(앞뒤 달은 미리 받아 둔다)', async () => {
     const { result } = await renderHook(() => useMonth(input));
     await waitFor(() => expect(result.current.base).toBe('2026-11'));
     expect([result.current.canPrev, result.current.canNext]).toEqual([true, true]);
@@ -60,7 +66,7 @@ describe('useMonth(결정 049 의 2)', () => {
     expect(result.current.shown).toBe('2026-10');
     await act(async () => result.current.go(1));
     expect(result.current.state).toEqual({ status: 'done', sky: nov });
-    expect(mockApi.getMonth.mock.calls.map((c) => c[0])).toEqual([undefined, '2026-12', '2026-10']);
+    expect(mockApi.getMonth.mock.calls.map((c) => c[0]).sort()).toEqual(['2026-10', '2026-12', undefined]);
   });
 
   it('못 받으면 실패, 다시 부르기(retry)로 그 달을 다시 부른다', async () => {
@@ -69,7 +75,7 @@ describe('useMonth(결정 049 의 2)', () => {
     await waitFor(() => expect(result.current.state).toEqual({ status: 'failed', error: 'NETWORK' }));
     await act(async () => result.current.retry());
     await waitFor(() => expect(result.current.state).toEqual({ status: 'done', sky: nov }));
-    expect(mockApi.getMonth).toHaveBeenCalledTimes(2);
+    expect(baseCalls()).toBe(2);
   });
 
   it('서버에 출생 정보가 없으면(404) 저장하고 한 번만 더 부른다', async () => {
@@ -77,7 +83,7 @@ describe('useMonth(결정 049 의 2)', () => {
     const { result } = await renderHook(() => useMonth(input));
     await waitFor(() => expect(result.current.state).toEqual({ status: 'done', sky: nov }));
     expect(mockApi.saveProfile).toHaveBeenCalledWith(input);
-    expect(mockApi.getMonth).toHaveBeenCalledTimes(2);
+    expect(baseCalls()).toBe(2);
   });
 
   it('10초 넘게 오지 않으면 실패로 둔다', async () => {
@@ -159,5 +165,72 @@ describe('useMonth · 이번 달 보관(결정 074)', () => {
     await AsyncStorage.clear();
     await answer({ ok: true, data: nov });
     expect(await AsyncStorage.getItem(MONTH_SKY_STORAGE_KEY)).toBeNull();
+  });
+});
+
+// 처음 다른 달로 넘길 때 버벅이고 반짝이던 것(소유자 지적, 빌드 11): 앞뒤 달을 미리 받고, 받는 중이면 이전 달 그림을 그대로 둔다
+describe('useMonth · 앞뒤 달 미리 받기', () => {
+  it('이번 달을 받으면 ‹ › 가 갈 수 있는 앞뒤 달을 뒤에서 한 번씩 받아 둔다 — 넘기면 서버를 기다리지 않는다', async () => {
+    const { result } = await renderHook(() => useMonth(input));
+    await waitFor(() => expect(callsFor('2026-12')).toBe(1));
+    await waitFor(() => expect(callsFor('2026-10')).toBe(1));
+    await act(async () => {});
+    // 이제 서버가 답하지 않아도 넘기면 바로(미리 받아 둔 것)
+    mockApi.getMonth.mockReturnValue(new Promise(() => {}));
+    await act(async () => result.current.go(1));
+    expect(result.current.state).toEqual({ status: 'done', sky: monthOf('2026-12') });
+    expect(result.current.drawn).toEqual({ month: '2026-12', state: { status: 'done', sky: monthOf('2026-12') } });
+    await act(async () => result.current.go(-1));
+    await act(async () => result.current.go(-1));
+    expect(result.current.state).toEqual({ status: 'done', sky: monthOf('2026-10') });
+    expect(callsFor('2026-12')).toBe(1);
+    expect(callsFor('2026-10')).toBe(1);
+  });
+
+  it('미리 받기가 실패하면 조용히(보던 달 그대로) — 넘길 때 다시 부른다', async () => {
+    mockApi.getMonth.mockImplementation(async (month?: string): Promise<ApiResult<MonthSky>> =>
+      month === '2026-12' && callsFor('2026-12') === 1 ? { ok: false, error: 'NETWORK' } : { ok: true, data: month ? monthOf(month) : nov },
+    );
+    const { result } = await renderHook(() => useMonth(input));
+    await waitFor(() => expect(callsFor('2026-12')).toBe(1));
+    await act(async () => {});
+    expect(result.current.state).toEqual({ status: 'done', sky: nov });
+    await act(async () => result.current.go(1));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', sky: monthOf('2026-12') }));
+    expect(callsFor('2026-12')).toBe(2);
+  });
+
+  it('받는 중이면 그릴 달(drawn)은 이전 달 그대로 — 다 받으면 한 번에 바뀐다(뼈대 · 빈 칸 없이)', async () => {
+    let resolve: (r: ApiResult<MonthSky>) => void = () => {};
+    mockApi.getMonth.mockImplementation((month?: string): Promise<ApiResult<MonthSky>> =>
+      month === '2026-12' ? new Promise((r) => (resolve = r)) : Promise.resolve({ ok: true, data: month ? monthOf(month) : nov }),
+    );
+    const { result } = await renderHook(() => useMonth(input));
+    await waitFor(() => expect(callsFor('2026-12')).toBe(1));
+    await act(async () => result.current.go(1));
+    expect(result.current.shown).toBe('2026-12');
+    expect(result.current.state).toEqual({ status: 'loading' });
+    expect(result.current.drawn).toEqual({ month: '2026-11', state: { status: 'done', sky: nov } });
+    // 넘길 때 같은 달을 또 부르지 않는다(미리 받는 중인 요청을 같이 기다린다)
+    expect(callsFor('2026-12')).toBe(1);
+    await act(async () => resolve({ ok: true, data: monthOf('2026-12') }));
+    expect(result.current.drawn).toEqual({ month: '2026-12', state: { status: 'done', sky: monthOf('2026-12') } });
+  });
+
+  it('받은 달은 이번 실행 메모리에 — 화면이 다시 붙어도(탭을 바꿨다 돌아옴) 앞뒤 달을 다시 부르지 않고 바로', async () => {
+    const first = await renderHook(() => useMonth(input));
+    await waitFor(() => expect(callsFor('2026-12')).toBe(1));
+    await waitFor(() => expect(callsFor('2026-10')).toBe(1));
+    await act(async () => {});
+    await first.unmount();
+    mockApi.getMonth.mockImplementation((month?: string): Promise<ApiResult<MonthSky>> =>
+      month ? new Promise(() => {}) : Promise.resolve({ ok: true, data: nov }),
+    );
+    const { result } = await renderHook(() => useMonth(input));
+    await act(async () => result.current.go(1));
+    expect(result.current.state).toEqual({ status: 'done', sky: monthOf('2026-12') });
+    await act(async () => {});
+    expect(callsFor('2026-12')).toBe(1);
+    expect(callsFor('2026-10')).toBe(1);
   });
 });

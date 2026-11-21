@@ -52,6 +52,11 @@ export type SessionStoreDeps = {
   loadSignup: () => Promise<{ signupToken: string; provider: ProviderCredential['provider'] } | null>;
   saveSignup: (signupToken: string, provider: ProviderCredential['provider'], expiresAt?: number) => Promise<void>;
   clearSignup: () => Promise<void>;
+  /**
+   * 이 앱이 기기에 둔 사람의 것(출생 정보 · 차트 · 받은 글, `byeolmyeong.` 머리)을 비운다 — 기기 설정(최근 로그인 · 소개 봄)은 남는다.
+   * 새 로그인(로그인 · 가입 완료)이 로그인 상태가 되기 전에, 401 로 로그인 전이 될 때 부른다. 같은 기기의 다음 사람이 앞사람의 것을 보지 않게
+   */
+  clearDeviceData: () => Promise<void>;
 };
 
 /** 로그인 한 번의 결과 */
@@ -96,6 +101,25 @@ export function createSessionStore(deps: SessionStoreDeps) {
     await deps.clearSignup();
     if (token && !deps.cookieSession) await deps.saveToken(token);
     set('signedIn', deps.cookieSession ? null : token);
+  }
+
+  /**
+   * 새 세션이 로그인으로 생긴다(로그인 · 가입 완료). 로그인 상태가 되기 전에 기기의 사람 것을 비운다 — 앞 세션이 만료로 끝났으면(로그아웃처럼
+   * 비우지 않았다) 다른 계정이 들어와도 앞사람의 출생 정보 · 풀이가 남아 홈이 서버에서 되살리지 않고 그것을 보여 줬다. 비우면 홈이 되살린다(결정 029).
+   * 기기 저장소를 비우지 못해도 로그인은 막지 않는다
+   */
+  async function newSession(token: string | null) {
+    await deps.clearDeviceData().catch(() => {});
+    await signedIn(token);
+  }
+
+  /**
+   * 서버가 세션이 없다고 했다(401). 로그인 전이 되고 기기의 사람 것도 비운다 — 다음 로그인이 어차피 비우니 같은 사람이 다시 들어와도
+   * 되살리기는 한 번 그대로이고, 그 사이(웹의 함께 쓰는 브라우저 등) 기기에 앞사람의 것이 남지 않는다
+   */
+  async function expired() {
+    await signedOut();
+    await deps.clearDeviceData().catch(() => {});
   }
 
   async function signedOut(lastError: string | null = null) {
@@ -159,13 +183,17 @@ export function createSessionStore(deps: SessionStoreDeps) {
           // 401 → 로그인 전 · 그 밖(닿지 못함 · 5xx) → 확인하지 못함(결정 068 의 4 — 로그인 전으로 정하지 않는다). 세션이 없으면 이어 하기가 먼저
           const r = await deps.getSession();
           if (r.ok || r.code === 'ACCOUNT_SUSPENDED') return alive(null);
-          return resume(() => set(r.error === 'LOGIN_REQUIRED' ? 'signedOut' : 'offline', null));
+          if (r.error !== 'LOGIN_REQUIRED') return resume(() => set('offline', null));
+          return resume(async () => {
+            await deps.clearDeviceData().catch(() => {});
+            set('signedOut', null);
+          });
         }
         const kept = await deps.loadToken();
         if (!kept) return resume(() => set('signedOut', null));
         deps.setApiToken(kept);
         const r = await deps.getSession();
-        if (!r.ok && r.error === 'LOGIN_REQUIRED') return signedOut();
+        if (!r.ok && r.error === 'LOGIN_REQUIRED') return expired();
         await alive(kept);
       })();
       return starting;
@@ -177,7 +205,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       const r = await deps.getSession();
       if (state.status !== 'offline') return;
       if (r.ok || r.code === 'ACCOUNT_SUSPENDED') set('signedIn', null);
-      else if (r.error === 'LOGIN_REQUIRED') await signedOut();
+      else if (r.error === 'LOGIN_REQUIRED') await expired();
     },
 
     /** 공급자 자격 증명으로 로그인한다. 처음 온 사람은 가입권을 메모리에 두고 가입 중이 된다 */
@@ -194,7 +222,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
         set('signingUp', null);
         return 'signingUp';
       }
-      await signedIn(r.data.token);
+      await newSession(r.data.token);
       await deps.saveLastProvider(credential.provider);
       return 'signedIn';
     },
@@ -213,7 +241,8 @@ export function createSessionStore(deps: SessionStoreDeps) {
         const r = await deps.signup(signupToken, birth, extra);
         if (r.ok) {
           const provider = signupProvider;
-          await signedIn(r.data.token);
+          // 가입 화면은 이 결과를 받은 뒤에 새 사람의 출생 정보를 기기에 둔다 — 비우기는 그보다 먼저 끝난다
+          await newSession(r.data.token);
           if (provider) await deps.saveLastProvider(provider);
           return r;
         }
@@ -269,7 +298,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       if (deps.devSession) return fetchDevSession();
       // 켤 때의 확인 중(401 은 그 확인의 답)이면 start 가 판정한다 — 여기서 로그인 전으로 바꾸면 이어 할 가입권까지 지운다(결정 068)
       if (state.status === 'checking') return false;
-      await signedOut();
+      await expired();
       return false;
     },
 

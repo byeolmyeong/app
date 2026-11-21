@@ -37,6 +37,7 @@ jest.mock('@/features/auth/use-session', () => {
     loadSignup: jest.fn(async () => null),
     saveSignup: jest.fn(async () => {}),
     clearSignup: jest.fn(async () => {}),
+    clearDeviceData: jest.fn(async () => {}),
   });
   let store = make();
   return {

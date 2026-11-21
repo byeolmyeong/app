@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, StyleSheet, View } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { NavBar } from '@/components/nav-bar';
@@ -29,9 +29,11 @@ import { HomeBell } from '@/features/notifications/home-bell';
 import { hasUnread } from '@/features/notifications/notification-rows';
 import { useNotifications } from '@/features/notifications/use-notifications';
 import { useStoredHeadline } from '@/features/reading/use-reading';
+import { onPushReceived } from '@/features/push/push';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
 import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timing-card';
 import { HomeTodayCard, HomeTodaySkeleton } from '@/features/timing/home-today-card';
+import { prefetchMonth } from '@/features/timing/use-month';
 import { TODAY_CARD_WRITING_AFTER_MS, useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 
@@ -79,6 +81,36 @@ function Home({ onRetry }: { onRetry: () => void }) {
     if (timing.state.status === 'done') timing.refresh();
     else if (timing.state.status === 'unknown') timing.recheck();
   });
+  // 쓰는 중 카드(결정 075 — 047 의 1-5 대체): 홈은 5초마다 묻지 않는다. 끝났는지는 시기 풀이 완성 푸시가 오거나(앱), 홈이 다시 보이거나
+  // 앱으로 돌아올 때(웹 · 푸시를 끈 사람) 한 번 다시 물어 같은 자리에서 완료 카드로 바꾼다 — 화면이 떠 있는 동안 서버를 거듭 부르지 않게
+  const timingWriting = useRef(false);
+  const timingIsWriting = timing.state.status === 'writing';
+  useEffect(() => {
+    timingWriting.current = timingIsWriting;
+  }, [timingIsWriting]);
+  const { recheck: recheckTiming } = timing;
+  useEffect(
+    () =>
+      onPushReceived((push) => {
+        if (push.type === 'TIMING_REPORT_DONE') recheckTiming();
+      }),
+    [recheckTiming],
+  );
+  useFocusEffect(
+    useCallback(() => {
+      if (timingWriting.current) recheckTiming();
+    }, [recheckTiming]),
+  );
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active' && timingWriting.current) recheckTiming();
+    });
+    return () => sub.remove();
+  }, [recheckTiming]);
+  // 앱을 켤 때 이번 달 달력을 한 번 받아 둔다 — 시기 탭을 열면 곧바로 달력(결정 075 의 3)
+  useEffect(() => {
+    if (asking) void prefetchMonth(asking);
+  }, [asking]);
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);
   const todayLoading = asking !== null && today.state.status === 'loading';

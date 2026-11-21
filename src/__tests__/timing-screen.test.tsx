@@ -7,7 +7,7 @@ import { StyleSheet } from 'react-native';
 import TimingScreen from '@/app/timing';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
-import { MONTH_SKY_STORAGE_KEY } from '@/features/timing/use-month';
+import { MONTH_SKY_STORAGE_KEY, prefetchMonth } from '@/features/timing/use-month';
 import { TIMING_REPORT_MAX_WRITING_MS, TIMING_REPORT_POLL_MS, TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { api, type ApiResult, type MonthSky, type TimingReportState } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -430,5 +430,46 @@ describe('시기 탭 · 불러오기(결정 061 · 065)', () => {
     expect(mockApi.getMonth).not.toHaveBeenCalled();
     expect(mockApi.getTimingReport).not.toHaveBeenCalled();
     expect(bottomTabs()).toHaveLength(4);
+  });
+});
+
+describe('들어가면 바로 — 한 번만 바뀌기(결정 075, 소유자: 뼈대 → 만들고 있어요 → 내용)', () => {
+  /** 기기 시계: 한국 2026-11-19(예시 이번 달 2026-11) */
+  let nowSpy: jest.SpyInstance;
+  beforeEach(() => {
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-19T01:00:00Z'));
+  });
+  afterEach(() => nowSpy.mockRestore());
+
+  it('보관한 풀이 + 쓰는 중 기억이면 첫 그림부터 내용 — 만들고 있어요를 보이지 않고, 서버가 다 썼다고 하면 그대로', async () => {
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report, status: 'WRITING' }));
+    let answer: (v: ApiResult<TimingReportState>) => void = () => {};
+    mockApi.getTimingReport.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    await render(<TimingScreen />);
+    expect(await screen.findByTestId('timing-now-card')).toBeTruthy();
+    expect(screen.queryByText(T.making.title)).toBeNull();
+    await act(async () => answer(done));
+    expect(screen.getByTestId('timing-now-card')).toBeTruthy();
+    expect(screen.queryByText(T.making.title)).toBeNull();
+  });
+
+  it('홈을 거쳐(앱을 켤 때 받아 둔 시기 풀이 · 이번 달) 시기 탭을 열면 서버 답을 기다리지 않고 첫 그림부터 내용 · 달력', async () => {
+    // 홈이 앱을 켤 때 한 일: 시기 풀이 상태(다 씀)를 보관하고 이번 달을 받아 둔다
+    await storeReport();
+    await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
+    expect(JSON.parse((await AsyncStorage.getItem(MONTH_SKY_STORAGE_KEY))!).sky.month).toBe(month.month);
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    mockApi.getMonth.mockReturnValue(new Promise(() => {}));
+    mockParams.mockReturnValue({ tab: 'month' });
+    await render(<TimingScreen />);
+    expect(await screen.findByTestId('timing-now-card')).toBeTruthy();
+    expect(screen.getByTestId('month-calendar')).toBeTruthy();
+    expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
+  });
+
+  it('이번 달을 기기에 받아 둔 것이 있으면 앱을 켤 때 다시 부르지 않는다', async () => {
+    await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
+    await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
+    expect(mockApi.getMonth).toHaveBeenCalledTimes(1);
   });
 });

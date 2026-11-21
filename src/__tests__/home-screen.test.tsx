@@ -24,6 +24,15 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
 }));
+// 쓰는 중에 온 푸시(결정 066 의 5) — 시험이 직접 보낸다
+const mockPushListeners = new Set<(push: { type: string }) => void>();
+jest.mock('@/features/push/push', () => ({
+  ...jest.requireActual('@/features/push/push'),
+  onPushReceived: (listener: (push: { type: string }) => void) => {
+    mockPushListeners.add(listener);
+    return () => mockPushListeners.delete(listener);
+  },
+}));
 // 홈은 로그인한 사람만 온다(루트 가드) — 계정은 로그인이 확인된 뒤에 묻는다
 jest.mock('@/features/auth/use-session', () => ({
   ...jest.requireActual('@/features/auth/use-session'),
@@ -37,6 +46,8 @@ jest.mock('@/lib/api', () => ({
     saveProfile: jest.fn(),
     getMyAccount: jest.fn(),
     getNotifications: jest.fn(),
+    // 앱을 켤 때 이번 달 달력을 받아 둔다(결정 075 의 3)
+    getMonth: jest.fn(),
     // 오늘의 하늘 칸(결정 051)
     postDaySky: jest.fn(),
     markNotificationRead: jest.fn(),
@@ -64,6 +75,7 @@ beforeEach(async () => {
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
   mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 0, items: [] } });
+  mockApi.getMonth.mockResolvedValue({ ok: true, data: fixtures.monthSky });
   mockApi.postDaySky.mockResolvedValue({ ok: true, data: fixtures.daySky });
 });
 
@@ -328,17 +340,33 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     expect(screen.queryByTestId('home-timing-card')).toBeNull();
   });
 
-  it('쓰는 중이면 칸이 없다(보드 11-2) — 홈은 상태를 한 번만 묻는다(5초마다 묻지 않는다, #63 리뷰 제안 5)', async () => {
+  it('쓰는 중이면 그 자리에 "만들고 있어요" 카드(뼈대 없이, 결정 075 — 047 의 1-5 대체) — 홈은 5초마다 묻지 않고, 끝남 푸시가 오면 다시 물어 같은 자리에서 완료 카드', async () => {
     jest.useFakeTimers();
     mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
     await render(<HomeScreen />);
     await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
     await screen.findByTestId('nickname-card');
+    expect(screen.getByTestId('home-timing-writing')).toBeTruthy();
+    expect(screen.getByText(T.home.writing.title)).toBeTruthy();
     await act(async () => void (await jest.advanceTimersByTimeAsync(20_000)));
-    expect(screen.queryByTestId('home-timing-card')).toBeNull();
-    expect(screen.queryByTestId('home-timing-empty')).toBeNull();
+    expect(screen.queryAllByTestId(/^sk-home-timing/)).toHaveLength(0);
     expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
+    await act(async () => mockPushListeners.forEach((l) => l({ type: 'TIMING_REPORT_DONE' })));
+    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
+    expect(screen.queryByTestId('home-timing-writing')).toBeNull();
+    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(2);
     jest.useRealTimers();
+  });
+
+  it('앱을 껐다 켜도(기기에 쓰는 중을 기억) 첫 그림부터 쓰는 중 카드 — 서버가 다 썼다고 하면 같은 자리에서 완료 카드', async () => {
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'WRITING' }));
+    let answer: (v: Awaited<ReturnType<typeof api.getTimingReport>>) => void = () => {};
+    mockApi.getTimingReport.mockReturnValue(new Promise((r) => (answer = r)));
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-timing-writing')).toBeTruthy();
+    await act(async () => answer({ ok: true, data: { status: 'DONE', report } }));
+    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
   });
 
   it('상태를 못 물었으면 그 자리에 안내(19-1) · 다시 보기, 서버에 경로가 없으면(404) 칸을 숨긴다', async () => {

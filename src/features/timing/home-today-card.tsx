@@ -33,8 +33,8 @@ function Head({ label }: { label: string }) {
   );
 }
 
-/** 쓰는 중의 작은 그림(보드 11 쓰는 중): 빛이 숨 쉬고 별이가 둥실 — 궤도의 점은 멈춰 있다. 동작 줄이기면 멈춘 장면 */
-function MakingArt() {
+/** 쓰는 중의 작은 그림(보드 11 쓰는 중): 빛이 숨 쉬고 별이가 둥실 — 궤도의 점은 멈춰 있다. 동작 줄이기면 멈춘 장면. 홈 시기 칸의 쓰는 중 카드도 쓴다 */
+export function MakingArt() {
   const run = !useReduceMotion();
   const float = usePulse(run, FLOAT_MS);
   const glow = usePulse(run, FLOAT_MS);

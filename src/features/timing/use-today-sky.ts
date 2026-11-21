@@ -14,22 +14,12 @@ import { AppState } from 'react-native';
 import { onPushReceived } from '@/features/push/push';
 import { koreaToday } from '@/features/timing/dates';
 import { api, isDaySky, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
+import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
 
 export const DAY_SKY_STORAGE_KEY = 'byeolmyeong.daySky.v1';
 const NO_PROFILE_STATUS = 404;
-/**
- * 세대 표식: 요청을 시작할 때 읽고, 끝났을 때 같을 때만 기기에 둔다 — 그 사이 로그아웃 · 탈퇴로 기기를 지웠으면(표식도 `byeolmyeong.` 이라 지워진다)
- * 앞사람의 하늘을 다시 써 넣지 않는다(공유 기억 share-cache 와 같은 방식, 리뷰 #66)
- */
+/** 세대 표식(lib/storage-generation): 요청을 시작할 때 읽고, 끝났을 때 같을 때만 기기에 둔다 — 로그아웃 · 탈퇴 뒤 앞사람의 하늘을 다시 쓰지 않게 */
 const GENERATION_KEY = 'byeolmyeong.daySkyGen.v1';
-
-async function generation(): Promise<string> {
-  const current = await AsyncStorage.getItem(GENERATION_KEY);
-  if (current) return current;
-  const next = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  await AsyncStorage.setItem(GENERATION_KEY, next);
-  return next;
-}
 
 /** failed 의 code 는 서버가 적어 준 이름(`GENERATION_FAILED` · `NO_PROFILE` …), httpStatus 는 상태 번호 */
 export type TodaySkyState =
@@ -62,10 +52,10 @@ function load(key: string, input: BirthInput, fresh: boolean): Promise<ApiResult
   const running = pending.get(key);
   if (running && !fresh) return running;
   const request = (async () => {
-    const gen = await generation().catch(() => null);
+    const gen = await storageGeneration(GENERATION_KEY).catch(() => null);
     let r = await api.postDaySky();
     if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await api.postDaySky();
-    if (r.ok && gen !== null && (await AsyncStorage.getItem(GENERATION_KEY).catch(() => null)) === gen)
+    if (r.ok && gen !== null && (await isSameGeneration(GENERATION_KEY, gen)))
       await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data } satisfies Stored)).catch(() => undefined);
     return r;
   })().finally(() => {

@@ -33,6 +33,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   }
   if (kakaoNativeAppKey) {
     plugins.push(['@react-native-seoul/kakao-login', { kakaoAppKey: kakaoNativeAppKey }]);
+    // SDK 58 은 주소 열기를 SceneDelegate 가 받아 카카오 플러그인이 AppDelegate 에 넣을 자리가 없다 — 카카오톡에서 돌아오는 로그인 주소를
+    // SceneDelegate 에서 카카오 SDK 로 넘긴다(iOS, 빌드 8 "Unmatched Route")
+    plugins.push('./plugins/with-kakao-scene-delegate.js');
     // 카카오 안드로이드 SDK 는 카카오의 Maven 저장소에 있다(라이브러리 문서의 Expo 설정).
     plugins.push(['expo-build-properties', { android: { extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'] } }]);
   }

@@ -91,3 +91,32 @@ describe('app.config EXPO_PUBLIC_META_APP_ID', () => {
     expect(c.android?.blockedPermissions).toEqual(['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED']);
   });
 });
+
+// iOS 카카오 로그인(빌드 8): SDK 58 은 주소 열기를 SceneDelegate 가 받는다 — 카카오 키가 있으면 카카오 플러그인 뒤에 우리 플러그인이 SceneDelegate 에 넣는다
+describe('app.config EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY', () => {
+  const withKakaoKey = (key: string | undefined) => {
+    const saved = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
+    if (key === undefined) delete process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
+    else process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY = key;
+    try {
+      return configWith(undefined);
+    } finally {
+      if (saved === undefined) delete process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
+      else process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY = saved;
+    }
+  };
+  const names = (c: ExpoConfig) => (c.plugins ?? []).map((p) => (Array.isArray(p) ? p[0] : p));
+
+  it('있으면 카카오 플러그인 바로 뒤에 SceneDelegate 플러그인을 넣는다', () => {
+    const list = names(withKakaoKey('dummy'));
+    const kakao = list.indexOf('@react-native-seoul/kakao-login');
+    expect(kakao).toBeGreaterThanOrEqual(0);
+    expect(list[kakao + 1]).toBe('./plugins/with-kakao-scene-delegate.js');
+  });
+
+  it('없으면 둘 다 넣지 않는다', () => {
+    const list = names(withKakaoKey(undefined));
+    expect(list).not.toContain('@react-native-seoul/kakao-login');
+    expect(list).not.toContain('./plugins/with-kakao-scene-delegate.js');
+  });
+});

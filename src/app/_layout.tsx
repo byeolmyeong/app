@@ -1,13 +1,13 @@
-import { useFonts } from 'expo-font';
 import { router, Stack, useSegments, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { slideInScreenOptions, useSlideUpScreenOptions } from '@/components/slide-up';
+import { useAppFonts } from '@/components/use-app-fonts';
 import { useInert } from '@/components/use-inert';
 import { SplashView, useSplashDone } from '@/components/splash-view';
-import { Colors, FontFamily } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import { guardCovers, guardRedirect } from '@/features/auth/guard';
 import { resumeStep } from '@/features/auth/signup-resume';
 import { useSuspended } from '@/features/auth/suspension';
@@ -57,17 +57,8 @@ export default function RootLayout() {
     if (target) router.replace(target);
   }, [target]);
   const slideUp = useSlideUpScreenOptions();
-  // 한 가족 이름 아래 굵기별 파일을 올린다. 굵기는 400 · 500 · 600 세 가지만 쓴다(theme.ts FontWeight, 결정 033).
-  const [loaded, error] = useFonts([
-    {
-      fontFamily: FontFamily,
-      fontDefinitions: [
-        { path: require('@/assets/fonts/Pretendard-Regular.otf'), weight: 400, style: 'normal' },
-        { path: require('@/assets/fonts/Pretendard-Medium.otf'), weight: 500, style: 'normal' },
-        { path: require('@/assets/fonts/Pretendard-SemiBold.otf'), weight: 600, style: 'normal' },
-      ],
-    },
-  ]);
+  // 글꼴: 앱은 기기에 실린 OTF, 웹은 공식 부분 글꼴 woff2 의 핵심 묶음 셋(성능 계획 1 — components/use-app-fonts)
+  const [loaded, error] = useAppFonts();
   const fontsDone = loaded || !!error;
   // 이용 정지 문(결정 065 의 5): 로그인이 확인되면 정지인지 답이 올 때까지 가리고, 정지면 정지 화면으로. 그동안 스플래시도 둔다
   const [gateBlocked, setGateBlocked] = useState(false);

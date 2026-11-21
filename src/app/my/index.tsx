@@ -15,7 +15,6 @@ import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { daysSince } from '@/features/home/days-since';
 import { MainTabs } from '@/features/home/main-tabs';
 import { MyCard } from '@/features/my/my-card';
-import { todaySkyTimeLabel } from '@/features/my/notification-settings';
 import { useMyAccount } from '@/features/my/use-my-account';
 import { useStoredHeadline } from '@/features/reading/use-reading';
 
@@ -23,7 +22,7 @@ const M = strings.my;
 const R = M.rows;
 
 /**
- * 마이 v2(결정 056, 보드 16): 위 별명 카드(계정 · 프로필 / 출생 정보 바꾸기) · 아래 묶음 제목 없는 카드 둘.
+ * 마이 v2(결정 056, 보드 16): 위 별명 카드(프로필 수정 / 출생 정보 수정) · 아래 묶음 제목 없는 카드 둘.
  * 로그아웃 · 계정 삭제는 계정 화면에 있다(056 의 3). 첫 카드 맨 위는 알림(16-2), 음악 줄은 1.1.0 에서 더한다(결정 069).
  * 출생 정보가 없어도(기기 저장소가 비었다) 카드는 닉네임과 버튼만으로 그리고, 줄들과 아래 탭은 그대로 보인다.
  * 서버를 부르는 것은 계정(`GET /account`)뿐이다 — 별자리 · 한 줄 별명 · 받은 날은 기기에 받아 둔 것을 쓴다.
@@ -60,8 +59,8 @@ export default function MyScreen() {
         />
         <View style={styles.listTop} />
         <ListCard>
-          {/* 오른쪽 받는 시간은 푸시 · 오늘의 하늘이 둘 다 켜졌을 때만(보드 16). 음악 줄(/my/music)은 1.1.0 에서 이 아래에 더한다(결정 069) */}
-          <ListCardRow label={R.notifications} value={todaySkyTimeLabel(account) ?? undefined} onPress={() => router.push('/my/notifications')} />
+          {/* 받는 시간은 알림 설정 안에서만 — 이 줄은 이름과 꺾쇠뿐(소유자 2026-11-21). 음악 줄(/my/music)은 1.1.0 에서 이 아래에 더한다(결정 069) */}
+          <ListCardRow label={R.notifications} onPress={() => router.push('/my/notifications')} />
           <ListCardRow label={R.faq} onPress={() => router.push('/settings/faq')} />
           <ListCardRow label={R.inquiry} onPress={() => router.push('/my/inquiries')} />
         </ListCard>

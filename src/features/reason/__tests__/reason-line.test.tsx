@@ -46,17 +46,25 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     expect(screen.queryByTestId('reason-wheel')).toBeNull();
   });
 
-  it('펼치고 접을 때 높이 · 흐림 · 꺾쇠가 함께 움직인다(열기 300 · 닫기 220) — 접는 움직임이 끝나면 내용을 치운다', async () => {
+  it('누르는 순간 높이 · 꺾쇠와 내용의 보임이 같이 시작한다 — 펼칠 때 보임은 높이의 1/3 시간, 접을 때는 절반(내용이 먼저 흐려짐)', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     const timing = jest.spyOn(Animated, 'timing');
     await render(<ReasonLine reason={sun} chart={fixtures.chart} />);
     await act(async () => {});
+    // 펼친 내용은 처음부터 그려져 있다(접힌 동안 숨김) — 높이를 미리 잴 수 있게
+    const body = screen.getByTestId('reason-body', { includeHiddenElements: true });
+    expect(body.props.accessibilityElementsHidden).toBe(true);
+    expect(body.props.pointerEvents).toBe('none');
+    timing.mockClear();
     await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
-    expect(timing).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ toValue: 1, duration: Motion.openMs }));
-    expect(screen.getByTestId('reason-body')).toBeTruthy();
+    const durations = timing.mock.calls.map(([, config]) => (config as { duration: number }).duration);
+    expect(durations).toEqual([Motion.openMs, Motion.openMs / 3]);
+    expect(screen.getByTestId('reason-body').props.accessibilityElementsHidden).toBe(false);
+    timing.mockClear();
     await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
-    expect(timing).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ toValue: 0, duration: Motion.closeMs }));
-    expect(screen.queryByTestId('reason-body')).toBeNull();
+    const closing = timing.mock.calls.map(([, config]) => (config as { duration: number }).duration);
+    expect(closing).toEqual([Motion.closeMs, Motion.closeMs / 2]);
+    expect(screen.getByTestId('reason-body', { includeHiddenElements: true }).props.accessibilityElementsHidden).toBe(true);
     timing.mockRestore();
   });
 

@@ -5,6 +5,7 @@ import { api, type ApiResult } from '@/lib/api';
 import {
   DETAIL_REPORT_MAX_WRITING_MS,
   DETAIL_REPORT_POLL_MS,
+  prefetchDetailReport,
   useDetailReport,
   type DetailReportConfig,
   type DetailReportState,
@@ -148,6 +149,39 @@ describe('useDetailReport · rememberStatus', () => {
     expect(await stored()).toEqual({ key, report });
   });
 
+  it('다 쓴 풀이를 둔 뒤 다시 받기(쓰는 중)를 기억해도 풀이는 지우지 않는다 — 다 쓰면 새 풀이만(결정 075)', async () => {
+    await AsyncStorage.setItem('test.remember.v1', JSON.stringify({ key, report }));
+    get.mockResolvedValueOnce(done).mockResolvedValueOnce(got('WRITING'));
+    const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'done', report }));
+    await act(async () => result.current.recheck());
+    expect(result.current.state).toEqual({ status: 'writing' });
+    expect(await stored()).toEqual({ key, report, status: 'WRITING' });
+  });
+
+  it('보관한 풀이 + 쓰는 중 기억이면 첫 그림부터 풀이(쓰는 중을 먼저 보이지 않음) — 서버가 다 썼다고 하면 그대로, 쓰는 중이라고 할 때만 쓰는 중으로(결정 075)', async () => {
+    await AsyncStorage.setItem('test.remember.v1', JSON.stringify({ key, report, status: 'WRITING' }));
+    const seen: string[] = [];
+    let answer: (v: ApiResult<DetailReportState<Fake>>) => void = () => {};
+    get.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const { result } = await renderHook(() => {
+      const r = useDetailReport(REMEMBER, input);
+      seen.push(r.state.status);
+      return r;
+    });
+    await act(async () => {});
+    expect(result.current.state).toEqual({ status: 'done', report });
+    await act(async () => answer(done));
+    expect(result.current.state).toEqual({ status: 'done', report });
+    expect(seen).not.toContain('writing');
+    expect(await stored()).toEqual({ key, report });
+    // 다시 열었는데 서버가 정말 쓰는 중이면 그때 쓰는 중으로
+    await AsyncStorage.setItem('test.remember.v1', JSON.stringify({ key, report, status: 'WRITING' }));
+    get.mockResolvedValueOnce(got('WRITING'));
+    const again = await renderHook(() => useDetailReport(REMEMBER, input));
+    await waitFor(() => expect(again.result.current.state).toEqual({ status: 'writing' }));
+  });
+
   it('끝내 못 썼으면(FAILED) 받기 전으로 기억한다 — 다음에 열 때 서버도 받기 전이라고 한다', async () => {
     const { result } = await renderHook(() => useDetailReport(REMEMBER, input));
     await waitFor(() => expect(result.current.state).toEqual({ status: 'none' }));
@@ -218,5 +252,34 @@ describe('useDetailReport · rememberStatus', () => {
     const plain = await renderHook(() => useDetailReport(CONFIG, input));
     await act(async () => {});
     expect(plain.result.current.state).toEqual({ status: 'checking' });
+  });
+});
+
+describe('prefetchDetailReport — 앱을 켤 때 상태를 받아 둔다(결정 075 의 4)', () => {
+  const REMEMBER: DetailReportConfig<Fake> = { ...CONFIG, storageKey: 'test.prefetch.v1', rememberStatus: true };
+  const stored = async () => JSON.parse((await AsyncStorage.getItem('test.prefetch.v1')) ?? 'null');
+
+  it('기기에 아무것도 없으면 상태를 한 번 묻고 받기 전 · 쓰는 중은 기억, 다 썼으면 풀이를 둔다', async () => {
+    get.mockResolvedValueOnce(got('NONE'));
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toEqual({ key, status: 'NONE' });
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce(got('WRITING'));
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toEqual({ key, status: 'WRITING' });
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce(done);
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toEqual({ key, report });
+  });
+
+  it('기기에 둔 것이 있으면(화면이 열 때 뒤에서 확인한다) 묻지 않고, 못 물었으면 아무것도 두지 않는다', async () => {
+    await AsyncStorage.setItem('test.prefetch.v1', JSON.stringify({ key, status: 'NONE' }));
+    await prefetchDetailReport(REMEMBER, input);
+    expect(get).not.toHaveBeenCalled();
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toBeNull();
   });
 });

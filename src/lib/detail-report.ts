@@ -38,8 +38,11 @@ export type DetailReportConfig<R> = {
   rememberStatus?: boolean;
 };
 
-/** 기기에 둔 것: 다 쓴 풀이, 또는(rememberStatus) 받기 전 · 쓰는 중이라는 상태 */
-type Stored<R> = { report: R } | { status: 'NONE' | 'WRITING' };
+/**
+ * 기기에 둔 것: 다 쓴 풀이와(rememberStatus) 받기 전 · 쓰는 중이라는 상태 — 따로 둔다. 다 쓴 풀이를 둔 뒤 다시 받기(쓰는 중)를 기억해도
+ * 풀이는 남아 다음에 열 때 곧바로 그린다(결정 075). 둘 다 없으면 null
+ */
+type Stored<R> = { report?: R; status?: 'NONE' | 'WRITING' };
 
 /**
  * checking 처음 확인하는 중 · none 받기 전(blocked: 서버가 지금은 받을 수 없다고 했다) · unknown 처음 확인을 못 했다(카드 자리 안내 —
@@ -65,16 +68,18 @@ async function loadStored<R>(config: DetailReportConfig<R>, key: string): Promis
     if (typeof parsed !== 'object' || parsed === null) return null;
     const stored = parsed as Record<string, unknown>;
     if (stored.key !== key) return null;
-    if (config.isReport(stored.report)) return { report: stored.report };
-    return config.rememberStatus && (stored.status === 'NONE' || stored.status === 'WRITING') ? { status: stored.status } : null;
+    const report = config.isReport(stored.report) ? stored.report : undefined;
+    const status = config.rememberStatus && (stored.status === 'NONE' || stored.status === 'WRITING') ? stored.status : undefined;
+    return report === undefined && status === undefined ? null : { report, status };
   } catch {
     return null;
   }
 }
 
-async function saveReport<R>(config: DetailReportConfig<R>, key: string, report: R): Promise<void> {
+async function saveReport<R>(run: Run<R>, report: R): Promise<void> {
+  run.storedReport = report;
   try {
-    await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, report }));
+    await AsyncStorage.setItem(run.config.storageKey, JSON.stringify({ key: run.key, report }));
   } catch {
     // 보관하지 못해도 받은 글은 보여 준다. 다음에 열 때 다시 받는다.
   }
@@ -85,7 +90,9 @@ async function remember<R>(run: Run<R>, status: 'NONE' | 'WRITING'): Promise<voi
   if (!run.config.rememberStatus || run.remembered === status) return;
   run.remembered = status;
   try {
-    await AsyncStorage.setItem(run.config.storageKey, JSON.stringify({ key: run.key, status }));
+    // 다 쓴 풀이가 있으면 함께 둔다(다시 받기를 눌러도 다음에 열 때 풀이를 곧바로 — 결정 075)
+    const report = run.storedReport === null ? {} : { report: run.storedReport };
+    await AsyncStorage.setItem(run.config.storageKey, JSON.stringify({ key: run.key, ...report, status }));
   } catch {
     // 기억하지 못하면 다음에 열 때 처음 확인부터 한다
   }
@@ -107,6 +114,8 @@ type Run<R> = {
   writingSince: number | null;
   /** 기기에 둔 상태(같은 것을 거듭 쓰지 않게). 풀이를 두었거나 아직 두지 않았으면 null */
   remembered: 'NONE' | 'WRITING' | null;
+  /** 기기에 둔 다 쓴 풀이(상태를 기억할 때 함께 둔다). 없으면 null */
+  storedReport: R | null;
   timer: ReturnType<typeof setTimeout> | null;
   set: (state: DetailReportView<R>) => void;
 };
@@ -129,7 +138,7 @@ async function check<R>(run: Run<R>): Promise<void> {
 /** 물어 받은 상태로 옮긴다 */
 async function apply<R>(run: Run<R>, data: DetailReportState<R>): Promise<void> {
   if (data.status === 'DONE') {
-    await saveReport(run.config, run.key, data.report);
+    await saveReport(run, data.report);
     run.remembered = null;
     if (run.alive) settle(run, { status: 'done', report: data.report });
   } else if (data.status === 'WRITING') {
@@ -181,8 +190,14 @@ function waitAndCheck<R>(run: Run<R>) {
 /** 보관본(또는 보던 풀이)을 둔 채 뒤에서 새로 묻는다. 다 쓴 풀이가 아니면(받지 못했어도) 보던 것을 그대로 둔다 */
 async function refreshQuietly<R>(run: Run<R>): Promise<void> {
   const r = await withTimeout(run.config.get());
-  if (!run.alive || !r.ok || r.data.status !== 'DONE') return;
-  await saveReport(run.config, run.key, r.data.report);
+  if (!run.alive || !r.ok) return;
+  // 서버가 쓰는 중이라고 하면(다시 받기) 그때 쓰는 중으로 — 받기 전이라고 하면 보던 풀이를 둔다
+  if (r.data.status === 'WRITING') {
+    run.busy = true;
+    return apply(run, r.data);
+  }
+  if (r.data.status !== 'DONE') return;
+  await saveReport(run, r.data.report);
   run.remembered = null;
   if (run.alive) run.set({ status: 'done', report: r.data.report });
 }
@@ -215,6 +230,24 @@ async function request<R>(run: Run<R>): Promise<void> {
 }
 
 /**
+ * 앱을 켤 때(홈의 첫 데이터) 상태를 한 번 받아 둔다 — 그 탭을 열면 기다리지 않고 받기 · 쓰는 중 · 풀이를 곧바로 그린다(결정 075 의 4).
+ * 기기에 둔 것이 있으면 묻지 않는다(그 화면이 열 때 뒤에서 확인한다). 못 물었으면 아무것도 두지 않는다.
+ */
+export async function prefetchDetailReport<R>(config: DetailReportConfig<R>, input: BirthInput): Promise<void> {
+  const key = keyOf(input);
+  if (await loadStored(config, key)) return;
+  const r = await withTimeout(config.get());
+  if (!r.ok) return;
+  try {
+    if (r.data.status === 'DONE') await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, report: r.data.report }));
+    else if (config.rememberStatus)
+      await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, status: r.data.status === 'WRITING' ? 'WRITING' : 'NONE' }));
+  } catch {
+    // 두지 못하면 그 화면이 열 때 처음 확인부터 한다
+  }
+}
+
+/**
  * 자세한 풀이 하나. config 는 그 풀이의 경로 쌍(get · request) · 보관 키 · 검사 함수 — 모듈에 한 번 만든 값을 넘긴다(바뀌지 않게).
  * input 이 null 이면(출생 정보 · 세션을 아직 읽는 중) 서버를 부르지 않고 확인 중으로 둔다.
  * start: 받기 · 다시 쓰기, recheck: 상태만 다시 묻기(연결 복귀 · 다시 보기), dismiss: 실패 화면의 "나중에 하기"(받기 전으로).
@@ -240,6 +273,7 @@ export function useDetailReport<R>(config: DetailReportConfig<R>, input: BirthIn
       poll,
       writingSince: null,
       remembered: null,
+      storedReport: null,
       timer: null,
       set: (state) => setSettled({ key, state }),
     };
@@ -250,11 +284,13 @@ export function useDetailReport<R>(config: DetailReportConfig<R>, input: BirthIn
         run.busy = true;
         return void check(run);
       }
-      if ('report' in stored) {
+      run.storedReport = stored.report ?? null;
+      run.remembered = stored.status ?? null;
+      // 다 쓴 풀이가 있으면 쓰는 중 기억이 있어도 풀이를 먼저 그리고 뒤에서 확인한다 — 서버가 쓰는 중이라고 할 때만 쓰는 중으로(결정 075)
+      if (stored.report !== undefined) {
         run.set({ status: 'done', report: stored.report });
         return void refreshQuietly(run);
       }
-      run.remembered = stored.status;
       if (stored.status === 'NONE') {
         run.set({ status: 'none' });
         return void confirmQuietly(run);
@@ -292,7 +328,8 @@ export function useDetailReport<R>(config: DetailReportConfig<R>, input: BirthIn
     if (!run || run.busy) return;
     run.busy = true;
     void refreshQuietly(run).finally(() => {
-      run.busy = false;
+      // 그새 쓰는 중으로 바뀌어 확인이 돌고 있으면(writingSince) 그대로 둔다
+      if (run.writingSince === null) run.busy = false;
     });
   }, []);
 

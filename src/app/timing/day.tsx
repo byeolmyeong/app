@@ -45,7 +45,7 @@ export default function TimingDayScreen() {
   const { ready } = useSession();
   const { profile, chart } = useBirthProfile();
   const birth = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
-  const { state, retry } = useDaySky(date, birth);
+  const { state, retry, made } = useDaySky(date, birth);
   const online = useOnline();
   const [today] = useState(() => koreaToday());
   const loading = date !== null && state.status === 'loading';
@@ -71,13 +71,14 @@ export default function TimingDayScreen() {
   if (!date || (state.status === 'failed' && state.httpStatus === 400 && BAD_DATE.includes(state.code ?? '')))
     return <StateScreen nav={nav()} title={T.day.outOfRange.title} body={T.day.outOfRange.body} primary={{ label: T.day.outOfRange.back, onPress: back }} />;
 
+  // 이 날을 이 기기에서 받은 적이 없으면 뼈대 없이 곧바로 쓰는 중(결정 075). 받은 적이 있으면 서버의 저장본이 곧 오므로 늦을 때만 뼈대
   if (state.status === 'loading')
-    return making ? (
+    return making || made === false ? (
       <MakingView title={T.day.making.title} lines={T.day.making.lines} />
     ) : (
       // 뼈대는 다 그려진 화면처럼 아래 탭과 함께(결정 065 의 2 · 071) — 쓰는 중 · 못 썼을 때만 탭이 없다(결정 061 의 2)
       <Screen nav={nav()} footer={<MainTabs active="timing" nested />}>
-        {phase === 'blank' ? null : <DaySkeleton />}
+        {phase === 'blank' || made === null ? null : <DaySkeleton />}
       </Screen>
     );
 

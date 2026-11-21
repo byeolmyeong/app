@@ -6,6 +6,8 @@ import { router } from 'expo-router';
 import TodayScreen from '@/app/today';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
+import { koreaToday } from '@/features/timing/dates';
+import { DAY_SKY_MADE_STORAGE_KEY } from '@/features/timing/day-sky-made';
 import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
 import { api, type DaySky } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -112,8 +114,22 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     await act(async () => answer({ ok: true, data: sky }));
   });
 
-  it('처음 묻는 중: 0.3초 뒤 뼈대(다 그려진 배치 — 탭 있음), 3초가 넘으면 쓰는 중(머리만 · 탭 없음, 결정 061 의 2)', async () => {
+  it('오늘을 이 기기에서 한 번도 받지 않았으면 뼈대 없이 곧바로 쓰는 중(머리만 · 탭 없음) — 받으면 글(결정 075)', async () => {
     jest.useFakeTimers();
+    let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
+    await render(<TodayScreen />);
+    await act(async () => {});
+    expect(screen.getByText(T.making.title)).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(400));
+    expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
+    await act(async () => finish({ ok: true, data: sky }));
+    expect(screen.getByText(sky.title)).toBeTruthy();
+  });
+
+  it('오늘을 받은 적 있는데 보관본이 없으면: 0.3초 뒤 뼈대(다 그려진 배치 — 탭 있음), 3초가 넘으면 쓰는 중(머리만 · 탭 없음, 결정 061 의 2)', async () => {
+    jest.useFakeTimers();
+    await AsyncStorage.setItem(DAY_SKY_MADE_STORAGE_KEY, JSON.stringify({ key: KEY, dates: [koreaToday()] }));
     let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
     mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
     await render(<TodayScreen />);

@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { onPushReceived } from '@/features/push/push';
+import { daySkyMadeGeneration, markDaySkyMade, wasDaySkyMade } from '@/features/timing/day-sky-made';
 import { koreaToday } from '@/features/timing/dates';
 import { api, isDaySky, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
 import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
@@ -53,10 +54,13 @@ function load(key: string, input: BirthInput, fresh: boolean): Promise<ApiResult
   if (running && !fresh) return running;
   const request = (async () => {
     const gen = await storageGeneration(GENERATION_KEY).catch(() => null);
+    const madeGen = await daySkyMadeGeneration();
     let r = await api.postDaySky();
     if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await api.postDaySky();
     if (r.ok && gen !== null && (await isSameGeneration(GENERATION_KEY, gen)))
       await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data } satisfies Stored)).catch(() => undefined);
+    // 받은 날을 기억한다(그날의 하늘과 같은 기억 — 결정 075 의 2)
+    if (r.ok) await markDaySkyMade(key, r.data.date, madeGen);
     return r;
   })().finally(() => {
     if (pending.get(key) === request) pending.delete(key);
@@ -69,6 +73,18 @@ function load(key: string, input: BirthInput, fresh: boolean): Promise<ApiResult
 export function useTodaySky(input: BirthInput | null) {
   const key = input ? keyOf(input) : null;
   const [state, setState] = useState<TodaySkyState>({ status: 'loading' });
+  /** 오늘(기기의 한국 날짜)을 이 기기에서 받은 적이 있는가(결정 075 — 없으면 뼈대 없이 곧바로 만드는 중). 읽기 전에는 null */
+  const [made, setMade] = useState<{ key: string; made: boolean } | null>(null);
+  useEffect(() => {
+    if (key === null) return;
+    let alive = true;
+    void wasDaySkyMade(key, koreaToday()).then((m) => {
+      if (alive) setMade({ key, made: m });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
   /** 지금 그린 글의 날짜 — 화면이 보일 때 · 앱으로 돌아올 때 오늘과 견준다 */
   const shownDate = useRef<string | null>(null);
   const latest = useRef(0);
@@ -152,7 +168,7 @@ export function useTodaySky(input: BirthInput | null) {
 
   /** 못 썼을 때의 "다시 쓰기" · 연결이 돌아왔을 때 — 늘 새로 묻는다 */
   const retry = useCallback(() => fetchToday(true), [fetchToday]);
-  return { state, retry };
+  return { state, retry, made: made && made.key === key ? made.made : null };
 }
 
 /**

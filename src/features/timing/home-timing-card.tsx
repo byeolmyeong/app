@@ -4,9 +4,10 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { CardFail } from '@/components/card-fail';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, Spacing, TimingLayout as L } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Spacing, TimingLayout as L, TodayCardLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth } from '@/features/timing/dates';
+import { MakingArt } from '@/features/timing/home-today-card';
 import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
 import { ChevronRight, SkBlock, TodoList } from '@/features/timing/timing-parts';
 import type { TimingReportView } from '@/features/timing/use-timing-report';
@@ -110,6 +111,22 @@ export function HomeTimingCards({
     return state.code === NOT_FOUND || !online ? null : (
       <CardFail kicker={T.now} title={T.loadFail.report} body={T.loadFail.body} retry={{ label: strings.states.loadFail.retry, onPress: onRetry }} />
     );
+  // 쓰는 중에도 칸은 그 자리에 — "만들고 있어요" 카드, 다 쓰면 같은 자리에서 완료 카드(결정 075 — 047 의 1-5 대체)
+  if (state.status === 'writing')
+    return (
+      <View testID="home-timing-writing" accessible accessibilityLabel={T.home.writing.title} style={styles.card}>
+        <Head label={T.now} />
+        <View style={styles.writingRow}>
+          <MakingArt />
+          <View style={styles.writingText}>
+            <Txt variant="stat">{T.home.writing.title}</Txt>
+            <Txt variant="caption" color="gray">
+              {T.home.writing.body}
+            </Txt>
+          </View>
+        </View>
+      </View>
+    );
   if (state.status !== 'done') return null;
   const report = shownTiming(state.report);
   const main = mainInterval(report);
@@ -206,4 +223,6 @@ const styles = StyleSheet.create({
   cards: { gap: H.cardGap },
   todo: { flexDirection: 'row', alignItems: 'center', gap: L.card.gap, minHeight: L.day.todo },
   flex: { flex: 1 },
+  writingRow: { flexDirection: 'row', alignItems: 'center', gap: TodayCardLayout.rowGap, marginTop: TodayCardLayout.rowTop },
+  writingText: { flex: 1, gap: TodayCardLayout.textGap },
 });

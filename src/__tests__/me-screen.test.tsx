@@ -155,6 +155,28 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     expect(screen.getByTestId('me-detail-card')).toBeTruthy();
   });
 
+  it('받기 전을 기억하면(앱을 켤 때 받아 둔 것) 뼈대 없이 첫 그림부터 내 별명 + "자세한 풀이" 카드 — 서버 답을 기다리지 않는다(결정 075)', async () => {
+    jest.useFakeTimers();
+    await storeReading();
+    await AsyncStorage.setItem(ME_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'NONE' }));
+    mockApi.getMeReport.mockReturnValue(new Promise(() => {}));
+    await render(<MeScreen />);
+    await act(async () => {});
+    expect(screen.getByTestId('me-detail-card')).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
+    expect(screen.queryByTestId('me-skeleton')).toBeNull();
+    jest.useRealTimers();
+  });
+
+  it('쓰는 중을 기억하면 뼈대 없이 곧바로 쓰는 중(결정 075)', async () => {
+    await storeReading();
+    await AsyncStorage.setItem(ME_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'WRITING' }));
+    mockApi.getMeReport.mockReturnValue(new Promise(() => {}));
+    await render(<MeScreen />);
+    expect(await screen.findByText(M.making.title)).toBeTruthy();
+    expect(screen.queryByTestId('me-skeleton')).toBeNull();
+  });
+
   it('처음 불러올 때 0.3초가 넘으면 뼈대(받기 전 배치, 결정 071), 머리 · 아래 탭은 그대로 보인다', async () => {
     jest.useFakeTimers();
     mockApi.createReading.mockReturnValue(new Promise(() => {}));

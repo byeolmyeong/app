@@ -51,6 +51,16 @@ async function load(month: string | undefined, input: BirthInput, key: string): 
 }
 
 /**
+ * 앱을 켤 때(홈의 첫 데이터) 이번 달을 한 번 받아 둔다 — 시기 탭을 열면 기다리지 않고 달력(결정 075 의 3). 기기에 이번 달 것이 있으면 부르지 않는다
+ * (시기 탭이 열 때 뒤에서 새로 받는다). 못 받아도 조용히 넘어간다.
+ */
+export async function prefetchMonth(input: BirthInput): Promise<void> {
+  const key = keyOf(input);
+  if (await readStored(key)) return;
+  await load(undefined, input, key);
+}
+
+/**
  * input 이 null 이면(출생 정보 · 세션을 아직 읽는 중) 부르지 않는다.
  * base 처음 받은 달 · shown 보이는 달(처음 받기 전에는 null) · go(±1) 달 옮기기 · retry 못 받은 달을 다시 부르기.
  */

@@ -46,6 +46,8 @@ jest.mock('@/lib/api', () => ({
     getTimingReport: jest.fn(async () => ({ ok: true, data: { status: 'NONE' } })),
     getNotifications: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
     postDaySky: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    getMonth: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    getMeReport: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({

@@ -8,6 +8,7 @@ import TimingPeriodScreen from '@/app/timing/period';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { koreaToday } from '@/features/timing/dates';
+import { DAY_SKY_MADE_STORAGE_KEY } from '@/features/timing/day-sky-made';
 import { DAY_SKY_MAX_WAIT_MS } from '@/features/timing/use-day-sky';
 import { TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { api, type ApiResult, type DaySky } from '@/lib/api';
@@ -110,10 +111,27 @@ describe('시기 자세히 /timing/period(결정 049 의 5, 캔버스 14-3)', ()
 });
 
 describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 14-4)', () => {
-  it('0.3초가 넘으면 다 그려질 배치의 뼈대(아래 탭과 함께), 3초가 넘으면 처음 쓰는 날로 보고 쓰는 중(머리 · 아래 탭 없이 — 별명 짓는 중처럼, 소유자 지적 5) → 글(날짜 · 요일 · 제목 · 흐름 셋 · 이유 · 실천 셋)과 아래 탭', async () => {
+  it('이 기기에서 한 번도 받지 않은 날은 뼈대 없이 곧바로 쓰는 중 — 받으면 그 날을 기억한다(결정 075)', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-11-19T12:00:00+09:00'));
+    mockParams.mockReturnValue({ date: '2026-11-21' });
+    let resolve: (r: ApiResult<DaySky>) => void = () => {};
+    mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    await render(<TimingDayScreen />);
+    await tick(0);
+    expect(screen.getByText(T.day.making.title)).toBeTruthy();
+    await tick(400);
+    expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
+    await act(async () => resolve({ ok: true, data: day }));
+    expect(screen.getByTestId('day-hero')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem(DAY_SKY_MADE_STORAGE_KEY))!)).toEqual({ key: birthKey, dates: ['2026-11-21'] });
+  });
+
+  it('이 기기에서 받은 적 있는 날: 0.3초가 넘으면 다 그려질 배치의 뼈대(아래 탭과 함께), 3초가 넘으면 쓰는 중(머리 · 아래 탭 없이 — 별명 짓는 중처럼, 소유자 지적 5) → 글(날짜 · 요일 · 제목 · 흐름 셋 · 이유 · 실천 셋)과 아래 탭', async () => {
     jest.useFakeTimers();
     // 그날(11월 21일)이 기기의 오늘이 아니게 — 오늘이면 이유가 "오늘" 로 시작한다(아래 시험)
     jest.setSystemTime(new Date('2026-11-19T12:00:00+09:00'));
+    await AsyncStorage.setItem(DAY_SKY_MADE_STORAGE_KEY, JSON.stringify({ key: birthKey, dates: ['2026-11-21'] }));
     mockParams.mockReturnValue({ date: '2026-11-21' });
     let resolve: (r: ApiResult<DaySky>) => void = () => {};
     mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (resolve = r)));

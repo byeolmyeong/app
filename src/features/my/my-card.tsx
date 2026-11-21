@@ -34,7 +34,7 @@ export type MyCardProps = {
 function CardButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.button}>
-      <Txt variant="table" style={styles.buttonText}>
+      <Txt variant="table" numberOfLines={1} style={styles.buttonText}>
         {label}
       </Txt>
     </Pressable>
@@ -43,7 +43,7 @@ function CardButton({ label, onPress }: { label: string; onPress: () => void }) 
 
 /**
  * 마이 위의 별명 카드(결정 056 의 1, 보드 16): 프로필 그림 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄,
- * 아래 버튼 둘(계정 · 프로필 / 출생 정보 바꾸기). 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 카드 자체는 누르지 않는다.
+ * 아래 버튼 둘(프로필 수정 / 출생 정보 수정 — 소유자 2026-11-21, 늘 한 줄). 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 카드 자체는 누르지 않는다.
  */
 export function MyCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, birthLine, onAccount, onBirth }: MyCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);

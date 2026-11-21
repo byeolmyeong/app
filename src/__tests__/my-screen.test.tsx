@@ -156,18 +156,20 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(router.push).toHaveBeenLastCalledWith(path);
   });
 
-  it.each([
-    ['푸시 · 오늘의 하늘 둘 다 켬', { pushConsent: true, todaySkyPush: true, todaySkyTime: '21:05' }, '오후 9:05'],
-    ['푸시 끔', { pushConsent: false, todaySkyPush: true, todaySkyTime: '21:05' }, null],
-    ['오늘의 하늘 끔', { pushConsent: true, todaySkyPush: false, todaySkyTime: '21:05' }, null],
-    ['오늘의 하늘 칸이 없는 서버', { pushConsent: true }, null],
-  ])('알림 줄 오른쪽 받는 시간: %s → %s(보드 16, 끄면 숨김)', async (_, fields, shown) => {
-    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...account, ...fields } });
+  it('알림 줄에는 받는 시간을 적지 않는다 — 오늘의 하늘을 켜 두어도 이름뿐(받는 시간은 알림 설정 안에서만, 소유자 2026-11-21)', async () => {
+    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...account, pushConsent: true, todaySkyPush: true, todaySkyTime: '21:05' } });
     await render(<MyScreen />);
     await screen.findByText('새벽별');
     const row = screen.getByRole('button', { name: R.notifications });
-    if (shown) expect(within(row).getByText(shown)).toBeTruthy();
-    else expect(within(row).queryByText(/오전|오후/)).toBeNull();
+    expect(within(row).queryByText(/오전|오후/)).toBeNull();
+    expect(within(row).getAllByText(/./).map((t) => t.props.children)).toEqual([R.notifications]);
+  });
+
+  it('별명 카드의 버튼은 "프로필 수정" · "출생 정보 수정" 이고 늘 한 줄(소유자 2026-11-21)', async () => {
+    await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    expect(card.getByText('프로필 수정').props.numberOfLines).toBe(1);
+    expect(card.getByText('출생 정보 수정').props.numberOfLines).toBe(1);
   });
 
   it('문의 메일 주소를 어디에도 적지 않는다(결정 024)', async () => {

@@ -8,6 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /** 키 → 보관된 글자(없으면 null). 키가 없으면 아직 모름 */
 const memory = new Map<string, string | null>();
+/** 비울 때마다 하나씩 — 비우기 전에 시작한 읽기는 비운 뒤에 끝나도 메모리에 두지 않는다(앞사람 값이 돌아오지 않게, #96 리뷰 R3) */
+let generation = 0;
 
 /** 메모리에 있는 값 — 동기. 아직 읽지 않았으면 undefined, 기기에 없으면 null */
 export const peekStored = (key: string): string | null | undefined => memory.get(key);
@@ -17,9 +19,10 @@ export const peekStored = (key: string): string | null | undefined => memory.get
  * 지우기는 forgetMemory 와 함께라 같은 값이 와서 화면이 바뀌지 않는다. 못 읽으면 메모리의 것(없으면 null).
  */
 export async function getStored(key: string): Promise<string | null> {
+  const started = generation;
   try {
     const value = await AsyncStorage.getItem(key);
-    memory.set(key, value);
+    if (started === generation) memory.set(key, value);
     return value;
   } catch {
     return memory.get(key) ?? null;
@@ -40,4 +43,5 @@ export function setMemoryOnly(key: string, value: string): void {
 /** 메모리를 비운다 — 기기를 지울 때(로그아웃 · 탈퇴 · 출생 정보 바꾸기) 함께 */
 export function forgetMemory(): void {
   memory.clear();
+  generation += 1;
 }

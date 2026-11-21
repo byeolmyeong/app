@@ -19,10 +19,13 @@ export const DEVICE_STORAGE_PREFIX = 'byeolmyeong.';
 
 /** 이 앱이 기기에 둔 사람의 것(출생 정보 · 차트 · 받은 글)을 모두 지운다. 기기에 붙는 값(`byeolmyeong-device.`)은 남긴다. 계정 삭제 · 로그아웃(`sign-out.ts`) · 출생 정보 바꾸기(`/my/birth` — 옛 출생 정보로 만든 보관을 지우고 새 것만 둔다)가 쓴다. 그래서 출생 정보와 상관없이 남아야 할 사람 값은 이 머리에 두지 않는다 */
 export async function clearDeviceData(): Promise<void> {
+  // 이번 실행 메모리는 기다리기 전에 — 지우는 동안 다시 붙은 화면이 메모리로 앞사람 것을 그리지 않게
+  forgetMemory();
   // 키를 하나씩 적지 않고 머리로 찾아 지운다. 기능이 새 키를 더해도 빠지지 않는다.
   const keys = await AsyncStorage.getAllKeys();
-  forgetMemory();
   await AsyncStorage.multiRemove(keys.filter((key) => key.startsWith(DEVICE_STORAGE_PREFIX)));
+  // 지우는 사이에 시작해 지우기 전의 값을 읽은 것이 메모리에 둔 것까지 다시 비운다(#96 리뷰 R3)
+  forgetMemory();
   // 이번 실행의 메모리에 둔 계정도 잊는다(다음 사람 · 바뀐 출생 정보의 화면에 앞의 것이 비치지 않게)
   await forgetAccount();
   // 가입 이어 하기의 보관(보안 저장소 · sessionStorage, 결정 068)은 이 머리 밖이라 따로 지운다

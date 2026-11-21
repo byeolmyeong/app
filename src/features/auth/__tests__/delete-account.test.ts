@@ -6,7 +6,7 @@ import { clearResume } from '@/features/auth/signup-resume';
 import { clearSession } from '@/features/auth/use-session';
 import { setAccountLocal, useStoredAccount } from '@/lib/account-store';
 import { api, type MyAccount } from '@/lib/api';
-import { peekStored, setMemoryOnly, setStored } from '@/lib/device-memory';
+import { getStored, peekStored, setMemoryOnly, setStored } from '@/lib/device-memory';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -74,5 +74,22 @@ describe('기기를 지우면 이번 실행의 메모리도(개인정보 경계 
     await act(async () => {});
     expect(result.current).toBeUndefined();
     expect(await AsyncStorage.getItem('byeolmyeong.account.v1')).toBeNull();
+  });
+
+  it('지우는 도중 시작한 읽기가 끝나도 앞사람 값을 메모리에 다시 두지 않는다(#96 리뷰 R3)', async () => {
+    await setStored('byeolmyeong.birth.v1', '앞사람 출생');
+    const clearing = clearDeviceData();
+    const reading = getStored('byeolmyeong.birth.v1');
+    await clearing;
+    await reading;
+    expect(await AsyncStorage.getItem('byeolmyeong.birth.v1')).toBeNull();
+    expect(peekStored('byeolmyeong.birth.v1')).toBeUndefined();
+  });
+
+  it('지우기를 시작하면 곧바로(기기를 다 지우기 전에도) 메모리로는 앞사람 값을 그리지 않는다', async () => {
+    await setStored('byeolmyeong.birth.v1', '앞사람 출생');
+    const clearing = clearDeviceData();
+    expect(peekStored('byeolmyeong.birth.v1')).toBeUndefined();
+    await clearing;
   });
 });

@@ -3,9 +3,9 @@
  * (같은 차트 = 같은 글이라 다시 생성은 없다). 실패하면 스스로 다시 부르지 않고 사용자가 누를 때만 다시 한다.
  * 글은 서버가 준 그대로 쓴다. 출생 정보와 보관된 값은 로그에 남기지 않는다.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
+import { getStored, peekStored, setStored } from '@/lib/device-memory';
 import { api, isReading, type ApiErrorKind, type ApiResult, type BirthInput, type Reading } from '@/lib/api';
 
 export const READING_STORAGE_KEY = 'byeolmyeong.reading.v1';
@@ -20,10 +20,9 @@ export type ReadingState =
 
 const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
 
-/** 이 출생 정보로 받아 둔 글. 없거나 다른 출생 정보의 글이거나 깨졌으면 null */
-async function loadReading(key: string): Promise<Reading | null> {
+/** 보관된 글자에서 이 출생 정보의 글. 없거나 다른 출생 정보의 글이거나 깨졌으면 null */
+function parseReading(raw: string | null, key: string): Reading | null {
   try {
-    const raw = await AsyncStorage.getItem(READING_STORAGE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
@@ -34,9 +33,20 @@ async function loadReading(key: string): Promise<Reading | null> {
   }
 }
 
+/** 이 출생 정보로 받아 둔 글(이번 실행에 읽었으면 메모리에서) */
+async function loadReading(key: string): Promise<Reading | null> {
+  return parseReading(await getStored(READING_STORAGE_KEY), key);
+}
+
+/** 이번 실행에 읽은 글 — 동기(다시 붙은 화면의 첫 그림). 아직 읽지 않았으면 undefined */
+function peekReading(key: string): Reading | null | undefined {
+  const raw = peekStored(READING_STORAGE_KEY);
+  return raw === undefined ? undefined : parseReading(raw, key);
+}
+
 async function saveReading(key: string, reading: Reading): Promise<void> {
   try {
-    await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key, reading }));
+    await setStored(READING_STORAGE_KEY, JSON.stringify({ key, reading }));
   } catch {
     // 보관하지 못해도 받은 글은 보여 준다. 다음에 열 때 다시 받는다.
   }
@@ -73,20 +83,23 @@ function requestReadingOnce(input: BirthInput): Promise<ApiResult<Reading>> {
  */
 export function useStoredReading(input: BirthInput | null): { checked: boolean; reading: Reading | null } {
   const key = input ? keyOf(input) : null;
-  const [stored, setStored] = useState<{ key: string; reading: Reading | null } | null>(null);
+  const [stored, setFound] = useState<{ key: string; reading: Reading | null } | null>(null);
 
   useEffect(() => {
     if (key === null) return;
     let alive = true;
     loadReading(key).then((reading) => {
-      if (alive) setStored({ key, reading });
+      if (alive) setFound({ key, reading });
     });
     return () => {
       alive = false;
     };
   }, [key]);
 
-  return stored && stored.key === key ? { checked: true, reading: stored.reading } : { checked: false, reading: null };
+  if (stored && stored.key === key) return { checked: true, reading: stored.reading };
+  // 이번 실행에 읽었으면 첫 그림부터(탭을 바꿔 다시 붙은 화면 — lib/device-memory)
+  const peeked = key === null ? undefined : peekReading(key);
+  return peeked === undefined ? { checked: false, reading: null } : { checked: true, reading: peeked };
 }
 
 /** 홈 별명 카드에 쓰는 받아 둔 풀이의 한 줄 별명과 만든 때 */
@@ -98,9 +111,8 @@ export type StoredHeadline = { headline: string; createdAt: string | null };
  * 서버에는 다시 짓지 않고 돌려줄 길(GET)이 없고 `POST /readings` 는 옛 글만 있는 계정이면 새로 지으므로, 홈은 부르지 않고
  * 기기에 있는 별명을 쓴다(업데이트 직후 "아직 별명을 짓지 않았어요" 가 틀리게 보이지 않게 — PR #49 리뷰). 나 · 내 별명을 열면 새 모양으로 바뀐다.
  */
-async function loadHeadline(key: string): Promise<StoredHeadline | null> {
+function parseHeadline(raw: string | null, key: string): StoredHeadline | null {
   try {
-    const raw = await AsyncStorage.getItem(READING_STORAGE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
@@ -113,6 +125,10 @@ async function loadHeadline(key: string): Promise<StoredHeadline | null> {
   } catch {
     return null;
   }
+}
+
+async function loadHeadline(key: string): Promise<StoredHeadline | null> {
+  return parseHeadline(await getStored(READING_STORAGE_KEY), key);
 }
 
 /** `useStoredReading` 과 같은 꼴 — `checked` 는 기기를 다 찾아봤는가, `stored` 는 찾은 별명(없으면 null) */
@@ -129,7 +145,9 @@ export function useStoredHeadline(input: BirthInput | null): { checked: boolean;
       alive = false;
     };
   }, [key]);
-  return found && found.key === key ? { checked: true, stored: found.stored } : { checked: false, stored: null };
+  if (found && found.key === key) return { checked: true, stored: found.stored };
+  const raw = key === null ? undefined : peekStored(READING_STORAGE_KEY);
+  return raw === undefined || key === null ? { checked: false, stored: null } : { checked: true, stored: parseHeadline(raw, key) };
 }
 
 /**
@@ -158,7 +176,9 @@ export function useReading(input: BirthInput | null) {
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const result = settled && settled.key === key && settled.attempt === attempt ? settled.result : null;
+  const peeked = key === null || attempt > 0 ? undefined : peekReading(key);
+  // 이번 실행에 받아 둔 글이 메모리에 있으면 첫 그림부터 그 글(요청은 그 글을 그대로 돌려준다)
+  const result = settled && settled.key === key && settled.attempt === attempt ? settled.result : peeked ? ({ ok: true, data: peeked } as const) : null;
   const state: ReadingState = !result
     ? { status: 'loading' }
     : result.ok

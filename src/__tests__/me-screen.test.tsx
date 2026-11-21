@@ -409,3 +409,27 @@ describe('나 탭 · 시각 "모름"(결정 048 의 7)', () => {
     expect(screen.getByText('태어날 때 나의 중심(해)이 호기심 많은 쌍둥이자리에 있었어요')).toBeTruthy();
   });
 });
+
+describe('탭을 바꿔 다시 붙어도 첫 그림부터(소유자 "미리 그려져 있지 않은 느낌" · "내 별명" 이 잠깐)', () => {
+  it('이번 실행에 읽은 풀이 · 내 별명은 기기를 늦게 읽어도 첫 그림부터 — 머리는 처음부터 "나"', async () => {
+    await storeReading();
+    await storeReport();
+    mockApi.getMeReport.mockResolvedValue(done);
+    const first = await render(<MeScreen />);
+    expect(await screen.findByTestId('me-nickname-card')).toBeTruthy();
+    await first.unmount();
+    // 기기 읽기가 끝나지 않는다(늦은 AsyncStorage) — 메모리만으로 그려야 한다
+    const getItem = AsyncStorage.getItem as jest.Mock;
+    const original = getItem.getMockImplementation();
+    getItem.mockImplementation(() => new Promise(() => {}));
+    try {
+      await render(<MeScreen />);
+      expect(screen.getByTestId('me-nickname-card')).toBeTruthy();
+      expect(within(screen.getByTestId('nav-bar')).getByText(M.title)).toBeTruthy();
+      expect(screen.queryByText(strings.reading.title)).toBeNull();
+      expect(screen.queryByTestId('me-skeleton')).toBeNull();
+    } finally {
+      getItem.mockImplementation(original);
+    }
+  });
+});

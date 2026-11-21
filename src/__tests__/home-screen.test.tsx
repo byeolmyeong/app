@@ -700,3 +700,24 @@ describe('계정은 기기 · 메모리에서 첫 그림부터(소유자 "이름
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('홈을 다시 붙여도 종 점 · 카드가 첫 그림부터(이번 실행의 메모리)', () => {
+  it('받은 알림함 목록 · 출생 정보는 기기 · 서버를 늦게 읽어도 첫 그림부터 — 점이 나중에 생기지 않는다', async () => {
+    mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 1, items: [{ id: 'n1', kind: 'ME_REPORT_DONE', createdAt: '2026-11-20T00:12:00Z', read: false }] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    const first = await render(<HomeScreen />);
+    expect(await screen.findByTestId('home-bell-dot')).toBeTruthy();
+    await first.unmount();
+    mockApi.getNotifications.mockReturnValue(new Promise(() => {}));
+    const getItem = AsyncStorage.getItem as jest.Mock;
+    const original = getItem.getMockImplementation();
+    getItem.mockImplementation(() => new Promise(() => {}));
+    try {
+      await render(<HomeScreen />);
+      expect(screen.getByTestId('nickname-card')).toBeTruthy();
+      expect(screen.getByTestId('home-bell-dot')).toBeTruthy();
+    } finally {
+      getItem.mockImplementation(original);
+    }
+  });
+});

@@ -9,10 +9,10 @@
  * 풀이마다 다른 것(경로 쌍 · 보관 키 · 검사 함수 · 기억 여부)은 config 로 받는다.
  * 쓰는 곳: 나 탭 풀이(features/me/use-me-report) · 시기 풀이(features/timing/use-timing-report). 출생 정보와 글은 로그에 남기지 않는다.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { api, type ApiErrorKind, type ApiResult, type BirthInput } from '@/lib/api';
+import { getStored, peekStored, setStored } from '@/lib/device-memory';
 import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
 import { withTimeout } from '@/lib/with-timeout';
 
@@ -62,10 +62,9 @@ export type DetailReportView<R> =
 
 const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
 
-/** 이 출생 정보로 기기에 둔 것. 없거나 다른 출생 정보의 것이거나 옛 모양이면 null */
-async function loadStored<R>(config: DetailReportConfig<R>, key: string): Promise<Stored<R> | null> {
+/** 보관된 글자에서 이 출생 정보의 것. 없거나 다른 출생 정보의 것이거나 옛 모양이면 null */
+function parseStored<R>(config: DetailReportConfig<R>, key: string, raw: string | null): Stored<R> | null {
   try {
-    const raw = await AsyncStorage.getItem(config.storageKey);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
@@ -79,6 +78,21 @@ async function loadStored<R>(config: DetailReportConfig<R>, key: string): Promis
   }
 }
 
+/** 이 출생 정보로 기기에 둔 것(이번 실행에 읽었으면 메모리에서) */
+async function loadStored<R>(config: DetailReportConfig<R>, key: string): Promise<Stored<R> | null> {
+  return parseStored(config, key, await getStored(config.storageKey));
+}
+
+/** 이번 실행에 읽은 것으로 그릴 첫 화면 — 동기(다시 붙은 화면의 첫 그림, lib/device-memory). 모르면 null */
+function peekView<R>(config: DetailReportConfig<R>, key: string): DetailReportView<R> | null {
+  const raw = peekStored(config.storageKey);
+  if (raw === undefined) return null;
+  const stored = parseStored(config, key, raw);
+  if (!stored) return null;
+  if (stored.report !== undefined) return { status: 'done', report: stored.report };
+  return stored.status === 'NONE' ? { status: 'none' } : stored.status === 'WRITING' ? { status: 'writing' } : null;
+}
+
 /** 세대 표식의 키 — 풀이마다 따로(보관 키에 붙인다, 머리가 `byeolmyeong.` 이라 기기를 지우면 함께 지워진다) */
 const generationKeyOf = (config: DetailReportConfig<unknown>) => `${config.storageKey}.gen`;
 
@@ -89,7 +103,7 @@ async function saveReport<R>(run: Run<R>, report: R): Promise<void> {
   run.storedReport = report;
   if (!(await canWrite(run))) return;
   try {
-    await AsyncStorage.setItem(run.config.storageKey, JSON.stringify({ key: run.key, report }));
+    await setStored(run.config.storageKey, JSON.stringify({ key: run.key, report }));
   } catch {
     // 보관하지 못해도 받은 글은 보여 준다. 다음에 열 때 다시 받는다.
   }
@@ -103,7 +117,7 @@ async function remember<R>(run: Run<R>, status: 'NONE' | 'WRITING'): Promise<voi
   try {
     // 다 쓴 풀이가 있으면 함께 둔다(다시 받기를 눌러도 다음에 열 때 풀이를 곧바로 — 결정 075)
     const report = run.storedReport === null ? {} : { report: run.storedReport };
-    await AsyncStorage.setItem(run.config.storageKey, JSON.stringify({ key: run.key, ...report, status }));
+    await setStored(run.config.storageKey, JSON.stringify({ key: run.key, ...report, status }));
   } catch {
     // 기억하지 못하면 다음에 열 때 처음 확인부터 한다
   }
@@ -274,9 +288,9 @@ export async function prefetchDetailReport<R>(config: DetailReportConfig<R>, inp
   // 쓰기 직전에 다시 본다: 그 사이 기기를 지웠거나(세대) 화면이 먼저 기억 · 보관했으면(늦은 받기 전이 쓰는 중을 덮지 않게) 두지 않는다(리뷰 #87)
   if (!(await isSameGeneration(genKey, gen)) || (await loadStored(config, key))) return;
   try {
-    if (r.data.status === 'DONE') await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, report: r.data.report }));
+    if (r.data.status === 'DONE') await setStored(config.storageKey, JSON.stringify({ key, report: r.data.report }));
     else if (config.rememberStatus)
-      await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, status: r.data.status === 'WRITING' ? 'WRITING' : 'NONE' }));
+      await setStored(config.storageKey, JSON.stringify({ key, status: r.data.status === 'WRITING' ? 'WRITING' : 'NONE' }));
   } catch {
     // 두지 못하면 그 화면이 열 때 처음 확인부터 한다
   }
@@ -380,6 +394,7 @@ export function useDetailReport<R>(config: DetailReportConfig<R>, input: BirthIn
     run.set({ status: 'none' });
   }, []);
 
-  const state: DetailReportView<R> = settled && settled.key === key ? settled.state : { status: 'checking' };
+  // 이번 실행에 읽었으면 첫 그림부터 그 화면(탭을 바꿔 다시 붙은 화면) — 뒤의 확인은 그대로
+  const state: DetailReportView<R> = settled && settled.key === key ? settled.state : ((key !== null ? peekView(config, key) : null) ?? { status: 'checking' });
   return { state, start, recheck, refresh, dismiss };
 }

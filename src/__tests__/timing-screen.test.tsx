@@ -10,6 +10,7 @@ import { saveBirth } from '@/features/chart/use-birth-profile';
 import { MONTH_SKY_STORAGE_KEY, prefetchMonth } from '@/features/timing/use-month';
 import { TIMING_REPORT_MAX_WRITING_MS, TIMING_REPORT_POLL_MS, TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { api, type ApiResult, type MonthSky, type TimingReportState } from '@/lib/api';
+import { forgetMemory } from '@/lib/device-memory';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -425,6 +426,8 @@ describe('시기 탭 · 불러오기(결정 061 · 065)', () => {
 
   it('출생 정보가 없으면 입력으로 가는 안내만 — 서버를 부르지 않는다', async () => {
     await AsyncStorage.clear();
+    // 앱에서 기기를 지우는 일(clearDeviceData)은 이번 실행의 메모리도 함께 비운다
+    forgetMemory();
     await render(<TimingScreen />);
     await act(async () => {});
     expect(mockApi.getMonth).not.toHaveBeenCalled();
@@ -478,5 +481,29 @@ describe('들어가면 바로 — 한 번만 바뀌기(결정 075, 소유자: �
     await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
     await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
     expect(mockApi.getMonth).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('탭을 바꿔 다시 붙어도 첫 그림부터(소유자 "미리 그려져 있지 않은 느낌")', () => {
+  it('이번 실행에 읽은 시기 풀이 · 이번 달은 기기를 늦게 읽어도 첫 그림부터 지금 나의 시기 · 달력', async () => {
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-19T01:00:00Z'));
+    await storeReport();
+    mockApi.getTimingReport.mockResolvedValue(done);
+    mockParams.mockReturnValue({ tab: 'month' });
+    const first = await render(<TimingScreen />);
+    expect(await screen.findByTestId('month-calendar')).toBeTruthy();
+    await first.unmount();
+    const getItem = AsyncStorage.getItem as jest.Mock;
+    const original = getItem.getMockImplementation();
+    getItem.mockImplementation(() => new Promise(() => {}));
+    try {
+      await render(<TimingScreen />);
+      expect(screen.getByTestId('timing-now-card')).toBeTruthy();
+      expect(screen.getByTestId('month-calendar')).toBeTruthy();
+      expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
+    } finally {
+      getItem.mockImplementation(original);
+      nowSpy.mockRestore();
+    }
   });
 });

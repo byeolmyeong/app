@@ -297,6 +297,16 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
+  it('맨 위 별명 카드의 오른쪽은 꺾쇠 › 만 — "풀이 읽기" 글자는 없고 화면 읽기 이름에 남는다(소유자, 빌드 11)', async () => {
+    await render(<MeScreen />);
+    const card = await screen.findByTestId('me-nickname-card');
+    expect(within(card).queryByText(M.card.read)).toBeNull();
+    expect(within(card).getByTestId('me-nickname-card-chevron')).toBeTruthy();
+    expect(screen.getByRole('button', { name: [`새벽별${M.card.suffix}`, reading.headline, M.card.read].join(', ') })).toBe(card);
+    await fireEvent.press(card);
+    expect(router.push).toHaveBeenCalledWith('/reading');
+  });
+
   it('성격: "새벽별 님의 성격" · 제목 · 키워드 셋 · 쓰인 별 · 한눈에 보기 · 문단 01~04(이유 줄)', async () => {
     const p = report.areas[0];
     await render(<MeScreen />);

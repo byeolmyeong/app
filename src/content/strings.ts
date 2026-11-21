@@ -394,13 +394,15 @@ export const strings = {
     title: '별이 붙여 준\n나의 별명',
     subtitle: '태어난 순간의 하늘을 계산해\n나를 설명하는 글로 풀어 드립니다.',
     /** 기기에 출생 정보가 없어 서버에 저장된 것을 확인하는 동안(결정 029) */
-    /** 홈 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): "새벽별 님" · "물병자리 · 별명을 받은 지 12일" · 풀이 읽기 */
+    /** 홈 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): "새벽별 님" · "물병자리 · 별명을 받은 지 12일" · 꺾쇠 ›. read 는 화면 읽기 이름에만(글자는 뺌, 소유자 빌드 11) */
     card: {
       nicknameSuffix: ' 님',
       separator: ' · ',
       daysPrefix: '별명을 받은 지 ',
       daysSuffix: '일',
       read: '풀이 읽기',
+      /** 화면 읽기 이름에서 보이는 글들 사이 */
+      labelSeparator: ', ',
     },
     dateLabel: '생년월일',
     datePlaceholder: '2000-06-15',
@@ -569,8 +571,8 @@ export const strings = {
       /** 서버가 받을 수 없다고 했을 때(402 PURCHASE_REQUIRED — 1.1.0 예약, 결정 050 의 4) */
       blocked: '지금은 받을 수 없어요',
     },
-    /** 받은 뒤 맨 위 카드(12-8): "새벽별 님의 별명" · 한 줄 별명 · 풀이 읽기 */
-    card: { suffix: ' 님의 별명', read: '풀이 읽기', fallback: '내 별명' },
+    /** 받은 뒤 맨 위 카드(12-8): "새벽별 님의 별명" · 한 줄 별명 · 꺾쇠 ›. read 는 화면 읽기 이름에만(글자는 뺌, 소유자 빌드 11) · 그 이름에서 글들 사이 */
+    card: { suffix: ' 님의 별명', read: '풀이 읽기', fallback: '내 별명', labelSeparator: ', ' },
     /** 칩 줄을 화면 읽기가 부르는 이름(아래 탭과 구분) */
     chipsLabel: '나의 영역',
     areas: { PERSONALITY: '성격', LOVE: '연애', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정' },

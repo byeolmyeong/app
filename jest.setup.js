@@ -31,6 +31,11 @@ jest.mock('expo-audio', () => ({
   setAudioModeAsync: jest.fn(async () => {}),
 }));
 
+// 누를 때 · 켤 때 받는 모듈(import() — 성능 계획 3): jest 는 import() 를 돌리지 않아 require 로 바꿔 끼운다.
+// 위의 가짜(expo-audio) · 각 시험의 jest.mock(html2canvas-pro)이 그대로 붙는다.
+jest.mock('./src/features/share/load-html2canvas', () => ({ loadHtml2canvas: jest.fn(async () => require('html2canvas-pro')) }));
+jest.mock('./src/features/audio/load-expo-audio', () => ({ loadExpoAudio: jest.fn(async () => require('expo-audio')) }));
+
 // 휴대폰 푸시(expo-notifications)도 네이티브 모듈이다(결정 057). 권한은 "아직 묻지 않음", 토큰은 받지 못한 것으로 두는 가짜를 깐다.
 // 권한 · 토큰 · 누르면 이동을 보는 시험(features/push)은 그 파일에서 바꿔 끼운다.
 jest.mock('expo-notifications', () => ({

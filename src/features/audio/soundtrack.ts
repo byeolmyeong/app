@@ -1,6 +1,7 @@
-import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 import { AppState, Platform } from 'react-native';
 
+import { loadExpoAudio } from '@/features/audio/load-expo-audio';
 import { loadMusicSettings, subscribeMusicSettings, type MusicSettings } from '@/features/audio/music-settings';
 import { FADE_MS, FADE_STEP_MS, TRACK_LOOPS, TRACK_SOURCES, TRACK_VOLUME, type Track } from '@/features/audio/tracks';
 
@@ -13,6 +14,11 @@ import { FADE_MS, FADE_STEP_MS, TRACK_LOOPS, TRACK_SOURCES, TRACK_VOLUME, type T
  * 기다릴 때 · 앱 열 때 음악은 청할 때마다 처음부터, 배경 음악과 뒤에서 돌아온 곡은 멈춘 자리에서 이어서 난다.
  */
 export function createSoundtrack() {
+  /**
+   * expo-audio 는 켤 때(start) 받는다 — 1.0.0 은 음악을 꺼 둬(결정 069) 루트가 켜지 않으므로 웹 첫 번들에 싣지 않는다(성능 계획 3).
+   * 받기 전에는 틀지 않는다(wanted 가 null)
+   */
+  let audio: typeof import('expo-audio') | null = null;
   let started = false;
   let unlocked = Platform.OS !== 'web';
   let foreground = AppState.currentState !== 'background';
@@ -32,14 +38,14 @@ export function createSoundtrack() {
   function player(track: Track): AudioPlayer {
     const made = players[track];
     if (made) return made;
-    const p = createAudioPlayer(TRACK_SOURCES[track]);
+    const p = audio!.createAudioPlayer(TRACK_SOURCES[track]);
     p.loop = TRACK_LOOPS[track];
     players[track] = p;
     return p;
   }
 
   function wanted(): Track | null {
-    if (!started || !unlocked || !foreground || !settings) return null;
+    if (!audio || !started || !unlocked || !foreground || !settings) return null;
     let top: Track = requests.length > 0 ? requests[requests.length - 1].track : 'background';
     if (Platform.OS === 'web') top = 'background';
     return settings[top] ? top : null;
@@ -100,7 +106,12 @@ export function createSoundtrack() {
   function start(): () => void {
     if (started) return () => {};
     started = true;
-    void setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false }).catch(() => {});
+    void loadExpoAudio().then((loaded) => {
+      if (!started) return;
+      audio = loaded;
+      void loaded.setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false }).catch(() => {});
+      apply();
+    });
     const offSettings = subscribeMusicSettings((s) => {
       settings = s;
       apply();

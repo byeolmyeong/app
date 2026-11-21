@@ -4,6 +4,7 @@ import { PixelRatio, Platform } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { saveImage, shareStory } from '@/features/share/share-actions';
+import { loadHtml2canvas } from '@/features/share/load-html2canvas';
 import * as web from '@/features/share/share-actions.web';
 import { openStory } from '@/features/share/story';
 
@@ -93,6 +94,15 @@ describe('앱의 이미지 저장 · 스토리(결정 053 의 1 · 5)', () => {
 describe('웹의 이미지 저장(결정 053 의 1 · 5)', () => {
   afterEach(() => {
     delete g.document;
+  });
+
+  it('그리는 모듈(html2canvas-pro 285KB)은 첫 화면에 싣지 않고 저장을 누를 때 받는다(성능 계획 3)', async () => {
+    (loadHtml2canvas as jest.Mock).mockClear();
+    expect(loadHtml2canvas).not.toHaveBeenCalled();
+    g.document = { createElement: jest.fn(() => ({ width: 0, height: 0, getContext: () => null, toDataURL: () => '', click: jest.fn() })) };
+    mockHtml2canvas.mockResolvedValue({ width: 1080, height: 1920 });
+    await web.saveImage(view);
+    expect(loadHtml2canvas).toHaveBeenCalledTimes(1);
   });
 
   it('카드를 가로 1080 이 되는 배율로 그리고 정확히 1080×1920 에 옮겨 PNG 로 내려받는다(SAVED)', async () => {

@@ -106,6 +106,7 @@ function setupStore(over: Partial<SessionStoreDeps> = {}) {
     loadSignup: jest.fn(async () => null),
     saveSignup: jest.fn(async () => {}),
     clearSignup: jest.fn(async () => {}),
+    clearDeviceData: jest.fn(async () => {}),
     ...over,
   } satisfies SessionStoreDeps;
   return { deps, store: createSessionStore(deps), kept: () => kept };

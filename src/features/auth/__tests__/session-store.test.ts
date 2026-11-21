@@ -30,6 +30,7 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
     loadSignup: jest.fn(async (): Promise<{ signupToken: string; provider: 'KAKAO' | 'APPLE' | 'GOOGLE' } | null> => null),
     saveSignup: jest.fn(async () => {}),
     clearSignup: jest.fn(async () => {}),
+    clearDeviceData: jest.fn(async () => {}),
     ...overrides,
   } satisfies SessionStoreDeps;
   return { deps, store: createSessionStore(deps), kept: () => kept };

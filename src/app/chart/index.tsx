@@ -19,7 +19,8 @@ const S = strings.skyMap;
 const FIRST_SELECTED = 'SUN';
 
 /**
- * 내 하늘 지도(시안 13 · 13-1 · 13-2): 휠 + "별마다 있던 자리". 줄을 누르면 그 별이 휠에서 빛나고 시트가 열린다.
+ * 내 하늘 지도(시안 13 · 13-1 · 13-2): 휠 + "별마다 있던 자리". 줄을 누르면 그 별이 휠에서 빛나고 시트가 열린다 — 지도 아래의 안내 글
+ * ("별을 누르면 …")은 뺐다(소유자, 빌드 11 · 결정 078). 휠 바로 아래에 목록이 온다(사이 32).
  * 이유 줄의 "하늘 지도에서 보기"(결정 054 의 4)는 `/chart?selected=MOON` 처럼 고른 별을 실어 온다 — 고를 수 없는 값이면 해를 고른다.
  * 시각 "모름" 이면 하우스 · 첫인상 · 꿈의 자리를 보여 주지 않는다. 맨 아래 "차트 자세히" 줄은 뺐다 — 목록으로 끝난다(소유자, 빌드 11 · 결정 078).
  * 숫자 표 화면(`/chart/detail`)은 남아 있지만 앱 안에서 가는 길은 없다.
@@ -51,9 +52,6 @@ export default function ChartScreen() {
         <View style={styles.wheel}>
           <ChartWheel chart={chart} selected={selected} />
         </View>
-        <Txt variant="note" color="hint" style={styles.hint}>
-          {S.hint}
-        </Txt>
         <View style={styles.list}>
           <SkyList chart={chart} selected={selected} onSelect={select} />
         </View>
@@ -70,7 +68,6 @@ export default function ChartScreen() {
 
 const styles = StyleSheet.create({
   wheel: { marginTop: Spacing.md },
-  hint: { marginTop: Spacing.sm, textAlign: 'center' },
   list: { marginTop: Spacing.xl },
   note: { marginTop: Spacing.md },
 });

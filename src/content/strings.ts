@@ -481,7 +481,6 @@ export const strings = {
     wheelLabel: '태어난 순간의 하늘 지도',
     /** 휠의 읽기 이름 뒤에 붙는 고른 별 */
     selectedPrefix: '고른 별: ',
-    hint: '별을 누르면 지도에서 그 자리가 빛나요',
     listHeading: '별마다 있던 자리',
     separator: ' · ',
     /** 5 → 5하우스 */

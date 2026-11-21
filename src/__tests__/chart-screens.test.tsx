@@ -356,7 +356,6 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     expect(screen.getAllByTestId('wheel-house-line')).toHaveLength(12);
     expect(screen.getAllByTestId('wheel-axis')).toHaveLength(2);
     expect(screen.queryAllByTestId('wheel-aspect-line')).toHaveLength(0);
-    expect(screen.getByText(S.hint)).toBeTruthy();
     expect(screen.getByText(S.listHeading)).toBeTruthy();
     expect(screen.getAllByTestId(/^sky-row-/)).toHaveLength(12);
     // 해가 고른 별: 휠에서 빛나고 그 하우스 칸이 칠해지며 목록의 줄도 고른 상태
@@ -454,6 +453,16 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     expect(screen.queryByText(strings.detail.title)).toBeNull();
     expect(screen.queryByRole('button', { name: strings.detail.title })).toBeNull();
     expect(screen.getAllByTestId(/^sky-row-/).at(-1)?.props.testID).toBe('sky-row-MC');
+  });
+
+  it('지도 아래 "별을 누르면 지도에서 그 자리가 빛나요" 안내 글은 없다 — 줄을 누르면 그 별이 빛나는 동작은 그대로(소유자, 빌드 11)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<ChartScreen />);
+    await screen.findByText(S.listHeading);
+    expect(screen.queryByText(/지도에서 그 자리가 빛나요/)).toBeNull();
+    await fireEvent.press(screen.getByTestId('sky-row-MOON'));
+    expect(screen.getByTestId('sky-row-MOON').props.accessibilityState).toMatchObject({ selected: true });
+    expect(screen.getByLabelText(`${S.wheelLabel}. ${S.selectedPrefix}${G.bodies.MOON.name}`)).toBeTruthy();
   });
 });
 

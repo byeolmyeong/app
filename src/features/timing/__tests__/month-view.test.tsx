@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
+import { TimingLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { MonthView } from '@/features/timing/month-view';
 import { useMonth } from '@/features/timing/use-month';
@@ -69,6 +71,27 @@ describe('이번 달(결정 049 의 2, 캔버스 14-1)', () => {
     expect(onDay).toHaveBeenLastCalledWith('2026-11-05');
     await fireEvent.press(screen.getAllByTestId('month-day')[1]);
     expect(onDay).toHaveBeenLastCalledWith('2026-11-25');
+  });
+
+  it('‹ › 는 32 동그라미 한가운데에 — 꺾쇠는 가리키는 쪽으로 1 옮겨 눈으로 보는 가운데를 맞춘다(소유자 지적, 빌드 10)', async () => {
+    await render(<Harness onDay={jest.fn()} />);
+    const head = StyleSheet.flatten((await screen.findByTestId('month-head')).props.style);
+    expect(head).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+    for (const [id, dir] of [['month-prev', -1], ['month-next', 1]] as const) {
+      const button = screen.getByTestId(id);
+      expect(StyleSheet.flatten(button.props.style)).toMatchObject({
+        width: TimingLayout.month.arrow,
+        height: TimingLayout.month.arrow,
+        borderRadius: TimingLayout.month.arrow / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+      });
+      // 꺾쇠의 테두리 상자는 이미 한가운데 — 열린 쪽에 무게가 실려(삼각형 무게중심 · 진하기 무게중심 둘 다) 가리키는 쪽으로 옮긴다
+      const icon = screen.getByTestId(`${id}-icon`);
+      expect(icon.props.width).toBe(TimingLayout.month.arrowIcon);
+      expect(StyleSheet.flatten(icon.props.style)?.transform).toEqual([{ translateX: dir * TimingLayout.month.arrowNudge }]);
+    }
+    expect(TimingLayout.month.arrowNudge).toBe(1);
   });
 
   it('‹ › 는 처음 받은 달의 지난달 · 다음 달 끝에서 막힌다', async () => {

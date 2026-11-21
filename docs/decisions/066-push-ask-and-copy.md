@@ -3,7 +3,7 @@ type: decision
 tags: [푸시, 알림 권한, 알림 받기 권유, 받는 시간, 푸시 문구, 광고, 알림 꺼짐]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 076-foreground-push-banner.md (5 — 앱을 쓰는 중에도 배너, 보고 있는 화면이면 띄우지 않음)
 ---
 # 066. 알림은 첫 홈에서 우리 시트로 한 번 묻고(받는 시간 함께), 푸시 문구는 종류마다 정한 표를 쓴다
 

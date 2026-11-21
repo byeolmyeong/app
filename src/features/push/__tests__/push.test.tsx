@@ -295,6 +295,7 @@ describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
     [{ type: 'TIMING_REPORT_DONE' }, ['/timing'], ['/', '/me']],
     [{ type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }, ['/my/inquiries/q1'], ['/my/inquiries', '/my/inquiries/q2', '/']],
     [{ type: 'EVENT', target: '/timing?from=push' }, ['/timing'], ['/', '/me']],
+    [{ type: 'EVENT', target: '/timing/' }, ['/timing'], ['/', '/me']],
   ])('그 알림이 가리키는 화면을 보고 있는가(결정 076): %j', (raw, viewing, elsewhere) => {
     const data = parsePushData(raw)!;
     for (const path of viewing) expect(isViewingTarget(data, path)).toBe(true);

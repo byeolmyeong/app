@@ -24,6 +24,14 @@ jest.mock('expo-router', () => ({
   },
 }));
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: mockSession.status })) }));
+// 쓰는 중에 온 푸시는 시험이 보낸다
+const mockPush: { listeners: Set<(push: unknown) => void> } = { listeners: new Set() };
+jest.mock('@/features/push/push', () => ({
+  onPushReceived: (listener: (push: unknown) => void) => {
+    mockPush.listeners.add(listener);
+    return () => mockPush.listeners.delete(listener);
+  },
+}));
 jest.mock('@/components/use-online', () => ({
   ...jest.requireActual('@/components/use-online'),
   useOnline: jest.fn(() => mockOnline.value),
@@ -348,6 +356,19 @@ describe('답변 보기(/my/inquiries/[id], 보드 16-8)', () => {
     } finally {
       (useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'a' });
     }
+  });
+
+  it('보는 중에 그 문의의 답 푸시가 오면 다시 묻고 답을 보인다 — 다른 문의의 푸시에는 묻지 않는다(결정 076)', async () => {
+    mockApi.getInquiry.mockResolvedValueOnce({ ok: true, data: { ...answered, answer: null } }).mockResolvedValue({ ok: true, data: answered });
+    await render(<InquiryDetailScreen />);
+    await screen.findByText(answered.body.split('\n')[0], { exact: false });
+    expect(screen.queryByText('알려 주셔서 고마워요.')).toBeNull();
+    expect(mockApi.getInquiry).toHaveBeenCalledTimes(1);
+    await act(async () => mockPush.listeners.forEach((l) => l({ type: 'INQUIRY_ANSWERED', inquiryId: 'other' })));
+    expect(mockApi.getInquiry).toHaveBeenCalledTimes(1);
+    await act(async () => mockPush.listeners.forEach((l) => l({ type: 'INQUIRY_ANSWERED', inquiryId: 'a' })));
+    expect(await screen.findByText('알려 주셔서 고마워요.')).toBeTruthy();
+    expect(mockApi.getInquiry).toHaveBeenCalledTimes(2);
   });
 
   it('끊겨서 못 받았으면 20-1', async () => {

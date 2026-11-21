@@ -80,7 +80,7 @@ export function isViewingTarget(data: PushData, pathname: string): boolean {
     case 'INQUIRY_ANSWERED':
       return pathname === `/my/inquiries/${data.inquiryId}`;
     case 'EVENT':
-      return pathname === data.target.split(/[?#]/)[0];
+      return pathname === (data.target.split(/[?#]/)[0].replace(/(.)\/+$/, '$1'));
   }
 }
 

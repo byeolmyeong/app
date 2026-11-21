@@ -283,3 +283,101 @@ describe('prefetchDetailReport — 앱을 켤 때 상태를 받아 둔다(결정
     expect(await stored()).toBeNull();
   });
 });
+
+describe('겹친 확인 · 늦은 답 · 지운 기기(리뷰 #87)', () => {
+  const CFG: DetailReportConfig<Fake> = { ...CONFIG, storageKey: 'byeolmyeong.testRace.v1', rememberStatus: true };
+  const stored = async () => JSON.parse((await AsyncStorage.getItem(CFG.storageKey)) ?? 'null');
+  const deferred = <T,>() => {
+    let resolve!: (v: T) => void;
+    const p = new Promise<T>((r) => (resolve = r));
+    return { p, resolve };
+  };
+
+  it('처음 조용한 확인과 연결 복귀(refresh)가 겹쳐도 쓰는 중 확인은 한 줄 — 5초에 한 번, 떠나면 멈춘다', async () => {
+    await AsyncStorage.setItem(CFG.storageKey, JSON.stringify({ key, report }));
+    const a = deferred<ApiResult<DetailReportState<Fake>>>();
+    const b = deferred<ApiResult<DetailReportState<Fake>>>();
+    get.mockReturnValueOnce(a.p).mockReturnValueOnce(b.p).mockResolvedValue(got('WRITING'));
+    const { result, unmount } = await renderHook(() => useDetailReport(CFG, input));
+    await waitFor(() => expect(result.current.state.status).toBe('done'));
+    await act(async () => result.current.refresh());
+    await act(async () => {
+      a.resolve(got('WRITING'));
+      b.resolve(got('WRITING'));
+    });
+    const before = get.mock.calls.length;
+    await tick();
+    expect(get.mock.calls.length - before).toBe(1);
+    await unmount();
+    const after = get.mock.calls.length;
+    await tick(DETAIL_REPORT_POLL_MS * 2);
+    expect(get.mock.calls.length - after).toBe(0);
+  });
+
+  it('홈(5초 확인 없음): 끝남 푸시로 다 쓴 풀이를 받은 뒤 늦게 온 첫 확인의 쓰는 중은 버린다 — 보관도 풀이만', async () => {
+    await AsyncStorage.setItem(CFG.storageKey, JSON.stringify({ key, report, status: 'WRITING' }));
+    const a = deferred<ApiResult<DetailReportState<Fake>>>();
+    get.mockReturnValueOnce(a.p).mockResolvedValueOnce(done);
+    const { result } = await renderHook(() => useDetailReport(CFG, input, { poll: false }));
+    await waitFor(() => expect(result.current.state.status).toBe('done'));
+    await act(async () => result.current.recheck());
+    await tick(10);
+    await act(async () => a.resolve(got('WRITING')));
+    await tick(10);
+    expect(result.current.state.status).toBe('done');
+    expect(await stored()).toEqual({ key, report });
+  });
+
+  it('앱을 켤 때 받아 두기의 늦은 받기 전이 화면이 기억한 쓰는 중을 덮지 않는다', async () => {
+    const slow = deferred<ApiResult<DetailReportState<Fake>>>();
+    get.mockReturnValueOnce(slow.p);
+    const pf = prefetchDetailReport(CFG, input);
+    get.mockResolvedValue(got('NONE'));
+    const { result, unmount } = await renderHook(() => useDetailReport(CFG, input));
+    await waitFor(() => expect(result.current.state.status).toBe('none'));
+    get.mockResolvedValue(got('WRITING'));
+    await act(async () => result.current.start());
+    await waitFor(async () => expect((await stored()).status).toBe('WRITING'));
+    await act(async () => {
+      slow.resolve(got('NONE'));
+      await pf;
+    });
+    expect((await stored()).status).toBe('WRITING');
+    await unmount();
+  });
+
+  it('받는 사이 로그아웃 · 탈퇴로 기기를 지웠으면 늦은 답을 두지 않는다 — 받아 두기 · 화면 모두(세대 표식)', async () => {
+    const slow = deferred<ApiResult<DetailReportState<Fake>>>();
+    get.mockReturnValueOnce(slow.p);
+    const pf = prefetchDetailReport(CFG, input);
+    await act(async () => {});
+    await AsyncStorage.clear();
+    await act(async () => {
+      slow.resolve(done);
+      await pf;
+    });
+    expect(await stored()).toBeNull();
+    // 화면: 확인 중에 기기를 지우면 다 쓴 풀이를 보여는 주되 두지 않는다
+    const late = deferred<ApiResult<DetailReportState<Fake>>>();
+    get.mockReturnValueOnce(late.p);
+    const { result } = await renderHook(() => useDetailReport(CFG, input));
+    await act(async () => {});
+    await AsyncStorage.clear();
+    await act(async () => late.resolve(done));
+    await waitFor(() => expect(result.current.state.status).toBe('done'));
+    expect(await stored()).toBeNull();
+  });
+});
+
+describe('앱을 켤 때 받아 두기는 이번 실행에 한 번(리뷰 #87 의 5)', () => {
+  const CFG: DetailReportConfig<Fake> = { ...CONFIG, storageKey: 'byeolmyeong.testOnce.v1', rememberStatus: true };
+  it('못 받았어도(끊김) 같은 실행에서 다시 붙은 홈이 또 묻지 않는다 — 기기를 지우면(로그아웃) 새 실행처럼 다시', async () => {
+    get.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await prefetchDetailReport(CFG, input);
+    await prefetchDetailReport(CFG, input);
+    expect(get).toHaveBeenCalledTimes(1);
+    await AsyncStorage.clear();
+    await prefetchDetailReport(CFG, input);
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+});

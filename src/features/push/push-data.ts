@@ -48,7 +48,8 @@ export function parsePushData(raw: unknown): PushData | null {
 export function pushTarget(data: PushData): Href {
   switch (data.type) {
     case 'TODAY_SKY':
-      return '/today';
+      // 그날을 함께 넘긴다 — 서버가 아침에 미리 만든 날이라 오늘의 하늘이 만드는 중을 비추지 않게(리뷰 #87 의 4)
+      return { pathname: '/today', params: { date: data.date } };
     case 'READING_DONE':
       return '/reading';
     case 'ME_REPORT_DONE':

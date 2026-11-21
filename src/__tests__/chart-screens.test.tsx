@@ -447,11 +447,13 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     expect(router.replace).toHaveBeenCalledWith('/');
   });
 
-  it('맨 아래 "차트 자세히" 줄은 /chart/detail 로 간다', async () => {
+  it('맨 아래 "차트 자세히" 줄은 없다 — 목록의 마지막 줄(꿈의 자리)로 끝난다(소유자, 빌드 11). 차트 자세히 화면은 남는다(아래)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<ChartScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: S.detail }));
-    expect(router.push).toHaveBeenCalledWith('/chart/detail');
+    await screen.findByText(S.listHeading);
+    expect(screen.queryByText(strings.detail.title)).toBeNull();
+    expect(screen.queryByRole('button', { name: strings.detail.title })).toBeNull();
+    expect(screen.getAllByTestId(/^sky-row-/).at(-1)?.props.testID).toBe('sky-row-MC');
   });
 });
 

@@ -1,8 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { ListRow } from '@/components/list-row';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
@@ -22,7 +21,8 @@ const FIRST_SELECTED = 'SUN';
 /**
  * 내 하늘 지도(시안 13 · 13-1 · 13-2): 휠 + "별마다 있던 자리". 줄을 누르면 그 별이 휠에서 빛나고 시트가 열린다.
  * 이유 줄의 "하늘 지도에서 보기"(결정 054 의 4)는 `/chart?selected=MOON` 처럼 고른 별을 실어 온다 — 고를 수 없는 값이면 해를 고른다.
- * 시각 "모름" 이면 하우스 · 첫인상 · 꿈의 자리를 보여 주지 않는다. 숫자 표는 맨 아래 "차트 자세히" 에 있다.
+ * 시각 "모름" 이면 하우스 · 첫인상 · 꿈의 자리를 보여 주지 않는다. 맨 아래 "차트 자세히" 줄은 뺐다 — 목록으로 끝난다(소유자, 빌드 11 · 결정 078).
+ * 숫자 표 화면(`/chart/detail`)은 남아 있지만 앱 안에서 가는 길은 없다.
  */
 export default function ChartScreen() {
   const { loaded, chart } = useBirthProfile();
@@ -62,9 +62,6 @@ export default function ChartScreen() {
             {S.timeUnknownNote}
           </Txt>
         )}
-        <View style={styles.detail}>
-          <ListRow label={S.detail} onPress={() => router.push('/chart/detail')} />
-        </View>
       </View>
       <SkySheet chart={chart} selected={selected} visible={sheetOpen} onClose={() => setSheetOpen(false)} />
     </Screen>
@@ -76,5 +73,4 @@ const styles = StyleSheet.create({
   hint: { marginTop: Spacing.sm, textAlign: 'center' },
   list: { marginTop: Spacing.xl },
   note: { marginTop: Spacing.md },
-  detail: { marginTop: Spacing.lg },
 });

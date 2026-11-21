@@ -67,3 +67,7 @@ jest.mock('react-native-share', () => {
     },
   };
 });
+
+// Reanimated(화면 스레드 움직임 — 이유 상자의 펼침)는 라이브러리의 시험 설정으로 JS 에서 돈다. 움직임 중간은 가짜 시계(jest.useFakeTimers)로 넘겨 본다.
+// 짝: package.json 의 jest.resolver(react-native-reanimated/jest/resolver)가 네이티브 대신 웹 구현을 고른다.
+require('react-native-reanimated').setUpTests();

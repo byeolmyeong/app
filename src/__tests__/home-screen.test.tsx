@@ -16,6 +16,7 @@ import { TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
 import { MONTH_SKY_STORAGE_KEY } from '@/features/timing/use-month';
 import { ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
+import { ACCOUNT_STORAGE_KEY, refreshAccount } from '@/lib/account-store';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -659,5 +660,43 @@ describe('홈은 접속하자마자 — 받아 둔 것 먼저 · 첫 상태까�
     expect(skeletons()).toHaveLength(0);
     await act(async () => finish({ ok: true, data: sky }));
     expect(screen.getByTestId('home-today-card')).toBeTruthy();
+  });
+});
+
+describe('계정은 기기 · 메모리에서 첫 그림부터(소유자 "이름이랑 프로필이 늦게 와")', () => {
+  const me = { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false };
+  beforeEach(async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
+  });
+
+  it('기기에 둔 계정이 있으면 /account 답 전에 이름 · 프로필 그림 — 자리표 없이', async () => {
+    await AsyncStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify({ account: me }));
+    mockApi.getMyAccount.mockReturnValue(new Promise(() => {}));
+    await render(<HomeScreen />);
+    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(screen.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
+    expect(screen.queryByTestId('avatar-placeholder', { includeHiddenElements: true })).toBeNull();
+  });
+
+  it('처음(기기에도 없음)이면 그림 · 이름 자리에 같은 크기의 흐린 자리표, 답이 오면 그 자리에 그림 · 이름', async () => {
+    let answer: (v: Awaited<ReturnType<typeof api.getMyAccount>>) => void = () => {};
+    mockApi.getMyAccount.mockReturnValue(new Promise((r) => (answer = r)));
+    await render(<HomeScreen />);
+    // 자리표는 화면 읽기에서 숨긴다
+    const hidden = { includeHiddenElements: true };
+    expect(await screen.findByTestId('avatar-placeholder', hidden)).toBeTruthy();
+    expect(screen.getByTestId('nickname-placeholder', hidden)).toBeTruthy();
+    await act(async () => answer({ ok: true, data: me }));
+    expect(screen.getByText('새벽별 님')).toBeTruthy();
+    expect(screen.queryByTestId('avatar-placeholder', hidden)).toBeNull();
+  });
+
+  it('정지 문이 로그인 때 받은 계정을 홈이 같이 쓴다 — /account 를 한 번 더 부르지 않는다', async () => {
+    await refreshAccount();
+    expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
+    await render(<HomeScreen />);
+    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,7 +4,8 @@ import { AppState } from 'react-native';
 
 import { clearSuspended, markSuspended, suspensionRedirect, useSuspended } from '@/features/auth/suspension';
 import { getSession } from '@/features/auth/use-session';
-import { api, setSuspendedHandler } from '@/lib/api';
+import { refreshAccount } from '@/lib/account-store';
+import { setSuspendedHandler } from '@/lib/api';
 
 /** 로그인 직후 정지인지 묻는 동안 화면을 가리는 최대 시간. 답이 늦으면 가림을 걷고(정지가 아닌 것으로 보고) 나중에 온 403 · 답으로 보낸다 */
 const CHECK_COVER_MAX_MS = 3000;
@@ -45,8 +46,9 @@ export function useSuspensionGate(signedIn: boolean, mounted: boolean): boolean 
     if (!signedIn) return;
     let alive = true;
     const cap = setTimeout(() => alive && setChecked(true), CHECK_COVER_MAX_MS);
-    // 정지면 getMyAccount 가 알림으로 표시를 켠다. 그 밖(정지 아님 · 받지 못함)은 꺼 둔 채로 둔다
-    void api.getMyAccount().finally(() => {
+    // 정지면 getMyAccount 가 알림으로 표시를 켠다. 그 밖(정지 아님 · 받지 못함)은 꺼 둔 채로 둔다.
+    // 받은 계정은 계정 보관 · 메모리에 둔다 — 홈 · 마이는 이 답을 같이 써서 /account 를 한 번 더 부르지 않는다
+    void refreshAccount().finally(() => {
       if (!alive) return;
       clearTimeout(cap);
       setChecked(true);
@@ -61,7 +63,7 @@ export function useSuspensionGate(signedIn: boolean, mounted: boolean): boolean 
     if (!signedIn || !suspended) return;
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
-      void api.getMyAccount().then((res) => {
+      void refreshAccount().then((res) => {
         if (res.ok && !res.data.suspended) clearSuspended();
       });
     });

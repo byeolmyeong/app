@@ -10,6 +10,7 @@ import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-nativ
 import { BackChevron } from '@/components/back-chevron';
 import { Sheet } from '@/components/sheet';
 import { TextLink } from '@/components/text-link';
+import { inputText } from '@/components/input-text';
 import { Txt } from '@/components/txt';
 import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing, StepLayout, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -127,7 +128,8 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
           autoCorrect={false}
           autoCapitalize="none"
           returnKeyType="search"
-          style={[styles.searchInput, searching && styles.searchValue]}
+          // 글자는 칸의 세로 가운데(iOS 한 줄은 lineHeight 없이 — components/input-text.ts)
+          style={[inputText('item'), styles.searchInput, searching && styles.searchValue]}
         />
         {searching ? (
           <Pressable accessibilityRole="button" accessibilityLabel={B.clearSearch} hitSlop={Spacing.xs} onPress={() => setQuery('')} style={styles.clear}>
@@ -282,7 +284,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.sheetFill,
   },
   searchFocused: { borderColor: Colors.primary },
-  searchInput: { flex: 1, ...Typography.item, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  searchInput: { flex: 1, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
   /** 검색 칸 아래 안내(받는 중 · 받지 못함) */
   below: { marginTop: Spacing.lg },
   /** 목록: 검색 칸에서 8 아래부터 시트 바닥까지 */

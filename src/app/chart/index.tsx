@@ -6,11 +6,12 @@ import { ListRow } from '@/components/list-row';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/txt';
+import { usePushSettled } from '@/components/use-push-settled';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { showsHouses, skyDetail } from '@/features/chart/chart-rows';
-import { ChartWheel } from '@/features/chart/ChartWheel';
+import { ChartWheel, ChartWheelPlaceholder } from '@/features/chart/ChartWheel';
 import { SkyList } from '@/features/chart/sky-list';
 import { SkySheet } from '@/features/chart/sky-sheet';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
@@ -31,6 +32,8 @@ export default function ChartScreen() {
   const [picked, setPicked] = useState<string | null>(null);
   const selected = picked ?? (asked && chart && skyDetail(chart, asked) ? asked : FIRST_SELECTED);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // 휠 SVG(고리 · 하우스 · 별 점과 이름)는 무겁다 — 미는 동안에는 같은 크기의 자리만, 밀기가 끝난 뒤 그린다(빌드 10)
+  const settled = usePushSettled();
   const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (!chart)
@@ -49,7 +52,7 @@ export default function ChartScreen() {
     <Screen nav={nav}>
       <View>
         <View style={styles.wheel}>
-          <ChartWheel chart={chart} selected={selected} />
+          {settled ? <ChartWheel chart={chart} selected={selected} /> : <ChartWheelPlaceholder chart={chart} />}
         </View>
         <Txt variant="note" color="hint" style={styles.hint}>
           {S.hint}

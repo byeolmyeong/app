@@ -159,7 +159,7 @@ export function ChartWheel({ chart, selected }: ChartWheelProps) {
   const name = selected ? selectedName(selected) : undefined;
   const a11y = name ? `${strings.skyMap.wheelLabel}. ${strings.skyMap.selectedPrefix}${name}` : strings.skyMap.wheelLabel;
   return (
-    <View style={styles.box} accessibilityRole="image" accessibilityLabel={a11y}>
+    <View testID="sky-wheel" style={styles.box} accessibilityRole="image" accessibilityLabel={a11y}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${w.size} ${w.size}`}>
         <Circle cx={w.center} cy={w.center} r={w.rOuter} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1.2} />
         <Circle cx={w.center} cy={w.center} r={w.rSign} fill={Colors.paper} stroke={Colors.hair} strokeWidth={1} />
@@ -308,6 +308,23 @@ export function MiniWheel({ chart, bodies, houses, label }: MiniWheelProps) {
               <Circle testID="mini-wheel-dot" cx={b.dot.x} cy={b.dot.y} r={L.wheelDot} fill={Colors.primary} />
             </G>
           ))}
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * 휠을 그리기 전의 자리(내 하늘 지도 — 밀기가 끝난 뒤 휠을 그린다, components/use-push-settled). 휠과 같은 상자에 바탕 고리 셋만 —
+ * 휠이 들어와도 아래 목록이 움직이지 않고, 고리 위에 선 · 이름 · 별 점만 더해진다.
+ */
+export function ChartWheelPlaceholder({ chart }: { chart: Chart }) {
+  const w = wheelLayout(chart);
+  return (
+    <View testID="wheel-placeholder" style={styles.box} aria-hidden importantForAccessibility="no-hide-descendants">
+      <Svg width="100%" height="100%" viewBox={`0 0 ${w.size} ${w.size}`}>
+        <Circle cx={w.center} cy={w.center} r={w.rOuter} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1.2} />
+        <Circle cx={w.center} cy={w.center} r={w.rSign} fill={Colors.paper} stroke={Colors.hair} strokeWidth={1} />
+        <Circle cx={w.center} cy={w.center} r={w.rInner} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1} />
       </Svg>
     </View>
   );

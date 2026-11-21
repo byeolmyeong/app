@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
@@ -7,6 +7,8 @@ import ChartDetailScreen from '@/app/chart/detail';
 import ChartScreen from '@/app/chart/index';
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
+import { PUSH_SETTLE_FALLBACK_MS } from '@/components/use-push-settled';
+import { Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { getSession } from '@/features/auth/use-session';
 import { loadBirth, saveBirth } from '@/features/chart/use-birth-profile';
@@ -21,7 +23,24 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
   useLocalSearchParams: jest.fn(() => ({})),
+  // 밀기 끝(transitionEnd): 따로 붙잡지 않으면 이미 끝난 것으로 곧바로 알린다
+  useNavigation: () => mockNavigation,
 }));
+type TransitionListener = (e: { data?: { closing: boolean } }) => void;
+const mockTransition = { held: false, listeners: [] as TransitionListener[] };
+const mockNavigation = {
+  addListener: (type: string, cb: TransitionListener) => {
+    if (type !== 'transitionEnd') return () => undefined;
+    if (!mockTransition.held) {
+      cb({ data: { closing: false } });
+      return () => undefined;
+    }
+    mockTransition.listeners.push(cb);
+    return () => {
+      mockTransition.listeners = mockTransition.listeners.filter((l) => l !== cb);
+    };
+  },
+};
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   api: {
@@ -452,6 +471,49 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     await render(<ChartScreen />);
     await fireEvent.press(await screen.findByRole('button', { name: S.detail }));
     expect(router.push).toHaveBeenCalledWith('/chart/detail');
+  });
+
+  describe('휠은 밀기가 끝난 뒤에(빌드 10 — 아이폰 기본 밀기 그대로, 매끄럽게)', () => {
+    beforeEach(() => {
+      mockTransition.held = true;
+      mockTransition.listeners = [];
+      jest.useFakeTimers();
+    });
+    afterEach(() => {
+      mockTransition.held = false;
+      jest.useRealTimers();
+    });
+
+    it('미는 동안에는 휠과 같은 크기의 자리만 — 별 목록은 바로, 들어오는 밀기가 끝나면 그 자리에 휠', async () => {
+      await saveBirth({ profile, chart: fixtures.chart });
+      (useLocalSearchParams as jest.Mock).mockReturnValue({ selected: 'MOON' });
+      await render(<ChartScreen />);
+      expect(await screen.findByText(S.listHeading)).toBeTruthy();
+      const place = StyleSheet.flatten(screen.getByTestId('wheel-placeholder', { includeHiddenElements: true }).props.style);
+      expect(place).toMatchObject({ width: '100%', maxWidth: Sizes.skyWheel, aspectRatio: 1 });
+      expect(screen.queryAllByTestId('wheel-house-line')).toHaveLength(0);
+      expect(screen.getAllByTestId(/^sky-row-/)).toHaveLength(12);
+      expect(screen.getByTestId('sky-row-MOON').props.accessibilityState).toMatchObject({ selected: true });
+      // 나가는 밀기의 끝으로는 그리지 않는다
+      await act(async () => mockTransition.listeners.forEach((cb) => cb({ data: { closing: true } })));
+      expect(screen.queryAllByTestId('wheel-house-line')).toHaveLength(0);
+      await act(async () => mockTransition.listeners.forEach((cb) => cb({ data: { closing: false } })));
+      expect(screen.getAllByTestId('wheel-house-line')).toHaveLength(12);
+      expect(screen.getByLabelText(`${S.wheelLabel}. ${S.selectedPrefix}${G.bodies.MOON.name}`)).toBeTruthy();
+      expect(screen.queryByTestId('wheel-placeholder', { includeHiddenElements: true })).toBeNull();
+      // 자리와 휠의 상자는 같다 — 휠이 들어와도 아래 목록이 움직이지 않는다
+      expect(StyleSheet.flatten(screen.getByTestId('sky-wheel').props.style)).toEqual(place);
+      (useLocalSearchParams as jest.Mock).mockReturnValue({});
+    });
+
+    it('밀기 끝을 듣지 못해도(첫 화면 · 이벤트 없음) 잠시 뒤에는 휠을 그린다', async () => {
+      await saveBirth({ profile, chart: fixtures.chart });
+      await render(<ChartScreen />);
+      expect(await screen.findByText(S.listHeading)).toBeTruthy();
+      expect(screen.queryAllByTestId('wheel-house-line')).toHaveLength(0);
+      await act(() => jest.advanceTimersByTime(PUSH_SETTLE_FALLBACK_MS));
+      expect(screen.getAllByTestId('wheel-house-line')).toHaveLength(12);
+    });
   });
 });
 

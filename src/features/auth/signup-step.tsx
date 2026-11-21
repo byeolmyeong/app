@@ -4,7 +4,7 @@
  * 진행 막대는 단계가 바뀔 때 다음 칸이 왼쪽에서 오른쪽으로 차오르고(뒤로 가면 줄어들고) 동작 줄이기면 바로 바뀐다(소유자 2026-11-19).
  */
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BackChevron } from '@/components/back-chevron';
@@ -38,40 +38,70 @@ let shownStep = 0;
 
 const filledAt = (count: number) => (i: number) => (i < count ? 1 : 0);
 
+/** 차오르기 · 줄기는 네이티브 드라이버로(웹은 없다) */
+const useNativeDriver = Platform.OS !== 'web';
+
+/** 칸 하나의 채움(scaleX 0~1): 보통은 단계 값 그대로의 숫자, 움직이는 동안만 Animated 값 */
+type Fill = number | Animated.Value;
+
+/** 지난 단계 모양 → 이 단계 모양으로 움직이는 동안의 칸들. 같은 단계면 움직이지 않는다(null) */
+type Move = { from: number; fills: Fill[]; moving: [Animated.Value, number][] };
+
+function moveBetween(from: number, step: number): Move | null {
+  if (from === step) return null;
+  const was = filledAt(from);
+  const to = filledAt(step);
+  const moving: [Animated.Value, number][] = [];
+  const fills = Array.from({ length: SIGNUP_STEPS }, (_, i): Fill => {
+    if (was(i) === to(i)) return to(i);
+    const value = new Animated.Value(was(i));
+    moving.push([value, to(i)]);
+    return value;
+  });
+  return { from, fills, moving };
+}
+
 /**
- * 진행 막대 칸마다의 채움(0~1). 화면에 들어올 때(뒤로 돌아올 때 포함) 지난 단계의 모양에서 이 단계의 모양으로 바뀐다.
+ * 진행 막대 칸마다의 채움. 화면에 들어올 때(뒤로 돌아올 때 포함) 지난 단계의 모양에서 이 단계의 모양으로 바뀐다.
+ * 움직임이 끝나면 단계 값에서 바로 계산한 숫자로 그린다 — 키보드 · 시트 · 화면 크기 변화로 다시 그리거나 레이아웃이 바뀌어도
+ * 움직임 값(기기 쪽에서 따로 돌던 값)에 기대지 않아 단계 값대로 남는다(소유자 빌드 7: 키보드가 올라오면 채운 칸이 사라졌다).
  * 동작 줄이기면 움직이지 않고 바로 바꾼다.
  */
-function useProgressFills(step: number) {
-  const [fills] = useState(() => Array.from({ length: SIGNUP_STEPS }, (_, i) => new Animated.Value(filledAt(step)(i))));
+function useProgressFills(step: number): Fill[] {
+  // 처음 그릴 때부터 지난 단계의 모양(들어오며 이 단계로 움직인다) — 한 번 이 단계 모양으로 그렸다가 되돌아가 깜빡이지 않게
+  const [move, setMove] = useState(() => moveBetween(shownStep || step, step));
+  const prepared = useRef(move);
   useFocusEffect(
     useCallback(() => {
       const from = shownStep || step;
       shownStep = step;
-      const to = filledAt(step);
-      fills.forEach((v, i) => v.setValue(filledAt(from)(i)));
-      if (from === step) return;
+      // 처음 들어올 때는 그릴 때 만든 움직임을 그대로 쓰고, 뒤로 돌아올 때는 새로 만든다
+      const next = prepared.current?.from === from ? prepared.current : moveBetween(from, step);
+      prepared.current = null;
+      setMove(next);
+      if (!next) return;
       let cancelled = false;
       let running: Animated.CompositeAnimation | null = null;
       void reduceMotionNow().then((reduce) => {
         if (cancelled) return;
-        if (reduce) return fills.forEach((v, i) => v.setValue(to(i)));
-        const moving = fills.map((v, i) => [v, i] as const).filter(([, i]) => filledAt(from)(i) !== to(i));
+        if (reduce) return setMove(null);
         running = Animated.parallel(
-          moving.map(([v, i]) =>
-            Animated.timing(v, { toValue: to(i), duration: L.progressMs, easing: Easing.out(Easing.ease), useNativeDriver: false }),
+          next.moving.map(([value, toValue]) =>
+            Animated.timing(value, { toValue, duration: L.progressMs, easing: Easing.out(Easing.ease), useNativeDriver }),
           ),
         );
-        running.start();
+        running.start(({ finished }) => {
+          if (finished && !cancelled) setMove(null);
+        });
       });
       return () => {
         cancelled = true;
         running?.stop();
-        fills.forEach((v, i) => v.setValue(to(i)));
+        setMove(null);
       };
-    }, [step, fills]),
+    }, [step]),
   );
-  return fills;
+  return move?.fills ?? Array.from({ length: SIGNUP_STEPS }, (_, i) => filledAt(step)(i));
 }
 
 /** 키보드가 떠 있는가(iOS · 안드로이드). 웹은 언제나 false */
@@ -116,10 +146,7 @@ function SignupStepScreen({ step, onBack, title, guide, footer, children }: Sign
         <View accessible accessibilityLabel={`${step}${strings.steps.separator}${SIGNUP_STEPS}`} style={styles.progress}>
           {fills.map((fill, i) => (
             <View key={i} style={styles.bar}>
-              <Animated.View
-                testID={`progress-fill-${i}`}
-                style={[styles.barFill, { width: fill.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]}
-              />
+              <Animated.View testID={`progress-fill-${i}`} style={[styles.barFill, { transform: [{ scaleX: fill }] }]} />
             </View>
           ))}
         </View>
@@ -152,8 +179,14 @@ const styles = StyleSheet.create({
   back: { width: L.back, height: L.back, marginLeft: L.backInset, alignItems: 'center', justifyContent: 'center' },
   progress: { flexDirection: 'row', gap: L.progressGap, paddingHorizontal: ScreenPaddingX },
   bar: { flex: 1, height: L.progressHeight, borderRadius: L.progressHeight, backgroundColor: Colors.hair, overflow: 'hidden' },
-  /** 켜진 부분(왼쪽에서부터 찬다) */
-  barFill: { height: L.progressHeight, borderRadius: L.progressHeight, backgroundColor: Colors.primary },
+  /** 켜진 부분: 칸 폭 그대로 두고 왼쪽 기준 scaleX 로 찬다(폭이 바뀌어도 비율 그대로) */
+  barFill: {
+    width: '100%',
+    height: L.progressHeight,
+    borderRadius: L.progressHeight,
+    backgroundColor: Colors.primary,
+    transformOrigin: 'left',
+  },
   content: { flexGrow: 1, paddingHorizontal: ScreenPaddingX },
   titleBlock: { gap: L.titleGap, marginTop: L.titleTop },
   footer: { paddingHorizontal: ScreenPaddingX },

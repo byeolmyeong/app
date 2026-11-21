@@ -85,6 +85,12 @@ describe('계정(/my/account, 보드 16-1)', () => {
     expect(router.push).toHaveBeenLastCalledWith('/my/delete');
   });
 
+  it('프로필 그림 버튼의 읽기 이름은 "프로필 수정"(소유자 2026-11-21)', async () => {
+    await render(<AccountScreen />);
+    await screen.findByText('새벽별');
+    expect(screen.getByRole('button', { name: '프로필 수정' })).toBeTruthy();
+  });
+
   it('프로필 그림을 누르면 고르기 시트(제목 없음), 다른 그림을 확인하면 PATCH 하고 바뀐 그림만 — 성공 알림은 없다(소유자 2026-11-21)', async () => {
     mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...account, avatar: 5 } });
     await render(<AccountScreen />);

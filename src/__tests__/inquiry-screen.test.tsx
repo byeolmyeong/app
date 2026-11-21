@@ -9,6 +9,7 @@ import OldInquiryScreen from '@/app/settings/inquiry';
 import { ScreenPaddingX } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { api, type InquiryItem } from '@/lib/api';
+import { forgetMemory } from '@/lib/device-memory';
 
 /** 화면을 떠났다 돌아옴을 흉내 낸다: key 를 바꾸고 다시 그리면 포커스 효과가 정리되고 다시 돈다 */
 const mockFocus = { key: 0 };
@@ -57,6 +58,8 @@ const open: InquiryItem = { id: 'b', category: 'IDEA', body: '별명을 다시 �
 let nowSpy: jest.SpyInstance;
 beforeEach(() => {
   jest.clearAllMocks();
+  // 내역의 이번 실행 메모리는 모듈 하나라 시험마다 비운다
+  forgetMemory();
   mockSession.status = 'signedIn';
   mockOnline.value = true;
   nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
@@ -79,6 +82,27 @@ describe('문의 내역(/my/inquiries, 보드 16-8)', () => {
     expect(shown.indexOf(open.body)).toBeLessThan(shown.indexOf('아침에'));
     await fireEvent.press(screen.getByText(I.newInquiry));
     expect(router.push).toHaveBeenLastCalledWith('/my/inquiries/new');
+  });
+
+  it('다시 열면 첫 그림부터 지난 내역을 그리고(뼈대 없음) 뒤에서 새로 받는다 — 기기를 지우면(로그아웃 등) 비워진다(소유자 "하위 화면이 깨지는 느낌")', async () => {
+    mockApi.getInquiries.mockResolvedValue({ ok: true, data: [answered] });
+    const first = await render(<InquiriesScreen />);
+    expect(await screen.findByText('아침에 오늘의 하늘 알림이 오지 않아요.')).toBeTruthy();
+    await first.unmount();
+    // 다시 열 때 서버는 아직 답하지 않았다
+    let answer: (v: { ok: true; data: InquiryItem[] }) => void = () => {};
+    mockApi.getInquiries.mockReturnValue(new Promise((r) => (answer = r)));
+    const again = await render(<InquiriesScreen />);
+    expect(screen.getByText('아침에 오늘의 하늘 알림이 오지 않아요.')).toBeTruthy();
+    expect(screen.queryByTestId('skeleton')).toBeNull();
+    await act(async () => answer({ ok: true, data: [open, answered] }));
+    expect(screen.getByText(open.body)).toBeTruthy();
+    await again.unmount();
+    // 로그아웃 · 새 세션 · 탈퇴는 기기를 지우며 메모리도 비운다 — 앞사람 내역이 남지 않는다
+    forgetMemory();
+    mockApi.getInquiries.mockReturnValue(new Promise(() => {}));
+    await render(<InquiriesScreen />);
+    expect(screen.queryByText(open.body)).toBeNull();
   });
 
   it('줄을 누르면 그 문의의 답변 보기로 간다', async () => {

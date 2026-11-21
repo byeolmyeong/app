@@ -5,6 +5,9 @@ import { Linking, Platform, StyleSheet } from 'react-native';
 
 import NotificationsScreen from '@/app/my/notifications';
 import { strings } from '@/content/strings';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { resetAccountStoreForTest, setAccountLocal, useStoredAccount } from '@/lib/account-store';
 import { api, type ApiResult, type MyAccount } from '@/lib/api';
 
 jest.mock('expo-router', () => ({
@@ -28,8 +31,11 @@ const full: MyAccount = { ...base, pushConsent: true, todaySkyPush: true, todayS
 const sw = (label: string) => screen.getByRole('switch', { name: label });
 const isOn = (label: string) => sw(label).props.accessibilityState.checked;
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  // 계정 보관(#96)은 모듈 하나라 시험마다 비운다
+  resetAccountStoreForTest();
+  await AsyncStorage.clear();
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: full });
 });
 
@@ -185,6 +191,56 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
     await fireEvent.press(await screen.findByText(strings.states.loadFail.retry));
     expect(await screen.findByText(N.push.label)).toBeTruthy();
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(2);
+  });
+
+  it('기기에 둔 계정이 있으면 서버 답 전 첫 그림부터 설정을 그린다(뼈대 없음) — 바꾼 답은 계정 보관에도 둔다(소유자 "하위 화면이 깨지는 느낌")', async () => {
+    await setAccountLocal(full);
+    mockApi.getMyAccount.mockReturnValue(new Promise<ApiResult<MyAccount>>(() => {}));
+    mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...full, marketingConsent: true } });
+    let seen: MyAccount | null | undefined;
+    function Probe() {
+      seen = useStoredAccount();
+      return null;
+    }
+    await render(
+      <>
+        <NotificationsScreen />
+        <Probe />
+      </>,
+    );
+    // 서버는 답하지 않았지만 둔 계정으로 바로
+    expect(isOn(N.push.label)).toBe(true);
+    expect(within(screen.getByRole('button', { name: N.time })).getByText('오전 8:00')).toBeTruthy();
+    expect(screen.queryByTestId('skeleton')).toBeNull();
+    // 서버 답 전에 바꿔도 된다(둔 계정이 되돌릴 곳) — 답은 계정 보관에도
+    await fireEvent.press(sw(N.marketing.label));
+    await waitFor(() => expect(seen?.marketingConsent).toBe(true));
+    expect(isOn(N.marketing.label)).toBe(true);
+  });
+
+  it('들어올 때 보낸 GET 이 바꾼 뒤에 옛 값으로 와도 화면 · 계정 보관은 바꾼 값(#106 리뷰)', async () => {
+    await setAccountLocal(full);
+    let answerGet: (v: ApiResult<MyAccount>) => void = () => {};
+    mockApi.getMyAccount.mockReturnValue(new Promise((r) => (answerGet = r)));
+    mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...full, marketingConsent: true } });
+    let seen: MyAccount | null | undefined;
+    function Probe() {
+      seen = useStoredAccount();
+      return null;
+    }
+    await render(
+      <>
+        <NotificationsScreen />
+        <Probe />
+      </>,
+    );
+    await fireEvent.press(sw(N.marketing.label));
+    await waitFor(() => expect(seen?.marketingConsent).toBe(true));
+    await act(async () => answerGet({ ok: true, data: full }));
+    await act(async () => {});
+    expect(isOn(N.marketing.label)).toBe(true);
+    expect(seen?.marketingConsent).toBe(true);
+    expect(JSON.parse((await AsyncStorage.getItem('byeolmyeong.account.v1')) ?? 'null')).toEqual({ account: { ...full, marketingConsent: true } });
   });
 
   it('0.3초가 넘게 걸리면 다 그려진 화면과 같은 카드 셋 · 같은 줄 수의 뼈대(결정 065)', async () => {

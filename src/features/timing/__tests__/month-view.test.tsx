@@ -94,6 +94,18 @@ describe('이번 달(결정 049 의 2, 캔버스 14-1)', () => {
     expect(TimingLayout.month.arrowNudge).toBe(1);
   });
 
+  it('달을 바꿔도 달력 격자와 칸은 다시 붙지 않고 그 자리에서 바뀐다(소유자 지적 — 처음 넘길 때 반짝임, 빌드 11)', async () => {
+    const props = { base: '2026-11', canPrev: true, canNext: true, onMove: jest.fn(), onRetry: jest.fn(), today: '2026-11-19', onDay: jest.fn() };
+    const view = await render(<MonthView {...props} shown="2026-11" state={{ status: 'done', sky: nov }} />);
+    const grid = screen.getByTestId('month-calendar');
+    const cells = () => screen.getByTestId('month-grid').children;
+    const tenth = cells()[10];
+    await view.rerender(<MonthView {...props} shown="2026-12" state={{ status: 'done', sky: quiet('2026-12') }} />);
+    expect(screen.getByText('2026년 12월')).toBeTruthy();
+    expect(screen.getByTestId('month-calendar')).toBe(grid);
+    expect(cells()[10]).toBe(tenth);
+  });
+
   it('‹ › 는 처음 받은 달의 지난달 · 다음 달 끝에서 막힌다', async () => {
     await render(<Harness onDay={jest.fn()} />);
     await screen.findByText('2026년 11월');

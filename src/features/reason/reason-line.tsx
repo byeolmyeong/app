@@ -1,8 +1,6 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { Path } from 'react-native-svg';
 
 import { useReduceMotion } from '@/components/byeoli';
@@ -12,6 +10,7 @@ import { Txt } from '@/components/txt';
 import { Colors, FontWeight, Motion, ReasonLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { MiniWheel } from '@/features/chart/ChartWheel';
+import { measureReveal, RevealBody, RevealTurn, runReveal, useReveal, type Reveal } from '@/features/reason/reason-reveal';
 import { josa, lookup, reasonSentence, type ReasonSentence } from '@/features/reason/reason-sentence';
 import { reasonFocus, reasonTerms, type ReasonTerm } from '@/features/reason/reason-terms';
 import type { Chart, Reason } from '@/lib/api';
@@ -54,14 +53,13 @@ function SentenceText({ sentence }: { sentence: ReasonSentence }) {
 }
 
 /** 펼침 상자의 꺾쇠: 닫힘 ⌃ · 펼침 ⌄(결정 061 의 7) — 같은 꺾쇠를 펼침과 같은 진행 값으로 반 바퀴 돌린다 */
-function Chevron({ progress }: { progress: SharedValue<number> }) {
-  const turn = useAnimatedStyle(() => ({ transform: [{ rotate: `${progress.value * 180}deg` }] }));
+function Chevron({ reveal }: { reveal: Reveal }) {
   return (
-    <Animated.View testID="reason-chevron" style={turn}>
+    <RevealTurn reveal={reveal} testID="reason-chevron">
       <Svg width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
         <Path d="M6 15l6-6 6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
-    </Animated.View>
+    </RevealTurn>
   );
 }
 
@@ -98,17 +96,16 @@ const focusName = (key: string) =>
  * 작은 지도(그 근거의 별 · 칸만 빛남, 지나가는 별은 없음) · 용어 줄 1~3(물음표는 말풍선, 한 번에 하나) · "하늘 지도에서 보기"
  * (그 별을 고른 채로 `/chart`). 문장을 만들 수 없는 근거(모르는 kind · 사전에 없는 값)면 아무것도 그리지 않는다(결정 054 의 7).
  * 펼치고 접을 때 높이가 부드럽게 늘고 줄며 내용이 흐려졌다 나타나고 꺾쇠가 반 바퀴 돈다(소유자 2026-11-21, 시트와 같은 Motion 값).
- * 꺾쇠 회전 · 높이 · 보임을 진행 값 하나(0→1, Reanimated — 화면 스레드에서 돈다)로 같은 길이 · 같은 곡선에 묶는다. 펼친 내용은 처음부터 그려 두고
+ * 꺾쇠 회전 · 높이 · 보임을 진행 값 하나(0→1)로 같은 길이 · 같은 곡선에 묶는다 — 앱은 Reanimated(화면 스레드), 웹은 RN Animated
+ * (reason-reveal.tsx · .web.tsx, 모양은 reason-reveal-shape.ts — 웹 번들에 Reanimated 를 싣지 않는다). 펼친 내용은 처음부터 그려 두고
  * (접힌 동안 높이 0 · 투명 · 누를 수 없음 · 화면 읽기에서 숨김) 절대 위치로 재 둔다 — 높이 0 칸 안에서도 제 높이를 잰다(iOS 에서 높이를 못 재
  * 회전이 끝난 뒤 내용이 툭 나타나던 것, 소유자 2026-11-21 빌드 8). 내용은 진행의 앞 1/3 에서 나타난다. 동작 줄이기면 바로 바뀐다.
  */
 export function ReasonLine({ reason, chart, today = false, style }: ReasonLineProps) {
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState<string | null>(null);
-  /** 펼친 내용의 실제 높이(처음부터 그려 두고 절대 위치로 잰다) — 0 에서 이 높이까지 늘인다 */
-  const contentHeight = useSharedValue(0);
-  /** 꺾쇠 회전 · 높이 · 보임을 함께 움직이는 진행 값(접힘 0 → 펼침 1) */
-  const progress = useSharedValue(0);
+  /** 꺾쇠 회전 · 높이 · 보임을 함께 움직이는 진행 값(접힘 0 → 펼침 1)과 펼친 내용의 실제 높이(처음부터 그려 두고 절대 위치로 잰다) */
+  const reveal = useReveal();
   /** 다 펼쳐졌다 — 높이를 묶지 않고 잘라내지 않는다(용어 말풍선이 칸 밖으로 나오고, 말풍선으로 줄이 길어져도 그대로) */
   const [settled, setSettled] = useState(false);
   /** 누를 때마다 올리는 번호 — 끝난 펼침의 알림이 그 뒤에 시작한 접기를 "다 펼침" 으로 덮지 않게(화면 스레드의 알림은 늦게 온다) */
@@ -124,16 +121,8 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
     setSettled(false);
     const duration = reduce ? 0 : next ? Motion.openMs : Motion.closeMs;
     const mine = ++turn.current;
-    progress.set(
-      withTiming(next ? 1 : 0, { duration, easing: Easing.bezier(...Motion.openCurve) }, (finished) => {
-        if (finished && next) scheduleOnRN(settle, mine);
-      }),
-    );
+    runReveal(reveal, next ? 1 : 0, duration, next ? () => settle(mine) : undefined);
   };
-  const reveal = useAnimatedStyle(() => ({
-    height: progress.value * contentHeight.value,
-    opacity: interpolate(progress.value, [0, 1 / 3], [0, 1], 'clamp'),
-  }));
   // 시각을 알아야 하우스 · 상승점 · 중천을 그린다(차트의 timeKnown — 이중 안전, 결정 054 의 6)
   const timeKnown = chart !== null && chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
   const sentence = reasonSentence(reason, { timeKnown, today });
@@ -155,19 +144,20 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
           </Txt>
           <SentenceText sentence={sentence} />
         </View>
-        <Chevron progress={progress} />
+        <Chevron reveal={reveal} />
       </Pressable>
-      <Animated.View
+      <RevealBody
+          reveal={reveal}
           testID="reason-body"
           pointerEvents={open ? 'auto' : 'none'}
           accessibilityElementsHidden={!open}
           importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
-          style={[settled ? styles.revealOpen : styles.reveal, reveal]}>
+          style={settled ? styles.revealOpen : styles.reveal}>
           <View
             testID="reason-measure"
             style={styles.measure}
             onLayout={(e) => {
-              contentHeight.set(e.nativeEvent.layout.height);
+              measureReveal(reveal, e.nativeEvent.layout.height);
             }}>
           {map ? (
             <MiniWheel
@@ -190,7 +180,7 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
             {/* 펼치면 상자 아래 여백이 늘어나는 만큼 — 높이와 함께 늘고 준다 */}
             <View style={styles.openSpace} />
           </View>
-        </Animated.View>
+        </RevealBody>
     </View>
   );
 }

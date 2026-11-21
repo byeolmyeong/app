@@ -220,6 +220,9 @@ function Home({ onRetry }: { onRetry: () => void }) {
       </Screen>
     );
   }
+  // 로그인 전 · 가입 중이면 루트 가드가 소개 · 로그인 · 가입 단계로 보낸다 — 그 가림막 아래에서 출생 정보 입력을 그리지 않는다
+  // (입력이 곳 목록 GET /places 를 받는다 — 처음 온 사람이 쓰지 않는 요청, 성능 계획 4)
+  if (session.status !== 'signedIn') return <Screen nav={nav}>{null}</Screen>;
   return (
     <Screen nav={nav}>
       <View style={styles.intro}>

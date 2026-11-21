@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -111,6 +111,11 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
   const progress = useSharedValue(0);
   /** 다 펼쳐졌다 — 높이를 묶지 않고 잘라내지 않는다(용어 말풍선이 칸 밖으로 나오고, 말풍선으로 줄이 길어져도 그대로) */
   const [settled, setSettled] = useState(false);
+  /** 누를 때마다 올리는 번호 — 끝난 펼침의 알림이 그 뒤에 시작한 접기를 "다 펼침" 으로 덮지 않게(화면 스레드의 알림은 늦게 온다) */
+  const turn = useRef(0);
+  const settle = (mine: number) => {
+    if (mine === turn.current) setSettled(true);
+  };
   const reduce = useReduceMotion();
   const toggle = () => {
     const next = !open;
@@ -118,9 +123,10 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
     setTip(null);
     setSettled(false);
     const duration = reduce ? 0 : next ? Motion.openMs : Motion.closeMs;
+    const mine = ++turn.current;
     progress.set(
       withTiming(next ? 1 : 0, { duration, easing: Easing.bezier(...Motion.openCurve) }, (finished) => {
-        if (finished && next) scheduleOnRN(setSettled, true);
+        if (finished && next) scheduleOnRN(settle, mine);
       }),
     );
   };

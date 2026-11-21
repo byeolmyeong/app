@@ -18,6 +18,8 @@ const sun: Reason = { when: 'BIRTH', items: [{ kind: 'PLACEMENT', body: 'SUN', s
 const TEXT = '태어날 때 나의 중심(해)이 호기심 많은 쌍둥이자리, 일상의 자리(6하우스)에 있었어요';
 
 beforeEach(() => jest.clearAllMocks());
+// 단언이 실패해도 가짜 시계가 다음 시험으로 넘어가지 않게
+afterEach(() => jest.useRealTimers());
 
 describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 · 12-1~12-3, 결정 054 의 4)', () => {
   it('접혀 있으면 "이렇게 풀이한 이유" 와 한 문장만 보이고, 화면 읽기는 펼칠 수 있는 단추로 읽는다', async () => {

@@ -143,10 +143,11 @@ describe('뼈대 = 다 그려진 화면의 칸 · 순서(결정 071)', () => {
     let resolve: (r: { ok: true; data: { status: 'NONE' } }) => void = () => {};
     mockApi.getMeReport.mockReturnValueOnce(new Promise((r) => (resolve = r)));
     const { names: skeleton, view } = await skeletonOf(<MeScreen />, 'me-skeleton');
-    // 받기 전 화면과 같은 머리(내 별명)
-    expect(screen.getByText(strings.reading.title)).toBeTruthy();
+    // 상태를 아직 모르면 머리 제목은 비워 둔다 — "내 별명" 이 먼저 보였다가 "나" 로 바뀌지 않게(소유자 지적), 받기 전이 오면 "내 별명"
+    expect(screen.queryByText(strings.reading.title)).toBeNull();
     await act(async () => resolve({ ok: true, data: { status: 'NONE' } }));
     expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
+    expect(screen.getByText(strings.reading.title)).toBeTruthy();
     expect(blocks()).toEqual([...readingBlocks, 'me-detail-card']);
     expect(skeleton).toEqual(blocks());
     await view.unmount();

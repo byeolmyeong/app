@@ -174,7 +174,9 @@ export default function MeScreen() {
     // (`?area=` — 푸시 "자세한 풀이가 다 됐어요" 는 12-8 로 연다, 결정 066) 아직 상태를 묻는 중이면 받은 뒤 배치.
     // 0.3초 전 빈 단계에도 그 배치의 머리 · 아래 탭을 둔다(중간에 바뀌지 않게, 071 의 6)
     const afterLayout = askedArea !== null && s.status === 'checking';
-    const loadingNav = afterLayout ? afterNav : <NavBar title={strings.reading.title} chevron />;
+    // 머리 제목은 받기 전 "내 별명" · 받은 뒤 "나" 다. 상태를 아직 모르면(기억 · 메모리 없음 — 앱을 켠 뒤 처음, 받아 두기 전) 제목을 비워 둔다:
+    // 틀린 제목이 먼저 보였다가 바뀌는 것보다 빈 머리에 맞는 제목이 한 번 나타나는 쪽이 덜 튄다(소유자 지적 — 나 탭으로 갈 때 "내 별명" 이 잠깐)
+    const loadingNav = afterLayout ? afterNav : s.status === 'checking' ? <NavBar chevron /> : <NavBar title={strings.reading.title} chevron />;
     if (phase !== 'skeleton') return <Screen nav={loadingNav} footer={tabs}>{null}</Screen>;
     if (afterLayout)
       return (

@@ -275,6 +275,36 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
   });
 });
 
+describe('시기 탭 · 이번 달 넘기기(소유자 지적 — 처음 넘길 때 버벅임 · 반짝임, 빌드 11)', () => {
+  it('앞뒤 달은 미리 받아 두어 처음 넘겨도 서버를 기다리지 않고 뼈대 없이 바로 — 달력 격자는 다시 붙지 않는다', async () => {
+    await render(<TimingScreen />);
+    const grid = await screen.findByTestId('month-calendar');
+    await waitFor(() => expect(mockApi.getMonth).toHaveBeenCalledWith('2026-12'));
+    await act(async () => {});
+    mockApi.getMonth.mockReturnValue(new Promise(() => {}));
+    await fireEvent.press(screen.getByTestId('month-next'));
+    expect(screen.getByText('2026년 12월')).toBeTruthy();
+    expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
+    expect(screen.getByTestId('month-calendar')).toBe(grid);
+    expect(mockApi.getMonth.mock.calls.filter((c) => c[0] === '2026-12')).toHaveLength(1);
+  });
+
+  it('미리 받는 중에 넘기면 이전 달 그림을 그대로 두고, 다 받으면 한 번에 바꾼다(뼈대로 깜빡이지 않게)', async () => {
+    let resolve: (r: ApiResult<MonthSky>) => void = () => {};
+    mockApi.getMonth.mockImplementation((m?: string): Promise<ApiResult<MonthSky>> =>
+      m === '2026-12' ? new Promise((r) => (resolve = r)) : Promise.resolve({ ok: true, data: m ? { ...month, month: m, days: [] } : month }),
+    );
+    await render(<TimingScreen />);
+    const grid = await screen.findByTestId('month-calendar');
+    await fireEvent.press(screen.getByTestId('month-next'));
+    expect(screen.getByText('2026년 11월')).toBeTruthy();
+    expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
+    await act(async () => resolve({ ok: true, data: { ...month, month: '2026-12', days: [] } }));
+    expect(screen.getByText('2026년 12월')).toBeTruthy();
+    expect(screen.getByTestId('month-calendar')).toBe(grid);
+  });
+});
+
 describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)', () => {
   it('받은 뒤에도 칩 줄은 세 칩에서 같은 자리(소유자 지적 1)', async () => {
     await storeReport();

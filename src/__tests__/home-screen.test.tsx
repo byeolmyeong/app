@@ -8,6 +8,7 @@ import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { useSession } from '@/features/auth/use-session';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import * as homeReady from '@/features/home/home-ready';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -96,6 +97,19 @@ describe('홈', () => {
     await render(<HomeScreen />);
     expect(await screen.findByPlaceholderText(strings.home.datePlaceholder)).toBeTruthy();
     expect(screen.queryByTestId('nickname-card')).toBeNull();
+  });
+
+  it('로그인 전 · 가입 중이면(루트 가드가 소개 · 로그인으로 보내는 동안 가림막 아래) 출생 정보 입력을 그리지 않고 곳 목록도 받지 않는다(성능 계획 4)', async () => {
+    for (const status of ['signedOut', 'signingUp'] as const) {
+      (useSession as jest.Mock).mockReturnValue({ status, token: null, ready: true, lastError: null });
+      const view = await render(<HomeScreen />);
+      await act(async () => {});
+      expect(screen.queryByPlaceholderText(strings.home.datePlaceholder)).toBeNull();
+      expect(mockApi.listPlaces).not.toHaveBeenCalled();
+      expect(mockApi.getProfile).not.toHaveBeenCalled();
+      await view.unmount();
+    }
+    (useSession as jest.Mock).mockReturnValue({ status: 'signedIn', token: 't', ready: true, lastError: null });
   });
 
   it('출생 정보가 있으면 머리의 로고와 별명 카드 — 프로필 그림 · "새벽별 님" · "쌍둥이자리 · 별명을 받은 지 12일" · 한 줄 별명 · 풀이 읽기(결정 047, 보드 11). 카테고리 · 궁합 칸은 없다(결정 055)', async () => {

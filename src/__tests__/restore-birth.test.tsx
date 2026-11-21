@@ -176,12 +176,14 @@ describe('출생 정보 되살리기(결정 029)', () => {
     expect(await loadBirth()).toEqual(mine);
   });
 
-  it('세션이 없으면 서버에 묻지 않고 입력 화면을 보여 준다', async () => {
+  it('세션이 없으면 서버에 묻지 않는다 — 루트 가드가 로그인으로 보내는 동안 가림막 아래에서 입력 화면도 그리지 않는다(곳 목록을 받지 않게, 성능 계획 4)', async () => {
     mockSession.current = { status: 'signedOut' as const, token: null, ready: true, lastError: null };
     mockApi.getProfile.mockResolvedValue({ ok: true, data: known });
     await render(<HomeScreen />);
-    expect(await formShown()).toBeTruthy();
+    await act(async () => {});
+    expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
     expect(mockApi.getProfile).not.toHaveBeenCalled();
+    expect(mockApi.listPlaces).not.toHaveBeenCalled();
   });
 
   it('가짜 서버에서는 되살리지 않고 입력 화면을 보여 준다', async () => {
@@ -228,7 +230,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
     expect(screen.queryByTestId('home-skeleton')).toBeNull();
   });
 
-  it('계정을 지운 뒤에는 입력 화면이 보인다: 세션이 비어 묻지 않고, 새 세션으로 물어도 서버에 없다', async () => {
+  it('계정을 지운 뒤: 세션이 비어 묻지 않고(가드가 로그인으로), 새 세션으로 물어도 서버에 없으면 입력 화면', async () => {
     await saveBirth({ profile: { date: known.date, time: null, place: null }, chart: fixtures.chartTimeUnknown });
     mockApi.deleteAccount.mockResolvedValue({ ok: true, data: null });
     const del = await render(<DeleteAccountScreen />);
@@ -240,8 +242,10 @@ describe('출생 정보 되살리기(결정 029)', () => {
     await waitFor(() => expect(mockSession.current.status).toBe('signedOut'));
     await del.unmount();
 
+    // 세션이 비었다 — 루트 가드가 로그인으로 보낸다(홈은 입력 화면을 그리지 않고 서버에도 묻지 않는다)
     const first = await render(<HomeScreen />);
-    expect(await formShown()).toBeTruthy();
+    await act(async () => {});
+    expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
     expect(mockApi.getProfile).not.toHaveBeenCalled();
     await first.unmount();
 

@@ -24,12 +24,25 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  api: { listPlaces: jest.fn(), createChart: jest.fn(), saveProfile: jest.fn(), getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })), getNotifications: jest.fn(async () => ({ ok: false, error: 'NETWORK' })) },
+  api: {
+    listPlaces: jest.fn(),
+    createChart: jest.fn(),
+    saveProfile: jest.fn(),
+    getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    getNotifications: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    // 서버에 저장된 출생 정보가 없다 — 되살리지 못해 입력부터 받는다(결정 029)
+    getProfile: jest.fn(async () => ({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' })),
+    // 입력을 마친 뒤 로그인한 홈 · 나 · 시기가 미리 묻는 것 — 이 시험은 입력만 본다
+    getTimingReport: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    getMeReport: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    getMonth: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+    postDaySky: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
+  },
 }));
 jest.mock('@/features/auth/use-session', () => ({
   getSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),
-  // 홈은 세션이 없으면 서버에 저장된 출생 정보를 묻지 않고 입력부터 받는다(결정 029).
-  useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })),
+  // 홈의 입력은 로그인한 사람이 서버에서 되살리지 못했을 때 보인다(결정 029) — 로그인 전이면 가드가 보내는 동안 그리지 않는다(성능 계획 4)
+  useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null })),
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;

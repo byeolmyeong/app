@@ -96,16 +96,19 @@ const focusName = (key: string) =>
  * 작은 지도(그 근거의 별 · 칸만 빛남, 지나가는 별은 없음) · 용어 줄 1~3(물음표는 말풍선, 한 번에 하나) · "하늘 지도에서 보기"
  * (그 별을 고른 채로 `/chart`). 문장을 만들 수 없는 근거(모르는 kind · 사전에 없는 값)면 아무것도 그리지 않는다(결정 054 의 7).
  * 펼치고 접을 때 높이가 부드럽게 늘고 줄며 내용이 흐려졌다 나타나고 꺾쇠가 반 바퀴 돈다(소유자 2026-11-21, 시트와 같은 Motion 값).
+ * 펼친 내용은 처음부터 그려 두고(접힌 동안 높이 0 · 투명 · 누를 수 없음 · 화면 읽기에서 숨김) 높이를 미리 재 둔다 — 누르는 순간 꺾쇠 · 높이 ·
+ * 내용이 같이 움직인다. 펼칠 때 내용은 높이 움직임의 앞 1/3 안에 다 나타나고, 접을 때는 내용이 먼저(절반 안에) 흐려진다(소유자 2026-11-21).
  * 기기의 동작 줄이기가 켜져 있으면 바로 바뀐다.
  */
 export function ReasonLine({ reason, chart, today = false, style }: ReasonLineProps) {
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState<string | null>(null);
-  /** 펼친 내용이 그려져 있는가(접는 움직임이 끝날 때까지 남는다) */
-  const [mounted, setMounted] = useState(false);
-  /** 펼친 내용의 실제 높이 — 0 에서 이 높이까지 늘인다 */
+  /** 펼친 내용의 실제 높이(처음부터 그려 두어 미리 잰다) — 0 에서 이 높이까지 늘인다 */
   const [height, setHeight] = useState(0);
+  /** 높이 · 꺾쇠 */
   const [progress] = useState(() => new Animated.Value(0));
+  /** 내용의 보임 — 펼칠 때는 높이보다 빨리, 접을 때는 먼저 */
+  const [fade] = useState(() => new Animated.Value(0));
   /** 다 펼쳐졌다 — 높이를 묶지 않고 잘라내지 않는다(용어 말풍선이 칸 밖으로 나오고, 말풍선으로 줄이 길어져도 그대로) */
   const [settled, setSettled] = useState(false);
   const reduce = useReduceMotion();
@@ -114,16 +117,13 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
     setOpen(next);
     setTip(null);
     setSettled(false);
-    if (next) setMounted(true);
-    Animated.timing(progress, {
-      toValue: next ? 1 : 0,
-      duration: reduce ? 0 : next ? Motion.openMs : Motion.closeMs,
-      easing: Easing.bezier(...Motion.openCurve),
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (!finished) return;
-      if (next) setSettled(true);
-      else setMounted(false);
+    const ms = (value: number) => (reduce ? 0 : value);
+    const easing = Easing.bezier(...Motion.openCurve);
+    Animated.parallel([
+      Animated.timing(progress, { toValue: next ? 1 : 0, duration: ms(next ? Motion.openMs : Motion.closeMs), easing, useNativeDriver: false }),
+      Animated.timing(fade, { toValue: next ? 1 : 0, duration: ms(next ? Motion.openMs / 3 : Motion.closeMs / 2), easing, useNativeDriver: false }),
+    ]).start(({ finished }) => {
+      if (finished && next) setSettled(true);
     });
   };
   // 시각을 알아야 하우스 · 상승점 · 중천을 그린다(차트의 timeKnown — 이중 안전, 결정 054 의 6)
@@ -149,11 +149,13 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
         </View>
         <Chevron progress={progress} />
       </Pressable>
-      {mounted ? (
-        <Animated.View
+      <Animated.View
           testID="reason-body"
-          style={settled ? null : [styles.reveal, { height: progress.interpolate({ inputRange: [0, 1], outputRange: [0, height] }), opacity: progress }]}>
-          <View onLayout={(e) => setHeight(e.nativeEvent.layout.height)}>
+          pointerEvents={open ? 'auto' : 'none'}
+          accessibilityElementsHidden={!open}
+          importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
+          style={settled ? null : [styles.reveal, { height: progress.interpolate({ inputRange: [0, 1], outputRange: [0, height] }), opacity: fade }]}>
+          <View testID="reason-measure" onLayout={(e) => setHeight(e.nativeEvent.layout.height)}>
           {map ? (
             <MiniWheel
               chart={map}
@@ -176,7 +178,6 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
             <View style={styles.openSpace} />
           </View>
         </Animated.View>
-      ) : null}
     </View>
   );
 }

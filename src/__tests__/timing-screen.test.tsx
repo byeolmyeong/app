@@ -467,6 +467,13 @@ describe('들어가면 바로 — 한 번만 바뀌기(결정 075, 소유자: �
     expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
   });
 
+  it('앱을 켤 때 이번 달 받아 두기는 이번 실행에 한 번 — 못 받았어도(끊김) 다시 붙은 홈이 또 묻지 않는다(리뷰 #87 의 5)', async () => {
+    mockApi.getMonth.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
+    await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
+    expect(mockApi.getMonth).toHaveBeenCalledTimes(1);
+  });
+
   it('이번 달을 기기에 받아 둔 것이 있으면 앱을 켤 때 다시 부르지 않는다', async () => {
     await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });
     await prefetchMonth({ date: profile.date, time: profile.time, placeId: profile.place.id });

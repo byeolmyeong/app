@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, ScrollView, StyleSheet } from 'react-native';
 
 import IntroScreen from '@/app/intro';
 import { strings } from '@/content/strings';
@@ -16,6 +16,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('@/features/auth/use-session', () => ({ signOutSession: jest.fn(async () => {}) }));
 
 const S = strings.intro;
+const WIDTH = 390;
+const pager = () => screen.getByTestId('intro-pager');
+const layoutPager = () => fireEvent(pager(), 'layout', { nativeEvent: { layout: { width: WIDTH, height: 600, x: 0, y: 0 } } });
+const scrollTo = (x: number) => fireEvent.scroll(pager(), { nativeEvent: { contentOffset: { x, y: 0 } } });
+const label = (n: number) => `${n}${strings.steps.separator}2`;
 
 beforeEach(async () => {
   jest.clearAllMocks();
@@ -89,11 +94,64 @@ describe('소개 화면', () => {
 
   it('다음으로 둘째 장까지 넘기고 시작하기를 누르면 로그인 화면으로(점 1/2 · 2/2)', async () => {
     await render(<IntroScreen />);
+    await layoutPager();
     expect(screen.getByLabelText(`1${strings.steps.separator}2`)).toBeTruthy();
     await fireEvent.press(screen.getByText(S.next));
+    // 장 번호는 스크롤이 그 장에 닿은 뒤에 바뀐다
+    await scrollTo(WIDTH);
     expect(screen.getByLabelText(`2${strings.steps.separator}2`)).toBeTruthy();
     expect(screen.queryByText(S.next)).toBeNull();
     await fireEvent.press(screen.getByText(S.start));
     expect(router.replace).toHaveBeenCalledWith('/login');
+  });
+});
+
+// 소유자: "다음" 을 눌러 넘길 때 막대가 버벅인다(손으로 밀 때는 괜찮다). 버튼도 손으로 밀 때와 같은 한 줄기 — 막대는 스크롤 위치 하나만 따라간다
+describe('소개 화면: 다음으로 넘길 때', () => {
+  beforeEach(() => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    (ScrollView.prototype.scrollTo as jest.Mock).mockClear();
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it('다음은 scrollTo 한 번(다음 장 · 움직임)만 부르고 막대에 따로 움직임을 걸지 않는다. 장 번호는 스크롤이 그 장에 닿은 뒤 한 번 바뀐다', async () => {
+    const timing = jest.spyOn(Animated, 'timing');
+    const spring = jest.spyOn(Animated, 'spring');
+    await render(<IntroScreen />);
+    await layoutPager();
+    await act(async () => {});
+    await fireEvent.press(screen.getByText(S.next));
+    expect(ScrollView.prototype.scrollTo).toHaveBeenCalledTimes(1);
+    expect(ScrollView.prototype.scrollTo).toHaveBeenCalledWith({ x: WIDTH, animated: true });
+    expect(timing).not.toHaveBeenCalled();
+    expect(spring).not.toHaveBeenCalled();
+    // 누른 순간 장 번호를 바꾸지 않는다 — 스크롤이 처음(0) · 가운데를 지나는 동안 앞 장으로 되돌아가며 다시 그려지지 않게
+    expect(screen.getByLabelText(label(1))).toBeTruthy();
+    await scrollTo(0);
+    await scrollTo(WIDTH / 2);
+    expect(screen.getByLabelText(label(1))).toBeTruthy();
+    await scrollTo(WIDTH);
+    expect(screen.getByLabelText(label(2))).toBeTruthy();
+    expect(screen.getByText(S.start)).toBeTruthy();
+  });
+
+  it('막대는 스크롤 위치를 네이티브 드라이버로 따라간다(폭이 아니라 transform 으로)', async () => {
+    const event = jest.spyOn(Animated, 'event');
+    await render(<IntroScreen />);
+    expect(event).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ useNativeDriver: true }));
+    for (const node of screen.getAllByTestId(/^intro-dot-/, { includeHiddenElements: true })) {
+      const style = StyleSheet.flatten(node.props.style);
+      expect(style.width).not.toEqual(expect.objectContaining({ interpolate: expect.anything() }));
+      expect(style.transform).toBeDefined();
+    }
+  });
+
+  it('동작 줄이기면 움직임 없이 바로 넘긴다', async () => {
+    (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(true);
+    await render(<IntroScreen />);
+    await layoutPager();
+    await act(async () => {});
+    await fireEvent.press(screen.getByText(S.next));
+    expect(ScrollView.prototype.scrollTo).toHaveBeenCalledWith({ x: WIDTH, animated: false });
   });
 });

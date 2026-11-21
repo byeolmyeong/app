@@ -2,12 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 
 import { strings } from '@/content/strings';
-import { parsePushData, pushTarget, type PushData } from '@/features/push/push-data';
+import { isViewingTarget, parsePushData, pushTarget, type PushData } from '@/features/push/push-data';
 import { api } from '@/lib/api';
 
 /**
@@ -193,18 +193,29 @@ export type PushTapState = {
 };
 
 /**
- * 루트에서 한 번: 알림을 누르면 그 종류의 화면으로(결정 066 의 4). 앱을 쓰는 중에 온 푸시는 휴대폰 배너를 띄우지 않는다(066 의 5 — 홈 종에 점만).
+ * 루트에서 한 번: 알림을 누르면 그 종류의 화면으로(결정 066 의 4). 앱을 쓰는 중에 온 푸시도 배너로 띄우되, 그 알림이 가리키는 화면을 보고 있으면 띄우지 않는다(결정 076).
  * `ready` 가 될 때까지 갈 곳을 들고 있다가 보낸다 — 알림으로 앱을 처음 켤 때 스플래시 · 로그인 · 정지 확인 뒤에 간다.
  * 같은 알림을 두 번(켤 때의 마지막 응답 + 듣기) 받아도 한 번만 간다.
  */
 export function usePushTapRouting({ ready, suspended, signedOut }: PushTapState): void {
+  // 지금 보고 있는 화면 — 쓰는 중에 온 알림을 띄울지 정할 때 본다(알림 처리기는 한 번만 걸어 두고 이 값을 읽는다)
+  const pathname = usePathname();
+  const pathRef = useRef(pathname);
+  useEffect(() => {
+    pathRef.current = pathname;
+  }, [pathname]);
   const pending = useRef<PushData | null>(null);
   const handled = useRef<string | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    // 앱을 쓰는 중에 온 푸시도 위에 배너로(소리는 없이) — 그 알림이 가리키는 화면을 지금 보고 있으면 띄우지 않는다(결정 076)
     Notifications.setNotificationHandler({
-      handleNotification: async () => ({ shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false, shouldSetBadge: false }),
+      handleNotification: async (notification) => {
+        const data = parsePushData(notification.request.content.data);
+        const show = !(data && isViewingTarget(data, pathRef.current));
+        return { shouldShowBanner: show, shouldShowList: show, shouldPlaySound: false, shouldSetBadge: false };
+      },
     });
     let alive = true;
     const take = (response: Notifications.NotificationResponse) => {

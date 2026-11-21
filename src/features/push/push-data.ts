@@ -61,3 +61,26 @@ export function pushTarget(data: PushData): Href {
       return data.target as Href;
   }
 }
+
+/**
+ * 지금 보고 있는 화면(경로)이 그 알림이 가리키는 화면인가 — 그렇다면 앱을 쓰는 중에 온 그 알림은 배너로 띄우지 않는다(결정 076).
+ * 오늘의 하늘은 홈(그 카드가 있다) · 오늘의 하늘 화면, 별명 지음은 내 별명 · 나 탭, 나 탭 풀이는 나 탭, 시기 풀이는 시기 탭, 문의 답변은 그 문의의 답변 보기,
+ * 광고는 그 주소.
+ */
+export function isViewingTarget(data: PushData, pathname: string): boolean {
+  switch (data.type) {
+    case 'TODAY_SKY':
+      return pathname === '/' || pathname === '/today';
+    case 'READING_DONE':
+      return pathname === '/reading' || pathname === '/me';
+    case 'ME_REPORT_DONE':
+      return pathname === '/me';
+    case 'TIMING_REPORT_DONE':
+      return pathname === '/timing';
+    case 'INQUIRY_ANSWERED':
+      return pathname === `/my/inquiries/${data.inquiryId}`;
+    case 'EVENT':
+      return pathname === data.target.split(/[?#]/)[0];
+  }
+}
+

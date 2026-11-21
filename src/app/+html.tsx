@@ -1,6 +1,7 @@
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
+import { WEB_FONT_DIR, WEB_FONTS, webCoreFontCss } from '@/components/web-fonts';
 import { Colors, Sizes } from '@/constants/theme';
 
 /**
@@ -20,11 +21,17 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="theme-color" content={Colors.paper} />
         <ScrollViewStyleReset />
         <style id="byeolmyeong-dark" dangerouslySetInnerHTML={{ __html: darkCss }} />
+        {/* 글꼴(성능 계획 1): 핵심 묶음 셋을 미리 받고 @font-face 는 여기에. 드문 글자의 조각 규칙은 body 끝(뒤에 적혀 그 글자를 먼저 맡는다) */}
+        {WEB_FONTS.map((f) => (
+          <link key={f.file} rel="preload" href={`${WEB_FONT_DIR}/${f.file}`} as="font" type="font/woff2" crossOrigin="" />
+        ))}
+        <style id="byeolmyeong-fonts" dangerouslySetInnerHTML={{ __html: webCoreFontCss() }} />
         {headNodes}
       </head>
       <body {...bodyAttributes}>
         {children}
         {bodyNodes}
+        <link rel="stylesheet" href={`${WEB_FONT_DIR}/dynamic.css`} />
       </body>
     </html>
   );

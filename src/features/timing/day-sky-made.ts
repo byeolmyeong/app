@@ -35,11 +35,12 @@ export async function wasDaySkyMade(birthKey: string, date: string): Promise<boo
   return s !== null && s.key === birthKey && s.dates.includes(date);
 }
 
-/** 그날을 받았다고 기억한다(세대가 그대로일 때만). 지난달 1일 전의 날은 지운다 */
-export async function markDaySkyMade(birthKey: string, date: string, gen: string | null): Promise<void> {
-  if (gen === null || !(await isSameGeneration(GENERATION_KEY, gen))) return;
+/** 그날을 받았다고 기억한다(세대가 그대로일 때만 — 그렇지 않으면 거짓을 돌려준다). 지난달 1일 전의 날은 지운다 */
+export async function markDaySkyMade(birthKey: string, date: string, gen: string | null): Promise<boolean> {
+  if (gen === null || !(await isSameGeneration(GENERATION_KEY, gen))) return false;
   const s = await read();
   const from = `${shiftMonth(koreanToday().slice(0, 7), -1)}-01`;
   const dates = [...new Set([...(s && s.key === birthKey ? s.dates : []), date])].filter((d) => d >= from).sort();
   await AsyncStorage.setItem(DAY_SKY_MADE_STORAGE_KEY, JSON.stringify({ key: birthKey, dates } satisfies Stored)).catch(() => undefined);
+  return true;
 }

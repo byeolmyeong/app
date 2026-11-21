@@ -2,8 +2,9 @@
  * 출생 정보와 받은 차트의 기기 보관. 다시 열 때 서버에 요청하지 않으려고 차트도 함께 둔다.
  * 보관된 값은 로그에 남기지 않는다.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
+
+import { getStored, peekStored, setStored } from '@/lib/device-memory';
 
 import type { BirthProfile } from '@/features/chart/birth-input';
 import { isChart, type Chart } from '@/lib/api';
@@ -33,10 +34,9 @@ function readBirthProfile(v: unknown): BirthProfile | null {
   return { date: p.date, time: p.time, place };
 }
 
-/** 보관된 값이 없거나 깨졌으면 null */
-export async function loadBirth(): Promise<StoredBirth | null> {
+/** 보관된 글자를 읽는다. 없거나 깨졌으면 null */
+function parseBirth(raw: string | null): StoredBirth | null {
   try {
-    const raw = await AsyncStorage.getItem(BIRTH_STORAGE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
@@ -48,16 +48,25 @@ export async function loadBirth(): Promise<StoredBirth | null> {
   }
 }
 
+/** 보관된 값이 없거나 깨졌으면 null(이번 실행에 읽었으면 메모리에서) */
+export async function loadBirth(): Promise<StoredBirth | null> {
+  return parseBirth(await getStored(BIRTH_STORAGE_KEY));
+}
+
 export async function saveBirth(value: StoredBirth): Promise<void> {
-  await AsyncStorage.setItem(BIRTH_STORAGE_KEY, JSON.stringify(value));
+  await setStored(BIRTH_STORAGE_KEY, JSON.stringify(value));
 }
 
 /**
- * 보관된 출생 정보와 차트. 처음 그릴 때(서버 렌더링 포함)는 loaded 가 false 이고
- * 화면이 뜬 뒤 기기 저장소를 읽어 채운다.
+ * 보관된 출생 정보와 차트. 처음 그릴 때(서버 렌더링 포함)는 loaded 가 false 이고 화면이 뜬 뒤 기기 저장소를 읽어 채운다 —
+ * 이번 실행에 이미 읽었으면 메모리에서 첫 그림부터(다시 붙은 탭 화면).
  */
 export function useBirthProfile() {
-  const [state, setState] = useState<{ loaded: boolean; stored: StoredBirth | null }>({ loaded: false, stored: null });
+  // 이번 실행에 읽었으면 첫 그림부터(탭을 바꿔 다시 붙은 화면 — lib/device-memory)
+  const [state, setState] = useState<{ loaded: boolean; stored: StoredBirth | null }>(() => {
+    const raw = peekStored(BIRTH_STORAGE_KEY);
+    return raw === undefined ? { loaded: false, stored: null } : { loaded: true, stored: parseBirth(raw) };
+  });
 
   useEffect(() => {
     let alive = true;

@@ -53,7 +53,8 @@ export type SessionStoreDeps = {
   saveSignup: (signupToken: string, provider: ProviderCredential['provider'], expiresAt?: number) => Promise<void>;
   clearSignup: () => Promise<void>;
   /**
-   * 이 앱이 기기에 둔 사람의 것(출생 정보 · 차트 · 받은 글, `byeolmyeong.` 머리)을 비운다 — 기기 설정(최근 로그인 · 소개 봄)은 남는다.
+   * 이 앱이 기기에 둔 사람의 것(출생 정보 · 차트 · 받은 글, `byeolmyeong.` 머리)과 이번 실행의 메모리 층(lib/device-memory · 계정 기억 lib/account-store)을
+   * 비운다 — 기기 설정(최근 로그인 · 소개 봄)은 남는다.
    * 새 로그인(로그인 · 가입 완료)이 로그인 상태가 되기 전에, 401 로 로그인 전이 될 때 부른다. 같은 기기의 다음 사람이 앞사람의 것을 보지 않게
    */
   clearDeviceData: () => Promise<void>;

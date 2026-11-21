@@ -6,11 +6,11 @@
  * ‹ › 로 본 달은 두지 않고, 화면이 떠 있는 동안만 기억해 다시 부르지 않는다. 늦게 온 답은 세대 표식이 같을 때만 둔다(로그아웃 뒤 다시 쓰지 않게).
  * 서버에 출생 정보가 없으면(404 `NO_PROFILE`) 저장하고 한 번만 더 부른다. 한 번의 요청은 10초까지만 기다린다(결정 065 의 2).
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
 import { koreaToday, shiftMonth } from '@/features/timing/dates';
 import { api, isMonthSky, type ApiErrorKind, type ApiResult, type BirthInput, type MonthSky } from '@/lib/api';
+import { getStored, peekStored, setStored } from '@/lib/device-memory';
 import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout';
 
@@ -28,9 +28,8 @@ export type MonthState = { status: 'loading' } | { status: 'done'; sky: MonthSky
 const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
 
 /** 기기에 둔 이번 달: 같은 출생 정보 · 모양이 맞고 · 기기의 이번 달(한국 날짜)인 것만. 달이 바뀌었으면 쓰지 않는다 */
-async function readStored(key: string): Promise<MonthSky | null> {
+function parseStored(raw: string | null, key: string): MonthSky | null {
   try {
-    const raw = await AsyncStorage.getItem(MONTH_SKY_STORAGE_KEY);
     const v: unknown = raw ? JSON.parse(raw) : null;
     if (typeof v !== 'object' || v === null) return null;
     const stored = v as { key?: unknown; sky?: unknown };
@@ -40,13 +39,23 @@ async function readStored(key: string): Promise<MonthSky | null> {
   }
 }
 
+/** 이번 실행에 읽었으면 메모리에서 */
+const readStored = async (key: string) => parseStored(await getStored(MONTH_SKY_STORAGE_KEY), key);
+
+/** 이번 실행에 읽은 이번 달 — 동기(다시 붙은 시기 탭의 첫 그림, lib/device-memory). 모르면 null */
+function peekMonth(key: string | null): MonthSky | null {
+  if (key === null) return null;
+  const raw = peekStored(MONTH_SKY_STORAGE_KEY);
+  return raw === undefined ? null : parseStored(raw, key);
+}
+
 /** month 가 없으면(처음 받는 이번 달) 받은 것을 기기에 둔다 — 요청을 시작할 때의 세대가 그대로일 때만 */
 async function load(month: string | undefined, input: BirthInput, key: string): Promise<ApiResult<MonthSky>> {
   const gen = month === undefined ? await storageGeneration(GENERATION_KEY).catch(() => null) : null;
   let r = await withTimeout(api.getMonth(month));
   if (!r.ok && r.status === NO_PROFILE_STATUS && (await withTimeout(api.saveProfile(input))).ok) r = await withTimeout(api.getMonth(month));
   if (r.ok && gen !== null && (await isSameGeneration(GENERATION_KEY, gen)))
-    await AsyncStorage.setItem(MONTH_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data })).catch(() => undefined);
+    await setStored(MONTH_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data })).catch(() => undefined);
   return r;
 }
 
@@ -78,12 +87,14 @@ export function useMonth(input: BirthInput | null) {
   const time = input?.time;
   const placeId = input?.placeId;
   const key = date === undefined || time === undefined || placeId === undefined ? null : keyOf({ date, time, placeId });
-  const [base, setBase] = useState<{ key: string; month: string } | null>(null);
+  // 이번 실행에 받아 둔 이번 달이 메모리에 있으면 첫 그림부터 달력(탭을 바꿔 다시 붙은 화면)
+  const [initial] = useState(() => peekMonth(key));
+  const [base, setBase] = useState<{ key: string; month: string } | null>(() => (key !== null && initial ? { key, month: initial.month } : null));
   /** 고른 달(null 이면 처음 받은 달) · 다시 부른 횟수 */
   const [picked, setPicked] = useState<{ key: string; month: string | null; attempt: number } | null>(null);
   const [failed, setFailed] = useState<{ key: string; month: string | null; attempt: number; error: ApiErrorKind } | null>(null);
   /** 받은 달(출생 정보|달 → 응답). 화면이 떠 있는 동안만(이번 달은 기기에도) */
-  const [cache, setCache] = useState<Record<string, MonthSky>>({});
+  const [cache, setCache] = useState<Record<string, MonthSky>>(() => (key !== null && initial ? { [`${key}|${initial.month}`]: initial } : {}));
   /** 기기에 둔 이번 달을 읽은 출생 정보 — 읽기 전에는 부르지 않는다(보관본이 있으면 뒤에서 새로 받는 것 하나만) */
   const [restored, setRestored] = useState<string | null>(null);
 

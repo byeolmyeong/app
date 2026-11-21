@@ -10,16 +10,34 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSession } from '@/features/auth/use-session';
 import { onPushReceived } from '@/features/push/push';
-import { api, type ApiErrorKind, type NotificationList } from '@/lib/api';
+import { api, isNotificationList, type ApiErrorKind, type NotificationList } from '@/lib/api';
+import { peekStored, setMemoryOnly } from '@/lib/device-memory';
 
 export type NotificationsState =
   | { status: 'loading' }
   | { status: 'ready'; list: NotificationList }
   | { status: 'failed'; error: ApiErrorKind; httpStatus?: number };
 
+/** 이번 실행에 받은 알림함 목록(메모리에만) — 다시 붙은 홈의 종 점 · 알림함이 첫 그림부터(로그아웃 때 기기를 지우며 함께 비워진다) */
+const MEMORY_KEY = 'byeolmyeong.notifications.memory';
+
+function lastList(): NotificationList | null {
+  const raw = peekStored(MEMORY_KEY);
+  if (!raw) return null;
+  try {
+    const v: unknown = JSON.parse(raw);
+    return isNotificationList(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useNotifications() {
   const signedIn = useSession().status === 'signedIn';
-  const [state, setState] = useState<NotificationsState>({ status: 'loading' });
+  const [state, setState] = useState<NotificationsState>(() => {
+    const list = lastList();
+    return list ? { status: 'ready', list } : { status: 'loading' };
+  });
   /** 이 화면에서 누른 줄 — 읽음 요청이 서버에 닿기 전에 다시 받아도 읽은 줄로 보인다 */
   const [readIds, setReadIds] = useState<ReadonlySet<string>>(() => new Set());
   const latest = useRef(0);
@@ -29,7 +47,10 @@ export function useNotifications() {
     const mine = ++latest.current;
     void api.getNotifications().then((res) => {
       if (latest.current !== mine) return;
-      if (res.ok) setState({ status: 'ready', list: res.data });
+      if (res.ok) {
+        setMemoryOnly(MEMORY_KEY, JSON.stringify(res.data));
+        setState({ status: 'ready', list: res.data });
+      }
       // 받아 둔 것이 있으면 실패해도 그대로 둔다(다시 볼 때의 끊김)
       else setState((prev) => (prev.status === 'ready' ? prev : { status: 'failed', error: res.error, httpStatus: res.status }));
     });

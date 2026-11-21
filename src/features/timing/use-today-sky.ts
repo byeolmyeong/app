@@ -6,7 +6,6 @@
  * 홈 카드와 오늘의 하늘이 같은 때 열려도 서버에는 한 번만 묻는다(같은 출생 정보의 요청을 함께 기다린다).
  * 서버에 출생 정보가 없으면(404 `NO_PROFILE`) 저장하고 한 번만 더 부른다. 다시 쓰기(retry)는 사람이 누를 때만 — 스스로 다시 부르지 않는다.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -15,6 +14,7 @@ import { onPushReceived } from '@/features/push/push';
 import { daySkyMadeGeneration, markDaySkyMade, wasDaySkyMade } from '@/features/timing/day-sky-made';
 import { koreaToday } from '@/features/timing/dates';
 import { api, isDaySky, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
+import { getStored, peekStored, setStored } from '@/lib/device-memory';
 import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
 
 export const DAY_SKY_STORAGE_KEY = 'byeolmyeong.daySky.v1';
@@ -33,9 +33,8 @@ type Stored = { key: string; sky: DaySky };
 const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
 
 /** 기기에 둔 것: 같은 출생 정보 · 모양이 맞는 것만. 날짜는 쓰는 쪽이 오늘과 견준다 */
-async function readStored(key: string): Promise<DaySky | null> {
+function parseStored(raw: string | null, key: string): DaySky | null {
   try {
-    const raw = await AsyncStorage.getItem(DAY_SKY_STORAGE_KEY);
     const v: unknown = raw ? JSON.parse(raw) : null;
     if (typeof v !== 'object' || v === null) return null;
     const stored = v as Partial<Stored>;
@@ -43,6 +42,17 @@ async function readStored(key: string): Promise<DaySky | null> {
   } catch {
     return null;
   }
+}
+
+/** 이번 실행에 읽었으면 메모리에서 */
+const readStored = async (key: string) => parseStored(await getStored(DAY_SKY_STORAGE_KEY), key);
+
+/** 이번 실행에 읽은 오늘 것 — 동기(다시 붙은 화면의 첫 그림, lib/device-memory). 오늘 것이 아니거나 모르면 null */
+function peekToday(key: string | null): DaySky | null {
+  if (key === null) return null;
+  const raw = peekStored(DAY_SKY_STORAGE_KEY);
+  const sky = raw === undefined ? null : parseStored(raw, key);
+  return sky && sky.date === koreaToday() ? sky : null;
 }
 
 /** 같은 출생 정보로 서버를 기다리는 중인 요청(홈 카드 · 오늘의 하늘이 함께 기다린다) */
@@ -58,7 +68,7 @@ function load(key: string, input: BirthInput, fresh: boolean): Promise<ApiResult
     let r = await api.postDaySky();
     if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await api.postDaySky();
     if (r.ok && gen !== null && (await isSameGeneration(GENERATION_KEY, gen)))
-      await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data } satisfies Stored)).catch(() => undefined);
+      await setStored(DAY_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data } satisfies Stored)).catch(() => undefined);
     // 받은 날을 기억한다(그날의 하늘과 같은 기억 — 결정 075 의 2)
     if (r.ok) await markDaySkyMade(key, r.data.date, madeGen);
     return r;
@@ -72,7 +82,11 @@ function load(key: string, input: BirthInput, fresh: boolean): Promise<ApiResult
 /** input 이 null 이면(출생 정보 · 세션을 읽는 중) 부르지 않는다 */
 export function useTodaySky(input: BirthInput | null) {
   const key = input ? keyOf(input) : null;
-  const [state, setState] = useState<TodaySkyState>({ status: 'loading' });
+  // 이번 실행에 받아 둔 오늘 것이 메모리에 있으면 첫 그림부터 그 글(탭을 바꿔 다시 붙은 화면)
+  const [state, setState] = useState<TodaySkyState>(() => {
+    const sky = peekToday(key);
+    return sky ? { status: 'done', sky } : { status: 'loading' };
+  });
   /** 오늘(기기의 한국 날짜)을 이 기기에서 받은 적이 있는가(결정 075 — 없으면 뼈대 없이 곧바로 만드는 중). 읽기 전에는 null */
   const [made, setMade] = useState<{ key: string; made: boolean } | null>(null);
   useEffect(() => {
@@ -86,7 +100,7 @@ export function useTodaySky(input: BirthInput | null) {
     };
   }, [key]);
   /** 지금 그린 글의 날짜 — 화면이 보일 때 · 앱으로 돌아올 때 오늘과 견준다 */
-  const shownDate = useRef<string | null>(null);
+  const shownDate = useRef<string | null>(state.status === 'done' ? state.sky.date : null);
   const latest = useRef(0);
 
   const fetchToday = useCallback((fresh = false) => {

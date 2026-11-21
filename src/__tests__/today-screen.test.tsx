@@ -10,6 +10,7 @@ import { koreaToday } from '@/features/timing/dates';
 import { DAY_SKY_MADE_STORAGE_KEY } from '@/features/timing/day-sky-made';
 import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
 import { api, type DaySky } from '@/lib/api';
+import { forgetMemory } from '@/lib/device-memory';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
@@ -98,6 +99,8 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
 
   it('기기에 출생 정보가 없으면 홈으로(되살리기 · 입력은 홈이 맡는다, 리뷰 #66)', async () => {
     await AsyncStorage.clear();
+    // 앱에서 기기를 지우는 일(clearDeviceData)은 이번 실행의 메모리도 함께 비운다
+    forgetMemory();
     await render(<TodayScreen />);
     await act(async () => {});
     expect(router.replace).toHaveBeenCalledWith('/');

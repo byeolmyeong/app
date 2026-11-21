@@ -271,6 +271,8 @@ export const NicknameCardLayout = {
   art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8 },
   /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." · "내 별명 읽기" 막대 폭 */
   skeleton: { name: 72, meta: 64, empty: 168, more: 72 },
+  /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
+  namePlaceholder: 96,
 } as const;
 
 /** 별명 짓는 중의 반짝임 셋의 자리(그림 칸 260 기준, 결정 042 시안 보드 9) */
@@ -891,6 +893,8 @@ export const MyLayout = {
     button: 40,
     buttonRadius: 10,
     buttonFill: 'rgba(255,255,255,0.08)',
+    /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
+    namePlaceholder: 104,
   },
   list: { radius: 16, row: 52, paddingV: 12, paddingH: 16, gap: 12, chevron: 18, descGap: 2, switch: { width: 48, height: 28, knob: 22, inset: 3 } },
   account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 18, badgeGlyph: 11, badgeGap: 6 },

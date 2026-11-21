@@ -194,6 +194,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
           <NicknameCard
             nickname={account?.nickname ?? null}
             avatar={account?.avatar ?? null}
+            accountPending={account === undefined}
             sunSign={sun ? signName(sun.sign) + strings.chart.signSuffix : null}
             // 오른쪽 위 그림도 해 별자리(서버 값)로 고른다 — 사람마다 다르다
             art={sun && CONSTELLATIONS[sun.sign] ? { sign: sun.sign, ...CONSTELLATIONS[sun.sign] } : null}

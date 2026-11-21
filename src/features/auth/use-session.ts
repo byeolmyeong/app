@@ -11,7 +11,6 @@ import { createSessionStore, type Session } from '@/features/auth/session-store'
 import { restoreDraft } from '@/features/auth/signup-draft';
 import { clearResume, loadResume, startResume } from '@/features/auth/signup-resume';
 import { deleteToken, loadToken, saveToken } from '@/features/auth/token-storage';
-import { forgetAccount } from '@/lib/account-store';
 import { api, setSessionRefresher, setSessionToken } from '@/lib/api';
 
 const store = createSessionStore({
@@ -39,7 +38,6 @@ const store = createSessionStore({
   clearSignup: clearResume,
   // 새 로그인 · 401 때 앞사람이 기기에 남긴 것을 비운다(로그아웃 · 탈퇴와 같은 범위)
   clearDeviceData,
-  forgetAccount,
 });
 
 // 서버가 401 을 주면 api 가 이 방법을 부른다. 개발용이면 세션을 한 번 다시 받고, 아니면 로그인 전이 된다.

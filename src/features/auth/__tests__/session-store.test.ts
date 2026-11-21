@@ -151,27 +151,6 @@ describe('시작할 때 세션 확인(소셜 로그인)', () => {
 });
 
 describe('로그인 · 가입 · 로그아웃', () => {
-  it('로그인 · 가입을 마칠 때 앞 계정의 기억(계정 보관)을 잊는다 — 다른 계정일 수 있다. 세션 되살리기에서는 잊지 않는다', async () => {
-    const forgetAccount = jest.fn(async () => {});
-    const restored = setup({ stored: 'kept-token', forgetAccount });
-    await restored.store.start();
-    expect(restored.store.getSnapshot().status).toBe('signedIn');
-    expect(forgetAccount).not.toHaveBeenCalled();
-
-    const { store } = setup({ forgetAccount });
-    await store.start();
-    await store.signIn(google);
-    expect(forgetAccount).toHaveBeenCalledTimes(1);
-
-    const fresh = setup({ forgetAccount, login: jest.fn(async () => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' })) });
-    await fresh.store.start();
-    await fresh.store.signIn(google);
-    expect(forgetAccount).toHaveBeenCalledTimes(1);
-    await fresh.store.completeSignup(signupInput);
-    expect(fresh.store.getSnapshot().status).toBe('signedIn');
-    expect(forgetAccount).toHaveBeenCalledTimes(2);
-  });
-
   it('계정이 있으면 토큰을 보관하고 로그인 상태가 된다', async () => {
     const { deps, store, kept } = setup();
     await store.start();

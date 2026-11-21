@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook } from '@testing-library/react-native';
 
+import { clearDeviceData } from '@/features/auth/delete-account';
 import { createSessionStore, type SessionStoreDeps } from '@/features/auth/session-store';
 import { signOut } from '@/features/auth/sign-out';
 import { saveBirth, useBirthProfile } from '@/features/chart/use-birth-profile';
-import { forgetAccount, setAccountLocal, useStoredAccount } from '@/lib/account-store';
+import { setAccountLocal, useStoredAccount } from '@/lib/account-store';
 import type { MyAccount } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -18,7 +19,7 @@ jest.mock('@/features/auth/signup-resume', () => ({ clearResume: jest.fn(async (
 const A: MyAccount = { nickname: '앞사람', avatar: 3, email: 'a@x.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 const birthA = { date: '1990-01-01', time: '12:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 
-/** 세션 저장소(로그인 · 401) — 계정 기억 잊기는 진짜(lib/account-store) */
+/** 세션 저장소(로그인 · 401) — 기기 비우기는 진짜(clearDeviceData: 기기 · 메모리 층 · 계정 기억, #101 의 새 세션 · 만료 자리) */
 function sessionStore(overrides: Partial<SessionStoreDeps> = {}) {
   const ok = <T,>(data: T) => ({ ok: true as const, data });
   return createSessionStore({
@@ -38,7 +39,7 @@ function sessionStore(overrides: Partial<SessionStoreDeps> = {}) {
     loadSignup: jest.fn(async () => null),
     saveSignup: jest.fn(async () => {}),
     clearSignup: jest.fn(async () => {}),
-    forgetAccount,
+    clearDeviceData,
     ...overrides,
   } as SessionStoreDeps);
 }
@@ -82,10 +83,11 @@ describe('같은 기기에서 계정이 바뀔 때 — 앞사람의 이름 · �
     }
   });
 
-  it('세션이 끝나(401) 기기를 지우지 않은 채 B 가 로그인해도 B 의 첫 그림에 A 의 이름이 없다(로그인이 계정 기억을 잊는다)', async () => {
+  it('A 의 세션이 끝남(401 만료) → B 로그인 → B 의 첫 그림에 A 의 이름 · 출생 정보가 없다(만료 · 새 세션이 기기와 메모리 층을 비운다)', async () => {
     await setAccountLocal(A);
+    await saveBirth({ profile: birthA, chart: fixtures.chart });
     const a = await renders();
-    expect(a.seen.at(-1)?.nickname).toBe('앞사람');
+    expect(a.seen.at(-1)).toEqual({ nickname: '앞사람', birthDate: '1990-01-01' });
     await a.view.unmount();
 
     const store = sessionStore({
@@ -98,6 +100,36 @@ describe('같은 기기에서 계정이 바뀔 때 — 앞사람의 이름 · �
     expect(store.getSnapshot().status).toBe('signedIn');
 
     const b = await renders();
-    for (const frame of b.seen) expect(frame.nickname).not.toBe('앞사람');
+    expect(b.seen.length).toBeGreaterThan(0);
+    for (const frame of b.seen) {
+      expect(frame.nickname).not.toBe('앞사람');
+      expect(frame.birthDate).not.toBe('1990-01-01');
+    }
+  });
+
+  it('만료 · 새 세션에서 기기 저장소 비우기가 실패해도(로그인은 막지 않는다) B 의 첫 그림에 A 의 이름 · 출생 정보가 없다 — 메모리 층은 기다리기 전에 빈다', async () => {
+    await setAccountLocal(A);
+    await saveBirth({ profile: birthA, chart: fixtures.chart });
+    const a = await renders();
+    expect(a.seen.at(-1)).toEqual({ nickname: '앞사람', birthDate: '1990-01-01' });
+    await a.view.unmount();
+
+    (AsyncStorage.getAllKeys as jest.Mock).mockRejectedValue(new Error('io'));
+    const store = sessionStore({
+      loadToken: jest.fn(async () => 'token-A'),
+      getSession: jest.fn(async () => ({ ok: false as const, error: 'LOGIN_REQUIRED' as const, status: 401 })),
+    });
+    await store.start();
+    await store.signIn({ provider: 'APPLE', idToken: 'b' });
+    expect(store.getSnapshot().status).toBe('signedIn');
+
+    const b = await renders();
+    expect(b.seen.length).toBeGreaterThan(0);
+    for (const frame of b.seen) {
+      expect(frame.nickname).not.toBe('앞사람');
+      // 기기에 남은 출생 정보는 화면이 다시 읽을 수 있다(저장소가 실패한 경우) — 메모리로 첫 그림에 그리지는 않는다
+    }
+    expect(b.seen[0].birthDate).toBeUndefined();
+    (AsyncStorage.getAllKeys as jest.Mock).mockReset();
   });
 });

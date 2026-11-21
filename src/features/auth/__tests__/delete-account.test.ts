@@ -86,6 +86,16 @@ describe('기기를 지우면 이번 실행의 메모리도(개인정보 경계 
     expect(peekStored('byeolmyeong.birth.v1')).toBeUndefined();
   });
 
+  it('기기 저장소가 실패해도 메모리 층과 계정 기억은 먼저 빈다(새 세션 · 만료는 실패를 삼키고 로그인을 막지 않는다)', async () => {
+    await setStored('byeolmyeong.birth.v1', '앞사람 출생');
+    await setAccountLocal(A);
+    (AsyncStorage.getAllKeys as jest.Mock).mockRejectedValueOnce(new Error('io'));
+    await expect(clearDeviceData()).rejects.toThrow('io');
+    expect(peekStored('byeolmyeong.birth.v1')).toBeUndefined();
+    const { result } = await renderHook(() => useStoredAccount());
+    expect(result.current).toBeUndefined();
+  });
+
   it('지우기를 시작하면 곧바로(기기를 다 지우기 전에도) 메모리로는 앞사람 값을 그리지 않는다', async () => {
     await setStored('byeolmyeong.birth.v1', '앞사람 출생');
     const clearing = clearDeviceData();

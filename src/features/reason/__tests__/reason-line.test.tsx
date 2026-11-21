@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { AccessibilityInfo, Animated } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
+import { getAnimatedStyle } from 'react-native-reanimated';
 
 import { Motion } from '@/constants/theme';
 import { strings } from '@/content/strings';
@@ -46,36 +47,65 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     expect(screen.queryByTestId('reason-wheel')).toBeNull();
   });
 
-  it('누르는 순간 높이 · 꺾쇠와 내용의 보임이 같이 시작한다 — 펼칠 때 보임은 높이의 1/3 시간, 접을 때는 절반(내용이 먼저 흐려짐)', async () => {
+  /** 꺾쇠의 회전(도) · 칸의 높이 · 보임 — Reanimated 가 지금 그리는 값 */
+  // getAnimatedStyle 의 타입은 인자가 없다고 적혀 있지만 시험에서는 그 요소를 받는다(react-native-reanimated/jestUtils)
+  const animated = getAnimatedStyle as unknown as (element: unknown) => unknown;
+  const now = () => {
+    const turn = animated(screen.getByTestId('reason-chevron', { includeHiddenElements: true })) as { transform: { rotate: string }[] };
+    const body = animated(screen.getByTestId('reason-body', { includeHiddenElements: true })) as { height: number; opacity: number };
+    return { deg: parseFloat(turn.transform[0].rotate), height: body.height, opacity: body.opacity };
+  };
+
+  it('꺾쇠 회전 · 높이 · 보임이 진행 값 하나로 같은 길이 · 같은 곡선 — 내용은 절대 위치로 미리 재고, 앞 1/3 에서 나타난다(소유자 2026-11-21 빌드 8)', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
-    const timing = jest.spyOn(Animated, 'timing');
+    jest.useFakeTimers();
     await render(<ReasonLine reason={sun} chart={fixtures.chart} />);
     await act(async () => {});
-    // 펼친 내용은 처음부터 그려져 있다(접힌 동안 숨김) — 높이를 미리 잴 수 있게
-    const body = screen.getByTestId('reason-body', { includeHiddenElements: true });
-    expect(body.props.accessibilityElementsHidden).toBe(true);
-    expect(body.props.pointerEvents).toBe('none');
-    timing.mockClear();
+    // 펼친 내용은 처음부터 그려져 있고(숨김), 칸의 높이와 상관없이 제 높이로 놓여 잰다
+    const measure = screen.getByTestId('reason-measure', { includeHiddenElements: true });
+    expect(StyleSheet.flatten(measure.props.style)).toMatchObject({ position: 'absolute' });
+    await fireEvent(measure, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 240 } } });
+    expect(now()).toEqual({ deg: 0, height: 0, opacity: 0 });
+
     await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
-    const durations = timing.mock.calls.map(([, config]) => (config as { duration: number }).duration);
-    expect(durations).toEqual([Motion.openMs, Motion.openMs / 3]);
+    await act(async () => jest.advanceTimersByTime(16));
+    const early = now();
+    // 첫 프레임부터 셋이 같은 진행 값으로 움직인다
+    expect(early.deg).toBeGreaterThan(0);
+    expect(early.height / 240).toBeCloseTo(early.deg / 180, 5);
+    expect(early.opacity).toBeCloseTo(Math.min(1, (early.deg / 180) * 3), 5);
+    await act(async () => jest.advanceTimersByTime(Motion.openMs / 3));
+    const third = now();
+    expect(third.height / 240).toBeCloseTo(third.deg / 180, 5);
+    expect(third.opacity).toBe(1);
+    await act(async () => jest.advanceTimersByTime(Motion.openMs));
+    expect(now()).toEqual({ deg: 180, height: 240, opacity: 1 });
+    // 다 펼치면 잘라내지 않는다(용어 말풍선이 칸 밖으로)
+    expect(StyleSheet.flatten(screen.getByTestId('reason-body').props.style)).toMatchObject({ overflow: 'visible' });
     expect(screen.getByTestId('reason-body').props.accessibilityElementsHidden).toBe(false);
-    timing.mockClear();
+
     await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
-    const closing = timing.mock.calls.map(([, config]) => (config as { duration: number }).duration);
-    expect(closing).toEqual([Motion.closeMs, Motion.closeMs / 2]);
+    await act(async () => jest.advanceTimersByTime(16));
+    const closing = now();
+    expect(closing.deg).toBeLessThan(180);
+    expect(closing.height / 240).toBeCloseTo(closing.deg / 180, 5);
+    expect(StyleSheet.flatten(screen.getByTestId('reason-body', { includeHiddenElements: true }).props.style)).toMatchObject({ overflow: 'hidden' });
+    await act(async () => jest.advanceTimersByTime(Motion.closeMs));
+    expect(now()).toEqual({ deg: 0, height: 0, opacity: 0 });
     expect(screen.getByTestId('reason-body', { includeHiddenElements: true }).props.accessibilityElementsHidden).toBe(true);
-    timing.mockRestore();
+    jest.useRealTimers();
   });
 
   it('기기의 동작 줄이기가 켜져 있으면 바로 바뀐다(움직이지 않는다)', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
-    const timing = jest.spyOn(Animated, 'timing');
+    jest.useFakeTimers();
     await render(<ReasonLine reason={sun} chart={fixtures.chart} />);
     await act(async () => {});
+    await fireEvent(screen.getByTestId('reason-measure', { includeHiddenElements: true }), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 240 } } });
     await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
-    expect(timing).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ duration: 0 }));
-    timing.mockRestore();
+    await act(async () => jest.advanceTimersByTime(16));
+    expect(now()).toEqual({ deg: 180, height: 240, opacity: 1 });
+    jest.useRealTimers();
   });
 
   it('물음표는 말풍선이고 한 번에 하나만 열린다(12-2 해 · 12-3 하우스 — 하늘 지도의 팁과 같은 글)', async () => {

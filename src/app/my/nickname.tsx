@@ -28,7 +28,7 @@ const CHECK_AFTER_MS = 500;
  * 규칙은 가입 단계와 같다(판정은 서버, 앱은 먼저 안내만). 가입처럼 규칙에 맞는 새 닉네임을 치고 0.5초 멈추면 쓸 수 있는지 한 번 묻는다 —
  * 쓸 수 있으면 칸 아래 초록 "사용할 수 있는 닉네임이에요", 이미 있으면 빨강(소유자 2026-11-21). 묻지 못하면(끊김 · 옛 서버) 아무것도 적지 않는다.
  * "저장" 을 누를 때 서버에 한 번 보낸다 — 이미 있으면(409) 칸 아래 안내,
- * 그 밖의 실패는 짧은 알림(적은 글은 그대로, 결정 065 의 1). 저장하면 이 화면에 머물며 "닉네임을 바꿨어요" 를 알린다.
+ * 그 밖의 실패는 짧은 알림(적은 글은 그대로, 결정 065 의 1). 저장하면 이 화면에 머물며 바뀐 닉네임만 보인다(성공 알림 없음, 소유자 2026-11-21).
  */
 export default function NicknameScreen() {
   const { account, setAccount } = useMyAccount();
@@ -99,10 +99,10 @@ export default function NicknameScreen() {
     const res = await api.updateAccount({ nickname: check.value });
     sending.current = false;
     setSaving(false);
+    // 바뀐 닉네임이 곧 알림이다 — 성공 알림은 띄우지 않는다(소유자 2026-11-21)
     if (res.ok) {
       setAccount(res.data);
       setTyped(null);
-      show('success', MN.saved);
       return;
     }
     if (res.code === 'NICKNAME_TAKEN') return setRejected('TAKEN');

@@ -43,7 +43,14 @@ function Arrow({ dir, enabled, onPress }: { dir: 1 | -1; enabled: boolean; onPre
       disabled={!enabled}
       onPress={onPress}
       style={[styles.arrow, !enabled && styles.off]}>
-      <Svg width={M.arrowIcon} height={M.arrowIcon} viewBox="0 0 24 24" fill="none">
+      {/* 가리키는 쪽으로 1 — 열린 쪽에 무게가 실린 꺾쇠를 눈으로 보는 가운데에(theme M.arrowNudge) */}
+      <Svg
+        testID={dir === 1 ? 'month-next-icon' : 'month-prev-icon'}
+        width={M.arrowIcon}
+        height={M.arrowIcon}
+        viewBox="0 0 24 24"
+        fill="none"
+        style={dir === 1 ? styles.nudgeNext : styles.nudgePrev}>
         <Path d={dir === 1 ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'} stroke={Colors.gray} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
     </Pressable>
@@ -307,6 +314,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  nudgePrev: { transform: [{ translateX: -M.arrowNudge }] },
+  nudgeNext: { transform: [{ translateX: M.arrowNudge }] },
   off: { opacity: M.disabledOpacity },
   calendarTop: { marginTop: M.cardTop },
   calendar: {

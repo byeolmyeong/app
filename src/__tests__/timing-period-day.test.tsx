@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import TimingDayScreen from '@/app/timing/day';
 import TimingPeriodScreen from '@/app/timing/period';
 import { strings } from '@/content/strings';
+import { clearDeviceData } from '@/features/auth/delete-account';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { koreaToday } from '@/features/timing/dates';
 import { DAY_SKY_MADE_STORAGE_KEY } from '@/features/timing/day-sky-made';
@@ -256,6 +257,70 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'INVALID', status: 200 });
     await render(<TimingDayScreen />);
     expect(await screen.findByText(T.day.cannotOpen.title)).toBeTruthy();
+  });
+
+  describe('이번 실행에서 받은 날은 메모리에(빌드 10 — 기기에는 두지 않는다, 결정 049 의 9)', () => {
+    it('다시 열면 서버를 기다리지 않고 글 — 다시 부르지 않고, 쓰는 중 · 뼈대도 없다', async () => {
+      mockParams.mockReturnValue({ date: '2026-11-21' });
+      const first = await render(<TimingDayScreen />);
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      await first.unmount();
+      // 다시 열 때 서버는 답하지 않는다 — 그래도 글이 보여야 한다
+      mockApi.postDaySky.mockReturnValue(new Promise(() => {}));
+      await render(<TimingDayScreen />);
+      expect(screen.queryByText(T.day.making.title)).toBeNull();
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
+      expect(screen.queryByText(T.day.making.title)).toBeNull();
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+    });
+
+    it('다른 날 · 다른 출생 정보는 따로 — 받지 않은 것은 서버에 묻는다', async () => {
+      mockParams.mockReturnValue({ date: '2026-11-21' });
+      const first = await render(<TimingDayScreen />);
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      await first.unmount();
+      mockParams.mockReturnValue({ date: '2026-11-22' });
+      mockApi.postDaySky.mockResolvedValueOnce({ ok: true, data: { ...day, date: '2026-11-22' } });
+      const other = await render(<TimingDayScreen />);
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+      expect(mockApi.postDaySky).toHaveBeenLastCalledWith('2026-11-22');
+      await other.unmount();
+      await saveBirth({ profile: { ...profile, time: '09:00' }, chart: fixtures.chart });
+      mockParams.mockReturnValue({ date: '2026-11-21' });
+      await render(<TimingDayScreen />);
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(3);
+    });
+
+    it('기기를 지우면(로그아웃 · 탈퇴 · 출생 정보 바꾸기) 메모리도 — 다시 열면 서버에 묻는다', async () => {
+      mockParams.mockReturnValue({ date: '2026-11-21' });
+      const first = await render(<TimingDayScreen />);
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      await first.unmount();
+      await clearDeviceData();
+      await saveBirth({ profile, chart: fixtures.chart });
+      await render(<TimingDayScreen />);
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+    });
+
+    it('기기를 지우기 전에 시작한 요청의 늦은 답은 메모리에 두지 않는다(앞사람의 글이 남지 않게)', async () => {
+      mockParams.mockReturnValue({ date: '2026-11-21' });
+      let resolve: (r: ApiResult<DaySky>) => void = () => {};
+      mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+      const first = await render(<TimingDayScreen />);
+      await act(async () => undefined);
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+      await first.unmount();
+      await clearDeviceData();
+      await act(async () => resolve({ ok: true, data: day }));
+      await saveBirth({ profile, chart: fixtures.chart });
+      await render(<TimingDayScreen />);
+      expect(await screen.findByTestId('day-hero')).toBeTruthy();
+      expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('서버에 출생 정보가 없으면(404) 저장하고 한 번만 더 부른다', async () => {

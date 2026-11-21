@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react-native';
 
 import {
   ACCOUNT_STORAGE_KEY,
+  accountEpoch,
   ensureAccount,
   forgetAccount,
   refreshAccount,
@@ -153,5 +154,30 @@ describe('#96 리뷰 R1 · R2 — 오프라인 첫 묻기 · 잊는 사이의 �
     await act(async () => forgetAccount());
     await act(async () => answer(JSON.stringify({ account: A })));
     expect(result.current).toBeUndefined();
+  });
+
+  it('#106 리뷰: 바꾸기 전에 시작한 묻기의 늦은 답은 바꾼 값(메모리 · 기기)을 옛 값으로 덮지 않는다', async () => {
+    let answer: (v: { ok: true; data: MyAccount }) => void = () => {};
+    mockApi.getMyAccount.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const asking = refreshAccount();
+    const changed = { ...me, marketingConsent: true };
+    await setAccountLocal(changed);
+    await act(async () => {
+      answer({ ok: true, data: me });
+      await asking;
+    });
+    const { result } = await renderHook(() => useStoredAccount());
+    expect(result.current).toEqual(changed);
+    expect(await stored()).toEqual({ account: changed });
+  });
+
+  it('#106 리뷰: 보내기 전의 잊기 번호를 준 저장 답은, 그 사이 잊었으면(로그아웃) 두지 않는다', async () => {
+    const since = accountEpoch();
+    await forgetAccount();
+    await setAccountLocal({ ...me, nickname: '앞사람' }, since);
+    const { result } = await renderHook(() => useStoredAccount());
+    await act(async () => {});
+    expect(result.current).toBeUndefined();
+    expect(await stored()).toBeNull();
   });
 });

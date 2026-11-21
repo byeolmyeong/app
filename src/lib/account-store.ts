@@ -24,6 +24,8 @@ let fetching: Promise<ApiResult<MyAccount>> | null = null;
 let fetchedThisLogin = false;
 /** 잊을 때마다 하나씩 — 잊기 전에 시작한 읽기 · 묻기의 늦은 답은 쓰지 않는다(로그인 직후 새 계정을 앞 세션의 답으로 끝내지 않게, #96 리뷰 R2) */
 let epoch = 0;
+/** 바꾼 것(PATCH 응답)을 둘 때마다 하나씩 — 그보다 먼저 시작한 묻기의 늦은 답이 바꾼 값을 옛 값으로 덮지 않게(#106 리뷰) */
+let localVersion = 0;
 const listeners = new Set<() => void>();
 
 function publish(next: MyAccount | null | undefined) {
@@ -64,10 +66,11 @@ export function refreshAccount(): Promise<ApiResult<MyAccount>> {
   fetchedThisLogin = true;
   if (fetching) return fetching;
   const started = epoch;
+  const startedVersion = localVersion;
   const asking: Promise<ApiResult<MyAccount>> = (async () => {
     const gen = await storageGeneration(GENERATION_KEY).catch(() => null);
     const r = await api.getMyAccount();
-    const same = started === epoch && gen !== null && (await isSameGeneration(GENERATION_KEY, gen));
+    const same = started === epoch && startedVersion === localVersion && gen !== null && (await isSameGeneration(GENERATION_KEY, gen));
     if (r.ok && same) {
       publish(r.data);
       await save(r.data, gen);
@@ -91,8 +94,16 @@ export function ensureAccount(): Promise<ApiResult<MyAccount>> | null {
   return refreshAccount();
 }
 
-/** 저장(PATCH /account)의 응답으로 바로 갈아 끼운다 */
-export async function setAccountLocal(account: MyAccount): Promise<void> {
+/** 지금의 잊기 번호 — 저장(PATCH)을 보내기 전에 받아 두었다가 setAccountLocal 에 넘긴다 */
+export const accountEpoch = (): number => epoch;
+
+/**
+ * 저장(PATCH /account)의 응답으로 바로 갈아 끼운다. `since`(보내기 전의 accountEpoch)를 주면 그 사이 잊었을 때(로그아웃 · 다른 계정으로 로그인)
+ * 늦게 온 앞사람의 답을 두지 않는다(#106 리뷰).
+ */
+export async function setAccountLocal(account: MyAccount, since?: number): Promise<void> {
+  if (since !== undefined && since !== epoch) return;
+  localVersion += 1;
   publish(account);
   await save(account, await storageGeneration(GENERATION_KEY).catch(() => null));
 }
@@ -127,6 +138,9 @@ export function useStoredAccount(): MyAccount | null | undefined {
 
 /** 시험용 */
 export function resetAccountStoreForTest(): void {
+  // 앞 시험의 늦은 답이 다음 시험의 보관에 들지 않게
+  epoch += 1;
+  localVersion = 0;
   current = undefined;
   readDone = false;
   reading = null;

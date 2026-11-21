@@ -218,6 +218,31 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
     expect(isOn(N.marketing.label)).toBe(true);
   });
 
+  it('들어올 때 보낸 GET 이 바꾼 뒤에 옛 값으로 와도 화면 · 계정 보관은 바꾼 값(#106 리뷰)', async () => {
+    await setAccountLocal(full);
+    let answerGet: (v: ApiResult<MyAccount>) => void = () => {};
+    mockApi.getMyAccount.mockReturnValue(new Promise((r) => (answerGet = r)));
+    mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...full, marketingConsent: true } });
+    let seen: MyAccount | null | undefined;
+    function Probe() {
+      seen = useStoredAccount();
+      return null;
+    }
+    await render(
+      <>
+        <NotificationsScreen />
+        <Probe />
+      </>,
+    );
+    await fireEvent.press(sw(N.marketing.label));
+    await waitFor(() => expect(seen?.marketingConsent).toBe(true));
+    await act(async () => answerGet({ ok: true, data: full }));
+    await act(async () => {});
+    expect(isOn(N.marketing.label)).toBe(true);
+    expect(seen?.marketingConsent).toBe(true);
+    expect(JSON.parse((await AsyncStorage.getItem('byeolmyeong.account.v1')) ?? 'null')).toEqual({ account: { ...full, marketingConsent: true } });
+  });
+
   it('0.3초가 넘게 걸리면 다 그려진 화면과 같은 카드 셋 · 같은 줄 수의 뼈대(결정 065)', async () => {
     jest.useFakeTimers();
     try {

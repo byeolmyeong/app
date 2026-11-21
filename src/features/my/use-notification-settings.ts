@@ -1,9 +1,9 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useSession } from '@/features/auth/use-session';
 import { notificationSettingsOf, type NotificationSettings } from '@/features/my/notification-settings';
-import { refreshAccount, setAccountLocal, useStoredAccount } from '@/lib/account-store';
+import { accountEpoch, refreshAccount, setAccountLocal, useStoredAccount } from '@/lib/account-store';
 import { api, type AccountPatch, type ApiErrorKind, type MyAccount } from '@/lib/api';
 
 export type NotificationState =
@@ -48,6 +48,10 @@ export function useNotificationSettings() {
   const confirmed = useRef<Confirmed | null>(null);
   /** 답을 기다리는 바꾸기의 수 */
   const inflight = useRef(0);
+  // 로그아웃하면 앞사람의 서버 값을 되돌릴 곳으로 남기지 않는다
+  useEffect(() => {
+    if (!signedIn) confirmed.current = null;
+  }, [signedIn]);
 
   const load = useCallback(() => {
     if (!signedIn) return;
@@ -90,6 +94,7 @@ export function useNotificationSettings() {
       };
     });
     const mine = ++latest.current;
+    const since = accountEpoch();
     inflight.current++;
     const res = await api.updateAccount(patch);
     inflight.current--;
@@ -97,7 +102,7 @@ export function useNotificationSettings() {
     // 기다리는 바꾸기가 없을 때만 서버가 마지막으로 준 값으로 맞춘다(못 바꾼 것은 이때 되돌아간다). 계정 보관도 그 값으로
     if (inflight.current === 0) {
       setState(readyOf(confirmed.current?.account ?? base));
-      if (confirmed.current) void setAccountLocal(confirmed.current.account);
+      if (confirmed.current) void setAccountLocal(confirmed.current.account, since);
     }
     return res.ok;
   }, [stored]);

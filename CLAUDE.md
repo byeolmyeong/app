@@ -30,7 +30,7 @@
 ## 명령어 (Node 22)
 - 개발: `npx expo start --web` · 빌드: `npx expo export --platform web` · 테스트: `npm test` · 린트/타입: `npx tsc --noEmit && npx expo lint`
 - 패키지 설치: `npx expo install <패키지>` 만. 환경 변수 이름은 루트 `.env.example`
-- 브랜드 그림 PNG 다시 만들기(앱 아이콘 · 스플래시 · 공유 카드): `node scripts/render-brand.mjs`
+- 브랜드 그림 PNG 다시 만들기(앱 아이콘 · 스플래시 · 공유 카드): `node scripts/render-brand.mjs` 뒤 `scripts/compress-png.mjs`(스플래시 · 기본 별이를 팔레트 PNG 로 — 사용법은 그 파일)
 - 기기 개발 빌드(소셜 로그인은 Expo Go 에서 안 된다, 결정 034): `npx eas-cli@latest build --profile development`(iOS 시뮬레이터는 `development-simulator`). 공급자 값은 EAS `development` 환경 변수(운영과 같은 값, 결정 041) → `app.config.ts`. 로컬 `npx expo run:*` · Metro 는 `.env`
 - 웹 배포(Vercel, 결정 037): `develop` → app.staging.byeolmyeong.com, `main` → app.byeolmyeong.com. 작업 브랜치는 `develop` 으로 PR. 설정은 `vercel.json` — CSP 머리도 여기(결정 077). 새 외부 스크립트 · API 주소를 쓰면 정책도 고치고, 웹 빌드 뒤 `node scripts/check-csp.mjs`
 - 테스트앱 "별명 테스트"(스테이징 서버, TestFlight 에만, 결정 041): `npx eas-cli@latest build --profile test --platform ios --auto-submit`. 운영앱은 `--profile production`. 값은 EAS 환경 변수(preview · production)

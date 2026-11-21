@@ -1,4 +1,5 @@
 // 브랜드 그림 SVG(assets/brand) → PNG(assets/images). 그림을 고치면 이 스크립트를 다시 돌린다(결정 035).
+// 다시 만든 뒤에는 화면에 바로 실리는 그림(스플래시 · 기본 별이)을 scripts/compress-png.mjs 로 줄인다(성능 계획 2).
 // 이 컴퓨터의 Chrome 으로 찍는다. 다른 곳에 깔렸으면 CHROME 에 경로를 준다.
 //   node scripts/render-brand.mjs
 import { execFileSync } from 'node:child_process';

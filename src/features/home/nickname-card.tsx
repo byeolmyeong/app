@@ -7,7 +7,7 @@ import { GlowBackdrop } from '@/components/glow';
 import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { PlaceholderCircle, PlaceholderLine } from '@/components/placeholder';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, LineWidth, NicknameCardLayout as L, Spacing, Typography } from '@/constants/theme';
+import { BrandColors, Colors, LineWidth, NicknameCardLayout as L, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const C = strings.home.card;
@@ -32,18 +32,13 @@ export type NicknameCardProps = {
 };
 
 /**
- * 홈의 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): 프로필 그림 · "○○ 님" · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 꺾쇠 ›.
+ * 홈의 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): 프로필 그림 · "○○ 님" · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 풀이 읽기.
  * 카드 전체를 누르면 내 별명(풀이 글)으로 간다. 브랜드 자리라 오른쪽 위에 옅은 빛과 별자리 장식이 있다(결정 035).
- * 아래 줄의 "풀이 읽기" 글자는 빼고 꺾쇠만 둔다 — 화면 읽기 이름에는 남긴다(소유자, 빌드 11). 받아 둔 풀이가 없으면 "내 별명 읽기 ›" 그대로.
  */
 export function NicknameCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, onOpen }: NicknameCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
-  // 화면 읽기는 보이는 글 차례대로 + 가는 곳(글자를 뺀 "풀이 읽기")
-  const label = [nickname ? `${nickname}${C.nicknameSuffix}` : null, meta, headline ?? M.readingEmpty, headline ? C.read : M.readingCta]
-    .filter(Boolean)
-    .join(C.labelSeparator);
   return (
-    <Pressable testID="nickname-card" accessibilityRole="button" accessibilityLabel={label} onPress={onOpen} style={styles.card}>
+    <Pressable testID="nickname-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
       <CardConstellation art={art} />
       <View style={styles.row}>
@@ -73,12 +68,10 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
         </Txt>
       )}
       <View style={styles.more}>
-        {headline ? null : (
-          <Txt variant="captionStrong" color="gray">
-            {M.readingCta}
-          </Txt>
-        )}
-        <Svg testID="nickname-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+        <Txt variant="captionStrong" color="gray">
+          {headline ? C.read : M.readingCta}
+        </Txt>
+        <Svg width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
           <Path d="M9 6l6 6-6 6" stroke={Colors.gray} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </View>
@@ -121,6 +114,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
   names: { flexShrink: 1 },
   headline: { marginTop: L.headlineTop },
-  /** 글자가 없어도(꺾쇠만) 그 줄 높이 그대로 — 카드 높이 · 꺾쇠의 세로 자리가 바뀌지 않게 */
-  more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.hairline, marginTop: L.moreTop, minHeight: Typography.captionStrong.lineHeight },
+  more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.hairline, marginTop: L.moreTop },
 });

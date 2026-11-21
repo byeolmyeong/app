@@ -13,13 +13,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { api, isShareCard, type ApiResult, type ShareCard, type ShareCreated, type ShareRequest } from '@/lib/api';
 import { koreanToday } from '@/lib/korea-date';
+import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
 
 export const SHARE_CARDS_STORAGE_PREFIX = 'byeolmyeong.shareCards.v1.';
 const GENERATION_KEY = `${SHARE_CARDS_STORAGE_PREFIX}gen`;
 const DAY_SKY = 'DAY_SKY:';
-
-/** 세대 표식을 만드는 중(처음 동시에 부른 요청들이 같은 세대를 쓰게) */
-let creating: Promise<string> | null = null;
 
 /** 기억하는 키. 기억하지 않는 종류는 null */
 export function shareKeyOf(request: ShareRequest): string | null {
@@ -36,20 +34,6 @@ export function shareKeyOf(request: ShareRequest): string | null {
   }
 }
 
-/** 지금 세대. 없으면(처음 · 기기를 지운 뒤) 새로 만든다 */
-async function generation(): Promise<string> {
-  const current = await AsyncStorage.getItem(GENERATION_KEY);
-  if (current) return current;
-  creating ??= (async () => {
-    const next = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    await AsyncStorage.setItem(GENERATION_KEY, next);
-    return next;
-  })().finally(() => {
-    creating = null;
-  });
-  return creating;
-}
-
 /** 그날의 하늘을 둘 때: 한국 날짜로 오늘보다 앞선 날의 그날의 하늘 기억을 지운다 */
 async function pruneDaySky(): Promise<void> {
   const today = koreanToday();
@@ -63,7 +47,7 @@ async function pruneDaySky(): Promise<void> {
 /** 결과로 기억을 고친다. 요청을 시작할 때의 세대와 지금 세대가 같을 때만(그 사이 기기를 지웠으면 쓰지 않는다) */
 async function remember(key: string, gen: string, card: ShareCard | null): Promise<void> {
   try {
-    if ((await AsyncStorage.getItem(GENERATION_KEY)) !== gen) return;
+    if (!(await isSameGeneration(GENERATION_KEY, gen))) return;
     if (!card) return await AsyncStorage.removeItem(`${SHARE_CARDS_STORAGE_PREFIX}${key}`);
     await AsyncStorage.setItem(`${SHARE_CARDS_STORAGE_PREFIX}${key}`, JSON.stringify(card));
     if (key.startsWith(DAY_SKY)) await pruneDaySky();
@@ -94,7 +78,7 @@ export async function prefetchShare(request: ShareRequest): Promise<void> {
   if (!key) return;
   let mark: string | null = null;
   try {
-    const gen = await generation();
+    const gen = await storageGeneration(GENERATION_KEY);
     mark = `${gen}|${key}`;
     if (prefetched.has(mark)) return;
     prefetched.add(mark);
@@ -118,7 +102,7 @@ export async function fetchShare(request: ShareRequest): Promise<ApiResult<Share
   if (!key) return api.createShare(request);
   let gen: string;
   try {
-    gen = await generation();
+    gen = await storageGeneration(GENERATION_KEY);
   } catch {
     return api.createShare(request);
   }

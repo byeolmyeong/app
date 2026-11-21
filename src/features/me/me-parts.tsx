@@ -16,7 +16,10 @@ const C = L.card;
 const D = L.detail;
 const K = L.skeleton;
 
-/** 받은 뒤 맨 위 카드(보드 12-8): 프로필 그림 · "○○ 님의 별명" · 한 줄 별명(한 줄로 자름) · 풀이 읽기 → 내 별명 */
+/**
+ * 받은 뒤 맨 위 카드(보드 12-8): 프로필 그림 · "○○ 님의 별명" · 한 줄 별명(한 줄로 자름) · 꺾쇠 › → 내 별명.
+ * 오른쪽의 "풀이 읽기" 글자는 빼고 꺾쇠만 둔다 — 화면 읽기 이름에는 남긴다(소유자, 빌드 11).
+ */
 export function MeNicknameCard({
   nickname,
   avatar,
@@ -29,7 +32,12 @@ export function MeNicknameCard({
   onOpen: () => void;
 }) {
   return (
-    <Pressable testID="me-nickname-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
+    <Pressable
+      testID="me-nickname-card"
+      accessibilityRole="button"
+      accessibilityLabel={[nickname ? `${nickname}${S.card.suffix}` : S.card.fallback, headline, S.card.read].filter(Boolean).join(S.card.labelSeparator)}
+      onPress={onOpen}
+      style={styles.card}>
       {isAvatarId(avatar) ? <Avatar id={avatar} size={C.avatar} /> : null}
       <View style={styles.cardText}>
         <Txt variant="label" color="accentText">
@@ -41,14 +49,9 @@ export function MeNicknameCard({
           </Txt>
         ) : null}
       </View>
-      <View style={styles.read}>
-        <Txt variant="caption" color="gray">
-          {S.card.read}
-        </Txt>
-        <Svg width={C.chevron} height={C.chevron} viewBox="0 0 24 24" fill="none">
-          <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
-      </View>
+      <Svg testID="me-nickname-card-chevron" width={C.chevron} height={C.chevron} viewBox="0 0 24 24" fill="none">
+        <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
     </Pressable>
   );
 }
@@ -117,7 +120,7 @@ export function DetailCard({ blocked, onRequest }: { blocked: boolean; onRequest
   );
 }
 
-/** 받은 뒤 맨 위 별명 카드의 뼈대(결정 071, 보드 12-8): 같은 카드에 프로필 동그라미 · 이름 · 한 줄 별명 · 풀이 읽기 */
+/** 받은 뒤 맨 위 별명 카드의 뼈대(결정 071, 보드 12-8): 같은 카드에 프로필 동그라미 · 이름 · 한 줄 별명(꺾쇠 자리는 비운다) */
 export function MeNicknameCardSkeleton() {
   return (
     <View testID="me-nickname-card-skeleton" style={styles.card}>
@@ -126,9 +129,7 @@ export function MeNicknameCardSkeleton() {
         <SkeletonText variant="label" widths={[K.card.label]} />
         <SkeletonText variant="clause" widths={[K.card.headline]} />
       </View>
-      <View style={styles.read}>
-        <SkeletonText variant="caption" widths={[K.card.read]} />
-      </View>
+      <View style={styles.chevronSpace} />
     </View>
   );
 }
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.raised,
   },
   cardText: { flex: 1, minWidth: 0, gap: C.textGap },
-  read: { flexDirection: 'row', alignItems: 'center' },
+  chevronSpace: { width: C.chevron },
   chips: { flexDirection: 'row', gap: L.chips.gap, paddingTop: L.chips.top, paddingBottom: L.chips.bottom },
   chip: { flex: 1, height: L.chips.height, borderRadius: L.chips.height / 2, alignItems: 'center', justifyContent: 'center' },
   chipOn: { backgroundColor: Colors.ink },

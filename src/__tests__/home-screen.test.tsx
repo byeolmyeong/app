@@ -129,6 +129,21 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
+  it('별명 카드 아래 줄은 꺾쇠 › 만 — "풀이 읽기" 글자는 없고 화면 읽기 이름에 남는다. 카드 전체를 누르면 /reading(소유자, 빌드 11)', async () => {
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-11-20T01:00:00Z').getTime());
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading({ ...fixtures.reading, createdAt: '2026-11-09T01:00:00Z' });
+    await render(<HomeScreen />);
+    const card = await screen.findByTestId('nickname-card');
+    await within(card).findByText(fixtures.reading.headline);
+    expect(within(card).queryByText(strings.home.card.read)).toBeNull();
+    expect(within(card).getByTestId('nickname-card-chevron')).toBeTruthy();
+    const name = ['새벽별 님', '쌍둥이자리 · 별명을 받은 지 12일', fixtures.reading.headline, strings.home.card.read].join(', ');
+    expect(screen.getByRole('button', { name })).toBe(card);
+    await fireEvent.press(card);
+    expect(router.push).toHaveBeenCalledWith('/reading');
+  });
+
   it('별명 카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 사람마다 다르다(소유자 지적: 처녀자리인데 다른 자리)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     const view = await render(<HomeScreen />);
@@ -207,7 +222,7 @@ describe('홈', () => {
     const card = await screen.findByTestId('nickname-card');
     expect(await within(card).findByText(old.headline)).toBeTruthy();
     expect(within(card).queryByText(M.readingEmpty)).toBeNull();
-    expect(within(card).getByText(strings.home.card.read)).toBeTruthy();
+    expect(card.props.accessibilityLabel).toMatch(new RegExp(`${strings.home.card.read}$`));
     // 만든 때가 없는 옛 글이라 "받은 지 N일" 은 없다
     expect(within(card).queryByText(/별명을 받은 지/)).toBeNull();
     expect(mockApi.createReading).not.toHaveBeenCalled();

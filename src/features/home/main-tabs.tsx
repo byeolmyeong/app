@@ -10,6 +10,13 @@ export type MainTab = 'home' | 'me' | 'timing' | 'my';
 /** 탭마다 가는 곳(결정 055 의 2). 나는 나 탭(`/me`, 결정 048 의 1), 시기는 시기 탭(`/timing`, 결정 049 의 1) */
 const PATHS = { home: '/', me: '/me', timing: '/timing', my: '/my' } as const;
 
+/**
+ * 탭마다의 첫 화면 — 루트 화면 쌓기의 이름(`PATHS` 와 짝). 루트 레이아웃이 이 넷을 미끄러짐 없이 바로 바꾼다(animation none):
+ * 탭은 화면 쌓기 위의 replace 라 기본이면 오른쪽에서 미끄러져 들어온다(iOS 탭 막대의 관례와 다름 — 소유자 지적). 탭 안에서 들어가는 화면은 그대로.
+ */
+const TAB_SCREENS: Record<MainTab, string> = { home: 'index', me: 'me', timing: 'timing/index', my: 'my/index' };
+export const TAB_ROOT_SCREENS = Object.values(TAB_SCREENS);
+
 const icon = (draw: (stroke: object) => React.ReactNode) =>
   function TabIcon(color: string) {
     return (

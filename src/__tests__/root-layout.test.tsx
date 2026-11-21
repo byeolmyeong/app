@@ -165,6 +165,29 @@ describe('약관 글 화면의 열림', () => {
   });
 });
 
+// 소유자 지적(테스트앱): 아래 탭을 바꾸면 화면이 오른쪽에서 미끄러져 들어왔다(탭이 화면 쌓기의 replace) — iOS 탭 막대처럼 바로
+describe('아래 탭의 첫 화면', () => {
+  beforeEach(() => {
+    mockSegments.mockReturnValue([]);
+    mockUseSession.mockReturnValue(session('signedIn'));
+  });
+
+  it('홈 · 나 · 시기 · 마이의 첫 화면은 미끄러짐 없이 바로 바뀐다(animation none)', async () => {
+    await render(<RootLayout />);
+    await waitFor(() => {
+      const options = Object.fromEntries(mockScreen.mock.calls.map(([p]) => [p.name, p.options]));
+      for (const name of ['index', 'me', 'timing/index', 'my/index']) expect(options[name]).toEqual({ animation: 'none' });
+    });
+  });
+
+  it('탭 안에서 들어가는 화면(내 별명 · 내 하늘 지도 · 시기 자세히 · 그날의 하늘 · 마이의 하위 화면 · 알림함 · 오늘의 하늘)은 화면 쌓기의 기본(오른쪽에서) 그대로', async () => {
+    await render(<RootLayout />);
+    await waitFor(() => expect(mockScreen).toHaveBeenCalled());
+    const names = mockScreen.mock.calls.map(([p]) => p.name);
+    for (const name of ['reading', 'chart/index', 'timing/period', 'timing/day', 'my/account', 'my/nickname', 'notifications', 'today']) expect(names).not.toContain(name);
+  });
+});
+
 // 스플래시(결정 067 의 3): 웹은 앱이 보드 1 모양을 그리고, 앱(iOS · 안드로이드)은 네이티브 스플래시를 같은 때까지 둔다
 describe('스플래시', () => {
   const original = Platform.OS;

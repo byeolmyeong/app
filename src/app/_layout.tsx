@@ -14,6 +14,7 @@ import { useSuspended } from '@/features/auth/suspension';
 import { useSuspensionGate } from '@/features/auth/suspension-gate';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { useHomeReady } from '@/features/home/home-ready';
+import { TAB_ROOT_SCREENS } from '@/features/home/main-tabs';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { usePushDeviceSync, usePushTapRouting } from '@/features/push/push';
 import { ChunkErrorBoundary } from '@/features/update/chunk-reload';
@@ -26,6 +27,8 @@ const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy
 /** 오른쪽에서 밀려 들어오는 가입 단계(앱은 화면 쌓기 기본, 웹은 화면이 스스로 — 결정 068 의 7) */
 const SLIDE_IN_ROUTES = ['signup/nickname', 'signup/birth'];
 const SLIDE_IN_OPTIONS = slideInScreenOptions(Platform.OS);
+/** 아래 탭의 첫 화면 넷: 탭을 바꾸면(replace) 미끄러짐 없이 바로 — iOS 탭 막대의 관례(소유자 지적). 탭 안에서 들어가는 화면은 기본(오른쪽에서) 그대로 */
+const TAB_ROOT_OPTIONS = { animation: 'none' } as const;
 /** 확인하지 못한 세션을 다시 확인하는 간격 */
 const RECHECK_MS = 30_000;
 
@@ -119,6 +122,9 @@ export default function RootLayout() {
               ))}
               {SLIDE_IN_ROUTES.map((name) => (
                 <Stack.Screen key={name} name={name} options={SLIDE_IN_OPTIONS} />
+              ))}
+              {TAB_ROOT_SCREENS.map((name) => (
+                <Stack.Screen key={name} name={name} options={TAB_ROOT_OPTIONS} />
               ))}
             </Stack>
           </View>

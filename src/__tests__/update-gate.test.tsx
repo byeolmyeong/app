@@ -44,7 +44,7 @@ jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(), hideAs
 jest.mock('expo-router', () => {
   const { Text: T } = jest.requireActual('react-native');
   // 세션이 없으면 로그인 전 가드가 로그인 화면으로 보낸다(결정 034) — 여기서는 보내는 것만 받아 둔다.
-  return { Stack: () => <T>앱의 화면들</T>, useSegments: jest.fn(() => []), router: { replace: jest.fn() } };
+  return { Stack: () => <T>앱의 화면들</T>, useSegments: jest.fn(() => []), usePathname: () => '/', router: { replace: jest.fn() } };
 });
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })) }));
 // 소개는 이미 본 기기로 둔다(결정 042 — 로그인 전이면 로그인 화면으로)

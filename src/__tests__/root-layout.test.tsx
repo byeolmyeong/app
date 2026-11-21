@@ -23,6 +23,7 @@ jest.mock('expo-router', () => ({
     },
   }),
   useSegments: jest.fn(() => []),
+  usePathname: () => '/',
   router: { replace: jest.fn(), push: jest.fn(), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
 }));
 // 글꼴을 받았는지는 시험이 정한다(기본: 받음)

@@ -5,7 +5,7 @@ import { IosAuthorizationStatus } from 'expo-notifications';
 import { router } from 'expo-router';
 import { AppState, Linking, Platform } from 'react-native';
 
-import { parsePushData, pushTarget } from '@/features/push/push-data';
+import { isViewingTarget, parsePushData, pushTarget } from '@/features/push/push-data';
 import {
   getPushPermission,
   onPushReceived,
@@ -21,7 +21,9 @@ import {
 import { api } from '@/lib/api';
 
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { extra: { eas: { projectId: 'project-1' } } }, easConfig: null } }));
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+// 지금 보고 있는 화면은 시험이 정한다(기본: 홈)
+let mockPathname = '/';
+jest.mock('expo-router', () => ({ router: { push: jest.fn() }, usePathname: () => mockPathname }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   api: { registerPushDevice: jest.fn(), deletePushDevice: jest.fn() },
@@ -36,6 +38,7 @@ const response = (id: string, data: object) => ({ actionIdentifier: 'default', n
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  mockPathname = '/';
   await AsyncStorage.clear();
   N.getPermissionsAsync.mockResolvedValue(perm(S.NOT_DETERMINED));
   N.getExpoPushTokenAsync.mockResolvedValue({ type: 'expo', data: 'ExponentPushToken[abc]' });
@@ -286,6 +289,20 @@ describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
     expect(parsePushData(raw)).toBeNull();
   });
 
+  it.each([
+    [{ type: 'TODAY_SKY', date: '2026-11-21' }, ['/', '/today'], ['/me', '/timing']],
+    [{ type: 'READING_DONE' }, ['/reading', '/me'], ['/', '/timing']],
+    [{ type: 'ME_REPORT_DONE' }, ['/me'], ['/', '/reading']],
+    [{ type: 'TIMING_REPORT_DONE' }, ['/timing'], ['/', '/me']],
+    [{ type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }, ['/my/inquiries/q1'], ['/my/inquiries', '/my/inquiries/q2', '/']],
+    [{ type: 'EVENT', target: '/timing?from=push' }, ['/timing'], ['/', '/me']],
+    [{ type: 'EVENT', target: '/timing/' }, ['/timing'], ['/', '/me']],
+  ])('그 알림이 가리키는 화면을 보고 있는가(결정 076): %j', (raw, viewing, elsewhere) => {
+    const data = parsePushData(raw)!;
+    for (const path of viewing) expect(isViewingTarget(data, path)).toBe(true);
+    for (const path of elsewhere) expect(isViewingTarget(data, path)).toBe(false);
+  });
+
   it('쓰는 중에 온 푸시는 알아본 것만 알리고, 돌려준 함수로 그만 듣는다', () => {
     const remove = jest.fn();
     let deliver: (n: never) => void = () => {};
@@ -310,10 +327,24 @@ describe('알림을 누르면(루트)', () => {
     return null;
   }
 
-  it('쓰는 중 배너는 띄우지 않는다(결정 066 의 5)', async () => {
-    await render(<Tap ready />);
-    const handler = N.setNotificationHandler.mock.calls[0][0];
-    expect(await handler?.handleNotification({} as never)).toEqual({ shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false, shouldSetBadge: false });
+  const incoming = (data: object) => ({ request: { identifier: 'n', content: { data } } }) as never;
+  const shown = { shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false };
+  const hidden = { shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false, shouldSetBadge: false };
+
+  it('쓰는 중에 온 푸시도 배너 · 목록으로 띄운다(소리 없이) — 그 알림이 가리키는 화면을 보고 있으면 띄우지 않는다(결정 076)', async () => {
+    mockPathname = '/me';
+    const view = await render(<Tap ready />);
+    const handler = N.setNotificationHandler.mock.calls[0][0]!;
+    expect(await handler.handleNotification(incoming({ type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }))).toEqual(shown);
+    expect(await handler.handleNotification(incoming({ type: 'ME_REPORT_DONE' }))).toEqual(hidden);
+    // 화면을 옮기면 그 화면을 기준으로(처리기는 한 번만 건다)
+    mockPathname = '/my/inquiries/q1';
+    await view.rerender(<Tap ready />);
+    expect(N.setNotificationHandler).toHaveBeenCalledTimes(1);
+    expect(await handler.handleNotification(incoming({ type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }))).toEqual(hidden);
+    expect(await handler.handleNotification(incoming({ type: 'ME_REPORT_DONE' }))).toEqual(shown);
+    // 알아보지 못한 data 도 띄운다(서버가 보낸 알림을 삼키지 않는다)
+    expect(await handler.handleNotification(incoming({ type: 'NOPE' }))).toEqual(shown);
   });
 
   it('알림으로 처음 켜면 화면들이 준비될 때까지 기다렸다가 한 번 간다 — 같은 알림이 듣기로 또 와도 한 번', async () => {

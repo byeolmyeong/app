@@ -4,16 +4,19 @@
  * ("다시 보기" · 연결이 돌아왔을 때만). 받은 글은 기기 저장소와 로그에 남기지 않는다. 화면의 메모리에만 있다.
  * 로그인 확인 전에 부르면 토큰 없이 나가 401 을 받고, 세션 다시 받기가 보관 토큰을 지운다 — 그래서 기다린다(알림이 바로 여는 주소라).
  * 요청마다 번호를 매겨 마지막 요청의 답만 쓴다 — 늦게 온 "다시 보기" 의 답이 그 뒤에 받은 새 목록을 덮거나, 떠난 뒤 온 답이 쓰이지 않게.
+ * 답변 보기를 보는 중에 그 문의의 답 푸시가 오면 배너 대신 화면을 다시 묻는다(결정 076 — 보고 있는 화면의 알림은 배너를 띄우지 않는다).
  */
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useSession } from '@/features/auth/use-session';
+import { onPushReceived } from '@/features/push/push';
+import type { PushData } from '@/features/push/push-data';
 import { api, type ApiErrorKind, type ApiResult, type InquiryItem } from '@/lib/api';
 
 export type Loaded<T> = { status: 'loading' } | { status: 'ready'; data: T } | { status: 'failed'; error: ApiErrorKind } | { status: 'notFound' };
 
-function useFocusedLoad<T>(load: (() => Promise<ApiResult<T>>) | null) {
+function useFocusedLoad<T>(load: (() => Promise<ApiResult<T>>) | null, refreshOn?: (push: PushData) => boolean) {
   const signedIn = useSession().status === 'signedIn';
   const [state, setState] = useState<Loaded<T>>(load ? { status: 'loading' } : { status: 'notFound' });
   /** 마지막으로 보낸 요청의 번호. 답이 왔을 때 이 번호가 아니면 버린다 */
@@ -35,7 +38,25 @@ function useFocusedLoad<T>(load: (() => Promise<ApiResult<T>>) | null) {
     };
   }, [load, signedIn]);
 
-  useFocusEffect(fetchOnce);
+  /** 이 화면이 보이고 있는가 — 쓰는 중에 온 푸시로 다시 물을지 정할 때 본다 */
+  const focused = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      focused.current = true;
+      const leave = fetchOnce();
+      return () => {
+        focused.current = false;
+        leave?.();
+      };
+    }, [fetchOnce]),
+  );
+  // 보고 있는 화면이 가리키는 푸시가 쓰는 중에 오면(배너는 띄우지 않는다 — 결정 076) 받아 둔 것은 둔 채 다시 묻는다
+  useEffect(() => {
+    if (!refreshOn) return;
+    return onPushReceived((push) => {
+      if (focused.current && refreshOn(push)) fetchOnce();
+    });
+  }, [fetchOnce, refreshOn]);
 
   /** 실패 화면의 "다시 보기" · 연결이 돌아왔을 때: 불러오는 중으로 돌리고 다시 묻는다(앞의 요청의 답은 버린다) */
   const retry = useCallback(() => {
@@ -54,5 +75,6 @@ export function useInquiries() {
 /** 문의 한 건과 답. 남의 것 · 없는 것은 notFound. 주소에 식별자가 없으면 묻지 않고 notFound */
 export function useInquiryItem(id: string) {
   const load = useCallback(() => api.getInquiry(id), [id]);
-  return useFocusedLoad<InquiryItem>(id === '' ? null : load);
+  const answeredHere = useCallback((push: PushData) => push.type === 'INQUIRY_ANSWERED' && push.inquiryId === id, [id]);
+  return useFocusedLoad<InquiryItem>(id === '' ? null : load, answeredHere);
 }

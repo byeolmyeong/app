@@ -2,8 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps, type TextStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { inputText } from '@/components/input-text';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing } from '@/constants/theme';
 
 export type FieldProps = {
   label: string;
@@ -81,7 +82,8 @@ export function FieldInput({
         placeholderTextColor={Colors.hint}
         selectionColor={Colors.primary}
         cursorColor={Colors.primary}
-        style={[styles.input, empty && styles.placeholder, trailing ? styles.inputFlex : null, multiline && styles.areaInput, style]}
+        // 글자 단계는 치는 칸에 맞게(iOS 한 줄은 lineHeight 없이 · 안드로이드는 세로 가운데 — 글자가 칸의 세로 가운데에 온다)
+        style={[inputText('input', { multiline }), styles.input, empty && styles.placeholder, trailing ? styles.inputFlex : null, multiline && styles.areaInput, style]}
         onFocus={(e) => {
           setFocused(true);
           onFocus?.(e);
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
   /** 고를 수 없게 흐려진 칸(시각 "모름") */
   off: { backgroundColor: Colors.fieldOff, borderColor: Colors.fill },
   select: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  input: { ...Typography.input, fontWeight: FontWeight.medium, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  input: { fontWeight: FontWeight.medium, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
   placeholder: { fontWeight: FontWeight.regular },
   inputFlex: { flex: 1 },
   value: { fontWeight: FontWeight.medium },

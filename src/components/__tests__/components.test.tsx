@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { AccessibilityInfo, Animated, Dimensions, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, Dimensions, Platform, StyleSheet } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/button';
@@ -405,6 +405,30 @@ describe('입력칸의 커서 · 고르는 칸의 화살표(비교 B4 · B5)', (
       </Sheet>,
     );
     expect(StyleSheet.flatten(screen.getByTestId('sheet-panel').props.style).paddingTop).toBe(36);
+  });
+});
+
+describe('FieldInput: 글자가 칸의 세로 가운데(소유자 지적 — iOS 테스트앱)', () => {
+  it('iOS 한 줄 칸의 TextInput 에는 lineHeight 가 없다(숫자 · 한글 · 영문이 위아래로 밀리지 않게), 여러 줄 칸은 줄 간격을 그대로 둔다', async () => {
+    const view = await render(<FieldInput value="2000-06-15" onChangeText={() => {}} keyboardType="number-pad" testID="date" />);
+    const style = StyleSheet.flatten(screen.getByTestId('date').props.style);
+    expect(style.lineHeight).toBeUndefined();
+    expect(style.fontSize).toBe(Typography.input.fontSize);
+    await view.rerender(<FieldInput value="여러 줄" onChangeText={() => {}} multiline testID="area" />);
+    expect(StyleSheet.flatten(screen.getByTestId('area').props.style).lineHeight).toBe(Typography.input.lineHeight);
+  });
+
+  it('안드로이드: 글꼴 위아래 여백 없이 세로 가운데, 여러 줄 칸은 위에서부터', async () => {
+    const original = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      const view = await render(<FieldInput value="새벽별" onChangeText={() => {}} testID="nick" />);
+      expect(StyleSheet.flatten(screen.getByTestId('nick').props.style)).toMatchObject({ includeFontPadding: false, textAlignVertical: 'center' });
+      await view.rerender(<FieldInput value="여러 줄" onChangeText={() => {}} multiline testID="area" />);
+      expect(StyleSheet.flatten(screen.getByTestId('area').props.style)).toMatchObject({ includeFontPadding: false, textAlignVertical: 'top' });
+    } finally {
+      Platform.OS = original;
+    }
   });
 });
 

@@ -32,6 +32,13 @@ describe('태어난 곳 시트', () => {
     expect(screen.queryAllByTestId('place-option')).toHaveLength(0);
   });
 
+  it('동네 검색 칸의 글자는 칸의 세로 가운데 — iOS 에서 lineHeight 를 빼 위아래로 밀리지 않는다(소유자 지적)', async () => {
+    await open();
+    const style = StyleSheet.flatten(search().props.style);
+    expect(style.lineHeight).toBeUndefined();
+    expect(style.paddingVertical ?? style.padding).toBe(0);
+  });
+
   it('시 · 도를 누르면 그 시 · 군 · 구 목록(제목은 시 · 도), 뒤로 가면 다시 칩', async () => {
     await open();
     await fireEvent.press(screen.getByText('부산'));

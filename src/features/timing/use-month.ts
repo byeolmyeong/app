@@ -50,15 +50,24 @@ async function load(month: string | undefined, input: BirthInput, key: string): 
   return r;
 }
 
+/** 이번 실행에 받아 두기를 한 것(세대 · 출생 정보) */
+const prefetchedMonths = new Set<string>();
+
 /**
  * 앱을 켤 때(홈의 첫 데이터) 이번 달을 한 번 받아 둔다 — 시기 탭을 열면 기다리지 않고 달력(결정 075 의 3). 기기에 이번 달 것이 있으면 부르지 않는다
  * (시기 탭이 열 때 뒤에서 새로 받는다). 못 받아도 조용히 넘어간다.
  */
 export async function prefetchMonth(input: BirthInput): Promise<void> {
   const key = keyOf(input);
+  // 이번 실행에 한 번 — 탭을 바꿀 때마다 홈이 다시 붙어도 못 받은 것(끊김 · 404)을 거듭 묻지 않는다. 기기를 지우면(세대) 다시(리뷰 #87 의 5)
+  const gen = await storageGeneration(GENERATION_KEY).catch(() => null);
+  const once = `${gen}|${key}`;
+  if (gen === null || prefetchedMonths.has(once)) return;
+  prefetchedMonths.add(once);
   if (await readStored(key)) return;
   await load(undefined, input, key);
 }
+
 
 /**
  * input 이 null 이면(출생 정보 · 세션을 아직 읽는 중) 부르지 않는다.

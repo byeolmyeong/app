@@ -148,6 +148,22 @@ describe('오늘의 하늘(결정 051 의 2)', () => {
     await waitFor(() => expect(again.result.current.made).toBe(true));
   });
 
+  it('기기에 둔 오늘 것을 읽으면 그 날을 "만든 적 있음" 으로 기억한다(기존 보관본으로 채움, 리뷰 #87 의 4)', async () => {
+    await store(sky('2026-11-19'));
+    // 뒤에서 새로 받는 것은 실패시켜(기억을 쓰지 않게) 보관본을 읽은 것만으로 기억하는지 본다
+    mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await renderHook(() => useTodaySky(birth));
+    await waitFor(async () => expect(JSON.parse((await AsyncStorage.getItem(DAY_SKY_MADE_STORAGE_KEY)) ?? 'null')).toEqual({ key: KEY, dates: ['2026-11-19'] }));
+  });
+
+  it('오늘의 하늘 푸시를 받으면 그 날을 "만든 적 있음" 으로 기억한다(서버가 아침에 미리 만들었다)', async () => {
+    await store(sky('2026-11-19'));
+    const { result } = await renderHook(() => useTodaySky(birth));
+    await waitFor(() => expect(result.current.state.status).toBe('done'));
+    await act(async () => mockPush?.({ type: 'TODAY_SKY', date: '2026-11-20' }));
+    await waitFor(async () => expect(JSON.parse((await AsyncStorage.getItem(DAY_SKY_MADE_STORAGE_KEY))!).dates).toContain('2026-11-20'));
+  });
+
   it('출생 정보를 읽는 중(null)이면 부르지 않는다', async () => {
     const { result } = await renderHook(() => useTodaySky(null));
     await act(async () => {});

@@ -256,7 +256,8 @@ describe('이 기기 등록 · 해제(서버 S10-2)', () => {
 describe('푸시 data 와 누르면 갈 곳(결정 066 의 4)', () => {
   it.each([
     // 오늘의 하늘은 /today(A④)
-    [{ type: 'TODAY_SKY', date: '2026-11-21' }, '/today'],
+    // 오늘의 하늘은 /today — 그날을 함께 넘겨 서버가 미리 만든 날로 연다(리뷰 #87 의 4)
+    [{ type: 'TODAY_SKY', date: '2026-11-21' }, { pathname: '/today', params: { date: '2026-11-21' } }],
     [{ type: 'READING_DONE' }, '/reading'],
     [{ type: 'ME_REPORT_DONE' }, '/me'],
     [{ type: 'TIMING_REPORT_DONE' }, '/timing'],

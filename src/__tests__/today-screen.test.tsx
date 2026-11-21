@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import TodayScreen from '@/app/today';
 import { strings } from '@/content/strings';
@@ -14,6 +14,7 @@ import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
+  useLocalSearchParams: jest.fn(() => ({})),
   useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
 }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -125,6 +126,21 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
     await act(async () => finish({ ok: true, data: sky }));
     expect(screen.getByText(sky.title)).toBeTruthy();
+  });
+
+  it('오늘의 하늘 푸시를 눌러 열면(그날이 오늘) 서버가 미리 만든 날이라 만드는 중을 비추지 않는다 — 늦을 때만 뼈대(리뷰 #87 의 4)', async () => {
+    jest.useFakeTimers();
+    (useLocalSearchParams as jest.Mock).mockReturnValueOnce({ date: koreaToday() }).mockReturnValue({ date: koreaToday() });
+    let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
+    await render(<TodayScreen />);
+    await act(async () => {});
+    expect(screen.queryByText(T.making.title)).toBeNull();
+    await act(async () => jest.advanceTimersByTime(300));
+    expect(screen.getByTestId('sk-day-hero')).toBeTruthy();
+    await act(async () => finish({ ok: true, data: sky }));
+    expect(screen.getByText(sky.title)).toBeTruthy();
+    (useLocalSearchParams as jest.Mock).mockReturnValue({});
   });
 
   it('오늘을 받은 적 있는데 보관본이 없으면: 0.3초 뒤 뼈대(다 그려진 배치 — 탭 있음), 3초가 넘으면 쓰는 중(머리만 · 탭 없음, 결정 061 의 2)', async () => {

@@ -2,15 +2,18 @@
  * 자세한 풀이(나 탭 풀이 · 시기 풀이 — 결정 050)를 요청하고 다 쓰일 때까지 확인하는 상태와 기기 보관. 서버의 같은 생성 고리라(서버 결정 029)
  * 규칙도 하나다: 쓰는 중에는 화면이 떠 있는 동안만 5초마다 상태를 묻고(GET), 다 썼거나 실패했거나 화면을 떠나면 멈춘다(3분이 넘도록 쓰는 중이면
  * 확인을 멈추고 "다시 보기" 는 상태만). 만들기(POST)는 사람이 누를 때만 — 연결 복귀 · "다시 보기" 는 상태만 묻는다. 서버에 출생 정보가 없으면
- * 저장하고 한 번만 더, 받을 수 없으면(402 PURCHASE_REQUIRED, 1.1.0 예약) 받기 전 + 막힘. 다 쓴 풀이는 출생 정보별로 그 풀이의 보관 키에 두고
- * 다시 열 때 먼저 보여 준 뒤 뒤에서 새로 묻는다(결정 065 의 2). rememberStatus 인 풀이(시기)는 받기 전 · 쓰는 중이라는 상태도 같은 자리에 두고,
- * 다시 열 때 그 상태를 곧바로 보인 뒤 뒤에서 물어 바뀌었으면 바꾼다(기억이 없을 때만 확인 중). 풀이마다 다른 것은 config 로 받는다.
+ * 저장하고 한 번만 더, 받을 수 없으면(402 PURCHASE_REQUIRED, 1.1.0 예약) 받기 전 + 막힘.
+ * 기기 보관(출생 정보별, 그 풀이의 보관 키 하나): 다 쓴 풀이와(rememberStatus 면) 받기 전 · 쓰는 중 기억을 따로 둔다 — 다시 열면 풀이가 있으면 풀이를,
+ * 없으면 기억한 받기 전 · 쓰는 중을 곧바로 보인 뒤 뒤에서 확인한다(뼈대는 둘 다 없을 때만 — 결정 065 의 2 · 075). 늦게 온 앞의 답은 요청 번호로 버리고,
+ * 그 사이 기기를 지웠으면(세대 표식) 늦은 답을 두지 않는다(리뷰 #87). 앱을 켤 때는 prefetchDetailReport 가 이번 실행에 한 번 상태를 받아 둔다.
+ * 풀이마다 다른 것(경로 쌍 · 보관 키 · 검사 함수 · 기억 여부)은 config 로 받는다.
  * 쓰는 곳: 나 탭 풀이(features/me/use-me-report) · 시기 풀이(features/timing/use-timing-report). 출생 정보와 글은 로그에 남기지 않는다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { api, type ApiErrorKind, type ApiResult, type BirthInput } from '@/lib/api';
+import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
 import { withTimeout } from '@/lib/with-timeout';
 
 /** 쓰는 중일 때 상태를 묻는 주기 */
@@ -76,8 +79,15 @@ async function loadStored<R>(config: DetailReportConfig<R>, key: string): Promis
   }
 }
 
+/** 세대 표식의 키 — 풀이마다 따로(보관 키에 붙인다, 머리가 `byeolmyeong.` 이라 기기를 지우면 함께 지워진다) */
+const generationKeyOf = (config: DetailReportConfig<unknown>) => `${config.storageKey}.gen`;
+
+/** 이 화면이 열릴 때의 세대가 그대로인가 — 그 사이 로그아웃 · 탈퇴 · 출생 정보 바꾸기로 기기를 지웠으면 늦은 답을 두지 않는다(리뷰 #87) */
+const canWrite = <R,>(run: Run<R>) => run.gen !== null && isSameGeneration(generationKeyOf(run.config as DetailReportConfig<unknown>), run.gen);
+
 async function saveReport<R>(run: Run<R>, report: R): Promise<void> {
   run.storedReport = report;
+  if (!(await canWrite(run))) return;
   try {
     await AsyncStorage.setItem(run.config.storageKey, JSON.stringify({ key: run.key, report }));
   } catch {
@@ -89,6 +99,7 @@ async function saveReport<R>(run: Run<R>, report: R): Promise<void> {
 async function remember<R>(run: Run<R>, status: 'NONE' | 'WRITING'): Promise<void> {
   if (!run.config.rememberStatus || run.remembered === status) return;
   run.remembered = status;
+  if (!(await canWrite(run))) return;
   try {
     // 다 쓴 풀이가 있으면 함께 둔다(다시 받기를 눌러도 다음에 열 때 풀이를 곧바로 — 결정 075)
     const report = run.storedReport === null ? {} : { report: run.storedReport };
@@ -116,6 +127,10 @@ type Run<R> = {
   remembered: 'NONE' | 'WRITING' | null;
   /** 기기에 둔 다 쓴 풀이(상태를 기억할 때 함께 둔다). 없으면 null */
   storedReport: R | null;
+  /** 상태 묻기(GET) · 만들기(POST)의 번호 — 늦게 온 앞의 답은 버린다(겹친 확인이 두 줄이 되거나 다 쓴 풀이를 쓰는 중으로 덮지 않게, 리뷰 #87) */
+  seq: number;
+  /** 화면이 열릴 때 읽은 세대 표식. 읽지 못했으면 null(두지 않는다) */
+  gen: string | null;
   timer: ReturnType<typeof setTimeout> | null;
   set: (state: DetailReportView<R>) => void;
 };
@@ -126,10 +141,17 @@ function settle<R>(run: Run<R>, state: DetailReportView<R>) {
   run.set(state);
 }
 
+/** 상태(GET)를 묻는다. 화면을 떠났거나 그 뒤에 다른 묻기 · 만들기를 시작했으면 null(늦은 답은 버린다) */
+async function ask<R>(run: Run<R>): Promise<ApiResult<DetailReportState<R>> | null> {
+  const mine = ++run.seq;
+  const r = await withTimeout(run.config.get());
+  return run.alive && run.seq === mine ? r : null;
+}
+
 /** 상태(GET)를 한 번 묻고 옮긴다. 쓰는 중이면 주기 뒤에 다시 묻는다 */
 async function check<R>(run: Run<R>): Promise<void> {
-  const r = await withTimeout(run.config.get());
-  if (!run.alive) return;
+  const r = await ask(run);
+  if (!r) return;
   if (!r.ok)
     return settle(run, run.polling ? { status: 'failed', error: r.error, stage: 'poll' } : { status: 'unknown', error: r.error, code: r.status });
   await apply(run, r.data);
@@ -166,8 +188,8 @@ async function apply<R>(run: Run<R>, data: DetailReportState<R>): Promise<void> 
  * 확인 중으로 막지 않아 받기는 곧바로 누를 수 있다.
  */
 async function confirmQuietly<R>(run: Run<R>): Promise<void> {
-  const r = await withTimeout(run.config.get());
-  if (!run.alive || run.busy) return;
+  const r = await ask(run);
+  if (!r || run.busy) return;
   if (!r.ok) {
     if (r.status === NOT_FOUND) settle(run, { status: 'unknown', error: r.error, code: r.status });
     return;
@@ -189,8 +211,8 @@ function waitAndCheck<R>(run: Run<R>) {
 
 /** 보관본(또는 보던 풀이)을 둔 채 뒤에서 새로 묻는다. 다 쓴 풀이가 아니면(받지 못했어도) 보던 것을 그대로 둔다 */
 async function refreshQuietly<R>(run: Run<R>): Promise<void> {
-  const r = await withTimeout(run.config.get());
-  if (!run.alive || !r.ok) return;
+  const r = await ask(run);
+  if (!r || !r.ok) return;
   // 서버가 쓰는 중이라고 하면(다시 받기) 그때 쓰는 중으로 — 받기 전이라고 하면 보던 풀이를 둔다
   if (r.data.status === 'WRITING') {
     run.busy = true;
@@ -206,6 +228,8 @@ async function refreshQuietly<R>(run: Run<R>): Promise<void> {
 async function request<R>(run: Run<R>): Promise<void> {
   if (!run.alive || run.busy) return;
   run.busy = true;
+  // 기다리던 조용한 확인의 답은 버린다(받기를 누른 뒤 늦게 온 받기 전 · 쓰는 중이 화면을 되돌리지 않게)
+  run.seq++;
   run.polling = true;
   run.writingSince = Date.now();
   run.set({ status: 'writing' });
@@ -229,6 +253,9 @@ async function request<R>(run: Run<R>): Promise<void> {
   }
 }
 
+/** 이번 실행에 받아 두기를 한 것(보관 키 · 세대 · 출생 정보) */
+const prefetched = new Set<string>();
+
 /**
  * 앱을 켤 때(홈의 첫 데이터) 상태를 한 번 받아 둔다 — 그 탭을 열면 기다리지 않고 받기 · 쓰는 중 · 풀이를 곧바로 그린다(결정 075 의 4).
  * 기기에 둔 것이 있으면 묻지 않는다(그 화면이 열 때 뒤에서 확인한다). 못 물었으면 아무것도 두지 않는다.
@@ -236,8 +263,16 @@ async function request<R>(run: Run<R>): Promise<void> {
 export async function prefetchDetailReport<R>(config: DetailReportConfig<R>, input: BirthInput): Promise<void> {
   const key = keyOf(input);
   if (await loadStored(config, key)) return;
+  const genKey = generationKeyOf(config as DetailReportConfig<unknown>);
+  const gen = await storageGeneration(genKey).catch(() => null);
+  // 이번 실행에 한 번 — 탭을 바꿀 때마다 홈이 다시 붙어도 못 받은 것(끊김 · 404)을 거듭 묻지 않는다. 기기를 지우면(세대) 다시(리뷰 #87 의 5)
+  const once = `${genKey}|${gen}|${key}`;
+  if (gen === null || prefetched.has(once)) return;
+  prefetched.add(once);
   const r = await withTimeout(config.get());
   if (!r.ok) return;
+  // 쓰기 직전에 다시 본다: 그 사이 기기를 지웠거나(세대) 화면이 먼저 기억 · 보관했으면(늦은 받기 전이 쓰는 중을 덮지 않게) 두지 않는다(리뷰 #87)
+  if (!(await isSameGeneration(genKey, gen)) || (await loadStored(config, key))) return;
   try {
     if (r.data.status === 'DONE') await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, report: r.data.report }));
     else if (config.rememberStatus)
@@ -274,11 +309,16 @@ export function useDetailReport<R>(config: DetailReportConfig<R>, input: BirthIn
       writingSince: null,
       remembered: null,
       storedReport: null,
+      seq: 0,
+      gen: null,
       timer: null,
       set: (state) => setSettled({ key, state }),
     };
     current.current = run;
-    loadStored(config, key).then((stored) => {
+    void (async () => {
+      run.gen = await storageGeneration(generationKeyOf(config as DetailReportConfig<unknown>)).catch(() => null);
+      return loadStored(config, key);
+    })().then((stored) => {
       if (!run.alive) return;
       if (!stored) {
         run.busy = true;

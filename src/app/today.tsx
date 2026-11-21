@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 
 import { MakingView } from '@/components/making-view';
@@ -14,6 +14,7 @@ import { birthInputOf } from '@/features/chart/birth-input';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { ShareEntry } from '@/features/share/share-entry';
+import { koreaToday } from '@/features/timing/dates';
 import { DaySkeleton, DayView } from '@/features/timing/day-view';
 import { useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 
@@ -33,7 +34,10 @@ export default function TodayScreen() {
   const { ready } = useSession();
   const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
-  const { state, retry, made } = useTodaySky(birth);
+  const { state, retry, made: madeHere } = useTodaySky(birth);
+  // 오늘의 하늘 푸시를 눌러 열었으면(그날이 오늘) 서버가 미리 만든 날 — 만든 적 있음으로 본다(리뷰 #87 의 4)
+  const { date: pushedDate } = useLocalSearchParams<{ date?: string }>();
+  const made = pushedDate === koreaToday() ? true : madeHere;
   // 기기에 출생 정보가 없으면(알림으로 처음 켰을 때 등) 되살리기 · 입력은 홈이 맡는다 — 쓰는 중에 멈춰 있지 않게(리뷰 #66)
   const noProfile = loaded && !profile;
   useEffect(() => {

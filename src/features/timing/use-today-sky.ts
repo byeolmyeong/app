@@ -111,6 +111,9 @@ export function useTodaySky(input: BirthInput | null) {
       if (stored && stored.date === koreaToday()) {
         shownDate.current = stored.date;
         setState({ status: 'done', sky: stored });
+        // 기기에 둔 오늘 것이 있으면 그 날은 만든 적 있음(이 기억이 생기기 전의 보관본으로 채움, 리뷰 #87 의 4)
+        setMade({ key, made: true });
+        void daySkyMadeGeneration().then((g) => markDaySkyMade(key, stored.date, g));
         // 뒤에서 한 번 새로 받는다(같은 날 · 같은 차트면 서버도 같은 글이라 저장본이 바로 온다). 못 받으면 보관본 그대로
         const [date, time, placeId] = JSON.parse(key) as [string, string | null, number | null];
         const mine = ++requests.current;
@@ -153,10 +156,14 @@ export function useTodaySky(input: BirthInput | null) {
   useEffect(
     () =>
       onPushReceived((push) => {
-        if (push.type !== 'TODAY_SKY' || status.current === 'loading') return;
+        if (push.type !== 'TODAY_SKY') return;
+        // 아침 푸시가 온 날은 서버가 미리 만들었다 — 만든 적 있음으로 기억해 열 때 만드는 중이 잠깐 비치지 않게(리뷰 #87 의 4)
+        if (key !== null) void daySkyMadeGeneration().then((g) => markDaySkyMade(key, push.date, g));
+        if (push.date === koreaToday() && key !== null) setMade({ key, made: true });
+        if (status.current === 'loading') return;
         if (status.current === 'failed' || shownDate.current !== koreaToday()) fetchToday();
       }),
-    [fetchToday],
+    [key, fetchToday],
   );
   useFocusEffect(recheckDay);
   useEffect(() => {

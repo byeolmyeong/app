@@ -50,12 +50,25 @@ beforeEach(async () => {
   await AsyncStorage.setItem(DEVICE_KEY, '{"background":false}');
 });
 
-describe('출생 정보 바꾸기(/my/birth, 보드 16-4)', () => {
-  it('안내 · 넣어 둔 값으로 채운 세 칸 · 맨 아래 "바꾸기"', async () => {
+describe('출생 정보 수정(/my/birth, 보드 16-4)', () => {
+  it('안내 · 넣어 둔 값으로 채운 세 칸 · 맨 아래 "수정하기"', async () => {
     await render(<BirthChangeScreen />);
     expect(await screen.findByText(B.notice)).toBeTruthy();
     expect(date().props.value).toBe('1999-03-08');
     expect(submit()).toBeTruthy();
+  });
+
+  it('제목 · 아래 버튼 · 가운데 창은 "수정" 으로 — "출생 정보 수정" · "수정하기" · "출생 정보를 수정할까요?"(본문은 그대로, 소유자 2026-11-21)', async () => {
+    await render(<BirthChangeScreen />);
+    await screen.findByText(B.notice);
+    expect(screen.getByText('출생 정보 수정')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '수정하기' })).toBeTruthy();
+    await fireEvent.changeText(date(), '20000615');
+    await fireEvent.press(submit());
+    const dialog = within(screen.getByTestId('dialog'));
+    expect(dialog.getByText('출생 정보를 수정할까요?')).toBeTruthy();
+    expect(dialog.getByRole('button', { name: '수정하기' })).toBeTruthy();
+    expect(dialog.getByText('별명과 풀이를 새로 만들어요.\n지금 것은 되돌릴 수 없어요.')).toBeTruthy();
   });
 
   it('바뀐 것이 없으면 묻지 않고 돌아간다(서버를 부르지 않는다)', async () => {

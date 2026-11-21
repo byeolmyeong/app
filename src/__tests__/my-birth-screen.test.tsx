@@ -58,10 +58,11 @@ describe('출생 정보 수정(/my/birth, 보드 16-4)', () => {
     expect(submit()).toBeTruthy();
   });
 
-  it('제목 · 아래 버튼 · 가운데 창은 "수정" 으로 — "출생 정보 수정" · "수정하기" · "출생 정보를 수정할까요?"(본문은 그대로, 소유자 2026-11-21)', async () => {
+  it('제목 · 안내 · 아래 버튼 · 가운데 창은 "수정" 으로 — "출생 정보 수정" · "수정하면…" · "수정하기" · "출생 정보를 수정할까요?"(창 본문은 그대로, 소유자 2026-11-21)', async () => {
     await render(<BirthChangeScreen />);
     await screen.findByText(B.notice);
     expect(screen.getByText('출생 정보 수정')).toBeTruthy();
+    expect(screen.getByText('수정하면 별명과 자세한 풀이 · 시기 풀이가 모두 새로 만들어져요. 지금 것은 되돌릴 수 없어요.')).toBeTruthy();
     expect(screen.getByRole('button', { name: '수정하기' })).toBeTruthy();
     await fireEvent.changeText(date(), '20000615');
     await fireEvent.press(submit());

@@ -1,0 +1,29 @@
+import { render, screen } from '@testing-library/react-native';
+
+import { ListCard, ListCardRow } from '@/components/list-card';
+
+describe('목록 카드 줄의 값(소유자 2026-11-21)', () => {
+  const long = 'averyveryverylongemailaddress@example-domain.co.kr';
+
+  it('오른쪽에 값이 있으면 이름은 한 줄 · 줄지 않고, 값은 한 줄에 가운데 말줄임 — 화면 읽기는 전체', async () => {
+    await render(
+      <ListCard>
+        <ListCardRow label="연결된 계정" value={long} />
+      </ListCard>,
+    );
+    expect(screen.getByText('연결된 계정').props.numberOfLines).toBe(1);
+    const value = screen.getByText(long);
+    expect(value.props.numberOfLines).toBe(1);
+    expect(value.props.ellipsizeMode).toBe('middle');
+    expect(value.props.accessibilityLabel).toBe(long);
+  });
+
+  it('값이 없으면 이름은 남은 폭을 다 쓰고 줄을 막지 않는다', async () => {
+    await render(
+      <ListCard>
+        <ListCardRow label="자주 묻는 질문" onPress={() => {}} />
+      </ListCard>,
+    );
+    expect(screen.getByText('자주 묻는 질문').props.numberOfLines).toBeUndefined();
+  });
+});

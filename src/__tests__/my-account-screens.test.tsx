@@ -50,6 +50,12 @@ describe('계정(/my/account, 보드 16-1)', () => {
     expect(screen.getByLabelText(N.avatars[2])).toBeTruthy();
     expect(screen.getByText(A.linked)).toBeTruthy();
     expect(screen.getByText('dawn****@kakao.com')).toBeTruthy();
+    // 이메일이 길어도 이름은 한 줄 · 이메일은 한 줄에 가운데 말줄임, 화면 읽기는 전체(소유자 2026-11-21)
+    expect(screen.getByText(A.linked).props.numberOfLines).toBe(1);
+    const email = screen.getByText('dawn****@kakao.com');
+    expect(email.props.numberOfLines).toBe(1);
+    expect(email.props.ellipsizeMode).toBe('middle');
+    expect(email.props.accessibilityLabel).toBe('dawn****@kakao.com');
     expect(screen.getByTestId('provider-badge-KAKAO', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByText('dawnstar@kakao.com')).toBeNull();
     expect(screen.getByText(A.logout)).toBeTruthy();
@@ -79,7 +85,7 @@ describe('계정(/my/account, 보드 16-1)', () => {
     expect(router.push).toHaveBeenLastCalledWith('/my/delete');
   });
 
-  it('프로필 그림을 누르면 고르기 시트(제목 없음), 다른 그림을 확인하면 PATCH 하고 "프로필을 바꿨어요"', async () => {
+  it('프로필 그림을 누르면 고르기 시트(제목 없음), 다른 그림을 확인하면 PATCH 하고 바뀐 그림만 — 성공 알림은 없다(소유자 2026-11-21)', async () => {
     mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...account, avatar: 5 } });
     await render(<AccountScreen />);
     await screen.findByText('새벽별');
@@ -87,8 +93,8 @@ describe('계정(/my/account, 보드 16-1)', () => {
     await fireEvent.press(await screen.findByRole('radio', { name: N.avatars[4] }));
     await fireEvent.press(screen.getByText(N.confirm));
     await waitFor(() => expect(mockApi.updateAccount).toHaveBeenCalledWith({ avatar: 5 }));
-    expect(await screen.findByText(A.avatarSaved)).toBeTruthy();
-    expect(screen.getByLabelText(N.avatars[4])).toBeTruthy();
+    expect(await screen.findByLabelText(N.avatars[4])).toBeTruthy();
+    expect(screen.queryByTestId('toast')).toBeNull();
   });
 
   it('같은 그림을 확인하면 서버를 부르지 않고, 저장에 실패하면 그림은 그대로 두고 실패 알림', async () => {
@@ -139,7 +145,7 @@ describe('닉네임(/my/nickname, 보드 16-5)', () => {
     expect(disabled()).toBe(true);
   });
 
-  it('바꾸면 PATCH 하고, 이 화면에 머물며 "닉네임을 바꿨어요"', async () => {
+  it('바꾸면 PATCH 하고, 이 화면에 머물며 바뀐 닉네임만 — 성공 알림은 없다(소유자 2026-11-21)', async () => {
     mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...account, nickname: '별빛' } });
     await render(<NicknameScreen />);
     await waitFor(() => expect(box().props.value).toBe('새벽별'));
@@ -147,8 +153,8 @@ describe('닉네임(/my/nickname, 보드 16-5)', () => {
     expect(disabled()).toBe(false);
     await fireEvent.press(save());
     await waitFor(() => expect(mockApi.updateAccount).toHaveBeenCalledWith({ nickname: '별빛' }));
-    expect(await screen.findByText(strings.my.nickname.saved)).toBeTruthy();
-    expect(box().props.value).toBe('별빛');
+    await waitFor(() => expect(box().props.value).toBe('별빛'));
+    expect(screen.queryByTestId('toast')).toBeNull();
     expect(disabled()).toBe(true);
     expect(router.back).not.toHaveBeenCalled();
   });

@@ -181,8 +181,7 @@ export const strings = {
       providers: { GOOGLE: 'Google', APPLE: 'Apple', KAKAO: '카카오', DEV: '개발용' },
       logout: '로그아웃',
       delete: '계정 삭제',
-      /** 짧은 알림(결정 065 의 1) */
-      avatarSaved: '프로필을 바꿨어요',
+      /** 짧은 알림(결정 065 의 1) — 못 바꿨을 때만(바꾸면 바뀐 모습이 곧 알림, 소유자 2026-11-21) */
       saveFailed: '바꾸지 못했어요. 잠시 뒤 다시 해 주세요',
     },
     /**
@@ -212,7 +211,7 @@ export const strings = {
     /** 로그아웃 가운데 창(보드 16-9) */
     logout: { title: '로그아웃할까요?', body: '다시 로그인하면 별명과 풀이를\n그대로 볼 수 있어요.', cancel: '취소', confirm: '로그아웃' },
     /** 닉네임 바꾸기(보드 16-5): 칸 위 이름표는 없다(화면 제목과 겹친다). 규칙 · 오류 문구는 가입 단계(strings.nickname)와 같다 */
-    nickname: { title: '닉네임', save: '저장', saved: '닉네임을 바꿨어요' },
+    nickname: { title: '닉네임', save: '저장' },
     /** 계정 삭제(결정 056 의 8, 보드 16-10) → 지웠어요 → 확인은 로그인으로 */
     delete: {
       title: '계정 삭제',

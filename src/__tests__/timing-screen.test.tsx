@@ -7,6 +7,7 @@ import { StyleSheet } from 'react-native';
 import TimingScreen from '@/app/timing';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
+import { MONTH_SKY_STORAGE_KEY } from '@/features/timing/use-month';
 import { TIMING_REPORT_MAX_WRITING_MS, TIMING_REPORT_POLL_MS, TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { api, type ApiResult, type MonthSky, type TimingReportState } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -128,6 +129,23 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     // 받기는 곧바로 누를 수 있다(뒤의 확인을 기다리지 않는다)
     await fireEvent.press(screen.getByRole('button', { name: T.detail.request }));
     expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('기기에 둔 이번 달이 있으면 달력도 기다리지 않고 바로 — 시각 "모름" 거르기는 보관본도 거친다(결정 074)', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-11-19T12:00:00+09:00'));
+    const sky: MonthSky = { ...month, timeKnown: false, themes: [...month.themes, { area: 'MONEY', title: '돈 이번 달', from: '2026-11-01', to: '2026-12-01' }] };
+    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'NONE' }));
+    await AsyncStorage.setItem(MONTH_SKY_STORAGE_KEY, JSON.stringify({ key: birthKey, sky }));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    mockApi.getMonth.mockReturnValue(new Promise(() => {}));
+    await render(<TimingScreen />);
+    await tick(0);
+    expect(screen.getByTestId('month-calendar')).toBeTruthy();
+    expect(screen.queryByTestId('timing-month-pending', { includeHiddenElements: true })).toBeNull();
+    expect(screen.getByText(new RegExp(month.themes[0].title))).toBeTruthy();
+    expect(screen.queryByText(/돈 이번 달/)).toBeNull();
+    expect(screen.getByTestId('timing-detail-card')).toBeTruthy();
   });
 
   it('쓰는 중인 것을 기기가 기억하면 곧바로 쓰는 중(머리 · 아래 탭이 있는 틀 안)', async () => {

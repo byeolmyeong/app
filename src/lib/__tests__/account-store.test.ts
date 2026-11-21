@@ -100,3 +100,58 @@ describe('계정 보관 · 메모리(소유자 "이름이랑 프로필이 늦게
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('#96 리뷰 R1 · R2 — 오프라인 첫 묻기 · 잊는 사이의 답', () => {
+  const A: MyAccount = { nickname: '앞사람', avatar: 3, email: 'a@x.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
+  const B: MyAccount = { nickname: '다음사람', avatar: 5, email: 'b@x.com', provider: 'APPLE', marketingConsent: false, suspended: false };
+
+  it('R1: 기기에 계정이 있는데 화면보다 먼저 묻기(정지 문)가 끊겨 실패해도 기기의 계정을 버리지 않는다', async () => {
+    await AsyncStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify({ account: me }));
+    mockApi.getMyAccount.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await refreshAccount();
+    const { result } = await renderHook(() => useStoredAccount());
+    await act(async () => {});
+    expect(result.current).toEqual(me);
+  });
+
+  it('R1: 기기에도 없고 받지 못하면 그때는 null(이름 줄 · 그림 없이)', async () => {
+    mockApi.getMyAccount.mockResolvedValue({ ok: false, error: 'NETWORK' });
+    await refreshAccount();
+    const { result } = await renderHook(() => useStoredAccount());
+    await act(async () => {});
+    expect(result.current).toBeNull();
+  });
+
+  it('R2: 받는 중에 잊으면(로그인) 그 요청을 버린다 — 새로 묻고, 늦게 온 앞 계정의 답은 쓰지 않는다', async () => {
+    let answer: (v: Awaited<ReturnType<typeof api.getMyAccount>>) => void = () => {};
+    mockApi.getMyAccount.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: B });
+    const old = refreshAccount();
+    await act(async () => {});
+    await act(async () => forgetAccount());
+    const gate = refreshAccount();
+    const r = await gate;
+    expect(mockApi.getMyAccount).toHaveBeenCalledTimes(2);
+    expect(r.ok && r.data.nickname).toBe('다음사람');
+    await act(async () => {
+      answer({ ok: true, data: A });
+      await old;
+    });
+    const { result } = await renderHook(() => useStoredAccount());
+    await act(async () => {});
+    expect(result.current).toEqual(B);
+    expect(await stored()).toEqual({ account: B });
+    // 홈은 다시 묻지 않는다(이번 로그인에서 받았다)
+    expect(ensureAccount()).toBeNull();
+  });
+
+  it('R2: 기기를 읽는 중에 잊으면 늦게 읽힌 앞 계정을 메모리에 두지 않는다', async () => {
+    await AsyncStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify({ account: A }));
+    let answer: (v: string | null) => void = () => {};
+    (AsyncStorage.getItem as jest.Mock).mockReturnValueOnce(new Promise<string | null>((r) => (answer = r)));
+    const { result } = await renderHook(() => useStoredAccount());
+    await act(async () => forgetAccount());
+    await act(async () => answer(JSON.stringify({ account: A })));
+    expect(result.current).toBeUndefined();
+  });
+});

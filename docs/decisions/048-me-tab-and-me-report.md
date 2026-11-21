@@ -3,7 +3,7 @@ type: decision
 tags: [나 탭, 내 별명, 자세한 풀이, 연애, 성격, 관계, 일, 감정, 이성 방향성, 심층 리포트]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 078-build11-trim-card-and-sky-map.md (1 받은 뒤 별명 카드의 "풀이 읽기" 글자 → 꺾쇠만, 화면 읽기 이름에 남김)
 ---
 # 048. 나 탭은 "내 별명" 과 칩 다섯(성격 · 연애 · 관계 · 일 · 감정)의 자세한 풀이이고, 이성 방향성 화면은 없앤다
 

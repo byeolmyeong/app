@@ -29,7 +29,7 @@ const providerName = (provider: string) => (A.providers as Record<string, string
 /**
  * 계정(결정 056 의 3, 보드 16-1): 위 가운데 프로필 그림(누르면 고르기 시트 16-6) · 닉네임(16-5) · 연결된 계정(공급자 + 가린 이메일)을 한 카드에,
  * 로그아웃(가운데 창 16-9)은 따로 한 카드, 맨 아래 작은 밑줄 글자 "계정 삭제"(16-10).
- * 계정을 받지 못해도(끊김) 로그아웃 · 계정 삭제는 늘 보인다. 프로필은 고르면 바로 저장하고 짧은 알림으로 알린다(결정 065 의 1).
+ * 계정을 받지 못해도(끊김) 로그아웃 · 계정 삭제는 늘 보인다. 프로필은 고르면 바로 저장하고 바뀐 모습만 보인다 — 못 바꿨을 때만 짧은 알림(결정 065 의 1, 소유자 2026-11-21).
  */
 export default function AccountScreen() {
   const { account, setAccount } = useMyAccount();
@@ -46,10 +46,9 @@ export default function AccountScreen() {
     busy.current = true;
     const res = await api.updateAccount({ avatar: id });
     busy.current = false;
-    if (res.ok) {
-      setAccount(res.data);
-      show('success', A.avatarSaved);
-    } else show('error', A.saveFailed);
+    // 바뀐 그림이 곧 알림이다 — 성공 알림은 띄우지 않는다(소유자 2026-11-21). 못 바꿨을 때만 짧은 알림
+    if (res.ok) setAccount(res.data);
+    else show('error', A.saveFailed);
   }
 
   async function logout() {
@@ -82,8 +81,11 @@ export default function AccountScreen() {
               label={A.linked}
               trailing={
                 <View style={styles.linked}>
-                  <ProviderBadge provider={account?.provider ?? ''} />
-                  <Txt variant="desc" color="gray">
+                  <View style={styles.badge}>
+                    <ProviderBadge provider={account?.provider ?? ''} />
+                  </View>
+                  {/* 이메일이 길면 가운데를 줄여 앞과 도메인이 보이게(그림은 줄지 않는다). 화면 읽기는 전체를 읽는다 */}
+                  <Txt variant="desc" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={linked} style={styles.linkedText}>
                     {linked}
                   </Txt>
                 </View>
@@ -140,7 +142,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  linked: { flexDirection: 'row', alignItems: 'center', gap: L.badgeGap },
+  linked: { flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: L.badgeGap },
+  badge: { flexShrink: 0 },
+  linkedText: { flexShrink: 1 },
   /** 계정 삭제는 맨 아래 가운데 작은 밑줄 글자(아래 34) */
   footer: { alignItems: 'center', paddingHorizontal: ScreenPaddingX, paddingBottom: StateLayout.bottom },
   delete: { height: L.deleteRow, paddingHorizontal: Spacing.sm, justifyContent: 'center' },

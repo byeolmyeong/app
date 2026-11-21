@@ -53,6 +53,7 @@ function SwitchMark({ on }: { on: boolean }) {
 
 /** 목록 카드의 한 줄: 왼쪽 이름(과 설명), 오른쪽 값 · 덧붙일 것 · 화살표 또는 스위치. 최소 높이 52 */
 export function ListCardRow({ label, description, value, trailing, onPress, chevron = true, toggle, disabled = false }: ListCardRowProps) {
+  const hasRight = value !== undefined || trailing !== undefined;
   const content = (
     <>
       {description !== undefined ? (
@@ -64,17 +65,27 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
             {description}
           </Txt>
         </View>
+      ) : hasRight ? (
+        // 오른쪽에 값이 있으면 이름은 늘 한 줄 · 줄지 않는다 — 값이 남은 폭 안에서 줄어든다(소유자 2026-11-21)
+        <Txt variant="item" numberOfLines={1} style={styles.labelFixed}>
+          {label}
+        </Txt>
       ) : (
         <Txt variant="item" style={styles.label}>
           {label}
         </Txt>
       )}
-      {value !== undefined ? (
-        <Txt variant="desc" color="gray">
-          {value}
-        </Txt>
+      {hasRight ? (
+        <View style={styles.right}>
+          {value !== undefined ? (
+            // 넘치면 가운데를 줄여 앞과 끝(이메일의 도메인 등)이 보이게. 화면 읽기는 전체를 읽는다
+            <Txt variant="desc" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={value} style={styles.valueText}>
+              {value}
+            </Txt>
+          ) : null}
+          {trailing}
+        </View>
       ) : null}
-      {trailing}
       {toggle ? (
         <SwitchMark on={toggle.value} />
       ) : onPress && chevron ? (
@@ -123,6 +134,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: L.paddingH,
   },
   label: { flex: 1, fontWeight: FontWeight.medium },
+  labelFixed: { flexShrink: 0, fontWeight: FontWeight.medium },
+  /** 오른쪽 값 · 덧붙일 것: 남은 폭을 차지하고 오른쪽에 붙는다(넘치면 안에서 줄어든다) */
+  right: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+  valueText: { flexShrink: 1 },
   /** 설명이 있으면 이름과 설명을 한 칸에 위아래로(사이 2) */
   names: { flex: 1, gap: L.descGap },
   labelText: { fontWeight: FontWeight.medium },

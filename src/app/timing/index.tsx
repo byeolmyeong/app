@@ -173,11 +173,12 @@ export default function TimingScreen() {
       <>
         {monthPending ? (
           <MonthPending month={today.slice(0, 7)} visible={monthPhase !== 'blank'} />
-        ) : month.base && month.shown ? (
+        ) : month.base && month.drawn.month ? (
+          // 그릴 달(drawn): 고른 달을 받는 중이면 이전 달 그림 그대로 — 다 받으면 한 번에 바뀐다(처음 넘길 때 반짝임, 빌드 11)
           <MonthView
             base={month.base}
-            shown={month.shown}
-            state={month.state}
+            shown={month.drawn.month}
+            state={month.drawn.state}
             canPrev={month.canPrev}
             canNext={month.canNext}
             onMove={month.go}

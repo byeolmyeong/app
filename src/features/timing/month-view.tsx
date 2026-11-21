@@ -90,16 +90,17 @@ function Calendar({ sky, base, label, today, onDay }: { sky: MonthSky; base: str
           </Txt>
         ))}
       </View>
-      <View style={styles.grid}>
+      <View testID="month-grid" style={styles.grid}>
+        {/* 칸은 자리(i)로 이어 쓴다 — 달을 바꿔도 칸이 다시 붙지 않고 그 자리에서 날짜만 바뀐다(처음 넘길 때 반짝임, 빌드 11) */}
         {calendarCells(sky.month).map((date, i) => {
-          if (!date) return <View key={`e${i}`} style={styles.cell} />;
+          if (!date) return <View key={i} style={styles.cell} />;
           const category = dots.get(date);
           const isToday = date === today;
           const pressable = inCalendarRange(date, base);
           const label = `${formatMonthDay(date)}${category ? T.month.notable : ''}${isToday ? T.month.today : ''}`;
           return (
             <Pressable
-              key={date}
+              key={i}
               testID={`day-${date}`}
               accessibilityRole={pressable ? 'button' : undefined}
               accessibilityLabel={label}

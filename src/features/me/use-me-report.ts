@@ -3,7 +3,14 @@
  * 경로 쌍(`POST` · `GET /me-report`) · 보관 키 · 검사 함수. 글은 서버가 뒤에서 1분 안팎 동안 쓴다. 출생 정보와 글은 로그에 남기지 않는다.
  */
 import { api, isMeReport, type ApiErrorKind, type BirthInput, type MeReport } from '@/lib/api';
-import { DETAIL_REPORT_MAX_WRITING_MS, DETAIL_REPORT_POLL_MS, useDetailReport, type DetailReportConfig, type DetailReportView } from '@/lib/detail-report';
+import {
+  DETAIL_REPORT_MAX_WRITING_MS,
+  DETAIL_REPORT_POLL_MS,
+  prefetchDetailReport,
+  useDetailReport,
+  type DetailReportConfig,
+  type DetailReportView,
+} from '@/lib/detail-report';
 import { REQUEST_TIMEOUT_MS } from '@/lib/with-timeout';
 
 export const ME_REPORT_STORAGE_KEY = 'byeolmyeong.meReport.v1';
@@ -24,7 +31,12 @@ const ME_REPORT: DetailReportConfig<MeReport> = {
   get: () => api.getMeReport(),
   request: () => api.requestMeReport(),
   isReport: isMeReport,
+  // 받기 전 · 쓰는 중도 기억해 다시 열면 뼈대 없이 곧바로 그 화면(결정 075)
+  rememberStatus: true,
 };
+
+/** 앱을 켤 때(홈의 첫 데이터) 나 탭 풀이의 상태를 받아 둔다 — 나 탭을 열면 곧바로(결정 075 의 4) */
+export const prefetchMeReport = (input: BirthInput) => prefetchDetailReport(ME_REPORT, input);
 
 /**
  * 나 탭 풀이. start: 받기 · 다시 쓰기, recheck: 상태만 다시 묻기(연결 복귀 · 다시 보기), refresh: 다 받은 풀이를 조용히 새로,

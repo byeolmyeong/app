@@ -33,6 +33,7 @@ import { onPushReceived } from '@/features/push/push';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
 import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timing-card';
 import { HomeTodayCard, HomeTodaySkeleton } from '@/features/timing/home-today-card';
+import { prefetchMeReport } from '@/features/me/use-me-report';
 import { prefetchMonth } from '@/features/timing/use-month';
 import { TODAY_CARD_WRITING_AFTER_MS, useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { useTimingReport } from '@/features/timing/use-timing-report';
@@ -107,9 +108,11 @@ function Home({ onRetry }: { onRetry: () => void }) {
     });
     return () => sub.remove();
   }, [recheckTiming]);
-  // 앱을 켤 때 이번 달 달력을 한 번 받아 둔다 — 시기 탭을 열면 곧바로 달력(결정 075 의 3)
+  // 앱을 켤 때 이번 달 달력 · 나 탭 풀이의 상태를 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4). 스플래시는 이것을 기다리지 않는다
   useEffect(() => {
-    if (asking) void prefetchMonth(asking);
+    if (!asking) return;
+    void prefetchMonth(asking);
+    void prefetchMeReport(asking);
   }, [asking]);
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);

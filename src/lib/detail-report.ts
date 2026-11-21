@@ -230,6 +230,24 @@ async function request<R>(run: Run<R>): Promise<void> {
 }
 
 /**
+ * 앱을 켤 때(홈의 첫 데이터) 상태를 한 번 받아 둔다 — 그 탭을 열면 기다리지 않고 받기 · 쓰는 중 · 풀이를 곧바로 그린다(결정 075 의 4).
+ * 기기에 둔 것이 있으면 묻지 않는다(그 화면이 열 때 뒤에서 확인한다). 못 물었으면 아무것도 두지 않는다.
+ */
+export async function prefetchDetailReport<R>(config: DetailReportConfig<R>, input: BirthInput): Promise<void> {
+  const key = keyOf(input);
+  if (await loadStored(config, key)) return;
+  const r = await withTimeout(config.get());
+  if (!r.ok) return;
+  try {
+    if (r.data.status === 'DONE') await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, report: r.data.report }));
+    else if (config.rememberStatus)
+      await AsyncStorage.setItem(config.storageKey, JSON.stringify({ key, status: r.data.status === 'WRITING' ? 'WRITING' : 'NONE' }));
+  } catch {
+    // 두지 못하면 그 화면이 열 때 처음 확인부터 한다
+  }
+}
+
+/**
  * 자세한 풀이 하나. config 는 그 풀이의 경로 쌍(get · request) · 보관 키 · 검사 함수 — 모듈에 한 번 만든 값을 넘긴다(바뀌지 않게).
  * input 이 null 이면(출생 정보 · 세션을 아직 읽는 중) 서버를 부르지 않고 확인 중으로 둔다.
  * start: 받기 · 다시 쓰기, recheck: 상태만 다시 묻기(연결 복귀 · 다시 보기), dismiss: 실패 화면의 "나중에 하기"(받기 전으로).

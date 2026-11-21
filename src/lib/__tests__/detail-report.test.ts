@@ -5,6 +5,7 @@ import { api, type ApiResult } from '@/lib/api';
 import {
   DETAIL_REPORT_MAX_WRITING_MS,
   DETAIL_REPORT_POLL_MS,
+  prefetchDetailReport,
   useDetailReport,
   type DetailReportConfig,
   type DetailReportState,
@@ -251,5 +252,34 @@ describe('useDetailReport · rememberStatus', () => {
     const plain = await renderHook(() => useDetailReport(CONFIG, input));
     await act(async () => {});
     expect(plain.result.current.state).toEqual({ status: 'checking' });
+  });
+});
+
+describe('prefetchDetailReport — 앱을 켤 때 상태를 받아 둔다(결정 075 의 4)', () => {
+  const REMEMBER: DetailReportConfig<Fake> = { ...CONFIG, storageKey: 'test.prefetch.v1', rememberStatus: true };
+  const stored = async () => JSON.parse((await AsyncStorage.getItem('test.prefetch.v1')) ?? 'null');
+
+  it('기기에 아무것도 없으면 상태를 한 번 묻고 받기 전 · 쓰는 중은 기억, 다 썼으면 풀이를 둔다', async () => {
+    get.mockResolvedValueOnce(got('NONE'));
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toEqual({ key, status: 'NONE' });
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce(got('WRITING'));
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toEqual({ key, status: 'WRITING' });
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce(done);
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toEqual({ key, report });
+  });
+
+  it('기기에 둔 것이 있으면(화면이 열 때 뒤에서 확인한다) 묻지 않고, 못 물었으면 아무것도 두지 않는다', async () => {
+    await AsyncStorage.setItem('test.prefetch.v1', JSON.stringify({ key, status: 'NONE' }));
+    await prefetchDetailReport(REMEMBER, input);
+    expect(get).not.toHaveBeenCalled();
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    await prefetchDetailReport(REMEMBER, input);
+    expect(await stored()).toBeNull();
   });
 });

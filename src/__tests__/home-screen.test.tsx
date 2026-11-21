@@ -13,6 +13,8 @@ import * as homeReady from '@/features/home/home-ready';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
+import { MONTH_SKY_STORAGE_KEY } from '@/features/timing/use-month';
+import { ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -48,6 +50,8 @@ jest.mock('@/lib/api', () => ({
     getNotifications: jest.fn(),
     // 앱을 켤 때 이번 달 달력을 받아 둔다(결정 075 의 3)
     getMonth: jest.fn(),
+    // 앱을 켤 때 나 탭 풀이의 상태도 받아 둔다(결정 075 의 4)
+    getMeReport: jest.fn(),
     // 오늘의 하늘 칸(결정 051)
     postDaySky: jest.fn(),
     markNotificationRead: jest.fn(),
@@ -76,6 +80,7 @@ beforeEach(async () => {
   mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
   mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 0, items: [] } });
   mockApi.getMonth.mockResolvedValue({ ok: true, data: fixtures.monthSky });
+  mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
   mockApi.postDaySky.mockResolvedValue({ ok: true, data: fixtures.daySky });
 });
 
@@ -593,6 +598,16 @@ describe('홈은 접속하자마자 — 받아 둔 것 먼저 · 첫 상태까�
     expect(skeletons()).toHaveLength(0);
     expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
     expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
+  });
+
+  it('앱을 켤 때 이번 달 달력과 나 탭 풀이의 상태를 한 번 받아 둔다 — 시기 · 나 탭을 열면 곧바로(결정 075 의 4)', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+    await render(<HomeScreen />);
+    await act(async () => {});
+    expect(mockApi.getMonth).toHaveBeenCalledTimes(1);
+    expect(mockApi.getMeReport).toHaveBeenCalledTimes(1);
+    expect(JSON.parse((await AsyncStorage.getItem(ME_REPORT_STORAGE_KEY))!)).toEqual({ key: birthKey, status: 'NONE' });
+    expect(JSON.parse((await AsyncStorage.getItem(MONTH_SKY_STORAGE_KEY))!).sky.month).toBe(fixtures.monthSky.month);
   });
 
   it('시기 풀이를 받기 전이면 "자세한 풀이 받기" 카드가 바로 — 뼈대 없이', async () => {

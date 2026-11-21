@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { AppState, Platform } from 'react-native';
 
+import { loadExpoAudio } from '@/features/audio/load-expo-audio';
 import { MUSIC_STORAGE_KEY, resetMusicSettingsForTest, setMusicSetting } from '@/features/audio/music-settings';
 import { createSoundtrack } from '@/features/audio/soundtrack';
 import { FADE_MS, TRACK_SOURCES, TRACK_VOLUME, type Track } from '@/features/audio/tracks';
@@ -73,6 +74,15 @@ async function started(soundtrack = createSoundtrack()) {
 }
 
 describe('음악 한 줄(결정 062)', () => {
+  it('소리 모듈(expo-audio)은 루트가 켤 때 받는다 — 1.0.0 은 켜지 않아(결정 069) 첫 번들에 싣지 않는다(성능 계획 3)', async () => {
+    (loadExpoAudio as jest.Mock).mockClear();
+    const soundtrack = createSoundtrack();
+    soundtrack.request('waiting');
+    expect(loadExpoAudio).not.toHaveBeenCalled();
+    await started(soundtrack);
+    expect(loadExpoAudio).toHaveBeenCalledTimes(1);
+  });
+
   it('켜면 무음 모드를 따르고 · 다른 소리에 섞이고 · 뒤에서는 틀지 않게 정한 뒤, 배경 음악을 되풀이하며 작게 키운다', async () => {
     await started();
     expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false });

@@ -2,9 +2,8 @@
  * 웹의 공유: 이미지 저장(PNG 내려받기)만(결정 053 의 1 · 5). 앱은 `share-actions.ts` 가 같은 이름으로 사진 앱 · 스토리를 한다.
  * react-native-view-shot 의 웹 구현은 배율을 정할 수 없어 쓰지 않고, 그것이 쓰는 html2canvas-pro 를 직접 부른다.
  */
-import { html2canvas } from 'html2canvas-pro';
-
 import { Colors } from '@/constants/theme';
+import { loadHtml2canvas } from '@/features/share/load-html2canvas';
 import { SHARE_IMAGE } from '@/features/share/share-card';
 
 import type { CardRef, SaveResult, StoryShareResult } from './share-actions';
@@ -24,6 +23,8 @@ export async function saveImage(card: CardRef): Promise<SaveResult> {
   try {
     const element = card.current as unknown as HTMLElement | null;
     if (!element) return 'FAILED';
+    // 그리는 모듈은 누를 때 받는다(첫 화면에 싣지 않는다, 성능 계획 3)
+    const { html2canvas } = await loadHtml2canvas();
     const drawn = await html2canvas(element, {
       scale: SHARE_IMAGE.width / element.offsetWidth,
       backgroundColor: Colors.paper,

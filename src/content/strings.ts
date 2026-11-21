@@ -157,8 +157,8 @@ export const strings = {
       separator: ' · ',
       daysPrefix: '별명을 받은 지 ',
       daysSuffix: '일',
-      account: '계정 · 프로필',
-      birth: '출생 정보 바꾸기',
+      account: '프로필 수정',
+      birth: '출생 정보 수정',
     },
     /** 카드의 출생 정보 한 줄: "1999년 3월 8일 · 오후 2:10 · 서울 강남구", 시각을 모르면 "1999년 3월 8일 · 시각 모름" */
     birthLine: { year: '년 ', month: '월 ', day: '일', timeUnknown: '시각 모름' },
@@ -203,7 +203,7 @@ export const strings = {
     music: { title: '음악', background: '배경 음악', opening: '앱 열 때 음악', waiting: '기다릴 때 음악' },
     /** 출생 정보 바꾸기(결정 056 의 6, 보드 16-4): 안내 · 세 칸 · 바꾸기 → 가운데 창 → 별명 짓는 중부터 */
     birth: {
-      title: '출생 정보 바꾸기',
+      title: '출생 정보 수정',
       notice: '바꾸면 별명과 자세한 풀이 · 시기 풀이가 모두 새로 만들어져요. 지금 것은 되돌릴 수 없어요.',
       submit: '바꾸기',
       confirm: { title: '출생 정보를 바꿀까요?', body: '별명과 풀이를 새로 만들어요.\n지금 것은 되돌릴 수 없어요.', cancel: '취소', ok: '바꾸기' },

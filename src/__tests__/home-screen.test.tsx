@@ -136,6 +136,8 @@ describe('홈', () => {
     const card = await screen.findByTestId('nickname-card');
     await within(card).findByText(fixtures.reading.headline);
     expect(within(card).getByText(strings.home.card.read)).toBeTruthy();
+    // "풀이 읽기 ›" 의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
+    expect(within(card).getByTestId('nickname-card-chevron').props.width).toBe(22);
     // 화면 읽기는 #108 전처럼 카드 안의 글을 읽는다(이름을 따로 덮지 않음)
     expect(card.props.accessibilityLabel).toBeUndefined();
     await fireEvent.press(card);

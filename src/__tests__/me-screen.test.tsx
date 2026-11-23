@@ -304,6 +304,8 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     expect(within(card).queryByText(M.card.read)).toBeNull();
     // 꺾쇠는 가로 줄의 맨 끝(한 줄 별명 칸이 남은 폭을 다 씀)이고, 줄은 세로 가운데 맞춤
     expect(within(card).getByTestId('me-nickname-card-chevron')).toBeTruthy();
+    // 꺾쇠 › 는 22(소유자 2026-11-23, 빌드 13)
+    expect(within(card).getByTestId('me-nickname-card-chevron').props.width).toBe(22);
     const last = card.children[card.children.length - 1];
     expect(typeof last === 'string' ? last : last.props.testID).toBe('me-nickname-card-chevron');
     expect(StyleSheet.flatten(card.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });

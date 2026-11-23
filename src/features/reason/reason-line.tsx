@@ -56,7 +56,7 @@ function SentenceText({ sentence }: { sentence: ReasonSentence }) {
 function Chevron({ reveal }: { reveal: Reveal }) {
   return (
     <RevealTurn reveal={reveal} testID="reason-chevron">
-      <Svg width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+      <Svg testID="reason-chevron-glyph" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
         <Path d="M6 15l6-6 6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
     </RevealTurn>
@@ -194,7 +194,7 @@ export function ReasonLineSkeleton({ style }: { style?: StyleProp<ViewStyle> }) 
           <SkeletonText variant="label" widths={[L.skeleton.label]} />
           <SkeletonText variant="reason" widths={L.skeleton.sentence} />
         </View>
-        <View style={styles.chevronSpace} />
+        <View testID="reason-chevron-space" style={styles.chevronSpace} />
       </View>
     </View>
   );

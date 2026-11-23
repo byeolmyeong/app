@@ -73,6 +73,11 @@ export type WheelLayout = {
   axisFontSize: number;
   /** 별자리 칸의 경계선(별자리 고리 안) · 이름 자리 */
   signs: { sign: string; line: Line; label: Pt }[];
+  /**
+   * 시각 "모름" 일 때만: 별자리 12칸의 경계를 별자리 고리 안쪽 끝에서 가운데 원까지 늘린 선(결정 079 — 시각 없이 셀 수 있는 선만).
+   * 시각을 알면 그 자리는 하우스 선 · 축이 채우므로 없다
+   */
+  signInnerLines: Line[];
   /** 서버가 준 하우스 경계 12개: 가운데 원에서 별자리 고리까지. 시각 "모름" 이면 없다 */
   houseLines: Line[];
   houseNumbers: (Pt & { n: number })[];
@@ -195,6 +200,7 @@ export function wheelLayout(chart: Chart, size: number = SKY_WHEEL_SIZE): WheelL
   const { at, line } = polar;
   const { signs } = ringMarks(polar, rSign, rOuter, size);
 
+  const signInnerLines: Line[] = showHouses ? [] : SIGN_ORDER.map((_, i) => line(i * 30, rInner, rSign));
   const houseLines: WheelLayout['houseLines'] = [];
   const houseNumbers: WheelLayout['houseNumbers'] = [];
   const houseSectors: WheelLayout['houseSectors'] = [];
@@ -243,6 +249,7 @@ export function wheelLayout(chart: Chart, size: number = SKY_WHEEL_SIZE): WheelL
     houseFontSize: SKY.house * u,
     axisFontSize: SKY.axis * u,
     signs,
+    signInnerLines,
     houseLines,
     houseNumbers,
     houseSectors,

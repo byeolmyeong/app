@@ -144,7 +144,7 @@ export function SignArt({ sign, width, height }: { sign: string; width: number; 
  * 내 하늘 지도의 휠(시안 13). 서버가 준 `Chart` 만 그린다.
  * 별자리 고리 · 하우스 선과 번호 · 첫인상(상승점)과 꿈(중천)의 축 · 별 점과 짧은 이름. 각도 선은 긋지 않는다.
  * 고른 별(`selected`: 천체 · ASC · MC)은 주색으로 빛나고, 그 별이 있던 별자리 이름 · 하우스 번호가 밝아지며 그 하우스 칸이 칠해진다.
- * 시각 "모름" 차트는 하우스와 축 없이 그린다(golden-rules "프로젝트 규칙").
+ * 시각 "모름" 차트는 하우스와 축 없이 그리고, 별자리 경계만 가운데 원까지 옅게 늘린다(결정 079 · golden-rules "프로젝트 규칙").
  */
 export function ChartWheel({ chart, selected }: ChartWheelProps) {
   const w = wheelLayout(chart);
@@ -164,6 +164,17 @@ export function ChartWheel({ chart, selected }: ChartWheelProps) {
         <Circle cx={w.center} cy={w.center} r={w.rOuter} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1.2} />
         <Circle cx={w.center} cy={w.center} r={w.rSign} fill={Colors.paper} stroke={Colors.hair} strokeWidth={1} />
         <Circle cx={w.center} cy={w.center} r={w.rInner} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1} />
+        {/* 시각 "모름": 별자리 경계만 가운데 원까지 옅게 — 별 점 · 이름 · 빛남 아래에(결정 079) */}
+        {w.signInnerLines.map((l, i) => (
+          <Line
+            key={`si${i}`}
+            testID="wheel-sign-inner-line"
+            {...l}
+            stroke={Colors.hair}
+            strokeOpacity={SkyMapLayout.signInnerOpacity}
+            strokeWidth={SkyMapLayout.signInnerWidth}
+          />
+        ))}
         {sector ? (
           <Path testID="wheel-house-sector" d={sector.path} fill={Colors.primary} fillOpacity={SkyMapLayout.sectorOpacity} />
         ) : null}
@@ -265,7 +276,7 @@ export type MiniWheelProps = {
 /**
  * 이유 펼침의 작은 지도(보드 12-1, 결정 054 의 4): 하늘 지도의 휠을 지름 120 으로 줄여 고리 · 하우스 선(시각을 알 때만)과
  * 그 근거의 별 · 칸만 그린다. 다른 별 · 글자는 그리지 않는다. 좌표는 하늘 지도와 같은 `wheelLayout`(서버의 황경 그대로)이다.
- * 시각 "모름" 차트는 하우스 선 · 칸 · 축 없이 별자리 칸의 경계만 긋는다(golden-rules "프로젝트 규칙").
+ * 시각 "모름" 차트는 하우스 선 · 칸 · 축 없이 별자리 칸의 경계만 긋는다(고리 안과, 가운데 원까지 옅게 — 결정 079 · golden-rules "프로젝트 규칙").
  */
 export function MiniWheel({ chart, bodies, houses, label }: MiniWheelProps) {
   const L = ReasonLayout;
@@ -277,6 +288,16 @@ export function MiniWheel({ chart, bodies, houses, label }: MiniWheelProps) {
         <Circle cx={w.center} cy={w.center} r={w.rOuter} fill="none" stroke={Colors.hair} strokeWidth={1.5} />
         <Circle cx={w.center} cy={w.center} r={w.rSign} fill="none" stroke={Colors.hair} strokeWidth={1} />
         <Circle cx={w.center} cy={w.center} r={w.rInner} fill="none" stroke={Colors.hair} strokeWidth={1} />
+        {w.signInnerLines.map((l, i) => (
+          <Line
+            key={`msi${i}`}
+            testID="mini-wheel-sign-inner-line"
+            {...l}
+            stroke={Colors.hair}
+            strokeOpacity={SkyMapLayout.signInnerOpacity}
+            strokeWidth={SkyMapLayout.signInnerWidth}
+          />
+        ))}
         {withHouses
           ? w.houseSectors
               .filter((h) => houses.includes(h.n))

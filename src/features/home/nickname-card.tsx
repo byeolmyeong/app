@@ -71,7 +71,7 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
         <Txt variant="captionStrong" color="gray">
           {headline ? C.read : M.readingCta}
         </Txt>
-        <Svg width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+        <Svg testID="nickname-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
           <Path d="M9 6l6 6-6 6" stroke={Colors.gray} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </View>

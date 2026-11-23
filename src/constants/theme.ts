@@ -265,7 +265,8 @@ export const NicknameCardLayout = {
   rowGap: 12,
   headlineTop: 18,
   moreTop: 14,
-  chevron: 16,
+  /** "풀이 읽기 ›" 의 꺾쇠 22(소유자 2026-11-23, 빌드 13 — 글자와 세로 가운데, 선 굵기는 viewBox 24 의 2 그대로 비율) */
+  chevron: 22,
   glow: { x: 0.88, y: 0.08, extent: 0.58 },
   /** 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기 */
   art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8 },
@@ -309,7 +310,8 @@ export const SkyMapLayout = {
 export const MeLayout = {
   cardTop: 4,
   cardBottom: 14,
-  card: { padV: 12, padH: 14, radius: 16, avatar: 44, gap: 12, textGap: 2, chevron: 18 },
+  /** chevron: 꺾쇠 › 22(소유자 2026-11-23, 빌드 13 — 선 굵기는 viewBox 24 의 2 그대로 비율) */
+  card: { padV: 12, padH: 14, radius: 16, avatar: 44, gap: 12, textGap: 2, chevron: 22 },
   chips: { top: 4, bottom: 8, gap: 6, height: 36 },
   contentTop: 20,
   sectionGap: 36,
@@ -602,7 +604,8 @@ export const ReasonLayout = {
   radius: 12,
   textGap: 4,
   rowGap: 8,
-  chevron: 18,
+  /** 펼침 꺾쇠 22(소유자 2026-11-23, 빌드 13 — 선 굵기는 viewBox 24 의 2 그대로 비율) */
+  chevron: 22,
   wheel: 120,
   wheelTop: 18,
   wheelDot: 5,

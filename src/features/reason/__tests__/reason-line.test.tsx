@@ -5,7 +5,7 @@ import { getAnimatedStyle } from 'react-native-reanimated';
 
 import { Motion } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { ReasonLine } from '@/features/reason/reason-line';
+import { ReasonLine, ReasonLineSkeleton } from '@/features/reason/reason-line';
 import type { Reason } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -57,6 +57,13 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     const body = animated(screen.getByTestId('reason-body', { includeHiddenElements: true })) as { height: number; opacity: number };
     return { deg: parseFloat(turn.transform[0].rotate), height: body.height, opacity: body.opacity };
   };
+
+  it('펼침 꺾쇠는 22 이고 꺾쇠 자리(뼈대)도 같은 폭(소유자 2026-11-23, 빌드 13)', async () => {
+    await render(<ReasonLine reason={sun} chart={fixtures.chart} />);
+    expect(screen.getByTestId('reason-chevron-glyph', { includeHiddenElements: true }).props.width).toBe(22);
+    await render(<ReasonLineSkeleton />);
+    expect(StyleSheet.flatten(screen.getByTestId('reason-chevron-space').props.style)).toMatchObject({ width: 22 });
+  });
 
   it('꺾쇠 회전 · 높이 · 보임이 진행 값 하나로 같은 길이 · 같은 곡선 — 내용은 절대 위치로 미리 재고, 앞 1/3 에서 나타난다(소유자 2026-11-21 빌드 8)', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);

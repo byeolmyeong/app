@@ -337,6 +337,8 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     await render(<HomeScreen />);
     const card = await screen.findByTestId('home-timing-card');
     expect(within(card).getByText(T.now)).toBeTruthy();
+    // 카드 머리의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
+    expect(within(card).getByTestId('home-card-chevron').props.width).toBe(22);
     expect(within(card).getByText(T.home.past)).toBeTruthy();
     expect(within(card).getByText('2028 큰 변화')).toBeTruthy();
     expect(within(card).getByText(main.title)).toBeTruthy();
@@ -370,6 +372,8 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     await render(<HomeScreen />);
     const empty = await screen.findByTestId('home-timing-empty');
     expect(within(empty).getByText(T.home.emptyTitle)).toBeTruthy();
+    // "자세한 풀이 받기 ›" 의 꺾쇠도 22(시기 탭의 같은 부품 기본 18 은 그대로, 소유자 2026-11-23)
+    expect(within(empty).getByTestId('home-timing-request-chevron').props.width).toBe(22);
     await fireEvent.press(within(empty).getByRole('button', { name: T.home.request }));
     expect(router.replace).toHaveBeenLastCalledWith('/timing');
     expect(screen.queryByTestId('home-timing-card')).toBeNull();
@@ -494,6 +498,8 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     const card = await screen.findByTestId('home-today-card');
+    // 카드 머리의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
+    expect(within(card).getByTestId('home-card-chevron').props.width).toBe(22);
     expect(within(card).getByText('오늘의 하늘 · 11월 19일')).toBeTruthy();
     expect(within(card).getByText(sky.title)).toBeTruthy();
     expect(within(card).getByText('오늘은 달이 내 금성 자리를 지나요')).toBeTruthy();

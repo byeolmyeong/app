@@ -28,7 +28,7 @@ function Head({ label }: { label: string }) {
       <Txt variant="captionStrong" color="accentText">
         {label}
       </Txt>
-      <ChevronRight size={H.chevron} />
+      <ChevronRight size={H.chevron} testID="home-card-chevron" />
     </View>
   );
 }

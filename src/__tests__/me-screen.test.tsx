@@ -215,14 +215,14 @@ describe('나 탭 · 옛 보관본(업데이트 직후, 리뷰 #49)', () => {
     expect(screen.queryByText(old.headline)).toBeNull();
   });
 
-  it('서버가 내 별명을 새로 짓느라 10초가 넘으면 별명 짓는 중 — 머리 · 아래 탭이 있어 다른 탭으로 갈 수 있다(결정 065 의 2 · 061)', async () => {
+  it('서버가 내 별명을 새로 짓느라 10초가 넘으면 별명 짓는 중 — 아래 탭이 있어 다른 탭으로 갈 수 있고 머리는 없다(결정 065 의 2 · 061, 소유자 빌드 13)', async () => {
     jest.useFakeTimers();
     await storeReading(old as unknown as Reading);
     mockApi.createReading.mockReturnValue(new Promise(() => {}));
     await render(<MeScreen />);
     await act(async () => void (await jest.advanceTimersByTimeAsync(10_500)));
     expect(screen.getByTestId('making-art', { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.getByTestId('nav-bar')).toBeTruthy();
+    expect(screen.queryByTestId('nav-bar')).toBeNull();
     expect(tabs()).toHaveLength(4);
     expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', true);
   });

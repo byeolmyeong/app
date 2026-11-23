@@ -91,6 +91,9 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     await fireEvent.press(await screen.findByTestId('timing-chip-year'));
     expect(screen.getByTestId('timing-locked')).toBeTruthy();
     expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
+    // 자물쇠 · 글 · 받기 버튼 묶음이 카드의 세로 가운데에 — 위아래 안 여백이 같다(소유자, 빌드 13)
+    const card = StyleSheet.flatten(screen.getByTestId('timing-locked').props.style);
+    expect(card.paddingTop).toBe(card.paddingBottom);
     expect(screen.getByText(T.locked.year.title)).toBeTruthy();
     expect(chip('year').props.accessibilityState).toMatchObject({ selected: true });
     await fireEvent.press(chip('life'));
@@ -177,12 +180,12 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(screen.getByText('2026년의 흐름')).toBeTruthy();
   });
 
-  it('다른 곳에서 받기를 눌러 쓰는 중인 채로 열면 머리 · 아래 탭이 있는 틀 안의 쓰는 중(다른 탭으로 갈 수 있게, #49 의 나 탭과 같이)', async () => {
+  it('다른 곳에서 받기를 눌러 쓰는 중인 채로 열면 아래 탭이 있는 쓰는 중(다른 탭으로 갈 수 있게, #49) — 머리는 없다(소유자, 빌드 13)', async () => {
     mockApi.getTimingReport.mockResolvedValue(got('WRITING'));
     await render(<TimingScreen />);
     expect(await screen.findByText(T.making.title)).toBeTruthy();
     expect(bottomTabs()).toHaveLength(4);
-    expect(within(screen.getByTestId('nav-bar')).getByText(T.title)).toBeTruthy();
+    expect(screen.queryByTestId('nav-bar')).toBeNull();
     expect(mockApi.requestTimingReport).not.toHaveBeenCalled();
   });
 
@@ -380,11 +383,23 @@ describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)',
     expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'NEXT_BIG' });
   });
 
-  it('시각 "모름" 이면 위에 안내 한 줄(결정 049 의 8)', async () => {
+  it('시각 "모름" 이어도 맨 위 안내 줄은 없고(소유자, 빌드 13) 칩 줄은 시각을 알 때와 같은 자리 — 시각이 필요한 시기를 빼는 것은 그대로', async () => {
     await storeReport(fixtures.timingReportTimeUnknown);
     mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.timingReportTimeUnknown } });
+    const view = await render(<TimingScreen />);
+    await screen.findByTestId('timing-now-card');
+    expect(screen.queryByText('출생 시각을 몰라 일부 시기를 뺐어요')).toBeNull();
+    const unknownTop = chipsTop();
+    const unknownSiblings = screen.getByTestId('timing-chips-slot').parent?.children.length;
+    // 거름(time-known.ts)은 그대로 — 돈 영역 줄이 없다
+    expect(screen.queryByTestId('year-row-MONEY')).toBeNull();
+    await view.unmount();
+    await storeReport();
+    mockApi.getTimingReport.mockResolvedValue(done);
     await render(<TimingScreen />);
-    expect(await screen.findByText(T.timeUnknown)).toBeTruthy();
+    await screen.findByTestId('timing-now-card');
+    expect(chipsTop()).toBe(unknownTop);
+    expect(screen.getByTestId('timing-chips-slot').parent?.children.length).toBe(unknownSiblings);
   });
 
   it('다 받은 풀이를 보던 중 연결이 끊기면 띠, 돌아오면 조용히 새로 받는다 — 만들기(POST)는 하지 않는다', async () => {

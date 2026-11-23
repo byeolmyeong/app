@@ -11,6 +11,7 @@ import { DAY_SKY_MADE_STORAGE_KEY } from '@/features/timing/day-sky-made';
 import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
 import { api, type DaySky } from '@/lib/api';
 import { forgetMemory } from '@/lib/device-memory';
+import { GENERATION_MAX_WAIT_MS } from '@/lib/with-timeout';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('expo-router', () => ({
@@ -118,13 +119,15 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     await act(async () => answer({ ok: true, data: sky }));
   });
 
-  it('오늘을 이 기기에서 한 번도 받지 않았으면 뼈대 없이 곧바로 쓰는 중(머리만 · 탭 없음) — 받으면 글(결정 075)', async () => {
+  it('오늘을 이 기기에서 한 번도 받지 않았으면 뼈대 없이 곧바로 쓰는 중(머리 · 탭 없음 — 소유자 빌드 13) — 받으면 글(결정 075)', async () => {
     jest.useFakeTimers();
     let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
     mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
     await render(<TodayScreen />);
     await act(async () => {});
     expect(screen.getByText(T.making.title)).toBeTruthy();
+    expect(screen.queryByTestId('nav-bar')).toBeNull();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
     await act(async () => jest.advanceTimersByTime(400));
     expect(screen.queryAllByTestId(/^sk-/)).toHaveLength(0);
     await act(async () => finish({ ok: true, data: sky }));
@@ -146,7 +149,7 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     (useLocalSearchParams as jest.Mock).mockReturnValue({});
   });
 
-  it('오늘을 받은 적 있는데 보관본이 없으면: 0.3초 뒤 뼈대(다 그려진 배치 — 탭 있음), 3초가 넘으면 쓰는 중(머리만 · 탭 없음, 결정 061 의 2)', async () => {
+  it('오늘을 받은 적 있는데 보관본이 없으면: 0.3초 뒤 뼈대(다 그려진 배치 — 탭 있음), 3초가 넘으면 쓰는 중(머리 · 탭 없음, 결정 061 의 2 · 소유자 빌드 13)', async () => {
     jest.useFakeTimers();
     await AsyncStorage.setItem(DAY_SKY_MADE_STORAGE_KEY, JSON.stringify({ key: KEY, dates: [koreaToday()] }));
     let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
@@ -160,8 +163,22 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     await act(async () => jest.advanceTimersByTime(3000));
     expect(screen.getByText(T.making.title)).toBeTruthy();
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.queryByTestId('nav-bar')).toBeNull();
     await act(async () => finish({ ok: true, data: sky }));
     expect(screen.getByText(sky.title)).toBeTruthy();
+  });
+
+  it('머리가 없는 쓰는 중이 3분을 넘으면 기다리지 않고 못 썼을 때(머리 · 다시 쓰기 · 나중에 하기) — 갇히지 않게(소유자, 빌드 13)', async () => {
+    jest.useFakeTimers();
+    mockApi.postDaySky.mockReturnValueOnce(new Promise(() => {}));
+    await render(<TodayScreen />);
+    await act(async () => {});
+    expect(screen.getByText(T.making.title)).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(GENERATION_MAX_WAIT_MS - 1)));
+    expect(screen.getByText(T.making.title)).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(1)));
+    expect(screen.getByText(T.fail)).toBeTruthy();
+    expect(screen.getByTestId('nav-bar')).toBeTruthy();
   });
 
   it('못 썼으면 실패 틀 — 다시 쓰기를 누르면 다시 부르고, 나중에 하기는 뒤로', async () => {

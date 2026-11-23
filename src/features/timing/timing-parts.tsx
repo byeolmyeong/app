@@ -477,9 +477,9 @@ const styles = StyleSheet.create({
   request: { marginTop: D.buttonTop },
   lockedCard: {
     alignItems: 'center',
-    paddingTop: K.cardPadTop,
+    paddingTop: K.cardPadY,
     paddingHorizontal: K.cardPadX,
-    paddingBottom: K.cardPadBottom,
+    paddingBottom: K.cardPadY,
     borderRadius: D.radius,
     borderWidth: LineWidth,
     borderColor: Colors.hair,

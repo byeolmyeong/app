@@ -13,6 +13,7 @@ import { useSession } from '@/features/auth/use-session';
 import { keyThree } from '@/features/chart/chart-rows';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
+import { GENERATION_MAX_WAIT_MS } from '@/lib/with-timeout';
 import { api, type ApiResult, type Reading } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -84,15 +85,15 @@ describe('요약 해석 화면', () => {
     await act(async () => void (await jest.advanceTimersByTimeAsync(10_000)));
     expect(screen.getByText(R.generating)).toBeTruthy();
     expect(screen.queryByTestId('reading-skeleton')).toBeNull();
-    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
-    // 아래 탭도 그대로 — 그동안 다른 탭으로 갈 수 있다(나 탭과 같다, 결정 061 · 065 의 2)
+    // 짓는 중에는 머리가 없다(소유자, 빌드 13) — 아래 탭은 그대로라 그동안 다른 탭으로 갈 수 있다(나 탭과 같다, 결정 061 · 065 의 2)
+    expect(screen.queryByTestId('nav-bar')).toBeNull();
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
     await act(async () => resolve({ ok: true, data: reading }));
     expect(screen.getByText(reading.headline)).toBeTruthy();
     jest.useRealTimers();
   });
 
-  it('가입 직후 · 출생 정보를 바꾼 직후는 서버가 새로 짓는 중이라 뼈대 없이 바로 별명 짓는 중 — 가입 직후에만 머리 없이(보드 9, 리뷰 A6)', async () => {
+  it('가입 직후 · 출생 정보를 바꾼 직후는 서버가 새로 짓는 중이라 뼈대 없이 바로 별명 짓는 중 — 둘 다 머리 · 아래 탭 없이(보드 9, 소유자 빌드 13)', async () => {
     // 끝나지 않는 요청을 남기면 같은 출생 정보의 다음 시험이 그 요청을 함께 기다린다(use-reading 의 inflight) — 끝에 답한다
     let resolve: (r: ApiResult<Reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
@@ -107,8 +108,25 @@ describe('요약 해석 화면', () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(R.generating)).toBeTruthy();
     expect(screen.queryByTestId('reading-skeleton')).toBeNull();
-    expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
+    expect(screen.queryByTestId('nav-bar')).toBeNull();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
     await act(async () => resolve({ ok: true, data: reading }));
+  });
+
+  it('머리가 없는 짓는 중이 3분을 넘으면 기다리지 않고 못 지었을 때(머리 · 다시 짓기) — 갇히지 않게(소유자, 빌드 13)', async () => {
+    jest.useFakeTimers();
+    expect(GENERATION_MAX_WAIT_MS).toBe(180_000);
+    mockApi.createReading.mockReturnValueOnce(new Promise(() => {}));
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'birth' });
+    await render(<ReadingScreen />);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
+    expect(screen.getByText(R.generating)).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(GENERATION_MAX_WAIT_MS - 1)));
+    expect(screen.getByText(R.generating)).toBeTruthy();
+    await act(async () => void (await jest.advanceTimersByTimeAsync(1)));
+    expect(screen.queryByText(R.generating)).toBeNull();
+    expect(screen.getByTestId('nav-bar')).toBeTruthy();
+    jest.useRealTimers();
   });
 
   it('짓는 동안(별명 짓는 중이 보일 때)만 기다릴 때 음악을 청한다(결정 062 의 1) — 뼈대일 때는 아니고, 글이 오면 내려놓는다', async () => {

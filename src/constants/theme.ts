@@ -390,7 +390,6 @@ export const TimingLayout = {
   tag: { height: 24, padX: 9, radius: 12 },
   /** 칩 셋: 맨 위 카드 아래 · 카드가 없을 때 머리 아래(받기 전 — 세 칩 모두 같은 자리) · 높이 · 사이 */
   chips: { top: 20, topBare: 4, height: 36, gap: 6 },
-  timeUnknownTop: 12,
   contentTop: 24,
   contentBottom: 34,
   sectionGap: 32,
@@ -530,7 +529,8 @@ export const TimingLayout = {
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */
   /** 뼈대(결정 065 의 2 · 071 — 다 그려진 화면의 배치를 본뜬다): 글자 막대는 글자 크기보다 이만큼 낮게 · 딱지 폭 */
   skeleton: { barInset: 2, tag: 44 },
-  locked: { cardPadTop: 24, cardPadX: 20, cardPadBottom: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18 },
+  /** 잠긴 칩의 자물쇠 카드 — 위아래 안 여백은 같게(묶음이 카드의 세로 가운데, 소유자 빌드 13) */
+  locked: { cardPadY: 24, cardPadX: 20, icon: 48, glyph: 22, titleTop: 14, bodyTop: 6, buttonTop: 18 },
 } as const;
 
 /**

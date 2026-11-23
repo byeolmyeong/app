@@ -16,6 +16,7 @@ import { koreaToday } from '@/features/timing/dates';
 import { api, isDaySky, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
 import { getStored, peekStored, setStored } from '@/lib/device-memory';
 import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
+import { GENERATION_MAX_WAIT_MS, withTimeout } from '@/lib/with-timeout';
 
 export const DAY_SKY_STORAGE_KEY = 'byeolmyeong.daySky.v1';
 const NO_PROFILE_STATUS = 404;
@@ -65,8 +66,9 @@ function load(key: string, input: BirthInput, fresh: boolean): Promise<ApiResult
   const request = (async () => {
     const gen = await storageGeneration(GENERATION_KEY).catch(() => null);
     const madeGen = await daySkyMadeGeneration();
-    let r = await api.postDaySky();
-    if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await api.postDaySky();
+    // 쓰는 중 화면에는 머리가 없어 3분이 넘으면 기다리지 않는다(못 썼을 때로 — 빌드 13)
+    let r = await withTimeout(api.postDaySky(), GENERATION_MAX_WAIT_MS);
+    if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await withTimeout(api.postDaySky(), GENERATION_MAX_WAIT_MS);
     if (r.ok && gen !== null && (await isSameGeneration(GENERATION_KEY, gen)))
       await setStored(DAY_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data } satisfies Stored)).catch(() => undefined);
     // 받은 날을 기억한다(그날의 하늘과 같은 기억 — 결정 075 의 2)

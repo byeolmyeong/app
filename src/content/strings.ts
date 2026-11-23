@@ -485,7 +485,6 @@ export const strings = {
     houseSuffix: '하우스',
     /** 상승점 · 중천 줄: 1 → 1하우스가 시작되는 곳 */
     houseStartSuffix: '하우스가 시작되는 곳',
-    timeUnknownNote: '태어난 시각을 몰라 하우스와 첫인상 · 꿈의 자리는 보여 드리지 않아요.',
     relations: '다른 별과의 관계',
     relationsQuestion: '별과 별의 관계가 뭔가요?',
     relationsTip: '두 별이 하늘에서 이루는 각도로 읽어요.',
@@ -725,8 +724,6 @@ export const strings = {
       body: '잠깐 문제가 생겼어요. 다른 곳은 그대로 볼 수 있어요.',
     },
     limit: '요청이 많아요. 잠시 뒤 다시 시도해 주세요.',
-    /** 시각 "모름"(결정 049 의 8) */
-    timeUnknown: '출생 시각을 몰라 일부 시기를 뺐어요',
     /** 날짜를 적는 낱말: "2026년 9월 ~ 2027년 1월", "11월 21일 토요일", "2028 · 만 29세 무렵" */
     date: {
       yearSuffix: '년',

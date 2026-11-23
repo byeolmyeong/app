@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { getStored, peekStored, setStored } from '@/lib/device-memory';
 import { api, isReading, type ApiErrorKind, type ApiResult, type BirthInput, type Reading } from '@/lib/api';
+import { GENERATION_MAX_WAIT_MS, withTimeout } from '@/lib/with-timeout';
 
 export const READING_STORAGE_KEY = 'byeolmyeong.reading.v1';
 
@@ -56,9 +57,10 @@ async function requestReading(input: BirthInput): Promise<ApiResult<Reading>> {
   const key = keyOf(input);
   const stored = await loadReading(key);
   if (stored) return { ok: true, data: stored };
-  let r = await api.createReading();
+  // 별명 짓는 중 화면에는 머리가 없어 3분이 넘으면 기다리지 않는다(못 지었을 때로 — 빌드 13)
+  let r = await withTimeout(api.createReading(), GENERATION_MAX_WAIT_MS);
   // 서버에 출생 정보가 없으면(이 기능 전에 입력했거나 서버 저장이 비워진 경우) 저장하고 한 번만 더 요청한다.
-  if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await api.createReading();
+  if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await withTimeout(api.createReading(), GENERATION_MAX_WAIT_MS);
   // 실패한 것은 보관하지 않는다.
   if (r.ok) await saveReading(key, r.data);
   return r;

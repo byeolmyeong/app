@@ -57,7 +57,8 @@ export default function TodayScreen() {
   if (loading)
     // 오늘을 이 기기에서 받은 적이 없으면 뼈대 없이 곧바로 쓰는 중(결정 075). 받은 적이 있으면 서버의 저장본이 곧 오므로 늦을 때만 뼈대
     return writing || made === false ? (
-      <MakingView nav={nav()} title={T.making.title} lines={T.making.lines} />
+      // 쓰는 중은 머리 · 아래 탭 없이(소유자, 빌드 13 — 뒤로는 기기의 뒤로 · 밀어서, 3분이 넘으면 머리가 있는 못 썼을 때로)
+      <MakingView title={T.making.title} lines={T.making.lines} />
     ) : (
       // 뼈대는 다 그려진 화면처럼 아래 탭과 함께(결정 065 의 2 · 071) — 쓰는 중 · 못 썼을 때만 탭이 없다(결정 061 의 2)
       <Screen nav={nav()} footer={<MainTabs active="home" nested />}>

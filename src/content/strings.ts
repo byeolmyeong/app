@@ -485,7 +485,6 @@ export const strings = {
     houseSuffix: '하우스',
     /** 상승점 · 중천 줄: 1 → 1하우스가 시작되는 곳 */
     houseStartSuffix: '하우스가 시작되는 곳',
-    timeUnknownNote: '태어난 시각을 몰라 하우스와 첫인상 · 꿈의 자리는 보여 드리지 않아요.',
     relations: '다른 별과의 관계',
     relationsQuestion: '별과 별의 관계가 뭔가요?',
     relationsTip: '두 별이 하늘에서 이루는 각도로 읽어요.',

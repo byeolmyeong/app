@@ -4,12 +4,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { Txt } from '@/components/txt';
 import { usePushSettled } from '@/components/use-push-settled';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
-import { showsHouses, skyDetail } from '@/features/chart/chart-rows';
+import { skyDetail } from '@/features/chart/chart-rows';
 import { ChartWheel, ChartWheelPlaceholder } from '@/features/chart/ChartWheel';
 import { SkyList } from '@/features/chart/sky-list';
 import { SkySheet } from '@/features/chart/sky-sheet';
@@ -58,11 +57,6 @@ export default function ChartScreen() {
         <View style={styles.list}>
           <SkyList chart={chart} selected={selected} onSelect={select} />
         </View>
-        {showsHouses(chart) ? null : (
-          <Txt variant="label" color="gray" style={styles.note}>
-            {S.timeUnknownNote}
-          </Txt>
-        )}
       </View>
       <SkySheet chart={chart} selected={selected} visible={sheetOpen} onClose={() => setSheetOpen(false)} />
     </Screen>
@@ -72,5 +66,4 @@ export default function ChartScreen() {
 const styles = StyleSheet.create({
   wheel: { marginTop: Spacing.md },
   list: { marginTop: Spacing.xl },
-  note: { marginTop: Spacing.md },
 });

@@ -385,7 +385,7 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     // 시트는 별을 누르기 전에는 닫혀 있고, 숫자 표는 "차트 자세히" 에 있다
     expect(screen.queryByTestId('sheet-dim')).toBeNull();
     expect(screen.queryAllByTestId('data-table-row')).toHaveLength(0);
-    expect(screen.queryByText(S.timeUnknownNote)).toBeNull();
+    expect(screen.queryByText(/태어난 시각을 몰라/)).toBeNull();
   });
 
   it('줄을 누르면 그 별이 휠에서 고른 별이 되고 시트가 열린다(13-1)', async () => {
@@ -430,7 +430,7 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     (useLocalSearchParams as jest.Mock).mockReturnValue({});
   });
 
-  it('시각 "모름" 이면 하우스 선 · 번호 · 축이 없고, 목록은 별 10줄에 하우스 글이 없으며 안내를 적는다', async () => {
+  it('시각 "모름" 이면 하우스 선 · 번호 · 축이 없고, 목록은 별 10줄에 하우스 글이 없다 — 맨 아래 안내 글도 없다(소유자, 빌드 13)', async () => {
     await saveBirth({ profile: { ...profile, time: null }, chart: fixtures.chartTimeUnknown });
     await render(<ChartScreen />);
     expect(await screen.findByText(S.listHeading)).toBeTruthy();
@@ -440,9 +440,9 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
     expect(screen.queryByTestId('wheel-house-sector')).toBeNull();
     expect(screen.getAllByTestId(/^sky-row-/)).toHaveLength(10);
     expect(screen.queryByText(G.angles.ASC.nickname)).toBeNull();
-    // 줄의 "N하우스 · 주제" 가 없다(안내 글의 "하우스" 는 빼고 본다)
+    // 줄의 "N하우스 · 주제" 가 없다
     expect(screen.queryByText(new RegExp(`\\d${S.houseSuffix}`))).toBeNull();
-    expect(screen.getByText(S.timeUnknownNote)).toBeTruthy();
+    expect(screen.queryByText('태어난 시각을 몰라 하우스와 첫인상 · 꿈의 자리는 보여 드리지 않아요.')).toBeNull();
     // 시트에도 하우스 줄이 없다
     await fireEvent.press(screen.getByTestId('sky-row-SUN'));
     expect(await screen.findByTestId('sheet-dim')).toBeTruthy();

@@ -297,6 +297,9 @@ export const SkyMapLayout = {
   /** 고른 별의 빛무리(휠 · 목록의 점) · 고른 별의 하우스 칸에 쓰는 주색의 진하기 */
   haloOpacity: 0.25,
   sectorOpacity: 0.16,
+  /** 시각 "모름" 이면 별자리 경계를 가운데 원까지 늘린 선(결정 079): 하우스 선과 같은 hair 색에 낮은 진하기 · 조금 가늘게 */
+  signInnerOpacity: 0.5,
+  signInnerWidth: 0.8,
 } as const;
 
 /**

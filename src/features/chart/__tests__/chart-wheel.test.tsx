@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 
-import { Colors } from '@/constants/theme';
+import { Colors, SkyMapLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ChartWheel } from '@/features/chart/ChartWheel';
 import { fixtures } from '@/lib/fixtures';
@@ -15,6 +15,8 @@ describe('ChartWheel: 내 하늘 지도의 휠(시안 13)', () => {
     expect(screen.getAllByTestId('wheel-house-line')).toHaveLength(12);
     expect(screen.getAllByTestId(/^wheel-house-number-/)).toHaveLength(12);
     expect(screen.getAllByTestId('wheel-axis')).toHaveLength(2);
+    // 시각을 알면 안쪽은 하우스 선 · 축이 채운다 — 별자리 경계를 안쪽으로 늘리지 않는다(결정 079)
+    expect(screen.queryAllByTestId('wheel-sign-inner-line')).toHaveLength(0);
     expect(screen.getByTestId('wheel-axis-label-ASC')).toBeTruthy();
     expect(screen.getByTestId('wheel-axis-label-MC')).toBeTruthy();
     expect(screen.queryAllByTestId('wheel-aspect-line')).toHaveLength(0);
@@ -57,6 +59,16 @@ describe('ChartWheel: 내 하늘 지도의 휠(시안 13)', () => {
     expect(screen.queryAllByTestId('wheel-axis')).toHaveLength(0);
     expect(screen.queryByTestId('wheel-house-sector')).toBeNull();
     expect(screen.queryByTestId('wheel-axis-label-ASC')).toBeNull();
+    // 시각 없이 셀 수 있는 선(별자리 12칸의 경계)만 안쪽 원까지 옅게 늘린다(결정 079, 소유자 빌드 13)
+    const inner = screen.getAllByTestId('wheel-sign-inner-line');
+    expect(inner).toHaveLength(12);
+    for (const l of inner) {
+      expect(l.props.stroke).toEqual(argb(Colors.hair));
+      expect(l.props.strokeOpacity).toBe(SkyMapLayout.signInnerOpacity);
+      expect(l.props.strokeWidth).toBe(SkyMapLayout.signInnerWidth);
+    }
+    expect(SkyMapLayout.signInnerWidth).toBeGreaterThanOrEqual(0.75);
+    expect(SkyMapLayout.signInnerWidth).toBeLessThanOrEqual(1);
     expect(screen.getByTestId('wheel-selected-dot')).toBeTruthy();
     const sun = fixtures.chartTimeUnknown.positions.find((p) => p.body === 'SUN')!;
     expect(screen.getByTestId(`wheel-sign-${sun.sign}`).props.fill).toEqual(argb(Colors.accentText));

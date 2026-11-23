@@ -39,6 +39,8 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     expect(screen.getByTestId('reason-wheel')).toBeTruthy();
     expect(screen.getAllByTestId('mini-wheel-dot')).toHaveLength(1);
     expect(screen.getAllByTestId('mini-wheel-sector')).toHaveLength(1);
+    // 시각을 알면 안쪽은 하우스 선 — 별자리 경계를 안쪽으로 늘리지 않는다(결정 079)
+    expect(screen.queryAllByTestId('mini-wheel-sign-inner-line', { includeHiddenElements: true })).toHaveLength(0);
     // 용어 줄: 나의 중심 · 해 / 호기심 · 쌍둥이자리 / 일상의 자리 · 6하우스 — 별명 아래 한 줄 뜻
     expect(screen.getAllByTestId('reason-term')).toHaveLength(3);
     expect(screen.getByText(G.bodies.SUN.meaning)).toBeTruthy();
@@ -159,6 +161,8 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     await fireEvent.press(screen.getByRole('button', { name: `${R.label}, ${text}` }));
     expect(screen.queryAllByTestId('mini-wheel-sector')).toHaveLength(0);
     expect(screen.queryAllByTestId('mini-wheel-house-line')).toHaveLength(0);
+    // 작은 지도도 내 하늘 지도처럼 별자리 경계만 안쪽 원까지 옅게(결정 079)
+    expect(screen.getAllByTestId('mini-wheel-sign-inner-line', { includeHiddenElements: true })).toHaveLength(12);
     expect(screen.getAllByTestId('reason-term')).toHaveLength(2);
     expect(screen.queryByText(G.houses[6].meaning)).toBeNull();
   });

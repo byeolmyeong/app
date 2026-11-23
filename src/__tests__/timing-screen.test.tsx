@@ -91,6 +91,9 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     await fireEvent.press(await screen.findByTestId('timing-chip-year'));
     expect(screen.getByTestId('timing-locked')).toBeTruthy();
     expect(screen.queryAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(0);
+    // 자물쇠 · 글 · 받기 버튼 묶음이 카드의 세로 가운데에 — 위아래 안 여백이 같다(소유자, 빌드 13)
+    const card = StyleSheet.flatten(screen.getByTestId('timing-locked').props.style);
+    expect(card.paddingTop).toBe(card.paddingBottom);
     expect(screen.getByText(T.locked.year.title)).toBeTruthy();
     expect(chip('year').props.accessibilityState).toMatchObject({ selected: true });
     await fireEvent.press(chip('life'));

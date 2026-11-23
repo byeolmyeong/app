@@ -9,7 +9,6 @@ import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
 import { SkeletonGroup } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
-import { Txt } from '@/components/txt';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { useOnReconnect, useOnline } from '@/components/use-online';
 import { TimingLayout as L } from '@/constants/theme';
@@ -165,7 +164,6 @@ export default function TimingScreen() {
   // 시각 "모름" 이면 받았더라도 돈 · 운명적 만남 구간은 맨 위 카드 · 작은 실천에도 없다(이중 안전)
   const report = done ? shownTiming(s.report) : null;
   const main = report ? mainInterval(report) : null;
-  const timeKnown = report ? report.timeKnown : month.state.status === 'done' ? month.state.sky.timeKnown : true;
   const blocked = s.status === 'none' && s.blocked === true;
 
   let content: React.ReactNode;
@@ -214,11 +212,6 @@ export default function TimingScreen() {
       {/* 한 덩어리로 둔다 — 화면의 칸 사이 간격(16)이 끼지 않게 시안 14 의 간격 그대로 */}
       <View>
         {main ? <NowCard interval={main} onPress={main.detail ? () => router.push(`/timing/period?id=${main.id}`) : undefined} /> : null}
-        {timeKnown ? null : (
-          <Txt variant="caption" color="gray" style={styles.timeUnknown}>
-            {T.timeUnknown}
-          </Txt>
-        )}
         {/* 칩 줄은 세 칩에서 같은 자리 — 잠긴 칩을 골라도 이번 달의 자리 그대로(소유자 지적 2026-11-21) */}
         <View testID="timing-chips-slot" style={main ? styles.chips : styles.chipsBare}>
           <ChipRow value={chip} locked={!report} onChange={setPicked} />
@@ -274,7 +267,6 @@ function MonthPending({ month, visible }: { month: string; visible: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  timeUnknown: { marginTop: L.timeUnknownTop },
   chips: { marginTop: L.chips.top },
   chipsBare: { marginTop: L.chips.topBare },
   content: { paddingTop: L.contentTop, gap: L.sectionGap },

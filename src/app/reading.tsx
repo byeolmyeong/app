@@ -106,9 +106,10 @@ export default function ReadingScreen() {
   // 홈 · 나 탭에서 들어왔으면 뼈대와 같은 아래 탭도(중간에 탭이 생기지 않게, 결정 071 의 6)
   if (!stored.checked) return <Screen nav={nav} footer={fresh ? undefined : tabs}>{null}</Screen>;
 
-  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다. 받아 오다 10초가 넘은 것이면
-  // 머리 · 아래 탭이 있는 틀에 보여 그동안 다른 탭으로 갈 수 있게 한다(나 탭과 같다, 결정 061 · 065 의 2)
-  if (making) return <MakingView nav={from === 'signup' ? undefined : nav} tabs={fresh ? undefined : tabs} />;
+  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다. 머리(뒤로 · 제목)는 없다(소유자, 빌드 13 — 뒤로는
+  // 기기의 뒤로 · 밀어서, 3분이 넘으면 머리가 있는 못 지었을 때로). 받아 오다 10초가 넘은 것이면 아래 탭이 있는 틀에 보여 그동안 다른 탭으로
+  // 갈 수 있게 한다(나 탭과 같다, 결정 061 · 065 의 2)
+  if (making) return <MakingView tabs={fresh ? undefined : tabs} />;
   // 받아 오는 동안은 글과 같은 배치의 뼈대(결정 071) — 머리 · 아래 탭은 진짜
   if (state.status === 'loading')
     return (

@@ -12,12 +12,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { daySkyMadeGeneration, markDaySkyMade, wasDaySkyMade } from '@/features/timing/day-sky-made';
 import { api, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
 import { peekStored, setMemoryOnly } from '@/lib/device-memory';
-import { withTimeout } from '@/lib/with-timeout';
+import { GENERATION_MAX_WAIT_MS, withTimeout } from '@/lib/with-timeout';
 
 const NO_PROFILE_STATUS = 404;
 
 /** 한 번의 요청(그날을 처음 쓰면 수십 초)을 기다리는 한도. 넘으면 서버 실패로 보고(못 썼을 때 — 다시 쓰기 · 나중에 하기) 늦게 온 답은 버린다 */
-export const DAY_SKY_MAX_WAIT_MS = 180_000;
+export const DAY_SKY_MAX_WAIT_MS = GENERATION_MAX_WAIT_MS;
 
 /** failed 의 code 는 서버가 적어 준 이름(`DATE_OUT_OF_RANGE` · `INVALID_DATE` · `GENERATION_FAILED`), status 는 상태 번호 */
 export type DaySkyState =

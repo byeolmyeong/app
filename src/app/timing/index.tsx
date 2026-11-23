@@ -109,12 +109,13 @@ export default function TimingScreen() {
     );
 
   // 쓰는 중(14-7): 받기를 누른 직후는 머리 · 아래 탭 없이 별명 짓는 중과 같은 그림 · 시기 문구.
-  // 다른 곳에서 받기를 눌러 열었을 때 이미 쓰는 중이면(길면 몇 분) 머리 · 아래 탭이 있는 틀 안에 — 그동안 다른 탭으로 갈 수 있게(리뷰 #49 · #63)
+  // 다른 곳에서 받기를 눌러 열었을 때 이미 쓰는 중이면(길면 몇 분) 아래 탭이 있는 틀 안에 — 그동안 다른 탭으로 갈 수 있게(리뷰 #49 · #63).
+  // 쓰는 중에는 머리가 없다(소유자, 빌드 13)
   if (s.status === 'writing')
     return requested ? (
       <MakingView title={T.making.title} lines={T.making.lines} />
     ) : (
-      <MakingView nav={nav} tabs={tabs} title={T.making.title} lines={T.making.lines} />
+      <MakingView tabs={tabs} title={T.making.title} lines={T.making.lines} />
     );
 
   if (s.status === 'failed') {

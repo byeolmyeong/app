@@ -27,7 +27,7 @@ function Head({ label }: { label: string }) {
       <Txt variant="captionStrong" color="accentText">
         {label}
       </Txt>
-      <ChevronRight size={H.chevron} />
+      <ChevronRight size={H.chevron} testID="home-card-chevron" />
     </View>
   );
 }
@@ -103,7 +103,8 @@ export function HomeTimingCards({
         </Txt>
         <Pressable accessibilityRole="button" onPress={onOpen} style={styles.link}>
           <Txt variant="term">{T.home.request}</Txt>
-          <ChevronRight color={Colors.ink} />
+          {/* 홈 카드의 꺾쇠는 22(소유자 2026-11-23) — 시기 탭의 같은 부품 기본(18)은 그대로 */}
+          <ChevronRight size={H.chevron} color={Colors.ink} testID="home-timing-request-chevron" />
         </Pressable>
       </View>
     );

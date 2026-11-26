@@ -20,7 +20,7 @@
 - `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 화면 로직(chart·auth·onboarding·home·me·reason·reading·timing·notifications·push·my·share·support·update — 1.1.0 대기: synastry·direction·audio, 결정 055 · 069) · `src/components/` 공용 부품 · `src/content/` 문구 · `src/lib/` 서버 호출
 - 서버(Spring Boot)는 별도 저장소다. 앱과는 HTTP API 로만 만난다. 근거: docs/decisions/004-spring-backend.md
 - `docs/` agent가 참고할 문서 · `docs/raw/` 원본(던지는 곳, 고치지 않음) · `.claude/` 설정·규칙·스킬·에이전트·훅
-- `assets/brand/` 브랜드 그림 원본(SVG) · `scripts/` 개발 도구(`render-brand.mjs`: SVG → `assets/images/` PNG, 결정 035 · `pretendard-web.py`: 웹 부분 글꼴 → `public/fonts/`) · `assets/audio/` 음악 세 곡(바꿔 끼우는 법은 그 README, 결정 062 — 1.0.0 에서는 꺼 둠, 결정 069)
+- `assets/brand/` 브랜드 그림 원본(SVG) · `scripts/` 개발 도구(`render-brand.mjs`: SVG → `assets/images/` PNG, 결정 035 · `pretendard-web.py`: 웹 부분 글꼴 → `public/fonts/`) · `assets/fonts/` 앱 글꼴(공식 OTF 그대로, app.json 의 expo-font 플러그인이 빌드 때 넣는다 — 바꾸면 새 앱 빌드 · 개발 빌드도 다시, 결정 086) · `assets/audio/` 음악 세 곡(바꿔 끼우는 법은 그 README, 결정 062 — 1.0.0 에서는 꺼 둠, 결정 069)
 - `dist/`·`ios/`·`android/` 는 생성물이다(커밋 안 함, 손으로 고치지 않음).
 
 ## 스택

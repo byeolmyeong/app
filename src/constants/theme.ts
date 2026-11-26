@@ -933,7 +933,18 @@ export const MyLayout = {
     /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
     namePlaceholder: 104,
   },
-  list: { radius: 16, row: 52, paddingV: 12, paddingH: 16, gap: 12, chevron: 18, descGap: 2, switch: { width: 48, height: 28, knob: 22, inset: 3 } },
+  list: {
+    radius: 16,
+    row: 52,
+    paddingV: 12,
+    paddingH: 16,
+    gap: 12,
+    chevron: 18,
+    descGap: 2,
+    switch: { width: 48, height: 28, knob: 22, inset: 3 },
+    /** 묶음 제목이 있는 카드(결정 093): 카드 위아래 안 여백 · 제목 줄 높이 · 줄 높이(줄 사이 선 없음) */
+    titled: { padV: 6, title: 44, row: 48 },
+  },
   account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 18, badgeGlyph: 11, badgeGap: 6 },
   delete: { headingTop: 8, gap: 22, notePadding: 18, noteGap: 12, dot: 4, dotTop: 10, dotGap: 10, checkGap: 10, checkPadV: 4, checkPadH: 2 },
   done: { icon: 72, iconGlyph: 32, titleTop: 24, bodyTop: 10, lift: 40 },

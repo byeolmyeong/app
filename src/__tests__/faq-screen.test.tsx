@@ -31,6 +31,8 @@ const faqs: Faq[] = [
   },
 ];
 const ok = (data: Faq[]): ApiResult<Faq[]> => ({ ok: true, data });
+/** 화면 읽기에서 숨긴 것(접힌 답)까지 찾는다 */
+const HIDDEN = { includeHiddenElements: true };
 
 /** 서버가 이 본문으로 답할 때 진짜 응답 검사를 거친 결과 */
 function serverAnswers(status: number, body: unknown) {
@@ -63,7 +65,11 @@ describe('자주 묻는 질문(/settings/faq, 결정 028)', () => {
     expect(screen.queryByText(F.loading)).toBeNull();
     const rows = screen.getAllByRole('button', { expanded: false });
     expect(rows.map((row) => row.props.accessibilityLabel)).toEqual(faqs.map((f) => f.question));
-    for (const item of faqs) expect(screen.queryByText(item.answer)).toBeNull();
+    // 접힌 답은 화면 읽기에서 숨는다 — 펼침 움직임을 위해 처음부터 그려 두고 재므로 트리에는 있다
+    for (const item of faqs) {
+      expect(screen.queryByText(item.answer)).toBeNull();
+      expect(screen.getByText(item.answer, HIDDEN)).toBeTruthy();
+    }
     expect(mockApi.listFaqs).toHaveBeenCalledTimes(1);
   });
 
@@ -79,6 +85,10 @@ describe('자주 묻는 질문(/settings/faq, 결정 028)', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: first.question }));
     expect(screen.queryByText(first.answer)).toBeNull();
+    expect(screen.getByText(first.answer, HIDDEN)).toBeTruthy();
+    expect(screen.getByRole('button', { name: first.question }).props.accessibilityState).toMatchObject({
+      expanded: false,
+    });
   });
 
   it('여러 질문을 함께 펼쳐 둘 수 있다', async () => {

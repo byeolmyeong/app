@@ -191,8 +191,8 @@ export function HomeTodayPractices({ state, onOpen }: { state: TodaySkyState; on
   return (
     <Pressable testID="home-today-practices" accessibilityRole="button" onPress={onOpen} style={styles.card}>
       <Head label={T.practices} />
-      <View style={styles.todos}>
-        <TodoList items={state.sky.practices} />
+      <View testID="home-today-todos" style={styles.todos}>
+        <TodoList items={state.sky.practices} spaced />
       </View>
     </Pressable>
   );

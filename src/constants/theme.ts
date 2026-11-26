@@ -408,7 +408,8 @@ export const TimingLayout = {
   practicesTop: 12,
   practiceGap: 8,
   card: { radius: 16, pad: 16, padV: 14, gap: 12, chevron: 18 },
-  badge: 24,
+  /** 작은 실천의 번호 동그라미(결정 095 — 소유자 B안): 숫자는 본문 굵게 15/22 */
+  badge: 32,
   month: {
     arrow: 32,
     arrowIcon: 16,
@@ -543,7 +544,9 @@ export const TimingLayout = {
     chevron: 22,
     emptyTitleTop: 10,
     subTop: 2,
-    todosTop: 4,
+    /** 오늘의 작은 실천: 이름표 줄 아래 첫 번호 위(시기 카드 제목 글자 위와 같은 자리) · 줄 사이(결정 095) */
+    todosTop: 15,
+    todoGap: 14,
     days: { width: 136, gap: 8, pad: 12, radius: 16, titleBottom: 8, textTop: 4 },
   },
   /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */

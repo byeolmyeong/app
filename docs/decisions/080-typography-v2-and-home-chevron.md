@@ -3,7 +3,7 @@ type: decision
 tags: [디자인 시스템, 타이포그래피, 글씨 색, 대비, 홈, 별명 카드, 시기 칸, 꺾쇠, 화면 읽기]
 status: active
 last_reviewed: 2026-11-26
-superseded_by:
+superseded_by: 092-home-today-first.md (3 의 홈 별명 카드 모양 — 한 줄 카드로. 마이 카드 꺾쇠 규칙 · 글자 단계 · 글씨 색은 유효)
 ---
 # 080. 글자 단계 v2 — 37단을 역할 13 + 부품 8로 줄이고 글씨 색은 역할마다 하나(본문은 회색), 홈 · 마이 카드의 꺾쇠는 오른쪽 위 한 자리
 

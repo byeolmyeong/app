@@ -46,6 +46,9 @@ export const formatMonthOnly = monthText;
 /** "2026-11-21" → "11월 21일" */
 export const formatMonthDay = (date: string) => `${monthText(date)} ${dayNum(date)}${D.daySuffix}`;
 
+/** "21일" — 이번 달 칸처럼 달이 이미 정해진 자리 */
+export const formatDayOnly = (date: string) => `${dayNum(date)}${D.daySuffix}`;
+
 /** 요일(0 일요일 ~ 6 토요일) — 달력의 칸 배치 */
 export const weekdayOf = (date: string) => new Date(utcDay(date)).getUTCDay();
 

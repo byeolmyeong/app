@@ -1,22 +1,19 @@
-import { useId } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { CardFail } from '@/components/card-fail';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, TimingLayout as L, TodayCardLayout } from '@/constants/theme';
+import { Colors, LineWidth, TimingLayout as L, TodayCardLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth } from '@/features/timing/dates';
 import { MakingArt } from '@/features/timing/home-today-card';
-import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
-import { ChevronRight, SkBlock, TodoList } from '@/features/timing/timing-parts';
+import { SkeletonGroup, SkeletonText } from '@/components/skeleton';
+import { ChevronRight, SkBlock } from '@/features/timing/timing-parts';
 import type { TimingReportView } from '@/features/timing/use-timing-report';
 import { shownTiming } from '@/features/timing/time-known';
 import { mainInterval } from '@/features/timing/year-view';
 
 const T = strings.timing;
 const H = L.home;
-const P = L.period;
 /** 서버에 시기 풀이 경로가 아직 없을 때(계획 "위험" — 홈은 그 칸을 숨긴다) */
 const NOT_FOUND = 404;
 
@@ -32,50 +29,17 @@ function Head({ label }: { label: string }) {
   );
 }
 
-/** 지나온 시기 — 지금 — 다음 큰 변화의 해 줄(보드 11). "지금" 점의 자리는 시안의 그림 그대로다(날짜로 셈하지 않는다) */
-function NowLine({ nextYear }: { nextYear: number | null }) {
-  const id = `homeLine${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
-  return (
-    <View style={styles.lineBox}>
-      <View testID="home-track" style={styles.track}>
-        <Svg style={styles.trackLine} width="100%" height={LineWidth * 2}>
-          <Defs>
-            <LinearGradient id={id} x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={Colors.hair} />
-              <Stop offset={String(H.litAt)} stopColor={Colors.primary} />
-              <Stop offset="1" stopColor={Colors.hair} />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height={LineWidth * 2} fill={`url(#${id})`} />
-        </Svg>
-        <View style={[styles.dot, styles.dotStart]} />
-        <View style={[styles.dot, styles.dotEnd]} />
-        <View testID="home-now" style={[styles.now, { left: `${H.nowAt * 100}%` }]} />
-      </View>
-      <View style={styles.labels}>
-        <Txt variant="badge" color="hint" style={styles.labelStart}>
-          {T.home.past}
-        </Txt>
-        {/* "지금" 은 트랙과 같은 좌우 여백의 칸에서 점과 같은 % — 기준 폭이 같아야 가운데가 맞는다(소유자 빌드 15) */}
-        <View testID="home-now-lane" pointerEvents="none" style={styles.nowLane}>
-          <View testID="home-now-label" style={[styles.nowLabel, { left: `${H.nowAt * 100}%` }]}>
-            <Txt variant="badge">{T.home.now}</Txt>
-          </View>
-        </View>
-        {nextYear !== null ? (
-          <Txt variant="badge" color="hint" style={styles.labelEnd}>
-            {`${nextYear}${T.home.bigSuffix}`}
-          </Txt>
-        ) : null}
-      </View>
-    </View>
-  );
+/** "2027년 1월까지 · 다음 큰 변화 2028년" — 다음 큰 변화가 없으면 언제까지만 */
+export function timingLine(to: string, nextYear: number | null): string {
+  const until = `${formatMonth(to)}${T.date.untilSuffix}`;
+  return nextYear === null ? until : `${until}${T.home.separator}${T.home.nextPrefix}${nextYear}${T.date.yearSuffix}`;
 }
 
 /**
- * 홈의 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2): 시기 풀이가 다 됐으면 "지금 나의 시기"(지나온 · 지금 · 다음 큰 변화의 해 줄,
- * 대표 구간의 이름 · "○○○○년 ○월까지") · "이 시기의 작은 실천" 셋, 없으면 "지금 나는 어떤 시기일까 · 자세한 풀이 받기"(시기 탭으로),
- * 쓰는 중이면 칸이 없다. 상태를 못 물었으면 그 자리에 안내(19-1) — 서버에 그 경로가 없으면(404) 칸을 숨긴다. 누르면 시기 탭.
+ * 홈의 시기 칸(결정 092 — 047 의 1-4 · 1-5 대체): 시기 풀이가 다 됐으면 "지금 나의 시기" 한 줄 카드(대표 구간의 이름 ·
+ * "○○○○년 ○월까지 · 다음 큰 변화 ○○○○년"). 지나온 · 지금 · 큰 변화 줄 그림과 이 시기의 작은 실천은 시기 탭에만 둔다.
+ * 없으면 "지금 나는 어떤 시기일까"(카드 전체가 시기 탭으로), 쓰는 중이면 쓰는 중 카드. 상태를 못 물었으면 그 자리에 안내(19-1) —
+ * 서버에 그 경로가 없으면(404) 칸을 숨긴다. 누르면 시기 탭.
  */
 export function HomeTimingCards({
   state,
@@ -135,55 +99,27 @@ export function HomeTimingCards({
   const main = mainInterval(report);
   if (!main) return null;
   return (
-    <>
-      <Pressable testID="home-timing-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
-        <Head label={T.now} />
-        <NowLine nextYear={report.current.nextMilestone?.year ?? null} />
-        <Txt variant="subhead" keepAll style={styles.title}>
-          {main.title}
-        </Txt>
-        <Txt variant="small" color="gray" style={styles.sub}>
-          {`${formatMonth(main.to)}${T.date.untilSuffix}`}
-        </Txt>
-      </Pressable>
-      {main.practices ? (
-        <Pressable testID="home-timing-practices" accessibilityRole="button" onPress={onOpen} style={styles.card}>
-          <Head label={T.practices} />
-          <View style={styles.todos}>
-            <TodoList items={main.practices} />
-          </View>
-        </Pressable>
-      ) : null}
-    </>
+    <Pressable testID="home-timing-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
+      <Head label={T.now} />
+      <Txt variant="subhead" keepAll style={styles.title}>
+        {main.title}
+      </Txt>
+      <Txt variant="small" color="gray" style={styles.sub}>
+        {timingLine(main.to, report.current.nextMilestone?.year ?? null)}
+      </Txt>
+    </Pressable>
   );
 }
 
-/** 홈 시기 칸의 뼈대(결정 071, 보드 24): 다 그려진 "지금 나의 시기" 카드(이름표 · 줄 · 이름 · 언제까지)와 작은 실천 카드(셋)를 본뜬다 */
+/** 홈 시기 칸의 뼈대(결정 071): 다 그려진 "지금 나의 시기" 한 줄 카드(이름표 · 이름 · 언제까지)를 본뜬다 */
 export function HomeTimingSkeleton() {
   return (
     <SkeletonGroup testID="home-timing-skeleton">
-      <View style={styles.cards}>
       <SkBlock of="home-timing-card" style={styles.card}>
         <SkeletonText widths={['36%']} variant="kicker" />
-        <View style={styles.lineBox}>
-          <Skeleton width="100%" height={P.track} pill />
-          <View style={styles.labels} />
-        </View>
         <SkeletonText widths={['66%']} variant="subhead" style={styles.title} />
-        <SkeletonText widths={['40%']} variant="small" style={styles.sub} />
+        <SkeletonText widths={['56%']} variant="small" style={styles.sub} />
       </SkBlock>
-      <SkBlock of="home-timing-practices" style={styles.card}>
-        <SkeletonText widths={['40%']} variant="kicker" />
-        <View style={styles.todos}>
-          {[0, 1, 2].map((i) => (
-            <View key={i} testID="sk-timing-todo" style={styles.todo}>
-              <Skeleton width={L.badge} height={L.badge} pill />
-              <SkeletonText widths={[i === 1 ? '50%' : '62%']} variant="body" style={styles.flex} />
-            </View>
-          ))}
-        </View>
-      </SkBlock>
-      </View>
     </SkeletonGroup>
   );
 }
@@ -197,36 +133,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.raised,
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  lineBox: { marginTop: H.lineTop },
-  track: { height: P.track, marginHorizontal: P.trackInset },
-  trackLine: { position: 'absolute', left: 0, right: 0, top: (P.track - LineWidth * 2) / 2 },
-  dot: { position: 'absolute', top: (P.track - P.dot) / 2, width: P.dot, height: P.dot, borderRadius: P.dot / 2, backgroundColor: Colors.muted },
-  dotStart: { left: -P.trackInset },
-  dotEnd: { right: -P.trackInset },
-  now: {
-    position: 'absolute',
-    top: 0,
-    width: P.now,
-    height: P.now,
-    marginLeft: -P.now / 2,
-    borderRadius: P.now / 2,
-    backgroundColor: Colors.primary,
-    boxShadow: `0 0 10px ${Colors.primary}`,
-  },
-  labels: { marginTop: P.labelsTop, height: P.labels },
-  labelStart: { position: 'absolute', left: 0, fontWeight: FontWeight.regular },
-  labelEnd: { position: 'absolute', right: 0, fontWeight: FontWeight.regular },
-  /** "지금" 글자의 칸 — 트랙(track)과 같은 좌우 여백이라 같은 % 가 점과 같은 자리다 */
-  nowLane: { position: 'absolute', top: 0, bottom: 0, left: P.trackInset, right: P.trackInset },
-  nowLabel: { position: 'absolute', width: L.hero.art, marginLeft: -L.hero.art / 2, alignItems: 'center' },
-  title: { marginTop: H.titleTop },
+  /** 이름표 줄 바로 아래 — 받기 전 카드와 같은 틈(줄 그림이 없다, 결정 092) */
+  title: { marginTop: H.emptyTitleTop },
   emptyTitle: { marginTop: H.emptyTitleTop },
   sub: { marginTop: H.subTop },
-  todos: { marginTop: H.todosTop },
-  /** 뼈대 두 카드 사이 — 홈의 카드 사이(보드 11)와 같다 */
-  cards: { gap: H.cardGap },
-  todo: { flexDirection: 'row', alignItems: 'center', gap: L.card.gap, minHeight: L.day.todo },
-  flex: { flex: 1 },
   writingRow: { flexDirection: 'row', alignItems: 'center', gap: TodayCardLayout.rowGap, marginTop: TodayCardLayout.rowTop },
   writingText: { flex: 1, gap: TodayCardLayout.textGap },
 });

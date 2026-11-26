@@ -79,5 +79,20 @@
     "setupFilesAfterEnv": [
       "<rootDir>/jest.after-env.js"
     ]
+  },
+  "overrides": {
+    "@amplitude/analytics-react-native": {
+      "@react-native-async-storage/async-storage": "$@react-native-async-storage/async-storage"
+    }
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "@amplitude/analytics-react-native",
+          "@react-native-seoul/kakao-login"
+        ]
+      }
+    }
   }
 }

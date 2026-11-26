@@ -3,7 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
-import { slideInScreenOptions, useSlideUpScreenOptions } from '@/components/slide-up';
+import { useSlideUpScreenOptions } from '@/components/slide-up';
 import { useAppFonts } from '@/components/use-app-fonts';
 import { useInert } from '@/components/use-inert';
 import { SplashView, useSplashDone } from '@/components/splash-view';
@@ -27,14 +27,11 @@ initAnalytics();
 
 /** 아래에서 올라오는 창으로 여는 약관 글(결정 067 의 1). 가입 약관 단계의 "보기" 와 마이가 같은 화면을 연다 */
 const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];
-/** 오른쪽에서 밀려 들어오는 가입 단계(앱은 화면 쌓기 기본, 웹은 화면이 스스로 — 결정 068 의 7) */
-const SLIDE_IN_ROUTES = ['signup/nickname', 'signup/birth'];
-const SLIDE_IN_OPTIONS = slideInScreenOptions(Platform.OS);
 /** 아래 탭의 첫 화면 넷: 탭을 바꾸면(replace) 미끄러짐 없이 바로 — iOS 탭 막대의 관례(소유자 지적) */
 const TAB_ROOT_OPTIONS = { animation: 'none' } as const;
 /**
- * 화면 쌓기 기본: 탭 안에서 들어가는 화면도 밀려 들어오지 않고 바로 바뀐다(소유자 2026-11-21 · 빌드 15 "오른쪽에서 왼쪽으로 … 안 되게", 결정 094).
- * 아래에서 올라오는 약관 글 · 오른쪽에서 들어오는 가입 단계만 제 옵션으로 덮는다.
+ * 화면 쌓기 기본: 탭 안에서 들어가는 화면 · 가입 단계도 밀려 들어오지 않고 바로 바뀐다(소유자 2026-11-21 · 빌드 15 "오른쪽에서 왼쪽으로 … 안 되게",
+ * "가입 단계도 그냥 바로", 결정 094). 아래에서 올라오는 약관 글만 제 옵션으로 덮는다.
  */
 const STACK_OPTIONS = { headerShown: false, animation: 'none', contentStyle: { backgroundColor: Colors.paper } } as const;
 /** 확인하지 못한 세션을 다시 확인하는 간격 */
@@ -120,9 +117,6 @@ export default function RootLayout() {
             <Stack screenOptions={STACK_OPTIONS}>
               {SLIDE_UP_ROUTES.map((name) => (
                 <Stack.Screen key={name} name={name} options={slideUp} />
-              ))}
-              {SLIDE_IN_ROUTES.map((name) => (
-                <Stack.Screen key={name} name={name} options={SLIDE_IN_OPTIONS} />
               ))}
               {TAB_ROOT_SCREENS.map((name) => (
                 <Stack.Screen key={name} name={name} options={TAB_ROOT_OPTIONS} />

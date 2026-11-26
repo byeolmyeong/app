@@ -161,12 +161,12 @@ describe('약관 글 화면의 열림', () => {
     });
   });
 
-  it('가입 닉네임 · 출생 정보 단계는 오른쪽에서 밀려 들어온다(앱은 화면 쌓기의 밀어 넣기 animation default — 결정 068 의 7, 다른 화면의 none 을 덮는다)', async () => {
+  // 소유자 빌드 15 "가입 단계도 그냥 바로 넘어가게 해 줘"(결정 094 — 068 의 7 대체)
+  it('가입 닉네임 · 출생 정보 단계도 제 옵션 없이 화면 쌓기 기본(animation none)으로 바로 넘어간다', async () => {
     await render(<RootLayout />);
-    await waitFor(() => {
-      const options = Object.fromEntries(mockScreen.mock.calls.map(([p]) => [p.name, p.options]));
-      for (const name of ['signup/nickname', 'signup/birth']) expect(options[name]).toEqual({ animation: 'default' });
-    });
+    await waitFor(() => expect(mockScreen).toHaveBeenCalled());
+    const names = mockScreen.mock.calls.map(([p]) => p.name);
+    for (const name of ['signup/nickname', 'signup/birth']) expect(names).not.toContain(name);
   });
 });
 

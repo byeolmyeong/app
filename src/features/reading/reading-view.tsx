@@ -5,7 +5,7 @@ import { SkeletonText } from '@/components/skeleton';
 import { Txt } from '@/components/txt';
 import { ReadingLayout as L, ReasonLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
-import { ReasonLine, ReasonLineSkeleton } from '@/features/reason/reason-line';
+import { isReasonShown, ReasonLine, ReasonLineSkeleton } from '@/features/reason/reason-line';
 import { useTrackOnce } from '@/lib/analytics';
 import type { Chart, Reading } from '@/lib/api';
 
@@ -27,6 +27,8 @@ export type ReadingViewProps = {
  */
 export function ReadingView({ reading, chart, card }: ReadingViewProps) {
   useTrackOnce('reading_viewed', { kind: 'summary' });
+  // 첫 이유는 그려지는 이유가 둘 이상일 때만 펼친 채로(결정 091 — 하나뿐이면 접힌 채)
+  const openFirst = reading.sections.filter((s) => isReasonShown(s.reason, chart)).length >= 2;
   return (
     <View>
       <Txt testID="reading-headline" variant="title" keepAll style={styles.headline}>
@@ -42,8 +44,8 @@ export function ReadingView({ reading, chart, card }: ReadingViewProps) {
             <Txt variant="reading" color="body" keepAll style={styles.body}>
               {section.body}
             </Txt>
-            {/* 첫 문단의 이유는 펼친 채로 연다(결정 083) */}
-            <ReasonLine reason={section.reason} chart={chart} defaultOpen={i === 0} style={styles.reason} />
+            {/* 그려지는 이유가 둘 이상이면 첫 문단의 이유를 펼친 채로 연다(결정 083 · 091) */}
+            <ReasonLine reason={section.reason} chart={chart} defaultOpen={openFirst && i === 0} style={styles.reason} />
           </View>
         ))}
       </View>

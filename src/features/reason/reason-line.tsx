@@ -93,6 +93,19 @@ function TermRow({ term, open, onToggle }: { term: ReasonTerm; open: boolean; on
 const focusName = (key: string) =>
   key === 'ASC' || key === 'MC' ? G.angles[key].nickname : (lookup<{ name: string }>(G.bodies, key)?.name ?? key);
 
+/** 시각을 알아야 하우스 · 상승점 · 중천을 그린다(차트의 timeKnown — 이중 안전, 결정 054 의 6) */
+function reasonTimeKnown(chart: Chart | null): boolean {
+  return chart !== null && chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
+}
+
+/**
+ * 이 이유가 화면에 그려지는가(문장을 만들 수 있는가, 결정 054 의 7) — ReasonLine 이 그리는 기준과 같다.
+ * 화면은 그려지는 이유가 둘 이상일 때만 첫 이유를 펼친 채로 연다(결정 091)
+ */
+export function isReasonShown(reason: Reason, chart: Chart | null, today = false): boolean {
+  return reasonSentence(reason, { timeKnown: reasonTimeKnown(chart), today }) !== null;
+}
+
 /**
  * "이렇게 풀이한 이유" 줄(보드 12 · 12-1~12-3 · 11-5, 결정 054 의 4): 접힌 상자에 한 문장, 누르면 그 자리에서 펼친다 —
  * 작은 지도(그 근거의 별 · 칸만 빛남, 지나가는 별은 없음) · 용어 줄 1~3(물음표는 말풍선, 한 번에 하나) · "하늘 지도에서 보기"
@@ -130,8 +143,7 @@ export function ReasonLine({ reason, chart, today = false, defaultOpen = false, 
     const mine = ++turn.current;
     runReveal(reveal, next ? 1 : 0, duration, next ? () => settle(mine) : undefined);
   };
-  // 시각을 알아야 하우스 · 상승점 · 중천을 그린다(차트의 timeKnown — 이중 안전, 결정 054 의 6)
-  const timeKnown = chart !== null && chart.timeKnown && chart.houses !== undefined && chart.angles !== undefined;
+  const timeKnown = reasonTimeKnown(chart);
   const sentence = reasonSentence(reason, { timeKnown, today });
   if (!sentence) return null;
   const focus = reasonFocus(reason, timeKnown);

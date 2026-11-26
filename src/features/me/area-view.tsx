@@ -8,7 +8,7 @@ import { BrandColors, Colors, FontWeight, LineWidth, MeLayout as L, ReasonLayout
 import { strings } from '@/content/strings';
 import { AreaArt } from '@/features/me/area-art';
 import { starLabels } from '@/features/me/me-stars';
-import { ReasonLine } from '@/features/reason/reason-line';
+import { isReasonShown, ReasonLine } from '@/features/reason/reason-line';
 import type { Chart, MeAreaReport } from '@/lib/api';
 
 const S = strings.me;
@@ -28,18 +28,21 @@ const timeKnownOf = (chart: Chart | null) => chart !== null && chart.timeKnown &
 /**
  * 나 탭 칩 하나의 풀이(결정 048 의 3, 보드 12-8~12-12): 영역 카드(○○ 님의 성격 · 제목 · 키워드 셋 · 이 풀이에 쓰인 별) →
  * 영역마다의 칸(서버가 준 칸만: 한눈에 보기 · 연애의 작은 실천 + 이유 · 가까워지는 모습 · 나의 일 방식 막대 · 마음이 흔들릴 때) →
- * 번호 붙은 문단(제목 · 본문 · 접힌 이유). 칩의 첫 이유(연애는 작은 실천 아래, 나머지는 문단 01)는 펼친 채로 연다(결정 083 — 칩마다 새로 그려
- * 칩을 바꿨다 돌아와도 다시 펼친 채로). 앱은 글 · 값을 만들거나 다시 셈하지 않는다 — 막대는 서버 값의 자리에 점만 찍고 숫자를 적지 않는다.
+ * 번호 붙은 문단(제목 · 본문 · 접힌 이유). 칩에 그려지는 이유가 둘 이상이면 첫 이유(작은 실천 아래 이유가 있으면 그것, 아니면 문단 01)를
+ * 펼친 채로 연다(결정 083 · 091 — 칩마다 새로 그려 칩을 바꿨다 돌아와도 다시 펼친 채로, 하나뿐이면 접힌 채). 앱은 글 · 값을 만들거나 다시 셈하지 않는다 — 막대는 서버 값의 자리에 점만 찍고 숫자를 적지 않는다.
  */
 export function AreaView({ area, nickname, chart }: AreaViewProps) {
   const timeKnown = timeKnownOf(chart);
   /** 작은 실천 아래 이유(연애)가 이 칩의 첫 이유인가 — 아니면 문단 01 의 이유(결정 083) */
   const practiceReasonFirst = Boolean(area.practices && area.reason);
+  // 이 칩에 그려지는 이유(작은 실천 아래 + 문단마다)가 둘 이상일 때만 첫 이유를 펼친다(결정 091)
+  const reasons = [...(area.practices && area.reason ? [area.reason] : []), ...area.paragraphs.map((p) => p.reason)];
+  const openFirst = reasons.filter((r) => isReasonShown(r, chart)).length >= 2;
   return (
     <View style={styles.root}>
       <Hero area={area} nickname={nickname} timeKnown={timeKnown} />
       {area.glance ? <Glance glance={area.glance} /> : null}
-      {area.practices ? <Practices practices={area.practices} area={area} chart={chart} /> : null}
+      {area.practices ? <Practices practices={area.practices} area={area} chart={chart} openReason={openFirst} /> : null}
       {area.closer ? <Closer closer={area.closer} /> : null}
       {area.workStyle ? <WorkStyle value={area.workStyle} /> : null}
       {area.shaken ? <Shaken shaken={area.shaken} /> : null}
@@ -54,7 +57,7 @@ export function AreaView({ area, nickname, chart }: AreaViewProps) {
           <Txt variant="reading" color="body" keepAll style={styles.paragraphBody}>
             {p.body}
           </Txt>
-          <ReasonLine reason={p.reason} chart={chart} defaultOpen={i === 0 && !practiceReasonFirst} style={styles.reason} />
+          <ReasonLine reason={p.reason} chart={chart} defaultOpen={openFirst && i === 0 && !practiceReasonFirst} style={styles.reason} />
         </View>
       ))}
     </View>
@@ -139,7 +142,18 @@ function Glance({ glance }: { glance: NonNullable<MeAreaReport['glance']> }) {
   );
 }
 
-function Practices({ practices, area, chart }: { practices: NonNullable<MeAreaReport['practices']>; area: MeAreaReport; chart: Chart | null }) {
+function Practices({
+  practices,
+  area,
+  chart,
+  openReason,
+}: {
+  practices: NonNullable<MeAreaReport['practices']>;
+  area: MeAreaReport;
+  chart: Chart | null;
+  /** 작은 실천 아래 이유를 펼친 채로 여는가 — 칩에 그려지는 이유가 둘 이상일 때만(결정 091) */
+  openReason: boolean;
+}) {
   return (
     <View>
       <SectionTitle title={S.practices} />
@@ -162,7 +176,7 @@ function Practices({ practices, area, chart }: { practices: NonNullable<MeAreaRe
           </View>
         ))}
       </View>
-      {area.reason ? <ReasonLine reason={area.reason} chart={chart} defaultOpen style={styles.reason} /> : null}
+      {area.reason ? <ReasonLine reason={area.reason} chart={chart} defaultOpen={openReason} style={styles.reason} /> : null}
     </View>
   );
 }

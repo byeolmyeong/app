@@ -199,6 +199,22 @@ describe('요약 해석 화면', () => {
     expect(screen.queryByText(strings.reason.label)).toBeNull();
   });
 
+  it('그려지는 이유가 하나뿐인 글이면 첫 이유도 접힌 채로(결정 091, 소유자 빌드 15)', async () => {
+    mockApi.createReading.mockResolvedValue({ ok: true, data: { ...reading, sections: reading.sections.slice(0, 1) } });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.sections[0].title)).toBeTruthy();
+    expect(reasonsExpanded()).toEqual([false]);
+    expect(screen.queryByTestId('reason-wheel')).toBeNull();
+  });
+
+  it('둘째 이유가 문장을 만들 수 없는 근거면(그려지지 않음) 그려지는 이유는 하나라 첫 이유도 접힌다(결정 091)', async () => {
+    const unknown = { when: 'BIRTH', items: [{ kind: 'SOMETHING_NEW' }] } as unknown as (typeof reading.sections)[number]['reason'];
+    mockApi.createReading.mockResolvedValue({ ok: true, data: { ...reading, sections: [reading.sections[0], { ...reading.sections[1], reason: unknown }] } });
+    await render(<ReadingScreen />);
+    expect(await screen.findByText(reading.sections[1].title)).toBeTruthy();
+    expect(reasonsExpanded()).toEqual([false]);
+  });
+
   it('첫 이유는 처음부터 펼친 채로 작은 지도 · 용어 줄 · 하늘 지도에서 보기가 보이고, 나머지는 접혀 있다(결정 083)', async () => {
     await render(<ReadingScreen />);
     const text = '태어날 때 나의 중심(해)이 호기심 많은 쌍둥이자리, 일상의 자리(6하우스)에 있었어요';

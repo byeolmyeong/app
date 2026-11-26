@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
 import MyScreen from '@/app/my';
-import { MyLayout, NicknameCardLayout } from '@/constants/theme';
+import { inkTrim, MyLayout, NicknameCardLayout, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -78,8 +78,18 @@ describe('마이 v2(/my) — 별명 카드 · 묶음 카드 셋(결정 056 · 09
     const card = within(await screen.findByTestId('my-card'));
     const row = card.getByTestId('my-card-row');
     expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
-    // 이름 칸은 프로필 그림과 같은 높이에 위아래로 벌린다 — 닉네임 줄은 그림 위 끝, 별자리 · 날 수 줄은 그림 아래 끝(소유자 빌드 15 확정안)
-    expect(StyleSheet.flatten(card.getByTestId('my-card-names').props.style)).toMatchObject({ height: MyLayout.card.avatar, justifyContent: 'space-between' });
+    // 이름 칸은 위아래로 벌려, 보이는 글자가 프로필 그림의 위 · 아래 끝에 붙는다(소유자 빌드 15 "붙이라니까 · 파여 있는 느낌이잖아") —
+    // 줄 상자에서 보이는 글자까지의 여백(줄높이 여백 + 한글 안쪽 여백)만큼 칸을 위아래로 내민다
+    const top = inkTrim(Typography.section, 'top');
+    const bottom = inkTrim(Typography.caption, 'bottom');
+    expect(top).toBeCloseTo(5, 0);
+    expect(bottom).toBeCloseTo(3.4, 0);
+    expect(StyleSheet.flatten(card.getByTestId('my-card-names').props.style)).toMatchObject({
+      height: MyLayout.card.avatar + top + bottom,
+      marginTop: -top,
+      marginBottom: -bottom,
+      justifyContent: 'space-between',
+    });
     // 첫 줄에 닉네임과 꺾쇠가 같이 있고, 그 줄 안에서 세로 가운데 — 꺾쇠가 위쪽(닉네임 줄)에 온다
     const line = card.getByTestId('my-card-first-line');
     expect(StyleSheet.flatten(line.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });

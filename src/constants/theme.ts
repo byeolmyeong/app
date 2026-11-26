@@ -722,6 +722,20 @@ const type = (fontSize: number, lineHeight: number, fontWeight: Weight) =>
   ({ fontFamily: FontFamily, fontSize, lineHeight, fontWeight, letterSpacing: tracking(fontSize) }) as const;
 
 /**
+ * Pretendard 한글의 보이는 글자 윤곽이 글자 크기(em) 상자 안쪽으로 들어간 정도 — 위 · 아래(2026-11-26 웹에서 잼: 20px 위 0.054em, 13px 아래 0.073em).
+ * 라틴 소문자(monkey 등)는 한글보다 위가 낮아, 한글 기준으로 맞추면 섞인 이름에서도 위 끝이 그림을 넘지 않는다
+ */
+const HangulInk = { top: 0.05, bottom: 0.07 } as const;
+
+/**
+ * 줄 상자의 위(아래) 끝에서 보이는 한글 글자까지의 여백 = 줄높이 여백((줄높이 - 글자 크기) / 2) + 글자 크기 × 한글 안쪽 비율.
+ * 글자를 다른 것의 끝(프로필 그림의 위 · 아래)에 "보이는 글자 기준" 으로 붙일 때 그만큼 칸을 내민다(마이 카드, 결정 080 덧붙임).
+ * 글자 단계의 크기 · 줄높이가 바뀌어도 따라간다
+ */
+export const inkTrim = (t: { fontSize: number; lineHeight: number }, side: 'top' | 'bottom') =>
+  (t.lineHeight - t.fontSize) / 2 + t.fontSize * HangulInk[side];
+
+/**
  * 글자 단계 v2(결정 080 — 결정 033 의 37단을 역할로 줄였다). 크기/줄높이 · 굵기. 역할 13 + 부품 전용 8.
  * 색은 역할마다 하나: 제목 · 소제목 `ink` · 읽는 글 · 본문 `body` · 작은 본문 `gray` · 보조 · 메타 `hint` · 이름표 `accentText`.
  */

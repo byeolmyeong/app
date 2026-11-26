@@ -7,7 +7,7 @@ import { CardConstellation, type CardConstellationArt } from '@/components/card-
 import { GlowBackdrop } from '@/components/glow';
 import { PlaceholderCircle, PlaceholderLine } from '@/components/placeholder';
 import { Txt } from '@/components/txt';
-import { BrandColors, Colors, FontWeight, LineWidth, MyLayout } from '@/constants/theme';
+import { BrandColors, Colors, FontWeight, inkTrim, LineWidth, MyLayout, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 
 const L = MyLayout.card;
@@ -105,6 +105,10 @@ export function MyCard({ nickname, avatar, accountPending = false, sunSign, art,
   );
 }
 
+/** 닉네임 줄(section) 위 · 별자리 · 날 수 줄(caption) 아래에서 보이는 글자까지의 여백(theme.ts inkTrim) */
+const NAME_TRIM_TOP = inkTrim(Typography.section, 'top');
+const META_TRIM_BOTTOM = inkTrim(Typography.caption, 'bottom');
+
 const styles = StyleSheet.create({
   card: {
     overflow: 'hidden',
@@ -122,7 +126,15 @@ const styles = StyleSheet.create({
    * 이름 칸은 남은 폭을 써서 첫 줄의 꺾쇠가 카드 오른쪽 끝에 붙는다. 높이는 프로필 그림과 같고 위아래로 벌려,
    * 닉네임 줄은 그림 위 끝 · 별자리 · 날 수 줄은 그림 아래 끝에 맞는다(소유자 빌드 15 확정안)
    */
-  names: { flex: 1, height: L.avatar, justifyContent: 'space-between', gap: L.namesGap },
+  names: {
+    flex: 1,
+    // 보이는 글자 기준: 닉네임 글자의 위 · 아래 줄 글자의 아래가 그림 끝에 붙게, 줄 상자 안의 여백만큼 칸을 위아래로 내민다(소유자 빌드 15)
+    height: L.avatar + NAME_TRIM_TOP + META_TRIM_BOTTOM,
+    marginTop: -NAME_TRIM_TOP,
+    marginBottom: -META_TRIM_BOTTOM,
+    justifyContent: 'space-between',
+    gap: L.namesGap,
+  },
   /** 닉네임 줄: 글자와 꺾쇠를 한 줄에 세로 가운데로 */
   firstLine: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
   firstText: { flex: 1, minWidth: 0 },

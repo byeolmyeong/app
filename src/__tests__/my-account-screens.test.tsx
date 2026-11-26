@@ -9,7 +9,9 @@ import NicknameScreen from '@/app/my/nickname';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { clearSession, signOutSession } from '@/features/auth/use-session';
+import { saveBirth } from '@/features/chart/use-birth-profile';
 import { api, type MyAccount } from '@/lib/api';
+import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -43,7 +45,38 @@ beforeEach(async () => {
   mockApi.checkMyNickname.mockResolvedValue({ ok: true, data: { available: true } });
 });
 
-describe('계정(/my/account, 보드 16-1)', () => {
+describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
+  it('제목은 "내 정보", 프로필 · 출생 정보 · 연결된 계정 · 로그아웃 · 계정 삭제 순서다(결정 084)', async () => {
+    await saveBirth({ profile: { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } }, chart: fixtures.chart });
+    await render(<AccountScreen />);
+    expect(await screen.findByText('1999년 3월 8일 · 오후 2:10 · 서울 강남구')).toBeTruthy();
+    expect(screen.getByText('내 정보')).toBeTruthy();
+    expect(screen.queryByText('계정')).toBeNull();
+    const labels = [N.avatars[2], A.nickname, '출생 정보', '1999년 3월 8일 · 오후 2:10 · 서울 강남구', '수정', A.linked, A.logout, A.delete];
+    const shown = JSON.stringify(screen.toJSON());
+    const places = labels.map((label) => shown.indexOf(`"${label}"`));
+    expect(places.every((p) => p >= 0)).toBe(true);
+    expect(places).toEqual([...places].sort((a, b) => a - b));
+  });
+
+  it('출생 정보 줄(지금 값 한 줄 + "수정 ›")을 누르면 출생 정보 수정(/my/birth)으로 간다. 시각을 모르면 "시각 모름"', async () => {
+    await saveBirth({ profile: { date: '1999-03-08', time: null, place: null }, chart: fixtures.chartTimeUnknown });
+    await render(<AccountScreen />);
+    expect(await screen.findByText('1999년 3월 8일 · 시각 모름')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: '출생 정보' }));
+    expect(router.push).toHaveBeenLastCalledWith('/my/birth');
+  });
+
+  it('기기에 출생 정보가 없어도 출생 정보 줄은 이름과 "수정 ›" 으로 남아 들어갈 수 있다', async () => {
+    await render(<AccountScreen />);
+    await screen.findByText('새벽별');
+    const row = screen.getByRole('button', { name: '출생 정보' });
+    expect(within(row).getByText('수정')).toBeTruthy();
+    expect(within(row).queryByText(/년 .*월/)).toBeNull();
+    await fireEvent.press(row);
+    expect(router.push).toHaveBeenLastCalledWith('/my/birth');
+  });
+
   it('프로필 그림 · 닉네임 · 연결된 계정(공급자 + 가린 이메일) / 로그아웃 / 맨 아래 계정 삭제를 보인다', async () => {
     await render(<AccountScreen />);
     expect(await screen.findByText('새벽별')).toBeTruthy();

@@ -22,9 +22,9 @@ const M = strings.my;
 const R = M.rows;
 
 /**
- * 마이 v2(결정 056, 보드 16): 위 별명 카드(프로필 수정 / 출생 정보 수정) · 아래 묶음 제목 없는 카드 둘.
- * 로그아웃 · 계정 삭제는 계정 화면에 있다(056 의 3). 첫 카드 맨 위는 알림(16-2), 음악 줄은 1.1.0 에서 더한다(결정 069).
- * 출생 정보가 없어도(기기 저장소가 비었다) 카드는 닉네임과 버튼만으로 그리고, 줄들과 아래 탭은 그대로 보인다.
+ * 마이 v2(결정 056, 보드 16): 위 별명 카드(누르면 내 정보 — 결정 084) · 아래 묶음 제목 없는 카드 둘.
+ * 출생 정보 수정 · 로그아웃 · 계정 삭제는 내 정보 화면에 있다(결정 084). 첫 카드 맨 위는 알림(16-2), 음악 줄은 1.1.0 에서 더한다(결정 069).
+ * 출생 정보가 없어도(기기 저장소가 비었다) 카드는 닉네임과 꺾쇠만으로 그리고, 줄들과 아래 탭은 그대로 보인다.
  * 서버를 부르는 것은 계정(`GET /account`)뿐이다 — 별자리 · 한 줄 별명 · 받은 날은 기기에 받아 둔 것을 쓴다.
  */
 export default function MyScreen() {
@@ -54,8 +54,7 @@ export default function MyScreen() {
           days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
           headline={reading?.headline ?? null}
           birthLine={profile ? formatBirthLine(profile) : null}
-          onAccount={() => router.push('/my/account')}
-          onBirth={() => router.push('/my/birth')}
+          onOpen={() => router.push('/my/account')}
         />
         <View style={styles.listTop} />
         <ListCard>

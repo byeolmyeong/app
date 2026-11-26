@@ -132,7 +132,7 @@ last_reviewed: 2026-11-26
 - 선행: 태스크 2.
 - 결과 요약:
 
-### 8. privacy-items · 상태: 대기
+### 8. privacy-items · 상태: 초안(소유자 문안 확인 전 — 앱 #125 · 서버 #58 · 랜딩)
 - 읽을 것: 결정 040, 각 도구의 데이터 처리 문서, 앱 스토어 App Privacy·구글 플레이 데이터 보안 안내
 - 할 것: `docs/privacy-analytics.md` — 처리방침에 넣을 항목(수집 항목, 목적, 처리 위탁·국외 이전 받는 곳, 보관 기간 = 각 도구 설정값)과 두 스토어의 개인정보 항목에서 고칠 것. 문안은 쓰지 않는다. `docs/release-1.0.0.md` 의 처리방침 줄에서 이 문서를 가리킨다.
 - 하지 말 것: 법적 판단을 확정처럼 쓰기. 이유: 소유자가 확정한다. 모르는 것은 `[확인 필요]`.
@@ -140,7 +140,7 @@ last_reviewed: 2026-11-26
 - 실행 패턴: 혼자
 - 결과 요약:
 
-### 9. staging-verify · 상태: 대기
+### 9. staging-verify · 상태: 완료(결정 081 의 6 — 로컬에서 요청을 막고 본문 확인. 도착 확인은 운영 배포 뒤)
 - 읽을 것: 태스크 3~7 결과, 이 계획의 "리뷰 초점"
 - 할 것: 스테이징 웹(`https://app.staging.byeolmyeong.com`)에서 첫 진입을 일반 주소·공유 링크·초대 링크·카카오 로그인 돌아오기로 각각 열고, 앰플리튜드·GA4 로 가는 네트워크 요청을 모은다.
 - 검증: 모은 요청 본문·주소에 공유 id·초대 id·`code=`·입력한 출생 날짜가 0건. 앰플리튜드 스테이징 프로젝트와 GA4 DebugView 에 웹에서 나는 이벤트가 도착(스크린샷).
@@ -200,3 +200,18 @@ last_reviewed: 2026-11-26
   - 결정: 해석 종류 · 공유 카드 값 목록을 지금 화면에 맞췄다(결정 081 결과). 틀리면 비용: 11-19 표 이름으로 만든 차트가 없어 비용 없음.
   - 결정: 끝까지 읽음은 스크롤로만 잰다. 틀리면 비용: 화면보다 짧은 글은 끝까지 읽음이 안 잡힌다(해석 글은 대개 화면보다 길다).
   - 웹 CSP: `connect-src` 에 `https://api2.amplitude.com`(결정 081 의 5).
+- 8(privacy-items, 2026-11-26 초안): 처리방침과 수집 동의 글에 이용 통계를 더했다. 처리방침 버전은 2026-11-26.
+  - 처리방침: 제1조 목적 · 제2조 항목 · 제3조 이용 기록 1년 · 제5조 Amplitude 줄과 국외 이전 단락 · 제9조 임의 식별값.
+  - 수집 동의 글: 목적 · 항목 · 보유.
+  - 서버 #58: 새 판을 받고, 2026-11-20 · 19 판도 함께 받는다. CI 초록.
+  - 앱 #125(draft) · 랜딩 초안: 소유자가 확인한다. 확인할 것: 문안, 보관 1년과 앰플리튜드 설정, 30일 공지 없이 바로 시행.
+  - App Store 개인정보 항목 목록은 fc 세션에 보냈다.
+- 9(staging-verify, 2026-11-26): 확인 방법은 이렇다.
+  - 로컬 웹 빌드에 가짜 키(32자 16진수)를 넣고, 헤드리스 크롬에서 앰플리튜드 주소 요청을 가로챘다. 그 자리에서 가짜로 답해 밖으로 나가지 않는다.
+  - 연 주소 넷: `/` · `/s/SECRETSHARE123abc` · `/auth/kakao?code=SECRETCODE987&state=st` · `/login`.
+  - 결과: 보낸 곳은 `https://api2.amplitude.com/2/httpapi` 하나(CSP 와 같다), POST 4번 · 이벤트 10개.
+    - session_start, app_opened(direct · share), screen_viewed(`/` · `/s/[shareId]` · `/auth/kakao` · `/login`).
+  - 본문 속 `SECRETSHARE` · `SECRETCODE` · `code=` · `state=` · `localhost` · `http` · 레퍼러 · `ip` 키는 모두 0건이다.
+  - 이벤트 키: device_id · session_id · time · platform · os_name/version · device_manufacturer/model · language · library · event_type/properties · insert_id · event_id.
+  - 출생 정보 입력과 공유 카드 받기는 서버 없이 돌릴 수 없어 이 확인에 들지 않는다. 둘은 시험으로 본다: 값 목록 밖 값은 버림 · signup_completed 는 시각을 아는지만 · 공유 페이지 시험.
+  - 실제 도착(운영 프로젝트)은 앱 main · 운영 iOS 빌드 뒤 첫날 본다.

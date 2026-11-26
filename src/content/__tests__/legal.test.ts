@@ -10,13 +10,15 @@ function isoDate(korean: string): string {
 
 // 글을 바꾸면 버전도 올린다(legal.ts 머리 주석). 가입 때 보내는 버전과 글의 시행일이 같은 날이어야 한다.
 describe('약관 글의 시행일과 약관 버전', () => {
+  // 처리방침 · 수집 동의는 제품 분석(앰플리튜드)을 더해 시행일이 따로다(결정 081) — 약관 · 마케팅 동의는 그대로
   it('글의 시행일과 가입 때 보내는 약관 · 처리방침 버전이 같은 날이다', () => {
     expect(isoDate(legalInfo.effective)).toBe(LEGAL_VERSIONS.terms);
-    expect(isoDate(legalInfo.effective)).toBe(LEGAL_VERSIONS.privacy);
+    expect(isoDate(legalInfo.privacyEffective)).toBe(LEGAL_VERSIONS.privacy);
   });
 
   it('네 글의 마지막 시행 문구가 그 시행일을 적는다', () => {
-    for (const doc of [terms, privacy, marketing, privacyConsent]) expect(doc.closing).toContain(legalInfo.effective);
+    for (const doc of [terms, marketing]) expect(doc.closing).toContain(legalInfo.effective);
+    for (const doc of [privacy, privacyConsent]) expect(doc.closing).toContain(legalInfo.privacyEffective);
   });
 
   // 랜딩이 약관에서 궁합(1.1.0)을 뺀 판(랜딩 main 4eaca8e, 시행일 2026-11-20)과 같은 글이다 — 궁합을 다시 넣으면 랜딩 · 앱 글과 버전을 함께 올린다

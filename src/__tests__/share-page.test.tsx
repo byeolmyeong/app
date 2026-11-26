@@ -107,5 +107,7 @@ describe('공유 페이지(/s/<공유 식별자>)', () => {
       description: P.metaDescription,
       openGraph: { title: P.metaTitle, description: P.metaDescription },
     });
+    // 제목 구분은 랜딩과 같은 "|"(소유자 2026-11-26 — 긴 줄표는 쓰지 않는다)
+    expect(meta.title).toBe('별명 | 태어난 순간의 하늘로 읽는 나');
   });
 });

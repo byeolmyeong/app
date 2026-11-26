@@ -908,11 +908,11 @@ export const MyLayout = {
   birth: { noticePadV: 14, noticePadH: 16, noticeRadius: 14, noticeIcon: 20, noticeIconTop: 1, noticeGap: 10, gap: 22 },
   /**
    * 알림 설정(16-2 · 16-2-2): 푸시를 끄면 오늘의 하늘 묶음을 흐리게(불투명도) ·
-   * 처음 불러올 때 뼈대(이름 · 설명 막대의 높이 · 너비 — 막대는 글자 줄 높이 칸 가운데에 둔다. 스위치 크기는 list.switch)
+   * 처음 불러올 때 뼈대(이름 막대의 높이 · 너비, 오른쪽 값 막대의 높이 desc — 막대는 글자 줄 높이 칸 가운데에 둔다. 스위치 크기는 list.switch)
    */
   notifications: {
     dim: 0.4,
-    skeleton: { label: 16, desc: 12, labelWidth: '40%', descWidth: '70%' },
+    skeleton: { label: 16, desc: 12, labelWidth: '40%' },
     /** 휴대폰 설정에서 꺼짐 줄(16-2-1): 안 여백 · 종 끈 그림 동그라미(옅은 주색 바탕) · 그림 · "설정 열기" 와 화살표 사이 · 화살표 */
     osOff: { padV: 14, padH: 16, icon: 36, glyph: 18, iconFill: 'rgba(71,82,255,0.14)', actionGap: 2, chevron: 16 },
   },

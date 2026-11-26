@@ -94,6 +94,8 @@ beforeEach(async () => {
   mockParams.mockReturnValue({});
   mockApi.getAppConfig.mockResolvedValue(openConfig);
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
+  // 풀이 글(/reading)도 나 탭 풀이의 상태를 묻는다(결정 082 — 받기 전이면 카드). 이 시험들에서는 이미 받은 것으로
+  mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
   mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
   mockApi.listSynastries.mockResolvedValue({ ok: true, data: [] });
   await saveBirth({ profile, chart: fixtures.chart });

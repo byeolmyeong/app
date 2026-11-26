@@ -17,7 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false), dismissAll: jest.fn(), setParams: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
 }));
 jest.mock('@/lib/api', () => ({
@@ -101,6 +101,27 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     expect(tabs()).toHaveLength(0);
     // 쓰는 중에만 기다릴 때 음악(결정 062 의 1)
     expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', true);
+  });
+
+  it('내 별명의 "자세한 풀이 받기" 로 오면(`/me?request=1`) 받기 전인 것을 확인한 뒤 한 번만 POST → 쓰는 중, 주소의 표시는 지운다(결정 082)', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ request: '1' });
+    await storeReading();
+    const view = await render(<MeScreen />);
+    expect(await screen.findByText(M.making.title)).toBeTruthy();
+    expect(mockApi.requestMeReport).toHaveBeenCalledTimes(1);
+    expect(router.setParams).toHaveBeenCalledWith({ request: undefined });
+    // 다시 그려져도(주소의 표시가 아직 남아 있어도) 또 만들지 않는다
+    await view.rerender(<MeScreen />);
+    expect(mockApi.requestMeReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('`/me?request=1` 이어도 이미 받았으면 만들지 않고 받은 풀이(칩)를 보인다', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ request: '1' });
+    mockApi.getMeReport.mockResolvedValue(done);
+    await storeReading();
+    await render(<MeScreen />);
+    expect(await screen.findByTestId('me-chips')).toBeTruthy();
+    expect(mockApi.requestMeReport).not.toHaveBeenCalled();
   });
 
   it('다 쓰면 나 탭의 성격 칩으로 간다(5초마다 확인)', async () => {

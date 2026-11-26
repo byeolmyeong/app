@@ -8,7 +8,6 @@ import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BackChevron } from '@/components/back-chevron';
-import { useSlideUp } from '@/components/slide-up';
 import { reduceMotionNow } from '@/components/byeoli';
 import { Screen } from '@/components/screen';
 import { StateScreen } from '@/components/state-screen';
@@ -105,17 +104,8 @@ function useProgressFills(step: number): Fill[] {
   return move?.fills ?? Array.from({ length: SIGNUP_STEPS }, (_, i) => filledAt(step)(i));
 }
 
-export function SignupStep(props: SignupStepProps) {
-  // 웹은 다음 단계가 오른쪽에서 밀려 들어오고 뒤로는 오른쪽으로 나간다(앱의 화면 쌓기와 같게). 앱은 화면 쌓기가 움직인다
-  const { style, close, ref, hidden } = useSlideUp('right');
-  return (
-    <Animated.View testID="signup-step-slide" ref={ref} aria-hidden={hidden} style={style}>
-      <SignupStepScreen {...props} onBack={() => close(props.onBack)} />
-    </Animated.View>
-  );
-}
-
-function SignupStepScreen({ step, onBack, title, guide, footer, children }: SignupStepProps) {
+/** 가입 단계 사이는 밀려 들어오지 않고 바로 넘어간다(소유자 빌드 15 "가입 단계도 그냥 바로", 결정 094 — 068 의 7 대체) */
+export function SignupStep({ step, onBack, title, guide, footer, children }: SignupStepProps) {
   // 키패드가 떠 있으면 Screen 이 키패드 높이만큼 띄우고, 버튼은 키패드 12 위(결정 085)
   const keyboard = useKeyboardHeight() > 0;
   const fills = useProgressFills(step);

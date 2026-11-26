@@ -5,6 +5,7 @@ import { Animated, Platform, StyleSheet } from 'react-native';
 
 import TermsScreen from '@/app/settings/terms';
 import TermsStep from '@/app/signup/terms';
+import { Motion } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { clearDraft } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
@@ -46,6 +47,6 @@ describe('웹: 가입 약관 단계의 "보기" 가 올라온다', () => {
     await fireEvent.press(screen.getByRole('link', { name: strings.terms.viewLabels.terms }));
     expect(screen).toHavePathname('/settings/terms');
     expect(translateY()).toBe('100%');
-    expect(timing.mock.calls.some(([, config]) => config.toValue === 1 && config.duration === 300)).toBe(true);
+    expect(timing.mock.calls.some(([, config]) => config.toValue === 1 && config.duration === Motion.openMs)).toBe(true);
   });
 });

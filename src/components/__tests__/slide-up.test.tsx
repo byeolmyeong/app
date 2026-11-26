@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useCanGoBack } from 'expo-router';
 import { Animated, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
-import { slideInScreenOptions, slideUpScreenOptions, useSlideUp } from '@/components/slide-up';
+import { slideUpScreenOptions, useSlideUp } from '@/components/slide-up';
 import { TextPage } from '@/components/text-page';
 import { Colors, Motion } from '@/constants/theme';
 import { terms } from '@/content/legal';
@@ -81,11 +81,11 @@ describe('아래에서 올라오는 창: 웹', () => {
     delete (window as unknown as { matchMedia?: unknown }).matchMedia;
   });
 
-  it('앱 안에서 열면 화면 아래(100%)에서 시작해 0.3초 동안 제자리로 올라온다', async () => {
+  it('앱 안에서 열면 화면 아래(100%)에서 시작해 0.42초 동안 제자리로 올라온다', async () => {
     const runs = fakeTiming();
     await render(<Probe onClosed={jest.fn()} />);
     expect(translateY()).toBe('100%');
-    expect(runs).toEqual([expect.objectContaining({ toValue: 1, duration: 300 })]);
+    expect(runs).toEqual([expect.objectContaining({ toValue: 1, duration: 420 })]);
     await act(async () => runs[0].finish());
     expect(translateY()).toBe('0%');
   });
@@ -161,50 +161,10 @@ describe('아래에서 올라오는 창: iOS · 안드로이드', () => {
   });
 });
 
-// 가입 단계 사이(소유자: 앱과 같게 — 다음은 오른쪽에서 밀려 들어오고 뒤로는 반대)
-describe('오른쪽에서 밀려 들어오는 화면', () => {
-  it('화면 옵션: 웹만 앞 화면을 남기고(transparentModal) 바탕을 비운다. 앱은 화면 쌓기 기본(오른쪽에서) 그대로', () => {
-    expect(slideInScreenOptions('web')).toEqual({ presentation: 'transparentModal', contentStyle: { backgroundColor: 'transparent' } });
-    expect(slideInScreenOptions('ios')).toEqual({});
-    expect(slideInScreenOptions('android')).toEqual({});
-  });
-
-  it('웹: 오른쪽(100%)에서 들어오고, 닫으면 오른쪽으로 나간 뒤 돌아간다', async () => {
-    const original = Platform.OS;
-    Platform.OS = 'web';
-    (window as unknown as { matchMedia: unknown }).matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
-    (useCanGoBack as jest.Mock).mockReturnValue(true);
-    try {
-      const runs = fakeTiming();
-      const onClosed = jest.fn();
-      function Side() {
-        const { style, close } = useSlideUp('right');
-        return (
-          <Animated.View testID="slide" style={style}>
-            <Pressable onPress={() => close(onClosed)}>
-              <Text>닫기</Text>
-            </Pressable>
-          </Animated.View>
-        );
-      }
-      await render(<Side />);
-      expect(StyleSheet.flatten(screen.getByTestId('slide').props.style).transform?.[0]?.translateX).toBe('100%');
-      await act(async () => runs[0].finish());
-      await fireEvent.press(screen.getByText('닫기'));
-      expect(onClosed).not.toHaveBeenCalled();
-      await act(async () => runs[1].finish());
-      expect(onClosed).toHaveBeenCalledTimes(1);
-    } finally {
-      Platform.OS = original;
-      delete (window as unknown as { matchMedia?: unknown }).matchMedia;
-      jest.restoreAllMocks();
-    }
-  });
-});
-
 // 아래 시트(Sheet)와 아래에서 올라오는 창은 같은 움직임 값을 theme.ts 하나(Motion)에서 쓴다
 describe('움직임 값', () => {
-  it('열기 300 · 닫기 220 · 여는 곡선 bezier(0.32, 0.72, 0, 1)', () => {
-    expect(Motion).toEqual({ openMs: 300, closeMs: 220, openCurve: [0.32, 0.72, 0, 1] });
+  // 빌드 15 에서 300 · 220 은 내 하늘 지도 시트 · 이유 펼침이 너무 빠르다고 함(소유자) — 조금 늘림
+  it('열기 420 · 닫기 280 · 여는 곡선 bezier(0.32, 0.72, 0, 1)', () => {
+    expect(Motion).toEqual({ openMs: 420, closeMs: 280, openCurve: [0.32, 0.72, 0, 1] });
   });
 });

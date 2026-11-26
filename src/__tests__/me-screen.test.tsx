@@ -388,7 +388,7 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     expect(screen.getAllByText(strings.reason.label)).toHaveLength(1);
   });
 
-  it('칩마다 첫 이유가 펼친 채로 — 성격은 문단 01, 연애는 작은 실천 아래 이유. 접어 두고 칩을 바꿨다 돌아와도 다시 펼친 채로(결정 083)', async () => {
+  it('칩마다 이유가 둘 이상이면 첫 이유가 펼친 채로 — 성격은 문단 01, 연애는 이유가 하나라 접힌 채. 접어 두고 칩을 바꿨다 돌아와도 다시 펼친 채로(결정 083 · 091)', async () => {
     await render(<MeScreen />);
     expect(await screen.findByText(`새벽별${M.areaOf}${M.areas.PERSONALITY}`)).toBeTruthy();
     expect(reasonsExpanded()).toEqual([true, false, false, false]);
@@ -397,8 +397,9 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     await fireEvent.press(screen.getAllByRole('button', { name: new RegExp(`^${strings.reason.label}, `) })[0]);
     expect(reasonsExpanded()).toEqual([false, false, false, false]);
     await fireEvent.press(chip('LOVE'));
-    expect(reasonsExpanded()).toEqual([true]);
-    expect(screen.getAllByTestId('reason-wheel')).toHaveLength(1);
+    // 연애는 이유가 작은 실천 아래 하나뿐이라 접힌 채로(결정 091)
+    expect(reasonsExpanded()).toEqual([false]);
+    expect(screen.queryAllByTestId('reason-wheel')).toHaveLength(0);
     await fireEvent.press(chip('RELATIONSHIP'));
     expect(reasonsExpanded()).toEqual([true, false, false, false]);
     await fireEvent.press(chip('PERSONALITY'));

@@ -78,10 +78,12 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     expect(screen.queryByText(/재미|참고/)).toBeNull();
   });
 
-  it('이유는 하나뿐이라 처음부터 펼친 채로 — 지나가는 별이라 작은 지도 없이 용어 줄(결정 083)', async () => {
+  it('이유가 하나뿐이면 접힌 채로 연다 — 누르면 지나가는 별이라 작은 지도 없이 용어 줄(결정 091 · 083)', async () => {
     await render(<TodayScreen />);
     const reason = await screen.findByTestId('day-reason');
-    expect(within(reason).getByRole('button', { name: new RegExp(`^${strings.reason.label}, 오늘 `) }).props.accessibilityState).toMatchObject({ expanded: true });
+    const head = within(reason).getByRole('button', { name: new RegExp(`^${strings.reason.label}, 오늘 `) });
+    expect(head.props.accessibilityState).toMatchObject({ expanded: false });
+    await fireEvent.press(head);
     expect(within(reason).getAllByTestId('reason-term')).toHaveLength(3);
     expect(within(reason).queryByTestId('reason-wheel')).toBeNull();
   });

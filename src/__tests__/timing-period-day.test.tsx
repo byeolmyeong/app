@@ -90,14 +90,13 @@ describe('시기 자세히 /timing/period(결정 049 의 5, 캔버스 14-3)', ()
     expect(router.back).toHaveBeenCalled();
   });
 
-  it('이유는 하나뿐이라 처음부터 펼친 채로 — 지나가는 별이라 작은 지도 없이 용어 줄(결정 083)', async () => {
+  it('이유가 하나뿐이면 접힌 채로 연다 — 둘 이상일 때만 첫 이유를 펼친다(결정 091, 소유자 빌드 15)', async () => {
     mockParams.mockReturnValue({ id: main.id });
     await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report }));
     await render(<TimingPeriodScreen />);
     const reason = await screen.findByTestId('period-reason');
-    expect(within(reason).getByRole('button', { name: new RegExp(`^${strings.reason.label}, `) }).props.accessibilityState).toMatchObject({ expanded: true });
-    expect(within(reason).getAllByTestId('reason-term').length).toBeGreaterThan(0);
-    expect(within(reason).queryByTestId('reason-wheel')).toBeNull();
+    expect(within(reason).getByRole('button', { name: new RegExp(`^${strings.reason.label}, `) }).props.accessibilityState).toMatchObject({ expanded: false });
+    expect(within(reason).getByTestId('reason-body', { includeHiddenElements: true }).props.accessibilityElementsHidden).toBe(true);
   });
 
   it('처음 불러올 때 0.3초가 넘으면 시기 자세히의 배치를 본뜬 뼈대(결정 071)', async () => {
@@ -211,12 +210,11 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     expect(mockApi.createShare).toHaveBeenCalledWith({ kind: 'DAY_SKY', date: '2026-11-21' });
   });
 
-  it('이유는 하나뿐이라 처음부터 펼친 채로(결정 083)', async () => {
+  it('이유가 하나뿐이면 접힌 채로 연다(결정 091)', async () => {
     mockParams.mockReturnValue({ date: '2026-11-21' });
     await render(<TimingDayScreen />);
     const reason = await screen.findByTestId('day-reason');
-    expect(within(reason).getByRole('button', { name: new RegExp(`^${strings.reason.label}, `) }).props.accessibilityState).toMatchObject({ expanded: true });
-    expect(within(reason).getAllByTestId('reason-term').length).toBeGreaterThan(0);
+    expect(within(reason).getByRole('button', { name: new RegExp(`^${strings.reason.label}, `) }).props.accessibilityState).toMatchObject({ expanded: false });
   });
 
   it('오늘 날짜면 이유가 "오늘" 로 시작한다', async () => {

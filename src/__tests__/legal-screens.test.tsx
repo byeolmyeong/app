@@ -114,11 +114,11 @@ describe('약관 글 화면', () => {
     expect(screen.getByText(doc.closing)).toBeTruthy();
   });
 
-  it('표는 행마다 "머리 · 값" 카드로 쌓는다(폰 폭에서 칸이 좁아지지 않게): 처리방침은 제3조 4행 + 제5조 7행(Amplitude 줄 — 결정 081) → 카드 11장, 카드마다 그 표의 머리를 다 적는다', async () => {
+  it('표는 행마다 "머리 · 값" 카드로 쌓는다(폰 폭에서 칸이 좁아지지 않게): 처리방침은 제3조 4행 + 제5조 8행(Amplitude · Expo 줄 — 결정 081) → 카드 12장, 카드마다 그 표의 머리를 다 적는다', async () => {
     await render(<PrivacyScreen />);
     const tables = privacy.sections.flatMap((s) => s.blocks).flatMap((b) => ('table' in b ? [b.table] : []));
-    expect(tables.map((t) => t.rows.length)).toEqual([4, 7]);
-    expect(screen.getAllByTestId('legal-table-card')).toHaveLength(11);
+    expect(tables.map((t) => t.rows.length)).toEqual([4, 8]);
+    expect(screen.getAllByTestId('legal-table-card')).toHaveLength(12);
     for (const table of tables) for (const head of table.head) expect(screen.getAllByText(head)).toHaveLength(table.rows.length);
   });
 

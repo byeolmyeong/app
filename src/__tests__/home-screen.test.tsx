@@ -6,7 +6,7 @@ import { StyleSheet } from 'react-native';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
-import { Colors, TimingLayout } from '@/constants/theme';
+import { Colors, ScreenPaddingX, TimingLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -536,6 +536,11 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     const strip = await screen.findByTestId('home-month-days');
     expect(within(strip).getByText(strings.home.monthDays.title)).toBeTruthy();
     expect(within(strip).getByTestId('home-month-days-scroll').props.horizontal).toBe(true);
+    // 왼쪽은 홈 여백에서 잘리고 오른쪽만 화면 끝까지 밀린다(소유자 빌드 15 "왼쪽에 넘치지 않게")
+    const scrollStyle = StyleSheet.flatten(within(strip).getByTestId('home-month-days-scroll').props.style);
+    expect(scrollStyle).toMatchObject({ marginRight: -ScreenPaddingX });
+    expect(scrollStyle).not.toHaveProperty('marginLeft');
+    expect(scrollStyle).not.toHaveProperty('marginHorizontal');
     const days = within(strip).getAllByTestId('home-month-day');
     expect(days).toHaveLength(fixtures.monthSky.days.length);
     expect(StyleSheet.flatten(days[0].props.style)).toMatchObject({ width: TimingLayout.home.days.width });

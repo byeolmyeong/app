@@ -581,6 +581,30 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(router.push).toHaveBeenCalledWith('/today');
   });
 
+  // 소유자 빌드 17 "오늘만 보더가 아니라 제일 최근 게 보더 입혀지는 거 맞지?"(결정 097)
+  it('오늘이 눈여겨볼 날이 아니면 가장 가까운 다가오는 날이 맨 앞 칸에서 주색 테두리 · 주색 글자 — "21일 · 토"(오늘 글자는 오늘만), 지난 날은 테두리 없음', async () => {
+    const day = fixtures.monthSky.days[0];
+    const at = (date: string, text: string) => ({ ...day, date, text });
+    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [at('2026-11-10', '지난 날'), at('2026-11-21', '다가오는 날 하나'), at('2026-11-28', '다가오는 날 둘')] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-month-days');
+    const [next, later, past] = screen.getAllByTestId('home-month-day');
+    expect(within(next).getByText('21일 · 토')).toBeTruthy();
+    expect(StyleSheet.flatten(next.props.style)).toMatchObject({ borderColor: Colors.primary });
+    expect(StyleSheet.flatten(later.props.style).borderColor).not.toBe(Colors.primary);
+    expect(StyleSheet.flatten(past.props.style).borderColor).not.toBe(Colors.primary);
+  });
+
+  it('이번 달에 다가오는 날이 없으면(지난 날만) 테두리 칸이 없다', async () => {
+    const day = fixtures.monthSky.days[0];
+    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...day, date: '2026-11-03' }, { ...day, date: '2026-11-10' }] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-month-days');
+    for (const d of screen.getAllByTestId('home-month-day')) expect(StyleSheet.flatten(d.props.style).borderColor).not.toBe(Colors.primary);
+  });
+
   it('못 썼으면 그 자리에 작은 안내와 다시 쓰기(19-1) — 누르면 다시 부른다', async () => {
     mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 502, code: 'GENERATION_FAILED' });
     await saveBirth({ profile, chart: fixtures.chart });

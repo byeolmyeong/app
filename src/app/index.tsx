@@ -225,14 +225,19 @@ function Home({ onRetry }: { onRetry: () => void }) {
   // (입력이 곳 목록 GET /places 를 받는다 — 처음 온 사람이 쓰지 않는 요청, 성능 계획 4)
   if (session.status !== 'signedIn') return <Screen nav={nav}>{null}</Screen>;
   return (
-    <Screen nav={nav}>
-      <View style={styles.intro}>
-        <Txt variant="display">{strings.home.title}</Txt>
-        <Txt variant="table" color="gray">
-          {strings.home.subtitle}
-        </Txt>
-      </View>
-      <BirthForm stored={null} save={save} />
+    <Screen nav={nav} scroll={false} avoidKeyboard>
+      <BirthForm
+        stored={null}
+        save={save}
+        header={
+          <View style={styles.intro}>
+            <Txt variant="display">{strings.home.title}</Txt>
+            <Txt variant="table" color="gray">
+              {strings.home.subtitle}
+            </Txt>
+          </View>
+        }
+      />
     </Screen>
   );
 }

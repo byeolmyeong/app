@@ -1,17 +1,18 @@
 /**
  * 가입 단계 화면의 뼈대(결정 042, 시안 보드 6 · 7 · 8): 위 뒤로 가기 · 진행 막대(세 칸) · 큰 제목과 안내, 가운데 내용, 맨 아래 주 버튼 하나.
- * 내용이 길면 가운데만 굴러간다. 키보드가 올라오면 아래 버튼이 키보드 바로 위로 올라온다(보드 7-1).
+ * 내용이 길면 가운데만 굴러간다. 키보드가 올라오면 아래 버튼이 키보드 바로 위로 올라온다(보드 7-1, 결정 085).
  * 진행 막대는 단계가 바뀔 때 다음 칸이 왼쪽에서 오른쪽으로 차오르고(뒤로 가면 줄어들고) 동작 줄이기면 바로 바뀐다(소유자 2026-11-19).
  */
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BackChevron } from '@/components/back-chevron';
 import { useSlideUp } from '@/components/slide-up';
 import { reduceMotionNow } from '@/components/byeoli';
 import { Screen } from '@/components/screen';
 import { StateScreen } from '@/components/state-screen';
+import { useKeyboardHeight } from '@/components/use-keyboard-height';
 import { useOnline } from '@/components/use-online';
 import { Txt } from '@/components/txt';
 import { Colors, ScreenPaddingX, Sizes, StepLayout as L } from '@/constants/theme';
@@ -104,20 +105,6 @@ function useProgressFills(step: number): Fill[] {
   return move?.fills ?? Array.from({ length: SIGNUP_STEPS }, (_, i) => filledAt(step)(i));
 }
 
-/** 키보드가 떠 있는가(iOS · 안드로이드). 웹은 언제나 false */
-function useKeyboardShown() {
-  const [shown, setShown] = useState(false);
-  useEffect(() => {
-    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setShown(true));
-    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setShown(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  return shown;
-}
-
 export function SignupStep(props: SignupStepProps) {
   // 웹은 다음 단계가 오른쪽에서 밀려 들어오고 뒤로는 오른쪽으로 나간다(앱의 화면 쌓기와 같게). 앱은 화면 쌓기가 움직인다
   const { style, close, ref, hidden } = useSlideUp('right');
@@ -129,11 +116,12 @@ export function SignupStep(props: SignupStepProps) {
 }
 
 function SignupStepScreen({ step, onBack, title, guide, footer, children }: SignupStepProps) {
-  const keyboard = useKeyboardShown();
+  // 키패드가 떠 있으면 Screen 이 키패드 높이만큼 띄우고, 버튼은 키패드 12 위(결정 085)
+  const keyboard = useKeyboardHeight() > 0;
   const fills = useProgressFills(step);
   return (
-    <Screen scroll={false} bottomInset={keyboard ? 0 : Sizes.stepBottom}>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <Screen scroll={false} avoidKeyboard bottomInset={Sizes.stepBottom}>
+      <View style={styles.fill}>
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
@@ -168,7 +156,7 @@ function SignupStepScreen({ step, onBack, title, guide, footer, children }: Sign
           {children}
         </ScrollView>
         <View style={[styles.footer, keyboard && styles.footerKeyboard]}>{footer}</View>
-      </KeyboardAvoidingView>
+      </View>
     </Screen>
   );
 }
@@ -190,7 +178,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: ScreenPaddingX },
   titleBlock: { gap: L.titleGap, marginTop: L.titleTop },
   footer: { paddingHorizontal: ScreenPaddingX },
-  footerKeyboard: { paddingBottom: L.keyboardGap },
+  footerKeyboard: { paddingBottom: Sizes.keyboardGap },
 });
 
 /**

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Button } from '@/components/button';
@@ -8,6 +8,7 @@ import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { Toast, useToast } from '@/components/toast';
 import { Txt } from '@/components/txt';
+import { useKeyboardHeight } from '@/components/use-keyboard-height';
 import { Colors, InquiryLayout as L, LineWidth, MyLayout, Radius, ScreenPaddingX, Sizes, Spacing, StateLayout, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSuspended } from '@/features/auth/suspension';
@@ -35,6 +36,8 @@ export default function NewInquiryScreen() {
   const { toast, show, hide } = useToast();
   // 이용 정지 화면에서 왔으면 보낸 뒤 정지 화면으로 돌아간다(결정 065 의 5)
   const suspended = useSuspended();
+  // 키패드가 떠 있으면 Screen 이 키패드 높이만큼 띄우고, 버튼은 키패드 12 위(결정 085)
+  const keyboard = useKeyboardHeight() > 0;
   const sent = state.status === 'sent';
   // 적어 둔 글이 있으면(아직 보내지 않았다) 강제 업데이트를 미룬다(결정 027)
   useUpdateBusy(!sent && body !== '');
@@ -79,8 +82,8 @@ export default function NewInquiryScreen() {
   }
 
   return (
-    <Screen scroll={false} nav={<NavBar chevron title={F.title} onBack={back} />}>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <Screen scroll={false} avoidKeyboard nav={<NavBar chevron title={F.title} onBack={back} />}>
+      <View style={styles.fill}>
         <ScrollView style={styles.fill} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.group}>
             <Txt variant="captionStrong" color="gray">
@@ -120,14 +123,14 @@ export default function NewInquiryScreen() {
             </Txt>
           </View>
         </ScrollView>
-        <View style={styles.footer}>
+        <View style={[styles.footer, keyboard && styles.footerKeyboard]}>
           {/* 알림이 버튼 폭 그대로 뜨게 여백 없는 칸으로 감싼다 */}
           <View>
             <Toast toast={toast} onClose={hide} above="button" />
             <Button label={F.submit} disabled={!check.ok || sending} onPress={() => void submit()} />
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Screen>
   );
 }
@@ -150,6 +153,8 @@ const styles = StyleSheet.create({
   input: { ...Typography.input, flex: 1, padding: 0, color: Colors.ink },
   count: { alignSelf: 'flex-end' },
   footer: { paddingHorizontal: ScreenPaddingX, paddingBottom: StateLayout.bottom },
+  /** 키패드가 떠 있으면 버튼과 키패드 사이 12(결정 085) */
+  footerKeyboard: { paddingBottom: Sizes.keyboardGap },
   /** 보냈어요: 머리 자리(56)는 비워 두고, 그림 · 제목 · 설명을 가운데에서 조금 위로(보드 16-8) */
   blankNav: { height: Sizes.stepHeader },
   sentBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: ScreenPaddingX, paddingBottom: L.sent.lift },

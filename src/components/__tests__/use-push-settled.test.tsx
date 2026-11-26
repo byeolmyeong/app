@@ -42,7 +42,8 @@ describe('usePushSettled — 밀기가 끝났는가(무거운 그림을 밀기 �
     expect(result.current).toBe(false);
   });
 
-  it('밀기 끝을 듣지 못해도(첫 화면 · 이벤트 없음) 잠시 뒤에는 참', async () => {
+  it('밀기 끝을 듣지 못해도(첫 화면 · 이벤트 없음) 잠시 뒤에는 참 — iOS 기본 밀기(약 0.35초)보다 조금 긴 0.4초(소유자 빌드 14 "휠이 글보다 느리다")', async () => {
+    expect(PUSH_SETTLE_FALLBACK_MS).toBe(400);
     const { result } = await renderHook(() => usePushSettled());
     await act(() => jest.advanceTimersByTime(PUSH_SETTLE_FALLBACK_MS - 1));
     expect(result.current).toBe(false);

@@ -335,8 +335,9 @@ export function MiniWheel({ chart, bodies, houses, label }: MiniWheelProps) {
 }
 
 /**
- * 휠을 그리기 전의 자리(내 하늘 지도 — 밀기가 끝난 뒤 휠을 그린다, components/use-push-settled). 휠과 같은 상자에 바탕 고리 셋만 —
- * 휠이 들어와도 아래 목록이 움직이지 않고, 고리 위에 선 · 이름 · 별 점만 더해진다.
+ * 휠을 그리기 전의 자리(내 하늘 지도 — 밀기가 끝난 뒤 휠을 그린다, components/use-push-settled). 휠과 같은 상자에 휠의 뼈대 —
+ * 바탕 고리 셋 · 별자리 12칸 경계 · (시각을 알면) 하우스 선 · (모르면) 안쪽까지 옅은 경계 — 를 휠과 같은 값으로 미리 그린다.
+ * 휠이 들어와도 아래 목록이 움직이지 않고, 뼈대 위에 글자 · 별 점 · 고른 칸만 더해진다(소유자 빌드 14 "휠이 글보다 느리다" — 선만이라 가볍다).
  */
 export function ChartWheelPlaceholder({ chart }: { chart: Chart }) {
   const w = wheelLayout(chart);
@@ -346,6 +347,15 @@ export function ChartWheelPlaceholder({ chart }: { chart: Chart }) {
         <Circle cx={w.center} cy={w.center} r={w.rOuter} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1.2} />
         <Circle cx={w.center} cy={w.center} r={w.rSign} fill={Colors.paper} stroke={Colors.hair} strokeWidth={1} />
         <Circle cx={w.center} cy={w.center} r={w.rInner} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1} />
+        {w.signInnerLines.map((l, i) => (
+          <Line key={`psi${i}`} {...l} stroke={Colors.hair} strokeOpacity={SkyMapLayout.signInnerOpacity} strokeWidth={SkyMapLayout.signInnerWidth} />
+        ))}
+        {w.signs.map((s) => (
+          <Line key={`psl${s.sign}`} testID="wheel-placeholder-sign-line" {...s.line} stroke={Colors.hair} strokeWidth={1} />
+        ))}
+        {w.houseLines.map((l, i) => (
+          <Line key={`ph${i}`} testID="wheel-placeholder-house-line" {...l} stroke={Colors.hair} strokeWidth={1} />
+        ))}
       </Svg>
     </View>
   );

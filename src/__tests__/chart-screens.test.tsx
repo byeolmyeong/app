@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
@@ -500,9 +500,14 @@ describe('내 하늘 지도(/chart, 시안 13 · 13-1 · 13-2)', () => {
       (useLocalSearchParams as jest.Mock).mockReturnValue({ selected: 'MOON' });
       await render(<ChartScreen />);
       expect(await screen.findByText(S.listHeading)).toBeTruthy();
-      const place = StyleSheet.flatten(screen.getByTestId('wheel-placeholder', { includeHiddenElements: true }).props.style);
+      const placeholder = screen.getByTestId('wheel-placeholder', { includeHiddenElements: true });
+      const place = StyleSheet.flatten(placeholder.props.style);
       expect(place).toMatchObject({ width: '100%', maxWidth: Sizes.skyWheel, aspectRatio: 1 });
       expect(screen.queryAllByTestId('wheel-house-line')).toHaveLength(0);
+      // 자리는 휠의 뼈대(고리 셋 · 별자리 12칸 경계 · 하우스 12줄)까지 미리 그린다 — 글자 · 별 점만 나중에 더해진다(소유자 빌드 14)
+      expect(within(placeholder).getAllByTestId('wheel-placeholder-sign-line', { includeHiddenElements: true })).toHaveLength(12);
+      expect(within(placeholder).getAllByTestId('wheel-placeholder-house-line', { includeHiddenElements: true })).toHaveLength(12);
+      expect(within(placeholder).queryAllByTestId(/^wheel-sign-/, { includeHiddenElements: true })).toHaveLength(0);
       expect(screen.getAllByTestId(/^sky-row-/)).toHaveLength(12);
       expect(screen.getByTestId('sky-row-MOON').props.accessibilityState).toMatchObject({ selected: true });
       // 나가는 밀기의 끝으로는 그리지 않는다

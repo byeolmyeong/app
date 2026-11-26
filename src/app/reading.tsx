@@ -1,34 +1,53 @@
-import { router } from 'expo-router';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { View } from 'react-native';
 
-import { Button } from '@/components/button';
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { TextLink } from '@/components/text-link';
-import { Txt } from '@/components/txt';
-import { CardRadius, Colors, Sizes, Spacing } from '@/constants/theme';
+import { OfflineBanner } from '@/components/offline-banner';
+import { SkeletonGroup } from '@/components/skeleton';
+import { StateScreen } from '@/components/state-screen';
+import { useLoadingPhase } from '@/components/use-loading-phase';
+import { useOnReconnect, useOnline } from '@/components/use-online';
 import { strings } from '@/content/strings';
+import { clearSignedUp, signedUpNickname } from '@/features/auth/signup-draft';
+import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { useSession } from '@/features/auth/use-session';
 import { birthInputOf } from '@/features/chart/birth-input';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
-import { ChartPicture } from '@/features/chart/ChartWheel';
-import { KeyThree } from '@/features/chart/key-three';
+import { keyThree } from '@/features/chart/chart-rows';
+import { SignCard, SignCardSkeleton } from '@/features/chart/sign-card';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
-import { ReadingView } from '@/features/reading/reading-view';
+import { MainTabs } from '@/features/home/main-tabs';
+import { DetailCard, DetailCardSkeleton } from '@/features/me/me-parts';
+import { useMeReport } from '@/features/me/use-me-report';
+import { MakingView } from '@/components/making-view';
+import { ReadingSkeleton, ReadingView } from '@/features/reading/reading-view';
+import { clearPendingReveal, pendingReveal } from '@/features/reading/reveal-once';
+import { RevealView } from '@/features/reading/reveal-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
 import { ShareEntry } from '@/features/share/share-entry';
 import { useGenerationBusy } from '@/features/update/update-gate';
-import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
+const ST = strings.states;
+const MF = strings.making.fail;
 
 /**
- * 요약 해석: 서버가 쓴 글(총평 · 문단 · 강점 · 보완점)을 보여 준다. 차트는 여기서 "내 차트 보기" 로 연다.
- * 다시 생성은 없다(같은 차트 = 같은 글). 실패했을 때만 "다시 시도" 가 보인다.
+ * 내 별명(결정 048 의 2, 보드 12 받은 뒤 · 12-1~12-3): 요약 해석의 전체 페이지 — 한 줄 별명 · 별자리 카드(셋 · 내 하늘 지도 보기) ·
+ * 문단마다 접힌 "이렇게 풀이한 이유" · 강점 · 보완점. 머리는 꺾쇠 뒤로 가기(나 탭 · 홈에서 들어온다)와 오른쪽 공유하기, 아래 탭은 나.
+ * 다시 생성은 없다(같은 차트 = 같은 글). 실패했을 때만 "다시 시도" 가 보인다. 면책 문구는 두지 않는다(결정 064).
+ * 가입을 마치고 바로 와서(from=signup) 글이 다 지어지면 별명 공개(보드 10)를 한 번 보이고, "풀이 읽기" 로 이 글을 보인다(결정 044 · 048).
+ * 나 탭 풀이를 아직 받지 않았으면 나 탭의 받기 전과 같이 글 맨 아래에 "자세한 풀이" 카드(결정 082) — 가입 직후 · 출생 정보를 바꾼 직후
+ * 처음 오는 곳이 여기라 카드가 없으면 받을 길이 보이지 않았다(소유자 2026-11-26). 누르면 나 탭으로 가서(`/me?request=1`) 거기서 받기를 시작한다.
  */
 export default function ReadingScreen() {
   const { ready } = useSession();
+  // 가입을 마치고 바로 온 것인가(별명 짓는 중을 머리 없이, 보드 9). 홈 · 출생 정보 바꾸기에서 오면 뒤로 가기가 있다
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  // 별명 공개에 쓸 닉네임: 가입 직후(가입이 받은 값, 결정 044)와 출생 정보를 바꾼 직후(소유자 2026-11-20)에만 메모리에 있다.
+  // 앱을 다시 켜거나 웹을 새로 고치면 없다
+  const [revealFor, setRevealFor] = useState(() => (from === 'signup' ? signedUpNickname() : from === 'birth' ? pendingReveal() : null));
   const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 먼저 기기에 받아 둔 글을 찾는다. 있으면 세션을 기다리지 않고 바로 보여 준다.
@@ -38,91 +57,132 @@ export default function ReadingScreen() {
   // 짓는 중이거나 방금 받은 글이 떠 있는 동안에는 강제 업데이트를 미룬다(결정 027). 받아 둔 글을 다시 연 것은 아니다.
   const generating = profile !== null && stored.checked && !stored.reading && state.status === 'loading';
   useGenerationBusy(generating, !stored.reading && state.status === 'done');
-  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  // 가입 직후 · 출생 정보를 바꾼 직후는 서버가 새로 짓는 중이라 바로 별명 짓는 중(보드 9). 그 밖(홈 · 나 탭에서 들어옴)은 대개 지어 둔 글을
+  // 받아 오므로 0.3초 뒤 뼈대, 10초가 넘으면 새로 짓는 것으로 보고 별명 짓는 중(결정 071 · 065 의 2 — 나 탭과 같다, 리뷰 #49)
+  const fresh = from === 'signup' || from === 'birth';
+  const phase = useLoadingPhase(!fresh && profile !== null && !stored.reading && state.status === 'loading');
+  const making = generating && (fresh || phase === 'timeout');
+  // 짓는 동안(별명 짓는 중 화면)만 기다릴 때 음악(결정 062 의 1). 글이 오거나 못 지으면 배경으로
+  useSoundtrack('waiting', making);
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
+  // 글이 보일 때만 머리 오른쪽에 공유하기(내 별명 카드, 결정 053 의 2)
+  const readNav = <NavBar title={S.title} onBack={goBackOrHome} chevron right={<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />} />;
+  // 나 탭 안에서 들어온 화면이라 아래 탭은 나(결정 046 의 2 — 시안 12 에 탭이 있다)
+  const tabs = <MainTabs active="me" nested />;
+  // 나 탭 풀이를 받기 전인가(결정 082) — 받기 전이라고 서버가 답했을 때만 글 아래에 카드. 받기 · 쓰는 중 · 다 쓴 풀이는 나 탭이 맡는다
+  const me = useMeReport(ready ? birth : null);
+  const detail =
+    me.state.status === 'none' ? (
+      <DetailCard
+        blocked={me.state.blocked === true}
+        onRequest={() => {
+          // 나 탭의 첫 화면으로 바꿔 간다(아래 탭과 같은 길 — 쌓인 화면을 치우고 replace)
+          if (router.canDismiss()) router.dismissAll();
+          router.replace({ pathname: '/me', params: { request: '1' } });
+        }}
+      />
+    ) : null;
+  // 연결 끊김(결정 061 의 4): 받아 둔 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 다시 부른다
+  const online = useOnline();
+  useOnReconnect(online, () => {
+    if (state.status === 'failed' && state.error === 'NETWORK') retry();
+  });
+  const banner = online ? null : <OfflineBanner />;
 
   if (loaded && !profile)
     return (
-      <Screen nav={nav}>
+      <Screen nav={nav} footer={tabs}>
         <ChartEmpty />
       </Screen>
     );
 
+  const written = stored.reading ?? (state.status === 'done' ? state.reading : null);
+  if (revealFor && written)
+    return (
+      <RevealView
+        nickname={revealFor}
+        headline={written.headline}
+        // 해 · 달 · (시각을 알 때만) 상승궁 — 차트 요약(KeyThree)과 같은 값
+        signs={chart ? keyThree(chart).map((k) => ({ label: k.label, value: k.value + strings.chart.signSuffix })) : []}
+        onRead={() => {
+          clearSignedUp();
+          clearPendingReveal();
+          setRevealFor(null);
+        }}
+      />
+    );
+
   if (stored.reading)
     return (
-      <Screen nav={nav}>
-        <ReadingBody reading={stored.reading} chart={chart} />
+      <Screen nav={readNav} footer={tabs}>
+        {banner}
+        {/* 한 덩어리로 둔다 — 글과 카드 사이에 화면의 칸 사이 간격(16)이 끼지 않게(나 탭과 같은 간격) */}
+        <View>
+          <ReadingView reading={stored.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
+          {detail}
+        </View>
       </Screen>
     );
 
   // 기기를 찾아보는 동안에는 아무것도 그리지 않는다("짓는 중" 이 잠깐 비치지 않게).
-  if (!stored.checked) return <Screen nav={nav}>{null}</Screen>;
+  // 홈 · 나 탭에서 들어왔으면 뼈대와 같은 아래 탭도(중간에 탭이 생기지 않게, 결정 071 의 6)
+  if (!stored.checked) return <Screen nav={nav} footer={fresh ? undefined : tabs}>{null}</Screen>;
 
+  // 짓는 동안은 "별명 짓는 중"(결정 042 보드 9) — 가입을 마치고 처음 오는 곳이기도 하다. 머리(뒤로 · 제목)는 없다(소유자, 빌드 13 — 뒤로는
+  // 기기의 뒤로 · 밀어서, 3분이 넘으면 머리가 있는 못 지었을 때로). 받아 오다 10초가 넘은 것이면 아래 탭이 있는 틀에 보여 그동안 다른 탭으로
+  // 갈 수 있게 한다(나 탭과 같다, 결정 061 · 065 의 2)
+  if (making) return <MakingView tabs={fresh ? undefined : tabs} />;
+  // 받아 오는 동안은 글과 같은 배치의 뼈대(결정 071) — 머리 · 아래 탭은 진짜
   if (state.status === 'loading')
     return (
-      <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="heading">{S.generating}</Txt>
-          <Txt variant="table" color="gray">
-            {S.generatingNote}
-          </Txt>
-        </View>
+      <Screen nav={nav} footer={tabs}>
+        {phase === 'skeleton' ? (
+          <SkeletonGroup testID="reading-skeleton">
+            {/* 나 탭 풀이를 받기 전인 것을 이미 알면 글 아래 카드 자리도 뼈대로(결정 071 · 082) */}
+            <View>
+              <ReadingSkeleton card={chart ? <SignCardSkeleton chart={chart} /> : null} />
+              {me.state.status === 'none' ? <DetailCardSkeleton /> : null}
+            </View>
+          </SkeletonGroup>
+        ) : null}
       </Screen>
     );
 
+  // 못 받았을 때(결정 061 의 1 · 3 · 4): 끊겼으면 보드 20-1, 가입 직후면 보드 9-1(머리 · 탭 없이 다시 짓기만),
+  // 그 밖에는 보드 19 — 요청이 많을 때만 그 안내로
   if (state.status === 'failed')
-    return (
-      <Screen nav={nav}>
-        <View style={styles.status}>
-          <Txt variant="body">
-            {state.error === 'NETWORK' || state.error === 'LIMIT' ? S.failed[state.error] : S.failed.OTHER}
-          </Txt>
-          <Button label={S.retry} onPress={retry} />
-        </View>
-      </Screen>
+    return state.error === 'NETWORK' && !online ? (
+      <StateScreen
+        // 가입 직후면 머리 · 아래 탭 없이 — 갈 곳이 없고 별명 공개(결정 044)를 놓치지 않게(결정 065 의 4)
+        nav={from === 'signup' ? undefined : nav}
+        tabs={from === 'signup' ? undefined : tabs}
+        title={ST.offlineEmpty.title}
+        body={ST.offlineEmpty.body}
+        primary={{ label: ST.offlineEmpty.retry, onPress: retry }}
+      />
+    ) : from === 'signup' ? (
+      <StateScreen
+        title={MF.title}
+        body={state.error === 'LIMIT' ? S.failed.LIMIT : MF.body}
+        primary={{ label: MF.retry, onPress: retry }}
+      />
+    ) : (
+      <StateScreen
+        nav={nav}
+        tabs={tabs}
+        title={ST.loadFail.title.reading}
+        body={state.error === 'LIMIT' ? S.failed.LIMIT : ST.loadFail.body}
+        primary={{ label: ST.loadFail.retry, onPress: retry }}
+      />
     );
 
   return (
-    <Screen nav={nav}>
-      <ReadingBody reading={state.reading} chart={chart} />
+    <Screen nav={readNav} footer={tabs}>
+      {banner}
+      <View>
+        <ReadingView reading={state.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
+        {detail}
+      </View>
     </Screen>
   );
 }
-
-/** 그 사람의 하늘 그림, 글, 그 아래의 "연애에서 해 볼 만한 것 보기" · "내 차트 보기" · 안내 문구. */
-function ReadingBody({ reading, chart }: { reading: Reading; chart: Chart | null }) {
-  return (
-    <>
-      {chart ? (
-        <Pressable accessibilityRole="button" onPress={() => router.push('/chart')} style={styles.picture}>
-          <ChartPicture chart={chart} size={Sizes.readingPicture} />
-          {/* 그림만으로는 무슨 자리인지 알 수 없으니 글로 함께 적는다 */}
-          <KeyThree chart={chart} bare />
-        </Pressable>
-      ) : null}
-      <ReadingView reading={reading} />
-      <View style={styles.footer}>
-        {/* 공유는 누를 때 만든다. 카드에는 한 줄 총평과 키워드만 들어간다(결정 025) */}
-        <ShareEntry target={{ kind: 'READING' }} />
-        {/* 방향성 "이성" 은 들어가는 줄만 둔다. 글은 그 화면을 열 때 받는다(결정 023) */}
-        <TextLink label={S.seeDirection} onPress={() => router.push('/direction')} />
-        <TextLink label={S.seeChart} onPress={() => router.push('/chart')} />
-        <Txt variant="label" color="gray">
-          {S.disclaimer}
-        </Txt>
-      </View>
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
-  picture: {
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.lg,
-    marginTop: Spacing.xs,
-    backgroundColor: Colors.fill,
-    borderRadius: CardRadius,
-  },
-  status: { gap: Spacing.md, paddingTop: Spacing.lg },
-  footer: { gap: Spacing.lg, paddingTop: Spacing.lg },
-});

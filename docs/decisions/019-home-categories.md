@@ -3,7 +3,7 @@ type: decision
 tags: [화면 구성, 홈, 카테고리, 출생 정보]
 status: active
 last_reviewed: 2026-11-11
-superseded_by: 022-home-relation-synastry-back.md (관계 · 궁합 칸을 홈에서 뺀 부분만. 나머지는 유효)
+superseded_by: 022-home-relation-synastry-back.md (관계 · 궁합 칸을 홈에서 뺀 부분만. 나머지는 유효) · 038-settings-into-my.md (마이의 설정 자리) · 046-bottom-tabs-five.md (아래 탭 둘 → 다섯) · 047-home-v2.md (홈 카테고리 화면 · 홈에서 서버를 부르지 않음) · 048-me-tab-and-me-report.md (나 칸의 내용)
 ---
 # 019. 홈은 카테고리 화면이고, 출생 정보 입력은 처음 한 번과 바꿀 때만 나온다
 

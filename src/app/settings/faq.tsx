@@ -20,7 +20,7 @@ const F = strings.faq;
  */
 export default function FaqScreen() {
   const { state, retry } = useFaqs();
-  const nav = <NavBar title={F.title} onBack={goBackOrHome} />;
+  const nav = <NavBar title={F.title} onBack={goBackOrHome} chevron />;
 
   if (state.status === 'loading')
     return (
@@ -49,11 +49,11 @@ export default function FaqScreen() {
     return (
       <Screen nav={nav}>
         <View style={styles.status}>
-          <Txt variant="heading">{F.empty}</Txt>
+          <Txt variant="subhead">{F.empty}</Txt>
           <Txt variant="table" color="gray">
             {F.emptyNote}
           </Txt>
-          <TextLink label={F.toInquiry} onPress={() => router.push('/settings/inquiry')} />
+          <TextLink label={F.toInquiry} onPress={() => router.push('/my/inquiries/new')} />
         </View>
       </Screen>
     );

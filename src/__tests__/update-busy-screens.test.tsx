@@ -4,19 +4,21 @@ import { router, useLocalSearchParams } from 'expo-router';
 import type { ReactElement } from 'react';
 import { AppState, Text, type AppStateStatus } from 'react-native';
 
-import DirectionScreen from '@/app/direction';
 import ReadingScreen from '@/app/reading';
-import ReportScreen from '@/app/report';
-import InquiryScreen from '@/app/settings/inquiry';
+import MeScreen from '@/app/me';
+import TimingScreen from '@/app/timing';
+import NewInquiryScreen from '@/app/my/inquiries/new';
 import SynastryDirectionScreen from '@/app/synastry/[id]/direction';
 import SynastryResultScreen from '@/app/synastry/[id]/index';
 import SynastryReportScreen from '@/app/synastry/[id]/report';
 import SynastryEntryScreen from '@/app/synastry/index';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
+import { ME_REPORT_POLL_MS, ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
+import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { forgetFresh, rememberFresh } from '@/features/synastry/fresh-synastry';
 import { UpdateGate } from '@/features/update/update-gate';
-import { api, type ApiResult, type AppConfig, type PlatformConfig } from '@/lib/api';
+import { api, type ApiResult, type AppConfig, type MeReportState, type PlatformConfig } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -34,10 +36,13 @@ jest.mock('@/lib/api', () => ({
     listPlaces: jest.fn(),
     saveProfile: jest.fn(),
     createReading: jest.fn(),
-    createDirection: jest.fn(),
+    requestMeReport: jest.fn(),
+    getMeReport: jest.fn(),
+    getMyAccount: jest.fn(async () => ({ ok: false, error: 'NETWORK' })),
     createSynastryDirection: jest.fn(),
-    getReport: jest.fn(),
-    requestReport: jest.fn(),
+    getTimingReport: jest.fn(),
+    requestTimingReport: jest.fn(),
+    getMonth: jest.fn(),
     createDirectSynastry: jest.fn(),
     getSynastry: jest.fn(),
     listSynastries: jest.fn(),
@@ -59,7 +64,7 @@ const I = strings.inquiry;
 const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
 const made = fixtures.synastry;
 const { overlay: _overlay, ...storedSynastry } = made;
-const open: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+const open: PlatformConfig = { minVersion: null, latestVersion: null, storeUrl: null, message: null, blockNow: false };
 const openConfig: ApiResult<AppConfig> = { ok: true, data: { ios: open, android: open } };
 const required: ApiResult<AppConfig> = { ok: true, data: { ios: { ...open, minVersion: '9.0.0' }, android: open } };
 
@@ -77,6 +82,7 @@ const home = gate(<Text>홈</Text>);
 const blocked = () => screen.queryByText(U.title) !== null;
 
 beforeEach(async () => {
+  mockApi.getMonth.mockResolvedValue({ ok: true, data: fixtures.monthSky });
   await AsyncStorage.clear();
   jest.clearAllMocks();
   forgetFresh();
@@ -88,6 +94,8 @@ beforeEach(async () => {
   mockParams.mockReturnValue({});
   mockApi.getAppConfig.mockResolvedValue(openConfig);
   mockApi.listPlaces.mockResolvedValue({ ok: true, data: fixtures.places });
+  // 풀이 글(/reading)도 나 탭 풀이의 상태를 묻는다(결정 082 — 받기 전이면 카드). 이 시험들에서는 이미 받은 것으로
+  mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
   mockApi.saveProfile.mockImplementation(async (input) => ({ ok: true, data: input }));
   mockApi.listSynastries.mockResolvedValue({ ok: true, data: [] });
   await saveBirth({ profile, chart: fixtures.chart });
@@ -102,7 +110,8 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     let resolve: (r: ApiResult<typeof fixtures.reading>) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
     const view = await render(gate(<ReadingScreen />));
-    expect(await screen.findByText(strings.reading.generating)).toBeTruthy();
+    // 홈에서 들어와 기기에 글이 없으면 받아 오는 동안 뼈대(결정 071) — 그동안도 미룬다
+    expect(await screen.findByTestId('reading-skeleton')).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
 
@@ -127,37 +136,54 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('방향성 제시: 기다리는 중과 방금 받은 글이 떠 있는 동안 미룬다', async () => {
-    let resolve: (r: ApiResult<typeof fixtures.direction>) => void = () => {};
-    mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
-    const view = await render(gate(<DirectionScreen />));
-    expect(await screen.findByText(strings.direction.generating)).toBeTruthy();
+  it('나 탭: 자세한 풀이를 쓰는 중과 방금 다 쓴 풀이가 떠 있는 동안 미루고, 화면에서 나오면 막는다(리뷰 #49)', async () => {
+    await AsyncStorage.setItem(
+      READING_STORAGE_KEY,
+      JSON.stringify({ key: JSON.stringify([profile.date, profile.time, profile.place.id]), reading: fixtures.reading }),
+    );
+    let resolve: (r: ApiResult<MeReportState>) => void = () => {};
+    mockApi.getMeReport.mockResolvedValueOnce({ ok: true, data: { status: 'WRITING' } }).mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    jest.useFakeTimers();
+    const view = await render(gate(<MeScreen />));
+    await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
+    expect(screen.getByText(strings.me.making.title)).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
+    await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_POLL_MS)));
+    await act(async () => resolve({ ok: true, data: { status: 'DONE', report: fixtures.meReport } }));
+    expect(await screen.findByTestId('me-nickname-card')).toBeTruthy();
+    expect(blocked()).toBe(false);
+    await view.rerender(home);
+    expect(blocked()).toBe(true);
+    jest.useRealTimers();
+  });
 
-    await act(async () => resolve({ ok: true, data: fixtures.direction }));
-    expect(await screen.findByText(fixtures.direction.title)).toBeTruthy();
+  it('나 탭: 기기에 받아 둔 풀이를 다시 연 것은 미루지 않는다', async () => {
+    const key = JSON.stringify([profile.date, profile.time, profile.place.id]);
+    await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key, reading: fixtures.reading }));
+    await AsyncStorage.setItem(ME_REPORT_STORAGE_KEY, JSON.stringify({ key, report: fixtures.meReport }));
+    mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
+    await render(gate(<MeScreen />));
+    expect(await screen.findByTestId('me-nickname-card')).toBeTruthy();
+    await comeBackToUpdateRequired();
+    expect(blocked()).toBe(true);
+  });
+
+  it('시기 탭: 시기 풀이를 쓰는 중에는 미루고, 화면에서 나오면 막는다', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
+    const view = await render(gate(<TimingScreen />));
+    expect(await screen.findByText(strings.timing.making.title)).toBeTruthy();
+    await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
 
     await view.rerender(home);
     expect(blocked()).toBe(true);
   });
 
-  it('심층 리포트: 쓰는 중에는 미루고, 화면에서 나오면 막는다', async () => {
-    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
-    const view = await render(gate(<ReportScreen />));
-    expect(await screen.findByText(strings.report.writing)).toBeTruthy();
-    await comeBackToUpdateRequired();
-    expect(blocked()).toBe(false);
-
-    await view.rerender(home);
-    expect(blocked()).toBe(true);
-  });
-
-  it('심층 리포트: 이미 다 쓰인 글을 연 것은 미루지 않는다', async () => {
-    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
-    await render(gate(<ReportScreen />));
-    expect(await screen.findByText(fixtures.report.sections[0].title)).toBeTruthy();
+  it('시기 탭: 이미 다 쓰인 시기 풀이를 연 것은 미루지 않는다', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.timingReport } });
+    await render(gate(<TimingScreen />));
+    expect(await screen.findByTestId('timing-now-card')).toBeTruthy();
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(true);
   });
@@ -169,7 +195,7 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     await fireEvent.press(await screen.findByText('연애'));
     await fireEvent.changeText(screen.getByPlaceholderText(S.entry.namePlaceholder), '지우');
     await fireEvent.changeText(screen.getByPlaceholderText(H.datePlaceholder), '19990302');
-    await fireEvent.press(screen.getByText(H.timeUnknown));
+    await fireEvent.press(screen.getByRole('checkbox', { name: H.timeUnknown }));
     await fireEvent.press(screen.getByText(S.entry.submit));
     expect(await screen.findByText(S.entry.calculating)).toBeTruthy();
     await comeBackToUpdateRequired();
@@ -211,20 +237,6 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('시기 탭의 방향성(미래): 글을 기다리는 중에는 미루고, 글이 오면 막는다(리포트는 받아 둔 것)', async () => {
-    mockParams.mockReturnValue({ area: 'TIMING' });
-    mockApi.getReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.report } });
-    let resolve: (r: ApiResult<typeof fixtures.directionFuture>) => void = () => {};
-    mockApi.createDirection.mockReturnValue(new Promise((r) => (resolve = r)));
-    await render(gate(<ReportScreen />));
-    expect(await screen.findByText(strings.direction.future.generating)).toBeTruthy();
-    await comeBackToUpdateRequired();
-    expect(blocked()).toBe(false);
-
-    await act(async () => resolve({ ok: true, data: fixtures.directionFuture }));
-    await waitFor(() => expect(blocked()).toBe(true));
-  });
-
   it('궁합의 방향성: 기다리는 중과 방금 받은 글이 떠 있는 동안 미루고, 화면에서 나오면 막는다', async () => {
     mockParams.mockReturnValue({ id: made.id });
     let resolve: (r: ApiResult<typeof fixtures.directionSynastry>) => void = () => {};
@@ -254,30 +266,30 @@ describe('하던 일이 있는 화면은 강제 업데이트를 미룬다(결정
     expect(blocked()).toBe(true);
   });
 
-  it('문의하기: 적은 글이 있으면 미루고, 보내고 나면 막는다', async () => {
+  it('새 문의: 적은 글이 있으면 미루고, 보내고 나면 막는다', async () => {
     mockApi.createInquiry.mockResolvedValue({ ok: true, data: { id: 'inq-1' } });
-    await render(gate(<InquiryScreen />));
+    await render(gate(<NewInquiryScreen />));
     await fireEvent.press(screen.getByText(I.categories.BUG));
-    await fireEvent.changeText(screen.getByLabelText(I.bodyLabel), '리포트 화면이 열리지 않아요.');
+    await fireEvent.changeText(screen.getByLabelText(I.form.bodyLabel), '리포트 화면이 열리지 않아요.');
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
 
-    await fireEvent.press(screen.getByText(I.submit));
+    await fireEvent.press(screen.getByText(I.form.submit));
     await waitFor(() => expect(blocked()).toBe(true));
     expect(mockApi.createInquiry).toHaveBeenCalledTimes(1);
   });
 
-  it('문의하기: 답장 받을 이메일만 적어도 미루고, 지우면 막는다', async () => {
-    await render(gate(<InquiryScreen />));
-    await fireEvent.changeText(screen.getByLabelText(I.emailLabel), 'me@example.test');
+  it('새 문의: 적은 글을 지우면 다시 막는다', async () => {
+    await render(gate(<NewInquiryScreen />));
+    await fireEvent.changeText(screen.getByLabelText(I.form.bodyLabel), '적다가 지울 글');
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(false);
-    await fireEvent.changeText(screen.getByLabelText(I.emailLabel), '');
+    await fireEvent.changeText(screen.getByLabelText(I.form.bodyLabel), '');
     expect(blocked()).toBe(true);
   });
 
-  it('문의하기: 아무것도 적지 않았으면(종류만 골랐어도) 미루지 않는다', async () => {
-    await render(gate(<InquiryScreen />));
+  it('새 문의: 아무것도 적지 않았으면(종류만 골랐어도) 미루지 않는다', async () => {
+    await render(gate(<NewInquiryScreen />));
     await fireEvent.press(screen.getByText(I.categories.BUG));
     await comeBackToUpdateRequired();
     expect(blocked()).toBe(true);

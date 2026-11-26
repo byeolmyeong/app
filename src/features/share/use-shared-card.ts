@@ -3,6 +3,8 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
+import { shareCardOf } from '@/features/share/share-analytics';
+import { track } from '@/lib/analytics';
 import { api, type ApiErrorKind, type ApiResult, type ShareCard } from '@/lib/api';
 
 export type SharedCardState =
@@ -22,7 +24,10 @@ export function useSharedCard(shareId: string | null) {
     if (shareId === null) return;
     let alive = true;
     api.getSharedCard(shareId).then((result) => {
-      if (alive) setSettled({ shareId, attempt, result });
+      if (!alive) return;
+      // 공유 링크로 들어온 사람이 카드를 봤다(결정 040 — 공유 유입 전환의 분모). 공유 id 는 보내지 않는다
+      if (result.ok) track('shared_link_opened', { card: shareCardOf[result.data.kind] });
+      setSettled({ shareId, attempt, result });
     });
     return () => {
       alive = false;

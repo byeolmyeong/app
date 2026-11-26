@@ -40,7 +40,9 @@ const refused = (status: number, code: string): ApiResult<Direction> => ({ ok: f
 /** 상대의 출생 정보를 다시 넣는다: 생년월일과 "태어난 시각을 몰라요" */
 async function reenter(date = '19990302') {
   await fireEvent.changeText(await screen.findByPlaceholderText(H.datePlaceholder), date);
-  if (screen.queryByTestId('place-field')) await fireEvent.press(screen.getByText(H.timeUnknown));
+  // 시각 "모름" 체크가 아직 꺼져 있으면 켠다(결정 042 — 곳 칸은 그대로 있다)
+  const unknown = screen.getByRole('checkbox', { name: H.timeUnknown });
+  if (!unknown.props.accessibilityState?.checked) await fireEvent.press(unknown);
   await fireEvent.press(screen.getByText(D.submit));
 }
 
@@ -61,6 +63,8 @@ describe('방향성 제시 — 궁합(/synastry/[id]/direction)', () => {
     mockApi.createSynastryDirection.mockReturnValue(new Promise((r) => (resolve = r)));
     await render(<SynastryDirectionScreen />);
     expect(await screen.findByText(D.generating)).toBeTruthy();
+    // 기다리는 동안 생각하는 별이(결정 035)
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText(D.generatingNote)).toBeTruthy();
     expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
     expect(mockApi.createSynastryDirection).toHaveBeenCalledTimes(1);

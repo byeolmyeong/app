@@ -1,18 +1,20 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Spacing } from '@/constants/theme';
 
 export type TabsProps<K extends string> = {
   tabs: { key: K; label: string }[];
   value: K;
   onChange: (key: K) => void;
+  /** 탭 줄을 화면 읽기가 부르는 이름(한 화면에 탭 줄이 둘일 때 구분) */
+  label?: string;
 };
 
 /** 글자 탭. 화면 폭을 탭 수로 똑같이 나눠 쓴다. 고른 탭은 굵은 글씨와 밑줄, 나머지는 회색. */
-export function Tabs<K extends string>({ tabs, value, onChange }: TabsProps<K>) {
+export function Tabs<K extends string>({ tabs, value, onChange, label }: TabsProps<K>) {
   return (
-    <View style={styles.row} accessibilityRole="tablist">
+    <View testID="tabs" style={styles.row} accessibilityRole="tablist" accessibilityLabel={label}>
       {tabs.map((tab) => {
         const on = tab.key === value;
         return (
@@ -42,5 +44,5 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   on: { borderBottomColor: Colors.ink },
-  onText: { fontWeight: '700' },
+  onText: { fontWeight: FontWeight.semibold },
 });

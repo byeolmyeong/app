@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
-import { Colors, FontFamily, Sizes, Spacing } from '@/constants/theme';
+import { Colors, FontFamily, FontWeight, Sizes, Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { overlayLayout } from '@/features/chart/overlay-layout';
 import type { SynastryOverlay } from '@/lib/api';
@@ -44,7 +44,7 @@ export function OverlayWheel({ overlay, name }: OverlayWheelProps) {
               {...text}
               {...s.label}
               fontSize={w.signFontSize}
-              fontWeight="600"
+              fontWeight={FontWeight.semibold}
               fill={Colors.ink}
             >
               {label(strings.signs, s.sign)}
@@ -96,7 +96,7 @@ export function OverlayWheel({ overlay, name }: OverlayWheelProps) {
               {...text}
               {...b.label}
               fontSize={w.labelFontSize}
-              fontWeight="700"
+              fontWeight={FontWeight.semibold}
               fill={Colors.ink}
             >
               {label(strings.bodiesShort, b.body)}
@@ -108,7 +108,7 @@ export function OverlayWheel({ overlay, name }: OverlayWheelProps) {
               {...text}
               {...b.label}
               fontSize={w.labelFontSize}
-              fontWeight="500"
+              fontWeight={FontWeight.medium}
               fill={Colors.gray}
             >
               {label(strings.bodiesShort, b.body)}

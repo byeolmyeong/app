@@ -1,0 +1,78 @@
+// jest 전용: react-native Animated 의 움직임을 기다리지 않고 바로 끝낸다.
+// 시트가 닫히는 220ms 같은 움직임을 실제 시간으로 기다리면 부하가 걸렸을 때 시험이 5초 제한에 걸린다(타임아웃을 늘리지 않는다 — 골든 룰).
+// 움직임의 결과(마지막 값 · 끝났다는 알림)는 그대로 준다. 끝없이 도는 움직임(Animated.loop — 별이 · 별명 짓는 중)은 시작만 하고 돌리지 않는다.
+const { Animated } = require('react-native');
+
+const done = (callback) => callback?.({ finished: true });
+
+Animated.timing = (value, config) => ({
+  start: (callback) => {
+    value.setValue(config.toValue);
+    done(callback);
+  },
+  stop: () => {},
+  reset: () => {},
+});
+Animated.spring = Animated.timing;
+Animated.loop = () => ({ start: () => {}, stop: () => {}, reset: () => {} });
+
+// 연결 상태(@react-native-community/netinfo)는 네이티브 모듈이라 라이브러리가 준 가짜를 쓴다(결정 061 의 4 — 연결 끊김).
+// 끊김 · 되살아남을 보는 시험은 그 파일에서 addEventListener 를 바꿔 끼운다.
+jest.mock('@react-native-community/netinfo', () => require('@react-native-community/netinfo/jest/netinfo-mock.js'));
+
+// 기기 저장소(AsyncStorage)도 네이티브 모듈이라 없으면 읽어 들이는 순간 던진다. 루트의 문(UpdateGate)이 업데이트를 권한 버전을 적어 두므로
+// (결정 059) 라이브러리가 준 가짜(메모리)를 모든 시험에 깐다. 파일마다 jest.mock 으로 같은 가짜를 다시 깔아도 된다.
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+
+// 소리(expo-audio)도 네이티브 모듈이라 jest 에서는 읽어 들이는 순간 던진다. 쓰는 중 화면이 기다릴 때 음악을 청하므로(결정 062)
+// 소리를 내지 않는 가짜를 모든 시험에 깐다. 음악 줄 자체의 시험(features/audio)은 그 파일에서 다시 깔아 틀고 멈춤을 본다.
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: jest.fn(() => ({ volume: 1, loop: false, play: jest.fn(), pause: jest.fn(), seekTo: jest.fn(async () => {}), remove: jest.fn() })),
+  setAudioModeAsync: jest.fn(async () => {}),
+}));
+
+// 누를 때 · 켤 때 받는 모듈(import() — 성능 계획 3): jest 는 import() 를 돌리지 않아 require 로 바꿔 끼운다.
+// 위의 가짜(expo-audio) · 각 시험의 jest.mock(html2canvas-pro)이 그대로 붙는다.
+jest.mock('./src/features/share/load-html2canvas', () => ({ loadHtml2canvas: jest.fn(async () => require('html2canvas-pro')) }));
+jest.mock('./src/features/audio/load-expo-audio', () => ({ loadExpoAudio: jest.fn(async () => require('expo-audio')) }));
+
+// 휴대폰 푸시(expo-notifications)도 네이티브 모듈이다(결정 057). 권한은 "아직 묻지 않음", 토큰은 받지 못한 것으로 두는 가짜를 깐다.
+// 권한 · 토큰 · 누르면 이동을 보는 시험(features/push)은 그 파일에서 바꿔 끼운다.
+jest.mock('expo-notifications', () => ({
+  IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3, EPHEMERAL: 4 },
+  AndroidImportance: { MIN: 3, LOW: 4, DEFAULT: 5, HIGH: 6 },
+  DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
+  getPermissionsAsync: jest.fn(async () => ({ granted: false, status: 'undetermined', canAskAgain: true, expires: 'never' })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: false, status: 'denied', canAskAgain: false, expires: 'never' })),
+  getExpoPushTokenAsync: jest.fn(async () => {
+    throw new Error('no token in tests');
+  }),
+  setNotificationChannelAsync: jest.fn(async () => null),
+  setNotificationHandler: jest.fn(),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponse: jest.fn(() => null),
+  clearLastNotificationResponse: jest.fn(),
+  dismissAllNotificationsAsync: jest.fn(async () => {}),
+  setBadgeCountAsync: jest.fn(async () => true),
+}));
+
+// 인스타그램 스토리 공유(react-native-share, 결정 053)는 TurboModule 이라 jest 에서는 읽어 들이는 순간 던진다.
+// 공유 시트가 있는 화면 시험이 깨지지 않게 "아무것도 하지 않는" 가짜를 깐다. 스토리 열기 자체의 시험(features/share/story)은 그 파일에서 다시 깐다.
+jest.mock('react-native-share', () => {
+  const Social = { InstagramStories: 'instagramstories' };
+  return {
+    __esModule: true,
+    Social,
+    default: {
+      Social: { INSTAGRAM_STORIES: Social.InstagramStories },
+      shareSingle: jest.fn(async () => ({ success: true, message: '' })),
+      isPackageInstalled: jest.fn(async () => ({ isInstalled: true, message: '' })),
+    },
+  };
+});
+
+// Reanimated(화면 스레드 움직임 — 이유 상자의 펼침)는 라이브러리의 시험 설정으로 JS 에서 돈다. 움직임 중간은 가짜 시계(jest.useFakeTimers)로 넘겨 본다.
+// 짝: package.json 의 jest.resolver(react-native-reanimated/jest/resolver)가 네이티브 대신 웹 구현을 고른다.
+require('react-native-reanimated').setUpTests();

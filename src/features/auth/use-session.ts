@@ -5,23 +5,52 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
+import { linkAnalytics } from '@/features/auth/analytics-link';
+import { clearDeviceData } from '@/features/auth/delete-account';
+import { setLastProvider } from '@/features/auth/last-provider';
 import { createSessionStore, type Session } from '@/features/auth/session-store';
+import { restoreDraft } from '@/features/auth/signup-draft';
+import { clearResume, loadResume, startResume } from '@/features/auth/signup-resume';
 import { deleteToken, loadToken, saveToken } from '@/features/auth/token-storage';
-import { api, setSessionRefresher, setSessionToken } from '@/lib/api';
+import { identify, isAnalyticsEnabled, resetAnalytics, track } from '@/lib/analytics';
+import { api, setSessionRefresher, setSessionToken, type ProviderCredential } from '@/lib/api';
+
+const providerOf = (p: ProviderCredential['provider']) => p.toLowerCase() as 'google' | 'apple' | 'kakao';
 
 const store = createSessionStore({
   devSession: process.env.EXPO_PUBLIC_DEV_SESSION === '1',
   cookieSession: Platform.OS === 'web',
   createDevSession: () => api.createDevSession(),
   login: (credential) => api.login(credential),
-  signup: (signupToken, birth) => api.signup(signupToken, birth),
+  signup: (signupToken, birth, extra) => api.signup(signupToken, birth, extra),
+  checkNickname: (signupToken, nickname) => api.checkNickname(signupToken, nickname),
   getSession: () => api.getSession(),
   logout: () => api.logout(),
   loadToken,
   saveToken,
   deleteToken,
   setApiToken: setSessionToken,
+  saveLastProvider: setLastProvider,
+  // 가입 이어 하기(결정 068): 되돌릴 때 적던 초안도 메모리로
+  loadSignup: async () => {
+    const resume = await loadResume();
+    if (!resume) return null;
+    restoreDraft(resume.draft);
+    return resume;
+  },
+  saveSignup: (signupToken, provider, expiresAt) => startResume(signupToken, provider, Date.now(), expiresAt),
+  clearSignup: clearResume,
+  // 새 로그인 · 401 때 앞사람이 기기에 남긴 것을 비운다(로그아웃 · 탈퇴와 같은 범위)
+  clearDeviceData,
+  // 제품 분석(결정 040 · 081): 로그인 · 가입을 마친 순간
+  onSignedIn: (done) =>
+    done.kind === 'login'
+      ? track('login_completed', { provider: providerOf(done.provider) })
+      : track('signup_completed', { provider: providerOf(done.provider), time_known: done.timeKnown }),
 });
+
+// 로그인 상태가 되면 분석용 id 로 이어 붙이고, 로그아웃 · 계정 삭제 뒤에는 초기화한다(키가 있을 때만 서버를 부른다, 결정 081)
+linkAnalytics(store, { enabled: isAnalyticsEnabled, fetchId: () => api.getAnalyticsId(), identify, reset: resetAnalytics });
 
 // 서버가 401 을 주면 api 가 이 방법을 부른다. 개발용이면 세션을 한 번 다시 받고, 아니면 로그인 전이 된다.
 setSessionRefresher(() => store.refresh());
@@ -31,6 +60,15 @@ export const getSession = (): Session => store.getSnapshot();
 
 /** 세션을 비운다(계정을 지웠을 때). 보관된 토큰도 지운다 */
 export const clearSession = (): Promise<void> => store.clear();
+
+/** 웹이 시작할 때 서버에 닿지 못한 세션을 다시 확인한다(연결이 돌아옴 · 다시 시도, 결정 068 의 4) */
+export const recheckSession = (): Promise<void> => store.recheck();
+
+/**
+ * 켤 때의 세션 확인(start)이 끝나기를 기다린다(시작하지 않았으면 시작한다). 로그인에서 돌아오는 화면(/auth/google · /auth/kakao)은 페이지를 새로 열어
+ * 세션 확인과 로그인이 거의 함께 나가므로, 이것 뒤에 로그인한다 — 확인의 401(→ 로그인 전)이 늦게 와 성공한 로그인을 덮지 않게(결정 070)
+ */
+export const whenSessionChecked = (): Promise<void> => store.start();
 
 /** 로그아웃(서버 세션 · 보관된 토큰). 기기에 둔 출생 정보 · 글은 `sign-out.ts` 가 함께 비운다 */
 export const signOutSession = (): Promise<void> => store.signOut();
@@ -46,7 +84,7 @@ export function useSession(start = true): Session {
   return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 }
 
-/** 로그인 화면 · 가입 화면 · 설정이 쓰는 세션과 동작(결정 034). 로그인 여부와 만 14세 판정은 서버 응답만 따른다 */
+/** 로그인 화면 · 가입 화면 · 마이가 쓰는 세션과 동작(결정 034). 로그인 여부와 만 14세 판정은 서버 응답만 따른다 */
 export function useAuth() {
   const session = useSession();
   return {
@@ -54,6 +92,8 @@ export function useAuth() {
     lastError: session.lastError,
     signIn: store.signIn,
     completeSignup: store.completeSignup,
+    cancelSignup: store.cancelSignup,
+    checkNickname: store.checkNickname,
     devSessionEnabled: store.devSessionEnabled(),
     devSignIn: store.devSignIn,
   };

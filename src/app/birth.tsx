@@ -10,7 +10,7 @@ export default function BirthScreen() {
   const { loaded, profile, chart, save } = useBirthProfile();
   const stored = profile && chart ? { profile, chart } : null;
   return (
-    <Screen nav={<NavBar title={strings.birth.title} onBack={goBackOrHome} />}>
+    <Screen scroll={false} avoidKeyboard nav={<NavBar title={strings.birth.title} onBack={goBackOrHome} chevron />}>
       {/* 기기 저장소를 읽고 나면 보관된 값으로 입력 칸을 다시 만든다. */}
       <BirthForm key={loaded ? 'restored' : 'initial'} stored={stored} save={save} />
     </Screen>

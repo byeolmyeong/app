@@ -43,13 +43,13 @@ describe('기기 보관', () => {
     expect(await loadBirth()).toEqual({ profile: unknown, chart: fixtures.chartTimeUnknown });
   });
 
-  it('예전에 보관된 값(시각 "모름" + 곳)도 읽는다. 쓰지 않는 곳은 버린다', async () => {
+  it('시각 "모름" + 곳으로 보관된 값은 곳까지 읽는다(입력 칸을 채울 때 쓴다, 결정 042)', async () => {
     await AsyncStorage.setItem(
       BIRTH_STORAGE_KEY,
       JSON.stringify({ profile: { ...profile, time: null }, chart: fixtures.chartTimeUnknown }),
     );
     expect(await loadBirth()).toEqual({
-      profile: { date: '2000-06-15', time: null, place: null },
+      profile: { date: '2000-06-15', time: null, place: profile.place },
       chart: fixtures.chartTimeUnknown,
     });
   });

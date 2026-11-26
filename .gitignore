@@ -48,3 +48,4 @@ example
 !.env.example
 .claude/settings.local.json
 .local/
+.vercel

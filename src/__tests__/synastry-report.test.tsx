@@ -51,7 +51,9 @@ const refused = (status: number, code: string): ApiResult<SynastryReportRequest>
 /** 상대의 출생 정보를 다시 넣는다: 생년월일과 "태어난 시각을 몰라요" */
 async function reenter(date = '19990302') {
   await fireEvent.changeText(await screen.findByPlaceholderText(H.datePlaceholder), date);
-  if (screen.queryByTestId('place-field')) await fireEvent.press(screen.getByText(H.timeUnknown));
+  // 시각 "모름" 체크가 아직 꺼져 있으면 켠다(결정 042 — 곳 칸은 그대로 있다)
+  const unknown = screen.getByRole('checkbox', { name: H.timeUnknown });
+  if (!unknown.props.accessibilityState?.checked) await fireEvent.press(unknown);
   await fireEvent.press(screen.getByText(R.request));
 }
 
@@ -86,6 +88,8 @@ describe('궁합 리포트(/synastry/[id]/report)', () => {
 
     await fireEvent.press(screen.getByText(R.request));
     expect(await screen.findByText(R.writing)).toBeTruthy();
+    // 기다리는 동안 생각하는 별이(결정 035)
+    expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText(R.writingNote)).toBeTruthy();
     expect(mockApi.requestSynastryReport).toHaveBeenCalledTimes(1);
     expect(mockApi.requestSynastryReport).toHaveBeenCalledWith(id, partner);
@@ -199,7 +203,7 @@ describe('궁합 리포트(/synastry/[id]/report)', () => {
     expect(screen.queryByText(R.writing)).toBeNull();
     // 넣었던 값이 그대로 있다
     expect(screen.getByDisplayValue('1999-03-03')).toBeTruthy();
-    expect(screen.queryByTestId('place-field')).toBeNull();
+    expect(screen.getByRole('checkbox', { name: H.timeUnknown }).props.accessibilityState).toMatchObject({ checked: true });
     await reenter('19990302');
     expect(await screen.findByText(R.writing)).toBeTruthy();
     expect(mockApi.requestSynastryReport).toHaveBeenLastCalledWith(id, {

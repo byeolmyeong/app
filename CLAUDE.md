@@ -1,6 +1,6 @@
-# 앱 저장소 (byeolmyeong-app) — 앱 이름은 바꿀 예정(가칭 "별명")
+# 앱 저장소 (byeolmyeong-app) — 앱 "별명"
 
-점성술 몰라도 읽히는 나, 나의 사람들, 나의 타이밍 — 출생 차트를 서버가 계산하고 AI 가 용어 없이 풀어 주는 한국어 서양 점성술 서비스. 1.0.0 은 결제·횟수 제한·광고 없이 무료이고, 1.1.0 부터 광고와 방향성 제시 유료화를 붙인다. 앱 이름은 docs/decisions/013-rename-app.md
+점성술 몰라도 읽히는 나, 나의 사람들, 나의 타이밍 — 출생 차트를 서버가 계산하고 AI 가 용어 없이 풀어 주는 한국어 서양 점성술 서비스. 1.0.0 은 결제·횟수 제한·광고 없이 무료이고, 1.1.0 부터 광고와 자세한 풀이 유료화를 붙인다. 이름은 "별이 지어 준 이름": docs/decisions/032-keep-name-byeolmyeong.md
 
 ## 항상 (자동 로드, 합계 30,000자 이내)
 - Expo 규칙·명령: @AGENTS.md
@@ -17,9 +17,10 @@
 - "왜 이렇게 됐나"가 궁금할 때 → docs/decisions/ ADR 번호순. 바뀌면 새 번호로 대체. 종합된 답은 docs/synthesis/.
 
 ## 디렉터리 (이름이 곧 지시)
-- `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 화면 로직(chart·auth·reading·report·synastry·direction·support·update·share) · `src/components/` 공용 부품 · `src/content/` 문구 · `src/lib/` 서버 호출
+- `src/app/` 화면(Expo Router, 파일이 곧 라우트) · `src/features/<영역>/` 화면 로직(chart·auth·onboarding·home·me·reason·reading·timing·notifications·push·my·share·support·update — 1.1.0 대기: synastry·direction·audio, 결정 055 · 069) · `src/components/` 공용 부품 · `src/content/` 문구 · `src/lib/` 서버 호출
 - 서버(Spring Boot)는 별도 저장소다. 앱과는 HTTP API 로만 만난다. 근거: docs/decisions/004-spring-backend.md
 - `docs/` agent가 참고할 문서 · `docs/raw/` 원본(던지는 곳, 고치지 않음) · `.claude/` 설정·규칙·스킬·에이전트·훅
+- `assets/brand/` 브랜드 그림 원본(SVG) · `scripts/` 개발 도구(`render-brand.mjs`: SVG → `assets/images/` PNG, 결정 035 · `pretendard-web.py`: 웹 부분 글꼴 → `public/fonts/`) · `assets/fonts/` 앱 글꼴(공식 OTF 그대로, app.json 의 expo-font 플러그인이 빌드 때 넣는다 — 바꾸면 새 앱 빌드 · 개발 빌드도 다시, 결정 086) · `assets/audio/` 음악 세 곡(바꿔 끼우는 법은 그 README, 결정 062 — 1.0.0 에서는 꺼 둠, 결정 069)
 - `dist/`·`ios/`·`android/` 는 생성물이다(커밋 안 함, 손으로 고치지 않음).
 
 ## 스택
@@ -29,7 +30,10 @@
 ## 명령어 (Node 22)
 - 개발: `npx expo start --web` · 빌드: `npx expo export --platform web` · 테스트: `npm test` · 린트/타입: `npx tsc --noEmit && npx expo lint`
 - 패키지 설치: `npx expo install <패키지>` 만. 환경 변수 이름은 루트 `.env.example`
-- 기기 개발 빌드(소셜 로그인은 Expo Go 에서 안 된다, 결정 034): `npx eas-cli@latest build --profile development`(iOS 시뮬레이터는 `development-simulator`). 공급자 값은 `.env` 의 `EXPO_PUBLIC_*` → `app.config.ts`
+- 브랜드 그림 PNG 다시 만들기(앱 아이콘 · 스플래시 · 공유 카드): `node scripts/render-brand.mjs` 뒤 `scripts/compress-png.mjs`(스플래시 · 기본 별이를 팔레트 PNG 로 — 사용법은 그 파일)
+- 기기 개발 빌드(소셜 로그인은 Expo Go 에서 안 된다, 결정 034): `npx eas-cli@latest build --profile development`(iOS 시뮬레이터는 `development-simulator`). 공급자 값은 EAS `development` 환경 변수(운영과 같은 값, 결정 041) → `app.config.ts`. 로컬 `npx expo run:*` · Metro 는 `.env`
+- 웹 배포(Vercel, 결정 037): `develop` → app.staging.byeolmyeong.com, `main` → app.byeolmyeong.com. 작업 브랜치는 `develop` 으로 PR. 설정은 `vercel.json` — CSP 머리도 여기(결정 077). 새 외부 스크립트 · API 주소를 쓰면 정책도 고치고, 웹 빌드 뒤 `node scripts/check-csp.mjs`
+- 테스트앱 "별명 테스트"(스테이징 서버, TestFlight 에만, 결정 041): `npx eas-cli@latest build --profile test --platform ios --auto-submit`. 운영앱은 `--profile production`. 값은 EAS 환경 변수(preview · production)
 
 ## 도구 (.claude/)
 - 스킬 `/plan-feature`(킷 제공): 한 커밋을 넘는 요청은 바로 만들지 않는다. `docs/plans/`에 계획 파일 → 승인 → 실행 → 검증.

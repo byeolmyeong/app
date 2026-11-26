@@ -22,8 +22,8 @@ export function Paragraph({ title, body, basis }: ParagraphProps) {
           {[S.basisLabel, ...basis].join(S.basisSeparator)}
         </Txt>
       ) : null}
-      <Txt variant="heading">{title}</Txt>
-      <Txt variant="body">{body}</Txt>
+      <Txt variant="subhead">{title}</Txt>
+      <Txt variant="body" color="body">{body}</Txt>
     </View>
   );
 }

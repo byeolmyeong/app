@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth } from '@/constants/theme';
 
 export type TextLinkProps = { label: string; onPress: () => void };
 
@@ -18,5 +18,5 @@ export function TextLink({ label, onPress }: TextLinkProps) {
 
 const styles = StyleSheet.create({
   link: { alignSelf: 'flex-start', borderBottomWidth: LineWidth, borderBottomColor: Colors.ink },
-  text: { fontWeight: '600' },
+  text: { fontWeight: FontWeight.semibold },
 });

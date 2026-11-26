@@ -2,12 +2,14 @@
  * 출생 정보 입력의 검사와 표시. 달력상 맞는 날짜인지와 받는 범위(1900-01-01 ~ 오늘)만 본다.
  * 시각의 표준시 변환과 차트 계산은 서버가 한다.
  */
+import { formatWheelTime, wheelToClock, type WheelTime } from '@/components/time-wheel';
 import { strings } from '@/content/strings';
+import { placeLabel } from '@/features/chart/place-sheet';
 import type { BirthInput } from '@/lib/api';
 
 /**
  * 기기에 보관하는 출생 정보. date 는 YYYY-MM-DD, time 은 HH:mm 또는 null("모름").
- * place 는 time 이 있으면 반드시 있고, time 이 null 이면 묻지 않으므로 null 이다(결정 020).
+ * place 는 time 이 있으면 반드시 있고, time 이 null 이면 고른 경우에만 있다(결정 042 — 서버에는 보내지 않는다).
  */
 export type BirthProfile = { date: string; time: string | null; place: { id: number; name: string } | null };
 
@@ -57,8 +59,8 @@ export function formatDateTyping(text: string): string {
   return [year, month, day.slice(0, 2)].filter(Boolean).join('-');
 }
 
-/** 시각 고르기(오전/오후 · 시 · 분)의 값 */
-export type TimePick = { period: 'AM' | 'PM'; hour: number; minute: number };
+/** 시각 고르기(오전/오후 · 시 · 분)의 값 — 시각 드럼(`components/time-wheel`)과 같은 모양 */
+export type TimePick = WheelTime;
 
 /** HH:mm 을 고르기 값으로. 꼴이 틀리면 null */
 export function toTimePick(time: string): TimePick | null {
@@ -70,15 +72,13 @@ export function toTimePick(time: string): TimePick | null {
 
 /** 고르기 값을 HH:mm 으로. 오전 12시는 00, 오후 12시는 12 */
 export function fromTimePick(pick: TimePick): string {
-  const h = (pick.hour % 12) + (pick.period === 'PM' ? 12 : 0);
-  return `${pad(h)}:${pad(pick.minute)}`;
+  return wheelToClock(pick);
 }
 
 /** 예: "오후 9:00". 꼴이 틀리면 빈 글자 */
 export function formatTimeDisplay(time: string): string {
   const pick = toTimePick(time);
-  if (!pick) return '';
-  return `${pick.period === 'AM' ? strings.detail.am : strings.detail.pm} ${pick.hour}:${pad(pick.minute)}`;
+  return pick ? formatWheelTime(pick) : '';
 }
 
 export type BirthForm = {
@@ -99,17 +99,21 @@ export function validateBirthInput(
   const errors: BirthFormErrors = {};
   if (!date.ok) errors.date = date.error;
   if (time && !time.ok) errors.time = time.error;
-  // 시각 "모름" 이면 태어난 곳을 묻지 않는다. 앞서 골라 둔 곳이 있어도 보내지도 보관하지도 않는다(결정 020).
-  const place = form.timeUnknown ? null : form.place;
+  // 시각을 몰라도 태어난 곳 칸은 받는다(결정 042). 그때는 없어도 되고, 골랐으면 기기에만 두고 서버에는 보내지 않는다
+  // (시각이 없으면 서버가 곳을 읽지 않는다, 결정 020 의 서버 계약).
+  const place = form.place;
   if (!form.timeUnknown && !place) errors.place = E.placeRequired;
   if (!date.ok || (time && !time.ok) || errors.place) return { ok: false, errors };
   const timeValue = time ? time.value : null;
   return {
     ok: true,
-    input: { date: date.value, time: timeValue, placeId: place ? place.id : null },
+    input: { date: date.value, time: timeValue, placeId: place && timeValue !== null ? place.id : null },
     profile: { date: date.value, time: timeValue, place: place ? { id: place.id, name: place.name } : null },
   };
 }
+
+/** 두 출생 정보가 기기에서 같은 입력인가(날짜 · 시각 · 곳 — 시각 "모름" 이어도 곳까지 본다). 같으면 차트를 다시 받지 않는다 */
+export const sameBirth = (a: BirthProfile, b: BirthProfile) => a.date === b.date && a.time === b.time && a.place?.id === b.place?.id;
 
 /** 보관된 출생 정보를 서버 요청 모양으로. 시각 "모름" 이면 placeId 를 보내지 않는다(null) */
 export function birthInputOf(profile: BirthProfile): BirthInput {
@@ -126,4 +130,17 @@ export function formatBirthSummary(profile: BirthProfile): string {
   const day = `${y}. ${mo}. ${d}.`;
   if (profile.time === null) return `${day} · ${strings.home.timeLabel} ${strings.home.timeUnknownValue}`;
   return [`${day} ${formatTimeDisplay(profile.time)}`, profile.place?.name].filter(Boolean).join(' · ');
+}
+
+/**
+ * 마이 별명 카드의 출생 정보 한 줄(결정 056, 보드 16): "1999년 3월 8일 · 오후 2:10 · 서울 강남구"(시 · 도는 짧은 이름).
+ * 시각 "모름" 이면 곳 없이 "1999년 3월 8일 · 시각 모름". 곳 이름을 몰라 비어 있으면 곳 칸을 뺀다.
+ */
+export function formatBirthLine(profile: BirthProfile): string {
+  const B = strings.my.birthLine;
+  const [y, mo, d] = profile.date.split('-').map(Number);
+  const day = `${y}${B.year}${mo}${B.month}${d}${B.day}`;
+  if (profile.time === null) return [day, B.timeUnknown].join(strings.my.card.separator);
+  const place = profile.place?.name ? placeLabel(profile.place.name) : null;
+  return [day, formatTimeDisplay(profile.time), place].filter(Boolean).join(strings.my.card.separator);
 }

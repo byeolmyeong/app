@@ -2,12 +2,12 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Spacing } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Spacing } from '@/constants/theme';
 
 export type DataTableColumn = {
   key: string;
   title?: string;
-  align?: 'left' | 'right';
+  align?: 'left' | 'center' | 'right';
   /** 칸 너비 비율. 기본 1 */
   flex?: number;
   /** 이 칸의 글씨를 굵게 */
@@ -23,7 +23,7 @@ export type DataTableProps = {
   header?: boolean;
 };
 
-/** 옛 달력의 표처럼 읽히는 수치 표. 머리줄 아래 먹 선, 줄마다 옅은 선. */
+/** 옛 달력의 표처럼 읽히는 수치 표. 머리줄 아래 본문색 선, 줄마다 옅은 선. */
 export function DataTable({ columns, rows, header = true }: DataTableProps) {
   return (
     <View>
@@ -45,7 +45,7 @@ export function DataTable({ columns, rows, header = true }: DataTableProps) {
                 {cell}
               </Txt>
             ) : (
-              <View key={c.key} style={{ flex: c.flex ?? 1 }}>
+              <View key={c.key} style={{ flex: c.flex ?? 1, alignItems: c.align === 'center' ? 'center' : undefined }}>
                 {cell}
               </View>
             );
@@ -64,5 +64,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs },
   headerRow: { paddingBottom: Spacing.xxs, borderBottomWidth: LineWidth, borderBottomColor: Colors.ink },
   bodyRow: { paddingVertical: Spacing.xs, borderBottomWidth: LineWidth, borderBottomColor: Colors.hair },
-  bold: { fontWeight: '700' },
+  bold: { fontWeight: FontWeight.semibold },
 });

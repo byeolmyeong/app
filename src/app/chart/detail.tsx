@@ -22,7 +22,7 @@ type TabKey = keyof typeof S.tabs;
 export default function ChartDetailScreen() {
   const { loaded, chart, profile } = useBirthProfile();
   const [tab, setTab] = useState<TabKey>('planets');
-  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (!chart || !profile)
     return (
@@ -62,15 +62,17 @@ export default function ChartDetailScreen() {
       aspectCell: <BodyCell name={String(r.aspect)} meaning={String(r.meaning)} />,
     }));
   } else {
+    // 행성 표는 머리 줄과 칸 모두 가운데(천체 칸의 쉬운 말 · 역행 포함, 소유자 2026-11-21)
+    const center = 'center' as const;
     columns = [
-      { key: 'bodyCell', title: C.body, flex: 1.5 },
-      { key: 'sign', title: C.sign },
-      { key: 'degree', title: C.degree, align: right },
-      ...(withHouses ? [{ key: 'house', title: C.house, align: right }] : []),
+      { key: 'bodyCell', title: C.body, flex: 1.5, align: center },
+      { key: 'sign', title: C.sign, align: center },
+      { key: 'degree', title: C.degree, align: center },
+      ...(withHouses ? [{ key: 'house', title: C.house, align: center }] : []),
     ];
     rows = planetRows(chart).map((r) => ({
       ...r,
-      bodyCell: <BodyCell name={String(r.body)} retrograde={r.retrograde === true} meaning={String(r.meaning)} />,
+      bodyCell: <BodyCell name={String(r.body)} retrograde={r.retrograde === true} meaning={String(r.meaning)} center />,
     }));
   }
 

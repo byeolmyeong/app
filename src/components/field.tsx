@@ -1,48 +1,54 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import {
-  Animated,
-  Easing,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-  type TextInputProps,
-  type TextStyle,
-} from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps, type TextStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { inputText } from '@/components/input-text';
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Radius, Sizes, Spacing, Typography } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Radius, Sizes, Spacing } from '@/constants/theme';
 
 export type FieldProps = {
   label: string;
+  /** 라벨 줄 오른쪽에 둘 것(시각 칸의 "모름" 체크, 결정 042) */
+  labelRight?: ReactNode;
   /** 입력칸 아래의 작은 도움말 */
   hint?: string;
   /** 있으면 도움말 대신 오류색(danger)으로 보여 준다 */
   error?: string;
+  /** 있으면(오류가 없을 때) 도움말 대신 됐다는 색(success)으로 보여 준다 — 닉네임 "사용할 수 있는 닉네임이에요"(결정 068 의 6) */
+  success?: string;
   /** 입력칸. `FieldInput`(치는 칸)이나 `FieldSelect`(눌러서 고르는 칸)를 넣는다 */
   children: ReactNode;
 };
 
-/** 라벨(위) · 입력칸 · 도움말 또는 오류(아래). */
-export function Field({ label, hint, error, children }: FieldProps) {
+/** 라벨(위, 오른쪽에 덧붙일 것) · 입력칸 · 도움말 또는 오류(아래). 결정 042 시안의 모양이다. */
+export function Field({ label, labelRight, hint, error, success, children }: FieldProps) {
   return (
     <View style={styles.field}>
-      <Txt variant="table">{label}</Txt>
+      <View style={styles.labelRow}>
+        <Txt variant="captionStrong" color="gray">
+          {label}
+        </Txt>
+        {labelRight}
+      </View>
       {typeof children === 'string' ? (
         <View style={styles.box}>
-          <Txt variant="body">{children}</Txt>
+          <Txt variant="input" style={styles.value}>
+            {children}
+          </Txt>
         </View>
       ) : (
         children
       )}
       {error ? (
-        <Txt variant="label" color="danger">
+        <Txt variant="caption" color="danger">
           {error}
         </Txt>
+      ) : success ? (
+        <Txt variant="caption" color="success">
+          {success}
+        </Txt>
       ) : hint ? (
-        <Txt variant="label" color="hint">
+        <Txt variant="caption" color="hint">
           {hint}
         </Txt>
       ) : null}
@@ -51,24 +57,33 @@ export function Field({ label, hint, error, children }: FieldProps) {
 }
 
 /**
- * 치는 입력칸. 회색으로 채운 높이 56 칸이고, 포커스면 초록 테두리, 틀렸으면 오류 테두리.
- * `multiline` 이면 여러 줄 높이의 칸이 되고 글은 위에서부터 적힌다.
+ * 치는 입력칸. 떠 있는 면(raised) 에 옅은 테두리의 높이 52 칸이고, 포커스면 주색 테두리, 틀렸으면 오류 테두리(결정 042 시안).
+ * 값은 medium, 자리 글자는 regular 다. `multiline` 이면 여러 줄 높이의 칸이 되고 글은 위에서부터 적힌다.
+ * `trailing` 은 칸 안 오른쪽에 둔다(닉네임의 글자 수).
  */
 export function FieldInput({
   invalid = false,
   multiline = false,
+  trailing,
+  boxTestID,
   style,
   onFocus,
   onBlur,
   ...rest
-}: TextInputProps & { invalid?: boolean }) {
+}: TextInputProps & { invalid?: boolean; trailing?: ReactNode; boxTestID?: string }) {
   const [focused, setFocused] = useState(false);
+  const empty = !rest.value;
   return (
-    <View style={[styles.box, multiline && styles.area, focused && styles.focused, invalid && styles.invalid]}>
+    <View
+      testID={boxTestID}
+      style={[styles.box, trailing ? styles.withTrailing : null, multiline && styles.area, focused && styles.focused, invalid && styles.invalid]}>
       <TextInput
         multiline={multiline}
         placeholderTextColor={Colors.hint}
-        style={[styles.input, multiline && styles.areaInput, style]}
+        selectionColor={Colors.primary}
+        cursorColor={Colors.primary}
+        // 글자 단계는 치는 칸에 맞게(iOS 한 줄은 lineHeight 없이 · 안드로이드는 세로 가운데 — 글자가 칸의 세로 가운데에 온다)
+        style={[inputText('input', { multiline }), styles.input, empty && styles.placeholder, trailing ? styles.inputFlex : null, multiline && styles.areaInput, style]}
         onFocus={(e) => {
           setFocused(true);
           onFocus?.(e);
@@ -79,12 +94,10 @@ export function FieldInput({
         }}
         {...rest}
       />
+      {trailing}
     </View>
   );
 }
-
-/** 고르는 칸의 화살표가 도는 시간 */
-const ARROW_TURN_MS = 200;
 
 export type FieldSelectProps = {
   /** 고른 값. 없으면 placeholder 를 흐리게 보여 준다 */
@@ -98,7 +111,7 @@ export type FieldSelectProps = {
   testID?: string;
 };
 
-/** 눌러서 고르는 입력칸. 모양은 `FieldInput` 과 같고 오른쪽에 아래 화살표가 있다. 누르면 하단 시트를 연다. */
+/** 눌러서 고르는 입력칸. 모양은 `FieldInput` 과 같고 오른쪽에 아래 화살표가 있다(시트가 열려도 그대로 아래, 결정 042 시안). 누르면 하단 시트를 연다. */
 export function FieldSelect({
   value,
   placeholder,
@@ -108,18 +121,6 @@ export function FieldSelect({
   open = false,
   testID,
 }: FieldSelectProps) {
-  // 열리면 화살표가 반 바퀴 돌아 위를 향하고, 닫히면 되돌아온다.
-  const [turn] = useState(() => new Animated.Value(open ? 1 : 0));
-  useEffect(() => {
-    Animated.timing(turn, {
-      toValue: open ? 1 : 0,
-      duration: ARROW_TURN_MS,
-      easing: Easing.out(Easing.ease),
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-  }, [open, turn]);
-  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-
   return (
     <Pressable
       testID={testID}
@@ -127,45 +128,51 @@ export function FieldSelect({
       accessibilityState={{ disabled, expanded: open }}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.box, styles.select, open && styles.focused, invalid && styles.invalid]}
+      style={[styles.box, styles.select, disabled && styles.off, open && styles.focused, invalid && styles.invalid]}
     >
-      <Txt variant="body" color={disabled ? 'muted' : value ? 'ink' : 'hint'} style={value ? styles.value : undefined}>
+      <Txt variant="input" color={disabled ? 'muted' : value ? 'ink' : 'hint'} style={value ? styles.value : undefined}>
         {value ?? placeholder}
       </Txt>
-      <Animated.View style={{ transform: [{ rotate }] }}>
-        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <View testID="field-select-arrow">
+        <Svg width={Sizes.icon} height={Sizes.icon} viewBox="0 0 24 24" fill="none">
           <Path
             d="M6 9l6 6 6-6"
-            stroke={disabled ? Colors.muted : Colors.hint}
+            stroke={Colors.hint}
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </Svg>
-      </Animated.View>
+      </View>
     </Pressable>
   );
 }
 
-// 웹 브라우저가 그리는 파란 포커스 테두리는 끈다. 포커스는 칸의 초록 테두리로 보여 준다.
-const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle;
+// 웹 브라우저가 그리는 파란 포커스 테두리는 끈다. 포커스는 칸의 주색 테두리로 보여 준다. 커서는 주색(시트의 숨긴 커서를 물려받지 않게)
+const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none', caretColor: Colors.primary } : {}) as TextStyle;
 
 const styles = StyleSheet.create({
   field: { gap: Spacing.xs },
+  labelRow: { minHeight: Sizes.fieldLabelRow, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   box: {
     height: Sizes.inputHeight,
     justifyContent: 'center',
     paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.fill,
+    backgroundColor: Colors.raised,
     borderRadius: Radius,
     borderWidth: LineWidth,
-    borderColor: 'transparent',
+    borderColor: Colors.hair,
   },
+  withTrailing: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   area: { height: Sizes.textArea, paddingVertical: Spacing.md },
   areaInput: { flex: 1, textAlignVertical: 'top' },
   focused: { borderColor: Colors.primary },
   invalid: { borderColor: Colors.danger },
+  /** 고를 수 없게 흐려진 칸(시각 "모름") */
+  off: { backgroundColor: Colors.fieldOff, borderColor: Colors.fill },
   select: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  input: { ...Typography.body, fontWeight: '500', color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
-  value: { fontWeight: '500' },
+  input: { fontWeight: FontWeight.medium, color: Colors.ink, padding: 0, minWidth: 0, ...noOutline },
+  placeholder: { fontWeight: FontWeight.regular },
+  inputFlex: { flex: 1 },
+  value: { fontWeight: FontWeight.medium },
 });

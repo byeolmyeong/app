@@ -47,7 +47,7 @@ export default function SynastryEntryScreen() {
   // 계산하는 중과, 계산을 마쳐(idle 로 돌아온다) 결과 화면을 연 뒤에는 강제 업데이트를 미룬다(결정 027).
   // 이 화면은 결과 화면 아래에 남아 있으므로, 결과가 뜨기 전의 틈에도 바쁨이 이어진다.
   useGenerationBusy(state.status === 'calculating', state.status === 'idle');
-  const nav = <NavBar title={S.title} onBack={goBackOrHome} />;
+  const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
 
   async function onSubmit() {
     const birth = fields.validate();
@@ -73,7 +73,7 @@ export default function SynastryEntryScreen() {
     return (
       <Screen nav={nav}>
         <View style={styles.status}>
-          <Txt variant="heading">{E.calculating}</Txt>
+          <Txt variant="subhead">{E.calculating}</Txt>
           <Txt variant="table" color="gray">
             {E.calculatingNote}
           </Txt>

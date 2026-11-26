@@ -1,0 +1,173 @@
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+
+import { Button } from '@/components/button';
+import { NavBar } from '@/components/nav-bar';
+import { Screen } from '@/components/screen';
+import { Toast, useToast } from '@/components/toast';
+import { Txt } from '@/components/txt';
+import { useKeyboardHeight } from '@/components/use-keyboard-height';
+import { Colors, InquiryLayout as L, LineWidth, MyLayout, Radius, ScreenPaddingX, Sizes, Spacing, StateLayout, Typography } from '@/constants/theme';
+import { strings } from '@/content/strings';
+import { useSuspended } from '@/features/auth/suspension';
+import { CategoryChips } from '@/features/support/category-chips';
+import { checkInquiry, INQUIRY_BODY_MAX, INQUIRY_BODY_MIN, inquiryLength } from '@/features/support/inquiry';
+import { useInquiry } from '@/features/support/use-inquiry';
+import { useUpdateBusy } from '@/features/update/update-gate';
+import type { InquiryCategory } from '@/lib/api';
+
+const I = strings.inquiry;
+const F = I.form;
+
+const back = () => (router.canGoBack() ? router.back() : router.replace('/my/inquiries'));
+
+/**
+ * 새 문의(결정 058 의 2, 보드 16-8): 종류 칩 넷 · 내용(10~1000자, 글자 수) · 안내 한 줄 · 맨 아래 "보내기". 이메일 칸은 없다.
+ * 종류를 고르고 10자 이상 적어야 보낼 수 있다. 보내면 "문의를 보냈어요" → "문의 내역 보기"(내역이 쌓여 있으면 그리로 돌아가고, 없으면 내역으로 바꾼다).
+ * 보내지 못하면 이 화면에 머물며 짧은 알림(적은 글은 그대로, 결정 065 의 1). 적은 내용은 이 화면의 메모리에만 있다.
+ */
+export default function NewInquiryScreen() {
+  const [category, setCategory] = useState<InquiryCategory | null>(null);
+  const [body, setBody] = useState('');
+  const [focused, setFocused] = useState(false);
+  const { state, send } = useInquiry();
+  const { toast, show, hide } = useToast();
+  // 이용 정지 화면에서 왔으면 보낸 뒤 정지 화면으로 돌아간다(결정 065 의 5)
+  const suspended = useSuspended();
+  // 키패드가 떠 있으면 Screen 이 키패드 높이만큼 띄우고, 버튼은 키패드 12 위(결정 085)
+  const keyboard = useKeyboardHeight() > 0;
+  const sent = state.status === 'sent';
+  // 적어 둔 글이 있으면(아직 보내지 않았다) 강제 업데이트를 미룬다(결정 027)
+  useUpdateBusy(!sent && body !== '');
+
+  if (sent)
+    return (
+      <Screen scroll={false} nav={<View style={styles.blankNav} />}>
+        <View style={styles.sentBody}>
+          <View aria-hidden importantForAccessibility="no-hide-descendants" style={styles.sentIcon}>
+            <Svg width={L.sent.glyph} height={L.sent.glyph} viewBox="0 0 24 24" fill="none">
+              <Path d="M5 12.5L10 17L19 7.5" stroke={Colors.accentText} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </View>
+          <Txt variant="title" accessibilityRole="header" style={styles.sentTitle}>
+            {I.sent.title}
+          </Txt>
+          <Txt color="gray" keepAll style={styles.sentText}>
+            {I.sent.body}
+          </Txt>
+        </View>
+        <View style={styles.footer}>
+          {suspended ? (
+            <Button label={I.sent.back} onPress={() => router.dismissTo('/suspended')} />
+          ) : (
+            <Button label={I.sent.toList} onPress={() => router.dismissTo('/my/inquiries')} />
+          )}
+        </View>
+      </Screen>
+    );
+
+  const check = checkInquiry({ category, body });
+  const sending = state.status === 'sending';
+  const length = inquiryLength(body);
+
+  async function submit() {
+    if (!check.ok || sending) return;
+    const res = await send(check.input);
+    if (res === null || res.ok) return;
+    const message =
+      res.error === 'NETWORK' || res.error === 'LIMIT' ? I.failed[res.error] : res.code === 'INVALID_BODY' ? I.failed.INVALID_BODY : I.failed.OTHER;
+    show('error', message);
+  }
+
+  return (
+    <Screen scroll={false} avoidKeyboard nav={<NavBar chevron title={F.title} onBack={back} />}>
+      <View style={styles.fill}>
+        <ScrollView style={styles.fill} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.group}>
+            <Txt variant="captionStrong" color="gray">
+              {F.categoryLabel}
+            </Txt>
+            <CategoryChips value={category} onChange={setCategory} />
+          </View>
+          <View style={styles.group}>
+            <Txt variant="captionStrong" color="gray">
+              {F.bodyLabel}
+            </Txt>
+            <View style={[styles.box, focused && styles.boxFocused]}>
+              <TextInput
+                accessibilityLabel={F.bodyLabel}
+                multiline
+                value={body}
+                onChangeText={setBody}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder={F.placeholder}
+                placeholderTextColor={Colors.hint}
+                textAlignVertical="top"
+                style={styles.input}
+              />
+              <Txt variant="caption" color={length > INQUIRY_BODY_MAX ? 'danger' : 'hint'} style={styles.count}>
+                {`${length}${F.countSeparator}${INQUIRY_BODY_MAX}`}
+              </Txt>
+            </View>
+            {/* 적기 시작했는데 10자가 안 되면 왜 보낼 수 없는지 알린다(소유자 2026-11-20) */}
+            {body.trim() !== '' && length < INQUIRY_BODY_MIN ? (
+              <Txt variant="caption" color="danger">
+                {F.tooShort}
+              </Txt>
+            ) : null}
+            <Txt variant="caption" color="hint" keepAll>
+              {F.hint}
+            </Txt>
+          </View>
+        </ScrollView>
+        <View style={[styles.footer, keyboard && styles.footerKeyboard]}>
+          {/* 알림이 버튼 폭 그대로 뜨게 여백 없는 칸으로 감싼다 */}
+          <View>
+            <Toast toast={toast} onClose={hide} above="button" />
+            <Button label={F.submit} disabled={!check.ok || sending} onPress={() => void submit()} />
+          </View>
+        </View>
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  /** 머리 아래 12, 묶음 사이 22, 이름표 · 칸 · 안내 사이 8(보드 16-8) */
+  content: { gap: L.groupGap, paddingTop: MyLayout.gap, paddingHorizontal: ScreenPaddingX, paddingBottom: Spacing.md },
+  group: { gap: Spacing.xs },
+  box: {
+    height: L.body.height,
+    paddingVertical: L.body.paddingV,
+    paddingHorizontal: L.body.paddingH,
+    borderRadius: Radius,
+    borderWidth: LineWidth,
+    borderColor: Colors.hair,
+    backgroundColor: Colors.raised,
+  },
+  boxFocused: { borderColor: Colors.primary },
+  input: { ...Typography.input, flex: 1, padding: 0, color: Colors.ink },
+  count: { alignSelf: 'flex-end' },
+  footer: { paddingHorizontal: ScreenPaddingX, paddingBottom: StateLayout.bottom },
+  /** 키패드가 떠 있으면 버튼과 키패드 사이 12(결정 085) */
+  footerKeyboard: { paddingBottom: Sizes.keyboardGap },
+  /** 보냈어요: 머리 자리(56)는 비워 두고, 그림 · 제목 · 설명을 가운데에서 조금 위로(보드 16-8) */
+  blankNav: { height: Sizes.stepHeader },
+  sentBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: ScreenPaddingX, paddingBottom: L.sent.lift },
+  sentIcon: {
+    width: L.sent.icon,
+    height: L.sent.icon,
+    borderRadius: L.sent.icon / 2,
+    borderWidth: LineWidth,
+    borderColor: Colors.hair,
+    backgroundColor: Colors.raised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sentTitle: { marginTop: L.sent.titleTop, textAlign: 'center' },
+  sentText: { marginTop: L.sent.bodyTop, textAlign: 'center' },
+});

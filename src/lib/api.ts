@@ -78,17 +78,131 @@ export type ProviderCredential =
   | { provider: 'KAKAO'; code: string; redirectUri: string };
 
 /** 로그인 결과: 계정이 있으면 세션(웹은 token 이 null), 처음 온 사람은 가입권 */
-export type LoginResult = { status: 'SIGNED_IN'; token: string | null } | { status: 'SIGNUP_REQUIRED'; signupToken: string };
+export type LoginResult =
+  | { status: 'SIGNED_IN'; token: string | null }
+  /** expiresAt: 가입권이 끝나는 때(ms). 서버가 주지 않았거나 읽을 수 없으면 없다 */
+  | { status: 'SIGNUP_REQUIRED'; signupToken: string; expiresAt?: number };
 
 /** 가입 결과. 웹은 token 이 null 이다 */
 export type SignupResult = { token: string | null };
 
+/**
+ * `POST /auth/signup` 에 출생 정보와 함께 보내는 가입 단계의 값(결정 042). avatar 는 정수 1~8, 동의는 참거짓이다(서버가 타입을 정확히 본다).
+ * termsVersion · privacyVersion 은 `src/content/legal-versions.ts` 의 문자열 그대로다.
+ */
+export type SignupExtra = {
+  nickname: string;
+  avatar: number;
+  termsVersion: string;
+  privacyVersion: string;
+  pushConsent: boolean;
+  marketingConsent: boolean;
+};
+
+/** `POST /auth/nickname-check` 의 응답. 영문 대소문자는 같은 이름으로 본다(결정 042) */
+export type NicknameAvailability = { available: boolean };
+
+/**
+ * "이렇게 풀이한 이유" 의 근거 하나(서버 결정 031, 앱 결정 054). 글자는 `Chart` 의 body · sign · type 과 같고, 상승점 · 중천은 "ASC" · "MC" 다.
+ * 시각을 모르면 house 키 · CLUSTER · ASC · MC 가 오지 않는다. 값이 없는 키는 오지 않는다.
+ */
+export type KnownBasisItem =
+  | { kind: 'PLACEMENT'; body: string; sign: string; house?: number }
+  | { kind: 'CLUSTER'; house: number; bodies: string[] }
+  | { kind: 'ASPECT'; a: string; b: string; type: string }
+  | { kind: 'RULER'; body: string; ruler: string }
+  | { kind: 'TRANSIT'; mover: string; target?: string; type?: string; house?: number };
+
+/** 모르는 kind 는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
+export type BasisItem = KnownBasisItem | { kind: string };
+
+/** 근거의 때: 태어날 때 · 지금 지나는 시기 · 그날. 모르는 때는 풀이 전체를 거절하지 않고 받아 두고, 그리는 쪽이 그 이유 줄만 숨긴다(결정 054 의 7) */
+export const REASON_WHENS = ['BIRTH', 'NOW', 'DAY'] as const;
+export type ReasonWhen = (typeof REASON_WHENS)[number];
+export type Reason = { when: ReasonWhen | (string & {}); items: BasisItem[] };
+
+/** "이 풀이에 쓰인 별" 하나: 놓인 자리는 body + sign, 하우스 모임은 house + count, 각도 · 다스리는 별은 body 하나 */
+export type Star = { body?: string; sign?: string; house?: number; count?: number };
+
 export type Reading = {
   headline: string;
-  sections: { title: string; body: string; basis: string[] }[];
+  /** reason 은 요약 해석 v2 의 근거 구조. basis 는 옛 근거 낱말로 서버 S⑦ 까지만 함께 온다(앱은 읽지 않는다) */
+  sections: { title: string; body: string; reason: Reason; basis?: string[] }[];
   strengths: string[];
+  /** 보완점 2(요약 해석 v2) */
   cautions: string[];
+  /** 요약 해석 v2 의 만든 때(UTC ISO-8601, 서버 결정 030 · 031). 옛 응답에는 없다 — 홈의 "별명을 받은 지 N일"(결정 047) */
+  createdAt?: string;
 };
+
+/** 나 탭 풀이의 영역(결정 048). 서버는 이 순서로 다섯 영역을 모두 준다 */
+export const ME_AREAS = ['PERSONALITY', 'LOVE', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
+export type MeArea = (typeof ME_AREAS)[number];
+
+/**
+ * 나 탭 풀이의 한 영역. 공통 칸 + 영역마다의 칸 하나(그 영역이 아니면 키가 없다): 성격 glance · 연애 practices + reason ·
+ * 관계 closer · 일 workStyle(서버가 차트로 셈한 10~90, 0 쪽 혼자서 · 계획대로 · 꼼꼼하게) · 감정 shaken. 연애는 문단이 없다.
+ */
+export type MeAreaReport = {
+  area: MeArea;
+  title: string;
+  keywords: [string, string, string];
+  stars: Star[];
+  paragraphs: { title: string; body: string; reason: Reason }[];
+  glance?: { shining: [string, string]; tiring: [string, string] };
+  practices?: { title: string; body: string }[];
+  reason?: Reason;
+  closer?: { first: string; close: string; longtime: string };
+  workStyle?: { together: number; flexible: number; fast: number };
+  shaken?: { when: string; comfort: string };
+};
+
+export type MeReport = { areas: MeAreaReport[] };
+
+/** `GET /me-report`. 풀이는 DONE 일 때만 온다(지금 프로필의 차트 기준 — 출생 정보를 고치면 NONE) */
+export type MeReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: MeReport };
+
+/** `POST /me-report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
+export type MeReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
+
+/**
+ * `GET /account` · `PATCH /account` 에서 앱이 쓰는 값 — 홈 별명 카드와 마이 · 계정 화면이 함께 쓴다(결정 047 · 056):
+ * 닉네임 · 프로필 그림(계약은 1~8, 옛 계정은 둘 다 null — 서버 결정 025 · 028) · 이메일(옛 계정 null) · 공급자 · 마케팅 수신 동의 ·
+ * 이용 정지 여부(`suspended` — 없는 옛 서버는 false, 사유는 오지 않는다). 공급자는 계약이 `GOOGLE | APPLE | KAKAO | DEV` 지만
+ * 모르는 이름도 받는다 — 화면이 아는 것만 그린다.
+ */
+export type MyAccount = {
+  nickname: string | null;
+  avatar: number | null;
+  email: string | null;
+  provider: string;
+  marketingConsent: boolean;
+  suspended: boolean;
+  /** 푸시 알림 받기 동의(서버 결정 027). 이 칸이 없는 옛 서버는 알림 화면이 "받지 못함" 으로 본다 */
+  pushConsent?: boolean;
+  /**
+   * 오늘의 하늘 알림 스위치 · 받는 시간 "HH:mm"(24시간 · 5분 단위, 서버 S10-2). 사용자가 직접 정한 적 없으면 서버가 `pushConsent` 를 따라 준다 —
+   * 그대로 그린다. 보내기는 푸시 동의와 이 스위치가 둘 다 켜졌을 때만이다. 이 칸이 없는 서버면 둘 다 없다
+   */
+  todaySkyPush?: boolean;
+  todaySkyTime?: string;
+};
+
+/** `POST /push/devices` 의 몸통(서버 S10-2): Expo 푸시 토큰 · 기기 종류 */
+export type PushDevice = { expoToken: string; platform: 'IOS' | 'ANDROID' };
+
+/** `PATCH /account` 의 요청 — 보낸 칸만 바꾼다(서버 결정 025 · 027 · 028, S10-2). 동의 · 오늘의 하늘은 알림 화면(계획 A8-2)과 홈의 알림 받기 권유가 보낸다 */
+export type AccountPatch = {
+  nickname?: string;
+  avatar?: number;
+  pushConsent?: boolean;
+  marketingConsent?: boolean;
+  todaySkyPush?: boolean;
+  todaySkyTime?: string;
+};
+
+/** 오늘의 하늘 받는 시간의 꼴: "HH:mm" 24시간, 5분 단위(서버 S10-2 — 아니면 400 `INVALID_TODAY_SKY_TIME`) */
+export const isTodaySkyTime = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5][05]$/.test(v);
 
 /** 방향성 제시의 주제: 이성 · 미래(지금의 시기) · 궁합(궁합 한 건). 주제가 달라도 글의 모양은 같다 */
 export const DIRECTION_TOPICS = ['LOVE', 'FUTURE', 'SYNASTRY'] as const;
@@ -102,16 +216,6 @@ export type Direction = {
   topic: DirectionTopic;
   title: string;
   items: { title: string; body: string; basis: string[] }[];
-};
-
-/** 심층 리포트의 글 영역. 서버는 이 순서로 네 영역을 모두 준다. 다섯째 영역인 시기는 `Report.timing` 으로 따로 온다 */
-export const REPORT_AREAS = ['PERSONALITY', 'RELATIONSHIP', 'WORK', 'EMOTION'] as const;
-export type ReportArea = (typeof REPORT_AREAS)[number];
-
-export type ReportSection = {
-  area: ReportArea;
-  title: string;
-  paragraphs: { title: string; body: string; basis: string[] }[];
 };
 
 /** 시기의 날짜는 모두 한국 달력의 YYYY-MM-DD 글자다. 글자를 그대로 비교해 거르고 정렬한다(앱은 날짜를 계산하지 않는다) */
@@ -132,19 +236,34 @@ export type TimingMilestone = {
   body: string;
 };
 
-/** 나에게만 오는 구간. CHANGE 변화 · OPPORTUNITY 기회 · FATED 운명적 만남(시각을 알 때만). size 는 CHANGE 에만 있다 */
+/** 시기 자세히(14-3)의 01 무엇이 달라지나요 · 02 이렇게 지내 보세요 · 03 이 시기가 지나면(서버 결정 033) */
+export type TimingDetail = { changes: string; howTo: string; after: string };
+
+/** 시기의 영역: 일 · 사람·인연 · 나 자신 · 돈(시각을 모르면 돈이 없다) */
+export const LIFE_AREAS = ['PEOPLE', 'WORK', 'MONEY', 'SELF'] as const;
+export type LifeArea = (typeof LIFE_AREAS)[number];
+
+/**
+ * 나에게만 오는 구간. CHANGE 변화 · OPPORTUNITY 기회 · FATED 운명적 만남(시각을 알 때만). size 는 CHANGE 에만 있다.
+ * title 은 서버 표의 제목(이번 달 내내와 같은 말). 시기 풀이에서 모델이 쓴 구간(풀이를 만든 날에 걸쳐 있거나 10년 안에 시작)에만
+ * 한 줄 summary · 자세히 detail · 작은 실천 셋 practices · 근거 reason(`NOW`)이 있다 — 나머지는 키가 없다(서버 결정 033).
+ */
 export type TimingInterval = {
   id: string;
   kind: 'CHANGE' | 'OPPORTUNITY' | 'FATED';
   from: string;
   to: string;
-  area: 'PEOPLE' | 'WORK' | 'MONEY' | 'SELF';
+  area: LifeArea;
   size?: TimingSize;
   title: string;
   body: string;
+  summary?: string;
+  detail?: TimingDetail;
+  practices?: { title: string }[];
+  reason?: Reason;
 };
 
-/** 지금 나의 구간. 서버가 `GET /reports/me` 때마다 그날(date)로 만든다. 없는 값은 키가 없다 */
+/** 지금 나의 구간. 서버가 `GET /timing-report` 때마다 그날(date)로 만든다. 없는 값은 키가 없다 */
 export type TimingCurrent = {
   date: string;
   /** 오늘에 걸쳐 있는 구간. 없으면 빈 배열 */
@@ -155,24 +274,74 @@ export type TimingCurrent = {
   nextMilestone?: TimingMilestone;
   /** 오늘에서 가장 가까운 변곡점(지났든 아니든). 화면에서 강조한다 */
   nearestMilestone: MilestoneKind;
+  /** 시기 풀이의 대표 구간(오늘 걸친 구간 가운데 서버가 고른 것, 서버 결정 033). 걸친 구간이 없으면 키가 없다 */
+  mainId?: string;
 };
 
-/** 심층 리포트의 시기 영역. milestones 는 언제나 넷이 시간 순서로, intervals 는 시작 순서로 온다(서로 겹칠 수 있다) */
-export type ReportTiming = {
-  /** false 면 상승점 구간과 운명적 만남 구간이 빠져 있다 */
+/**
+ * 시기 풀이(결정 049 · 050, 서버 결정 033): 옛 심층 리포트의 시기 모양에 모델이 쓴 칸 · 대표 구간이 더해진 것. milestones 는 언제나 넷이
+ * 시간 순서로, intervals 는 시작 순서로 온다(서로 겹칠 수 있다). 지금(current)은 GET 할 때마다 그날로 붙는다.
+ */
+export type TimingReport = {
+  /** false 면 상승점 · 중천 · 하우스 · 버텍스가 대상인 구간(운명적 만남 · 돈)이 빠져 있다 */
   timeKnown: boolean;
   milestones: TimingMilestone[];
   intervals: TimingInterval[];
   current: TimingCurrent;
 };
 
-export type Report = { sections: ReportSection[]; timing: ReportTiming };
+/** `GET /timing-report`. 풀이는 DONE 일 때만 온다(지금 프로필의 차트 기준 — 출생 정보를 고치면 NONE) */
+export type TimingReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: TimingReport };
 
-/** `GET /reports/me`. 글은 DONE 일 때만 온다 */
-export type ReportState = { status: 'NONE' | 'WRITING' | 'FAILED' } | { status: 'DONE'; report: Report };
+/** `POST /timing-report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
+export type TimingReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
-/** `POST /reports` 의 응답(202). WRITING 쓰기 시작했거나 쓰는 중 · DONE 이미 써 둠 */
-export type ReportRequest = { status: 'WRITING' | 'DONE' };
+/** 눈여겨볼 날 · 그날의 하늘의 칩: 사람 · 일 · 마음(서버 결정 032 · 034). 모르는 칩은 받아 두고 그리는 쪽이 그 줄을 숨긴다 */
+export const DAY_CATEGORIES = ['PEOPLE', 'WORK', 'MIND'] as const;
+export type DayCategory = (typeof DAY_CATEGORIES)[number];
+
+/** "이번 달 내내" 한 줄: 그달에 걸친 시기 구간의 영역 · 표 제목 · 기간(그달 밖으로 이어질 수 있다) */
+export type MonthTheme = { area: LifeArea | (string & {}); title: string; from: string; to: string };
+
+/** 눈여겨볼 날 하나 = 달력의 점. reason 은 `{ when: DAY, items: [TRANSIT] }` */
+export type MonthDay = { date: string; category: DayCategory | (string & {}); text: string; reason: Reason };
+
+/**
+ * 이번 달(`GET /timing/month`, 서버 결정 032): month 는 계산한 달(`YYYY-MM` — 앱은 처음 받은 달로 앞뒤 한 달을 정한다),
+ * themes 0~2 · days 0~3(날짜 순). 서버가 요청 때 계산하고 저장하지 않는다(AI 없음).
+ */
+export type MonthSky = { month: string; timeKnown: boolean; themes: MonthTheme[]; days: MonthDay[] };
+
+/**
+ * 그날의 하늘(`POST /day-sky`, 서버 결정 034): 달력에서 누른 날(날짜 없으면 오늘 = 오늘의 하늘). 그날의 흐름 셋 · 이유(`DAY`) · 실천 셋.
+ * 소유자 · 차트 · 날짜마다 한 번 만들어 서버가 저장한다 — 다시 열면 같은 글. createdAt 은 만든 때(UTC)
+ */
+export type DaySky = {
+  date: string;
+  title: string;
+  category: DayCategory | (string & {});
+  flow: { people: string; work: string; mind: string };
+  reason: Reason;
+  practices: { title: string }[];
+  createdAt: string;
+};
+
+/** 알림함의 종류(결정 052 · 058, 서버 결정 035). 문구는 앱(`strings.notifications`)이 갖고 서버는 종류만 준다. 궁합 리포트는 1.0.0 앱이 숨긴다(결정 055) */
+export const NOTIFICATION_KINDS = ['READING_DONE', 'ME_REPORT_DONE', 'TIMING_REPORT_DONE', 'SYNASTRY_REPORT_DONE', 'INQUIRY_ANSWERED'] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+/** 알림 한 줄. 모르는 종류도 받아 두고 알림함이 그 줄만 숨긴다. synastryId · inquiryId 는 그 종류일 때만 있다. createdAt 은 UTC ISO-8601 */
+export type NotificationItem = {
+  id: string;
+  kind: NotificationKind | (string & {});
+  createdAt: string;
+  read: boolean;
+  synastryId?: string;
+  inquiryId?: string;
+};
+
+/** `GET /notifications`: 최근 30일 · 새것부터 · 100개까지. unread 는 30일 안의 안 읽은 수 */
+export type NotificationList = { unread: number; items: NotificationItem[] };
 
 /** 궁합의 관계 유형(결정 020). 서버가 유형마다 다른 가중치로 점수를 계산한다 */
 export const RELATIONS = ['LOVE', 'FRIEND', 'WORK', 'FAMILY'] as const;
@@ -242,12 +411,29 @@ export type SynastryReportState =
 /** `POST /synastry/{id}/report` 의 응답(202). FAILED 는 뒤에서 일할 자리가 없어 시작하지 못했다는 뜻 */
 export type SynastryReportRequest = { status: 'WRITING' | 'DONE' | 'FAILED' };
 
-/** 문의의 종류(결정 024). 계정 · 풀이/리포트 · 궁합 · 오류 신고 · 기타 */
-export const INQUIRY_CATEGORIES = ['ACCOUNT', 'READING', 'SYNASTRY', 'BUG', 'OTHER'] as const;
+/** 문의의 종류(결정 058, 서버 결정 039): 오류 · 제안 · 계정 · 기타. 옛 문의의 다른 값(READING · SYNASTRY · OTHER …)은 앱이 기타로 읽는다 */
+export const INQUIRY_CATEGORIES = ['BUG', 'IDEA', 'ACCOUNT', 'ETC'] as const;
 export type InquiryCategory = (typeof INQUIRY_CATEGORIES)[number];
 
-/** `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~2000자(유니코드 코드 포인트로 센다), replyEmail 은 답장을 받지 않으면 null */
-export type InquiryInput = { category: InquiryCategory; body: string; replyEmail: string | null };
+/**
+ * `POST /inquiries` 의 요청. body 는 앞뒤 공백을 뗀 10~1000자(유니코드 코드 포인트로 센다). 이메일 칸은 없다 —
+ * `replyEmail` 키를 보내면 서버가 옛 앱으로 보고 옛 규칙을 쓰므로 싣지 않는다(서버 결정 039 의 2).
+ */
+export type InquiryInput = { category: InquiryCategory; body: string };
+
+/**
+ * `GET /inquiries` · `GET /inquiries/{id}` 의 한 건에서 앱이 쓰는 값(결정 058). 모르는 종류는 `ETC`. 답(answer)이 있으면 답한 문의다 —
+ * 서버의 `status` 는 답이 있을 때만 `ANSWERED` 라 같은 뜻이고, 앱은 답의 유무로 본다. `emailed` 는 옛 앱이 이메일로 답을 받기로 한 문의
+ * (서버가 `replyEmail` 을 준 것 — 이메일 글자는 앱이 들고 있지 않는다).
+ */
+export type InquiryItem = {
+  id: string;
+  category: InquiryCategory;
+  body: string;
+  createdAt: string;
+  answer: { body: string; answeredAt: string } | null;
+  emailed: boolean;
+};
 
 /** `POST /inquiries` 의 응답(201). 접수된 문의의 식별자 */
 export type InquiryCreated = { id: string };
@@ -257,10 +443,12 @@ export type Faq = { id: string; question: string; answer: string };
 
 /**
  * `GET /app-config` 의 한 플랫폼 몫(결정 027). minVersion 은 점으로 나눈 숫자("1.2.0")이고 null 이면 아무도 막지 않는다.
+ * latestVersion 은 최신 버전(결정 059) — 이보다 낮으면 한 번 업데이트를 권한다. 이 칸을 내기 전의 옛 서버 응답에는 없어 null 로 읽는다.
  * message 는 관리자가 적은 안내(그냥 글자). blockNow 는 서버가 426 으로 바로 거절할지의 스위치다(앱은 판정에 쓰지 않는다).
  */
 export type PlatformConfig = {
   minVersion: string | null;
+  latestVersion: string | null;
   storeUrl: string | null;
   message: string | null;
   blockNow: boolean;
@@ -276,25 +464,53 @@ export type AppConfig = { ios: PlatformConfig; android: PlatformConfig; maintena
 export const SEASONS = ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'] as const;
 export type Season = (typeof SEASONS)[number];
 
+/** 해 별자리(공유 v2 내 별명 카드의 `sunSign` — 차트 계약의 sign 과 같은 값) */
+export const SIGNS = [
+  'ARIES',
+  'TAURUS',
+  'GEMINI',
+  'CANCER',
+  'LEO',
+  'VIRGO',
+  'LIBRA',
+  'SCORPIO',
+  'SAGITTARIUS',
+  'CAPRICORN',
+  'AQUARIUS',
+  'PISCES',
+] as const;
+export type Sign = (typeof SIGNS)[number];
+
 /**
- * 공유 카드(서버 결정 012). `kind` 로 가리는 네 모양이고 적힌 키가 전부다. 값이 없는 키는 오지 않는다.
+ * 공유 카드(서버 결정 012 · 036). `kind` 로 가리는 여덟 모양이고 적힌 키가 전부다. 값이 없는 키는 오지 않는다.
  * 출생 정보 · 근거 · 본문은 어느 카드에도 없다. SCORE 의 names 는 [공유하는 사람, 상대] 순서,
  * RANKING 의 entries 는 1~3명이고 name 은 서버가 만든 이니셜이거나(기본) 적은 이름 그대로다.
+ * 공유 v2 넷(NICKNAME · ME_AREA · DAY_SKY · NEXT_BIG, 결정 053)의 nickname 은 계정의 닉네임이고 옛 계정이라 없으면 키가 없다.
+ * DAY_SKY 의 date 는 그 날(YYYY-MM-DD, 한국 날짜), NEXT_BIG 의 year · age 는 서버가 셈한 다음 큰 마디의 해와 만 나이다.
  */
 export type ShareCard =
   | { kind: 'READING'; headline: string; keywords: [string, string, string] }
   | { kind: 'SCORE'; names: [string, string]; score: number; scoreLabel?: string; headline: string }
   | { kind: 'RANKING'; relation: Relation; entries: { name: string; score: number }[] }
-  | { kind: 'NEXT_TURN'; year: number; season: Season; theme: string };
+  | { kind: 'NEXT_TURN'; year: number; season: Season; theme: string }
+  | { kind: 'NICKNAME'; nickname?: string; sunSign: Sign; headline: string }
+  | { kind: 'ME_AREA'; nickname?: string; area: MeArea; title: string }
+  | { kind: 'DAY_SKY'; nickname?: string; date: string; title: string }
+  | { kind: 'NEXT_BIG'; nickname?: string; year: number; age: number; title: string };
 
 export type ShareKind = ShareCard['kind'];
 
-/** `POST /shares` 의 요청. myName 은 공유하는 사람을 부를 이름(1~20자), showNames 가 없으면 이니셜이다 */
+/**
+ * `POST /shares` 의 요청. myName 은 공유하는 사람을 부를 이름(1~20자), showNames 가 없으면 이니셜이다.
+ * 옛 READING · NEXT_TURN 은 앱이 더 만들지 않는다(결정 053 의 6 — 옛 링크의 카드는 ShareCard 로 계속 읽는다).
+ */
 export type ShareRequest =
-  | { kind: 'READING' }
   | { kind: 'SCORE'; synastryId: string; myName: string }
   | { kind: 'RANKING'; relation: Relation; showNames?: boolean }
-  | { kind: 'NEXT_TURN' };
+  | { kind: 'NICKNAME' }
+  | { kind: 'ME_AREA'; area: MeArea }
+  | { kind: 'DAY_SKY'; date: string }
+  | { kind: 'NEXT_BIG' };
 
 /** `POST /shares` 의 응답. card 는 `GET /shared/{shareId}` 가 주는 것과 같다 */
 export type ShareCreated = { shareId: string; card: ShareCard };
@@ -374,19 +590,161 @@ export function isPlaceList(v: unknown): v is Place[] {
 
 const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((item) => typeof item === 'string');
 
-/** 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다 */
+const isHouseNumber = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 12;
+const isOptionalHouse = (v: unknown) => v === undefined || isHouseNumber(v);
+const isNonEmptyText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+
+/** 아는 kind 는 제 필드가 계약의 모양이어야 한다. 모르는 kind 는 받는다(그 이유 줄만 숨긴다 — 결정 054 의 7) */
+function isBasisItem(v: unknown): v is BasisItem {
+  if (!isObject(v) || typeof v.kind !== 'string') return false;
+  switch (v.kind) {
+    case 'PLACEMENT':
+      return isNonEmptyText(v.body) && isNonEmptyText(v.sign) && isOptionalHouse(v.house);
+    case 'CLUSTER':
+      return isHouseNumber(v.house) && Array.isArray(v.bodies) && v.bodies.length > 0 && v.bodies.every(isNonEmptyText);
+    case 'ASPECT':
+      return isNonEmptyText(v.a) && isNonEmptyText(v.b) && isNonEmptyText(v.type);
+    case 'RULER':
+      return isNonEmptyText(v.body) && isNonEmptyText(v.ruler);
+    case 'TRANSIT':
+      // 지나가는 별 × 내 별의 각도(target + type), 또는 지나가는 별 × 내 하우스(house)
+      return (
+        isNonEmptyText(v.mover) &&
+        (v.target === undefined || isNonEmptyText(v.target)) &&
+        (v.type === undefined || isNonEmptyText(v.type)) &&
+        isOptionalHouse(v.house) &&
+        ((v.target !== undefined && v.type !== undefined) || v.house !== undefined)
+      );
+    default:
+      return true;
+  }
+}
+
+/** 근거는 1~2개. 때(when)는 비지 않은 글자면 받는다 — 모르는 때는 그 이유 줄만 숨긴다(리뷰 #49) */
+export function isReason(v: unknown): v is Reason {
+  return (
+    isObject(v) &&
+    isNonEmptyText(v.when) &&
+    Array.isArray(v.items) &&
+    v.items.length >= 1 &&
+    v.items.length <= 2 &&
+    v.items.every(isBasisItem)
+  );
+}
+
+/** 요약 해석 v2 의 보완점 수(서버 결정 030) */
+const READING_CAUTIONS = 2;
+
+/**
+ * 요약 해석 v2: 문단마다 근거 구조(reason)가 있어야 받는다 — 옛 모양(근거 낱말만 · 보완점 3)으로 기기에 보관된 글은 여기서 걸러져
+ * 다시 받는다(결정 048 의 8). 옛 근거 낱말(basis)은 서버 S⑦ 까지 함께 오고 그 뒤에 빠진다 — 있으면 낱말 목록이어야 한다.
+ * 응답의 `shareId` 는 더 쓰지 않는 필드라 보지 않는다(서버 결정 012). 공유는 `POST /shares` 로 만든다.
+ */
 export function isReading(v: unknown): v is Reading {
   return (
     isObject(v) &&
     typeof v.headline === 'string' &&
     Array.isArray(v.sections) &&
     v.sections.every(
-      (s) => isObject(s) && typeof s.title === 'string' && typeof s.body === 'string' && isStringList(s.basis),
+      (s) =>
+        isObject(s) &&
+        typeof s.title === 'string' &&
+        typeof s.body === 'string' &&
+        isReason(s.reason) &&
+        (s.basis === undefined || isStringList(s.basis)),
     ) &&
     isStringList(v.strengths) &&
-    isStringList(v.cautions)
+    isStringList(v.cautions) &&
+    v.cautions.length === READING_CAUTIONS &&
+    (v.createdAt === undefined || typeof v.createdAt === 'string')
   );
 }
+
+const isStar = (v: unknown): v is Star =>
+  isObject(v) &&
+  (v.body === undefined || isNonEmptyText(v.body)) &&
+  (v.sign === undefined || isNonEmptyText(v.sign)) &&
+  isOptionalHouse(v.house) &&
+  (v.count === undefined || Number.isInteger(v.count));
+
+const isTextList = (v: unknown, length: number) => Array.isArray(v) && v.length === length && v.every(isNonEmptyText);
+
+/** 일 방식 막대의 값: 정수, 막대 위에 놓일 자리(0~100). 범위 10~90 은 서버의 몫이라 판정하지 않는다 */
+const isBarValue = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 100;
+
+/** 영역마다의 칸(키 이름)과 그 모양. 그 영역이 아니면 그 키가 없어야 한다 */
+const ME_AREA_FIELDS: Record<MeArea, Record<string, (v: unknown) => boolean>> = {
+  PERSONALITY: { glance: (v) => isObject(v) && isTextList(v.shining, 2) && isTextList(v.tiring, 2) },
+  LOVE: {
+    practices: (v) =>
+      Array.isArray(v) && v.length === 3 && v.every((p) => isObject(p) && isNonEmptyText(p.title) && isNonEmptyText(p.body)),
+    reason: isReason,
+  },
+  RELATIONSHIP: { closer: (v) => isObject(v) && isNonEmptyText(v.first) && isNonEmptyText(v.close) && isNonEmptyText(v.longtime) },
+  WORK: { workStyle: (v) => isObject(v) && isBarValue(v.together) && isBarValue(v.flexible) && isBarValue(v.fast) },
+  EMOTION: { shaken: (v) => isObject(v) && isNonEmptyText(v.when) && isNonEmptyText(v.comfort) },
+};
+const ME_EXTRA_KEYS = Object.values(ME_AREA_FIELDS).flatMap((fields) => Object.keys(fields));
+/** 연애 말고 문단은 정확히 넷, 연애는 없다 */
+const ME_PARAGRAPHS = 4;
+
+function isMeAreaReport(v: unknown, area: MeArea): v is MeAreaReport {
+  if (!isObject(v) || v.area !== area || !isNonEmptyText(v.title) || !isTextList(v.keywords, 3)) return false;
+  if (!Array.isArray(v.stars) || v.stars.length < 1 || v.stars.length > 3 || !v.stars.every(isStar)) return false;
+  const paragraphs = area === 'LOVE' ? 0 : ME_PARAGRAPHS;
+  if (
+    !Array.isArray(v.paragraphs) ||
+    v.paragraphs.length !== paragraphs ||
+    !v.paragraphs.every((p) => isObject(p) && isNonEmptyText(p.title) && isNonEmptyText(p.body) && isReason(p.reason))
+  )
+    return false;
+  const own = ME_AREA_FIELDS[area];
+  return ME_EXTRA_KEYS.every((key) => (key in own ? own[key](v[key]) : v[key] === undefined));
+}
+
+/** 다섯 영역이 계약의 순서대로 모두 있고, 영역마다 제 칸만 있어야 한다 */
+export function isMeReport(v: unknown): v is MeReport {
+  return (
+    isObject(v) &&
+    Array.isArray(v.areas) &&
+    v.areas.length === ME_AREAS.length &&
+    v.areas.every((a, i) => isMeAreaReport(a, ME_AREAS[i]))
+  );
+}
+
+export function isMeReportState(v: unknown): v is MeReportState {
+  if (!isObject(v)) return false;
+  if (v.status === 'DONE') return isMeReport(v.report);
+  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+const isMeReportRequest = (v: unknown): v is MeReportRequest =>
+  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
+
+export function isMyAccount(v: unknown): v is MyAccount {
+  return (
+    isObject(v) &&
+    (v.nickname === null || typeof v.nickname === 'string') &&
+    // 계약은 1~8 이지만 모르는 번호여도 닉네임은 받는다 — 모르는 그림은 그리는 쪽이 숨긴다(isAvatarId)
+    (v.avatar === null || (typeof v.avatar === 'number' && Number.isInteger(v.avatar))) &&
+    (v.email === null || typeof v.email === 'string') &&
+    typeof v.provider === 'string' &&
+    typeof v.marketingConsent === 'boolean' &&
+    (v.suspended === undefined || typeof v.suspended === 'boolean')
+  );
+}
+
+const myAccountOf = (v: MyAccount): MyAccount => ({
+  nickname: v.nickname,
+  avatar: v.avatar,
+  email: v.email,
+  provider: v.provider,
+  marketingConsent: v.marketingConsent,
+  suspended: v.suspended === true,
+  // 알림 칸은 꼴이 맞을 때만 둔다 — 없거나 틀리면 그 칸만 없는 것으로(홈 · 마이 · 정지 문이 같은 계정을 쓰니 계정 전체를 버리지 않는다, #59 리뷰)
+  ...(typeof v.pushConsent === 'boolean' ? { pushConsent: v.pushConsent } : {}),
+  ...(typeof v.todaySkyPush === 'boolean' && isTodaySkyTime(v.todaySkyTime) ? { todaySkyPush: v.todaySkyPush, todaySkyTime: v.todaySkyTime } : {}),
+});
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
@@ -404,16 +762,31 @@ const isMilestone = (v: unknown): v is TimingMilestone =>
   typeof v.title === 'string' &&
   typeof v.body === 'string';
 
-/** 크기는 변화 구간에만 있고 다른 종류에는 키가 없다 */
+/** 시기 풀이의 실천 수(서버 결정 033 · 034 — 구간 · 그날 모두 셋) */
+const PRACTICE_COUNT = 3;
+
+const isPractices = (v: unknown) =>
+  Array.isArray(v) && v.length === PRACTICE_COUNT && v.every((p) => isObject(p) && isNonEmptyText(p.title));
+
+const isTimingDetail = (v: unknown) => isObject(v) && isNonEmptyText(v.changes) && isNonEmptyText(v.howTo) && isNonEmptyText(v.after);
+
+/**
+ * 크기는 변화 구간에만 있고 다른 종류에는 키가 없다. 모델이 쓴 칸(한 줄 · 자세히 · 실천 셋 · 근거)은 있으면 제 모양이어야 한다
+ * (시기 풀이의 구간에만 있다 — 서버 결정 033)
+ */
 const isInterval = (v: unknown): v is TimingInterval =>
   isObject(v) &&
   typeof v.id === 'string' &&
   (v.kind === 'CHANGE' ? isSize(v.size) : (v.kind === 'OPPORTUNITY' || v.kind === 'FATED') && v.size === undefined) &&
   isDate(v.from) &&
   isDate(v.to) &&
-  ['PEOPLE', 'WORK', 'MONEY', 'SELF'].includes(v.area as string) &&
+  LIFE_AREAS.some((area) => area === v.area) &&
   typeof v.title === 'string' &&
-  typeof v.body === 'string';
+  typeof v.body === 'string' &&
+  (v.summary === undefined || isNonEmptyText(v.summary)) &&
+  (v.detail === undefined || isTimingDetail(v.detail)) &&
+  (v.practices === undefined || isPractices(v.practices)) &&
+  (v.reason === undefined || isReason(v.reason));
 
 const isTimingCurrent = (v: unknown): v is TimingCurrent =>
   isObject(v) &&
@@ -423,10 +796,11 @@ const isTimingCurrent = (v: unknown): v is TimingCurrent =>
   (v.milestone === undefined || isMilestone(v.milestone)) &&
   (v.nextInterval === undefined || isInterval(v.nextInterval)) &&
   (v.nextMilestone === undefined || isMilestone(v.nextMilestone)) &&
-  MILESTONE_KINDS.some((kind) => kind === v.nearestMilestone);
+  MILESTONE_KINDS.some((kind) => kind === v.nearestMilestone) &&
+  (v.mainId === undefined || isNonEmptyText(v.mainId));
 
 /** 변곡점은 계약의 순서대로 넷이 모두 있어야 한다(화면이 그 순서를 믿고 "첫 번째~네 번째" 로 그린다) */
-const isTiming = (v: unknown): v is ReportTiming =>
+const isTiming = (v: unknown): v is TimingReport =>
   isObject(v) &&
   typeof v.timeKnown === 'boolean' &&
   Array.isArray(v.milestones) &&
@@ -458,34 +832,53 @@ export function isDirection(v: unknown): v is Direction {
   );
 }
 
-/**
- * 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다. 시기(timing)도 계약의 모양이어야 한다.
- * 시기가 생기기 전에 받아 기기에 둔 리포트는 여기서 걸러진다. 그 밖의 계약에 없는 필드는 보지 않는다.
- */
-export function isReport(v: unknown): v is Report {
+/** 시기 풀이: 마디 넷이 계약의 순서대로 · 구간 · 지금(대표 구간은 있으면 글자) — 모델이 쓴 칸은 구간마다 isInterval 이 본다 */
+export const isTimingReport = (v: unknown): v is TimingReport => isTiming(v);
+
+export function isTimingReportState(v: unknown): v is TimingReportState {
+  if (!isObject(v)) return false;
+  if (v.status === 'DONE') return isTimingReport(v.report);
+  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+}
+
+const isTimingReportRequest = (v: unknown): v is TimingReportRequest =>
+  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE' || v.status === 'FAILED');
+
+const isMonth = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
+
+/** 영역 · 칩은 비지 않은 글자면 받는다 — 모르는 것은 그리는 쪽이 그 줄만 숨긴다(계획 "전역 제약") */
+const isMonthTheme = (v: unknown) =>
+  isObject(v) && isNonEmptyText(v.area) && isNonEmptyText(v.title) && isDate(v.from) && isDate(v.to);
+
+const isMonthDay = (v: unknown) =>
+  isObject(v) && isDate(v.date) && isNonEmptyText(v.category) && isNonEmptyText(v.text) && isReason(v.reason);
+
+export function isMonthSky(v: unknown): v is MonthSky {
   return (
     isObject(v) &&
-    isTiming(v.timing) &&
-    Array.isArray(v.sections) &&
-    v.sections.length === REPORT_AREAS.length &&
-    v.sections.every(
-      (s, i) =>
-        isObject(s) &&
-        s.area === REPORT_AREAS[i] &&
-        typeof s.title === 'string' &&
-        Array.isArray(s.paragraphs) &&
-        s.paragraphs.length > 0 &&
-        s.paragraphs.every(
-          (p) => isObject(p) && typeof p.title === 'string' && typeof p.body === 'string' && isStringList(p.basis),
-        ),
-    )
+    isMonth(v.month) &&
+    typeof v.timeKnown === 'boolean' &&
+    Array.isArray(v.themes) &&
+    v.themes.every(isMonthTheme) &&
+    Array.isArray(v.days) &&
+    v.days.every(isMonthDay)
   );
 }
 
-export function isReportState(v: unknown): v is ReportState {
-  if (!isObject(v)) return false;
-  if (v.status === 'DONE') return isReport(v.report);
-  return v.status === 'NONE' || v.status === 'WRITING' || v.status === 'FAILED';
+export function isDaySky(v: unknown): v is DaySky {
+  return (
+    isObject(v) &&
+    isDate(v.date) &&
+    isNonEmptyText(v.title) &&
+    isNonEmptyText(v.category) &&
+    isObject(v.flow) &&
+    isNonEmptyText(v.flow.people) &&
+    isNonEmptyText(v.flow.work) &&
+    isNonEmptyText(v.flow.mind) &&
+    isReason(v.reason) &&
+    isPractices(v.practices) &&
+    typeof v.createdAt === 'string'
+  );
 }
 
 const isLongitudes = (v: unknown) =>
@@ -538,7 +931,7 @@ export function isSynastryRanking(v: unknown): v is SynastryRankingEntry[] {
   );
 }
 
-/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다([isReport] 와 같은 기준) */
+/** 네 영역이 계약의 순서대로 모두 있고, 영역마다 문단이 하나 이상 있어야 한다 */
 function isSynastryReport(v: unknown): v is SynastryReport {
   return (
     isObject(v) &&
@@ -591,10 +984,29 @@ export function isShareCard(v: unknown): v is ShareCard {
       );
     case 'NEXT_TURN':
       return Number.isInteger(v.year) && SEASONS.some((season) => season === v.season) && isText(v.theme);
+    case 'NICKNAME':
+      return isOptionalNickname(v.nickname) && SIGNS.some((sign) => sign === v.sunSign) && isText(v.headline);
+    case 'ME_AREA':
+      return isOptionalNickname(v.nickname) && ME_AREAS.some((area) => area === v.area) && isText(v.title);
+    case 'DAY_SKY':
+      return isOptionalNickname(v.nickname) && typeof v.date === 'string' && ISO_DATE.test(v.date) && isText(v.title);
+    case 'NEXT_BIG':
+      return (
+        isOptionalNickname(v.nickname) &&
+        Number.isInteger(v.year) &&
+        Number.isInteger(v.age) &&
+        (v.age as number) >= 0 &&
+        isText(v.title)
+      );
     default:
       return false;
   }
 }
+
+/** 공유 v2 카드의 닉네임: 없으면 키가 없고(옛 계정), 있으면 빈 글자가 아니다 */
+const isOptionalNickname = (v: unknown) => v === undefined || isText(v);
+/** 그날의 하늘 카드의 날짜 꼴(YYYY-MM-DD) */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const isShareCreated = (v: unknown): v is ShareCreated => isObject(v) && isText(v.shareId) && isShareCard(v.card);
 
@@ -605,6 +1017,10 @@ const shareBody = (input: ShareRequest) => {
       return { kind: input.kind, synastryId: input.synastryId, myName: input.myName };
     case 'RANKING':
       return { kind: input.kind, relation: input.relation, showNames: input.showNames === true };
+    case 'ME_AREA':
+      return { kind: input.kind, area: input.area };
+    case 'DAY_SKY':
+      return { kind: input.kind, date: input.date };
     default:
       return { kind: input.kind };
   }
@@ -617,8 +1033,6 @@ const FIXTURE_SHARE_PREFIX = 'fixture-share-';
 function fixtureShare(input: ShareRequest): ShareCreated {
   const C = fixtures.shareCards;
   switch (input.kind) {
-    case 'READING':
-      return { shareId: `${FIXTURE_SHARE_PREFIX}reading`, card: C.reading };
     case 'SCORE':
       return {
         shareId: `${FIXTURE_SHARE_PREFIX}score`,
@@ -628,8 +1042,18 @@ function fixtureShare(input: ShareRequest): ShareCreated {
       const key = input.showNames ? 'rankingNames' : 'ranking';
       return { shareId: `${FIXTURE_SHARE_PREFIX}${key}`, card: { ...C[key], relation: input.relation } };
     }
-    case 'NEXT_TURN':
-      return { shareId: `${FIXTURE_SHARE_PREFIX}nextTurn`, card: C.nextTurn };
+    case 'NICKNAME':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}nickname`, card: C.nickname };
+    case 'ME_AREA': {
+      // 서버와 같은 규칙: 연애는 영역 제목, 나머지는 첫 문단 제목(예시 나 탭 풀이에서)
+      const area = fixtures.meReport.areas.find((a) => a.area === input.area);
+      const title = (input.area === 'LOVE' ? area?.title : area?.paragraphs[0]?.title) ?? C.meArea.title;
+      return { shareId: `${FIXTURE_SHARE_PREFIX}meArea`, card: { ...C.meArea, area: input.area, title } };
+    }
+    case 'DAY_SKY':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}daySky`, card: { ...C.daySky, date: input.date } };
+    case 'NEXT_BIG':
+      return { shareId: `${FIXTURE_SHARE_PREFIX}nextBig`, card: C.nextBig };
   }
 }
 
@@ -646,10 +1070,64 @@ const isDirectionOf =
   (v: unknown): v is Direction =>
     isDirection(v) && v.topic === topic;
 
-const isReportRequest = (v: unknown): v is ReportRequest =>
-  isObject(v) && (v.status === 'WRITING' || v.status === 'DONE');
-
 const isInquiryCreated = (v: unknown): v is InquiryCreated => isObject(v) && isText(v.id);
+
+/** 서버의 한 건(값이 없는 키는 빠져 온다 — answer · replyEmail) */
+type InquiryItemWire = {
+  id: string;
+  category: string;
+  body: string;
+  status: string;
+  createdAt: string;
+  answer?: { body: string; answeredAt: string };
+  replyEmail?: string | null;
+};
+
+const isInquiryItemWire = (v: unknown): v is InquiryItemWire =>
+  isObject(v) &&
+  isText(v.id) &&
+  typeof v.category === 'string' &&
+  typeof v.body === 'string' &&
+  typeof v.status === 'string' &&
+  isText(v.createdAt) &&
+  (v.answer === undefined || (isObject(v.answer) && typeof v.answer.body === 'string' && isText(v.answer.answeredAt))) &&
+  (v.replyEmail === undefined || v.replyEmail === null || typeof v.replyEmail === 'string');
+
+const isInquiryList = (v: unknown): v is InquiryItemWire[] => Array.isArray(v) && v.every(isInquiryItemWire);
+
+const isInquiryCategory = (v: string): v is InquiryCategory => INQUIRY_CATEGORIES.some((c) => c === v);
+
+/** 앱이 쓰는 모양으로: 모르는 종류는 기타, 답이 없으면 null, 이메일 글자는 버리고 있었는지만 */
+const inquiryItemOf = (v: InquiryItemWire): InquiryItem => ({
+  id: v.id,
+  category: isInquiryCategory(v.category) ? v.category : 'ETC',
+  body: v.body,
+  createdAt: v.createdAt,
+  answer: v.answer ? { body: v.answer.body, answeredAt: v.answer.answeredAt } : null,
+  emailed: typeof v.replyEmail === 'string' && v.replyEmail.length > 0,
+});
+
+const isOptionalText = (v: unknown) => v === undefined || isText(v);
+
+const isNotificationItem = (v: unknown): v is NotificationItem =>
+  isObject(v) &&
+  isText(v.id) &&
+  isText(v.kind) &&
+  isText(v.createdAt) &&
+  typeof v.read === 'boolean' &&
+  isOptionalText(v.synastryId) &&
+  isOptionalText(v.inquiryId);
+
+/** 알림함: 안 읽은 수(0 이상 정수)와 줄. 종류는 비지 않은 글자면 받는다 — 모르는 종류는 알림함이 그 줄만 숨긴다(계획 "전역 제약") */
+export function isNotificationList(v: unknown): v is NotificationList {
+  return (
+    isObject(v) &&
+    Number.isInteger(v.unread) &&
+    (v.unread as number) >= 0 &&
+    Array.isArray(v.items) &&
+    v.items.every(isNotificationItem)
+  );
+}
 
 /** 하나라도 어긋나면 목록 전체를 받지 않는다. 계약에 없는 필드는 보지 않는다 */
 export function isFaqList(v: unknown): v is Faq[] {
@@ -661,9 +1139,14 @@ export function isFaqList(v: unknown): v is Faq[] {
 
 const isNullableString = (v: unknown): v is string | null => typeof v === 'string' || v === null;
 
-const isPlatformConfig = (v: unknown): v is PlatformConfig =>
+/** 서버가 보내는 한 플랫폼 몫: latestVersion 은 옛 서버 응답에 없을 수 있다(결정 059). getAppConfig 가 null 로 채운다 */
+type PlatformConfigBody = Omit<PlatformConfig, 'latestVersion'> & { latestVersion?: string | null };
+type AppConfigBody = Omit<AppConfig, 'ios' | 'android'> & { ios: PlatformConfigBody; android: PlatformConfigBody };
+
+const isPlatformConfig = (v: unknown): v is PlatformConfigBody =>
   isObject(v) &&
   isNullableString(v.minVersion) &&
+  (v.latestVersion === undefined || isNullableString(v.latestVersion)) &&
   isNullableString(v.storeUrl) &&
   isNullableString(v.message) &&
   typeof v.blockNow === 'boolean';
@@ -671,8 +1154,8 @@ const isPlatformConfig = (v: unknown): v is PlatformConfig =>
 const isMaintenance = (v: unknown): v is Maintenance =>
   isObject(v) && typeof v.active === 'boolean' && isNullableString(v.message);
 
-/** maintenance 는 키가 없을 때만 넘어간다. 있는데 모양이 다르면 응답 전체를 받지 않는다 */
-export function isAppConfig(v: unknown): v is AppConfig {
+/** maintenance · latestVersion 은 키가 없을 때만 넘어간다. 있는데 모양이 다르면 응답 전체를 받지 않는다 */
+export function isAppConfig(v: unknown): v is AppConfigBody {
   return (
     isObject(v) &&
     isPlatformConfig(v.ios) &&
@@ -689,7 +1172,7 @@ const isSessionBody =
   (v: unknown): v is { token?: string } =>
     isObject(v) && (isNonEmptyString(v.token) || (cookie && v.token === undefined));
 
-type LoginBody = { status: 'SIGNED_IN'; token?: string } | { status: 'SIGNUP_REQUIRED'; signupToken: string };
+type LoginBody = { status: 'SIGNED_IN'; token?: string } | { status: 'SIGNUP_REQUIRED'; signupToken: string; expiresAt?: unknown };
 
 const isLoginBody =
   (cookie: boolean) =>
@@ -698,8 +1181,14 @@ const isLoginBody =
     ((v.status === 'SIGNED_IN' && (isNonEmptyString(v.token) || (cookie && v.token === undefined))) ||
       (v.status === 'SIGNUP_REQUIRED' && isNonEmptyString(v.signupToken)));
 
+const isNicknameAvailability = (v: unknown): v is NicknameAvailability => isObject(v) && typeof v.available === 'boolean';
+
 /** 본문이 없는 성공(204) */
 const isEmpty = (v: unknown): v is null => v === null;
+
+/** `GET /auth/analytics-id` 의 응답. 분석용 id 는 서버가 계정 id 로 만든 되돌릴 수 없는 값이다(결정 040 · 081) */
+export type AnalyticsIdResult = { analyticsId: string };
+const isAnalyticsId = (v: unknown): v is AnalyticsIdResult => isObject(v) && typeof v.analyticsId === 'string';
 
 /** `PUT /profile` · `GET /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
@@ -725,6 +1214,8 @@ export type ApiConfig = {
   onUpdateRequired?: () => void;
   /** 서버가 503 `MAINTENANCE` 로 거절했을 때 부른다(결정 030) */
   onMaintenance?: () => void;
+  /** 서버가 403 `ACCOUNT_SUSPENDED` 로 거절했을 때 부른다(이용 정지 — 결정 065 의 5, 서버 결정 044) */
+  onSuspended?: () => void;
   /**
    * 웹이면 true: 세션은 서버의 httpOnly 쿠키 `bm_session` 이다(결정 034). 모든 요청에 쿠키를 싣고(`credentials: 'include'`),
    * Authorization 헤더를 붙이지 않으며, 로그인 · 가입 · 개발용 로그인에 `cookie: true` 를 보내고 받은 토큰을 버린다.
@@ -744,12 +1235,33 @@ const UPDATE_REQUIRED = 'UPDATE_REQUIRED';
 
 /** `{ error }` 로 오는 이름: 점검 중이다(상태 503). `/app-config` 를 뺀 모든 주소가 이렇게 답한다 */
 const MAINTENANCE = 'MAINTENANCE';
+/** 이용이 정지된 계정의 거절 이름(서버 결정 044) — 문의 · 계정 보기 · 로그아웃 · 계정 삭제 말고는 모두 이 403 이다 */
+const ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED';
 
 /** 가짜 서버의 설정. 아무도 막지 않는다 */
-const FIXTURE_PLATFORM_CONFIG: PlatformConfig = { minVersion: null, storeUrl: null, message: null, blockNow: false };
+const FIXTURE_PLATFORM_CONFIG: PlatformConfig = {
+  minVersion: null,
+  latestVersion: null,
+  storeUrl: null,
+  message: null,
+  blockNow: false,
+};
 
 /** 가짜 서버가 주는 세션 토큰 */
 const FIXTURE_TOKEN = 'fixture-session';
+
+/** 모의 서버(`useFixtures`)의 내 계정 */
+const FIXTURE_MY_ACCOUNT: MyAccount = {
+  nickname: '새벽별',
+  avatar: 3,
+  email: 'dawnstar@kakao.com',
+  provider: 'KAKAO',
+  marketingConsent: false,
+  suspended: false,
+  pushConsent: true,
+  todaySkyPush: true,
+  todaySkyTime: '08:00',
+};
 
 export function createApi(config: ApiConfig) {
   /**
@@ -759,7 +1271,7 @@ export function createApi(config: ApiConfig) {
   const cookie = config.cookieSession === true;
 
   async function request<T>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,
     options: RequestOptions<T>,
     retried = false,
@@ -802,6 +1314,7 @@ export function createApi(config: ApiConfig) {
       const code = isObject(body) && typeof body.error === 'string' ? { code: body.error } : {};
       if (status === 426 && code.code === UPDATE_REQUIRED) config.onUpdateRequired?.();
       if (status === 503 && code.code === MAINTENANCE) config.onMaintenance?.();
+      if (status === 403 && code.code === ACCOUNT_SUSPENDED) config.onSuspended?.();
       return { ok: false, error: 'SERVER', status, ...code };
     }
 
@@ -824,7 +1337,7 @@ export function createApi(config: ApiConfig) {
       return request('GET', '/places', { validate: isPlaceList, auth: false });
     },
 
-    /** `GET /app-config` 플랫폼별 최소 버전 · 스토어 주소 · 안내(결정 027)와 점검 여부(결정 030). 세션이 필요 없다 */
+    /** `GET /app-config` 플랫폼별 최소 · 최신 버전 · 스토어 주소 · 안내(결정 027 · 059)와 점검 여부(결정 030). 세션이 필요 없다 */
     async getAppConfig(): Promise<ApiResult<AppConfig>> {
       if (config.useFixtures)
         return {
@@ -835,7 +1348,10 @@ export function createApi(config: ApiConfig) {
             maintenance: { active: false, message: null },
           },
         };
-      return request('GET', '/app-config', { validate: isAppConfig, auth: false });
+      const res = await request('GET', '/app-config', { validate: isAppConfig, auth: false });
+      if (!res.ok) return res;
+      const withLatest = (p: PlatformConfigBody): PlatformConfig => ({ ...p, latestVersion: p.latestVersion ?? null });
+      return { ok: true, data: { ...res.data, ios: withLatest(res.data.ios), android: withLatest(res.data.android) } };
     },
 
     /** `GET /faqs` 자주 묻는 질문(결정 028). 공개된 것만, 보여 줄 순서대로 온다(빈 목록일 수 있다). 세션이 필요 없다 */
@@ -877,17 +1393,36 @@ export function createApi(config: ApiConfig) {
         auth: false,
       });
       if (!r.ok) return r;
-      if (r.data.status === 'SIGNUP_REQUIRED') return { ok: true, data: { status: 'SIGNUP_REQUIRED', signupToken: r.data.signupToken } };
+      if (r.data.status === 'SIGNUP_REQUIRED') {
+        // 가입권이 끝나는 때 — 이어 하기의 보관 수명(min(30분, expiresAt), 결정 068). 읽을 수 없으면 버린다
+        const expiresAt = typeof r.data.expiresAt === 'string' ? Date.parse(r.data.expiresAt) : NaN;
+        return {
+          ok: true,
+          data: { status: 'SIGNUP_REQUIRED', signupToken: r.data.signupToken, ...(Number.isFinite(expiresAt) ? { expiresAt } : {}) },
+        };
+      }
       return { ok: true, data: { status: 'SIGNED_IN', token: cookie ? null : (r.data.token ?? null) } };
     },
 
     /**
-     * `POST /auth/signup` 가입권과 출생 정보로 가입한다. 만 14세 판정은 서버가 한다(미만이면 403 `UNDER_AGE`).
-     * 가입권이 없거나 만료면 401 `SIGNUP_EXPIRED`, 출생 정보가 틀리면 `POST /charts` 와 같은 400 이 code 로 온다.
+     * `POST /auth/signup` 가입권 · 출생 정보 · 가입 단계의 값(닉네임 · 프로필 · 약관 버전 · 동의, 결정 042)으로 가입한다. 만 14세 판정은 서버가 한다.
+     * 오류(code): 가입권이 없거나 만료 401 `SIGNUP_EXPIRED` · 약관 400 `TERMS_REQUIRED` · 닉네임 400 `INVALID_NICKNAME` · 프로필 400 `INVALID_AVATAR` ·
+     * 출생 정보 `POST /charts` 와 같은 400 · 만 14세 미만 403 `UNDER_AGE`(가입권을 지운다) · 닉네임 중복 409 `NICKNAME_TAKEN`. 400 · 409 는 가입권이 남는다.
      */
-    async signup(signupToken: string, birth: BirthInput): Promise<ApiResult<SignupResult>> {
+    async signup(signupToken: string, birth: BirthInput, extra: SignupExtra): Promise<ApiResult<SignupResult>> {
       if (config.useFixtures) return { ok: true, data: { token: FIXTURE_TOKEN } };
-      const body = { signupToken, ...birth };
+      const body = {
+        signupToken,
+        date: birth.date,
+        time: birth.time,
+        placeId: birth.placeId,
+        nickname: extra.nickname,
+        avatar: extra.avatar,
+        termsVersion: extra.termsVersion,
+        privacyVersion: extra.privacyVersion,
+        pushConsent: extra.pushConsent,
+        marketingConsent: extra.marketingConsent,
+      };
       const r = await request('POST', '/auth/signup', {
         body: cookie ? { ...body, cookie: true } : body,
         validate: isSessionBody(cookie),
@@ -896,10 +1431,38 @@ export function createApi(config: ApiConfig) {
       return r.ok ? { ok: true, data: { token: cookie ? null : (r.data.token ?? null) } } : r;
     },
 
+    /**
+     * `POST /auth/nickname-check` 가입권으로 닉네임을 쓸 수 있는지 묻는다(결정 042). 가입 단계의 "다음" 에서 한 번만 부른다.
+     * 규칙에 어긋나면 400 `INVALID_NICKNAME`, 가입권이 없거나 만료면 401 `SIGNUP_EXPIRED` 가 code 로 온다. 세션 헤더는 붙이지 않는다.
+     */
+    async checkNickname(signupToken: string, nickname: string): Promise<ApiResult<NicknameAvailability>> {
+      if (config.useFixtures) return { ok: true, data: { available: true } };
+      return request('POST', '/auth/nickname-check', {
+        body: { signupToken, nickname },
+        validate: isNicknameAvailability,
+        auth: false,
+      });
+    },
+
+    /**
+     * `GET /account/nickname-check?nickname=` 마이 › 닉네임 바꾸기에서 그 닉네임을 쓸 수 있는지(서버 결정 051, 가입 중 확인과 같은 규칙 —
+     * 내 지금 닉네임이면 true). 틀리거나 비면 400 `INVALID_NICKNAME` 이 code 로 온다. 저장은 그대로 `PATCH /account`(그사이 가져가면 409)
+     */
+    async checkMyNickname(nickname: string): Promise<ApiResult<NicknameAvailability>> {
+      if (config.useFixtures) return { ok: true, data: { available: true } };
+      return request('GET', `/account/nickname-check?nickname=${encodeURIComponent(nickname)}`, { validate: isNicknameAvailability });
+    },
+
     /** `GET /auth/session` 세션이 살아 있는지(204). 웹이 켜질 때 쿠키 세션을 확인한다 */
     async getSession(): Promise<ApiResult<null>> {
       if (config.useFixtures) return { ok: true, data: null };
       return request('GET', '/auth/session', { validate: isEmpty });
+    },
+
+    /** `GET /auth/analytics-id` 분석 도구에 보낼 사용자 id(결정 081). 앰플리튜드 키가 있을 때(운영)만 부른다 */
+    async getAnalyticsId(): Promise<ApiResult<AnalyticsIdResult>> {
+      if (config.useFixtures) return { ok: true, data: { analyticsId: '0'.repeat(32) } };
+      return request('GET', '/auth/analytics-id', { validate: isAnalyticsId });
     },
 
     /** `DELETE /auth/session` 로그아웃. 이 기기의 세션만 지운다(웹은 쿠키도) */
@@ -933,17 +1496,6 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /directions` 방향성 제시(해 볼 만한 것 3개)의 이성 · 미래 주제. 서버가 저장된 출생 정보로 쓴다(없으면 404 `NO_PROFILE`).
-     * 처음에는 글을 다 쓸 때까지 기다렸다 답하므로 수십 초가 걸릴 수 있고, 그 뒤로는 저장된 글이 바로 온다.
-     * 미래는 "지금의 시기" 가 달라진 날부터 같은 요청이 새 글을 준다. 그래서 볼 때마다 부른다(결정 026).
-     */
-    async createDirection(topic: 'LOVE' | 'FUTURE'): Promise<ApiResult<Direction>> {
-      if (config.useFixtures)
-        return { ok: true, data: topic === 'FUTURE' ? fixtures.directionFuture : fixtures.direction };
-      return request('POST', '/directions', { body: { topic }, validate: isDirectionOf(topic) });
-    },
-
-    /**
      * `POST /directions` 의 궁합 주제: 직접 입력 궁합 한 건(`synastryId`)에 대한 글. birth 는 상대의 출생 정보이고
      * 그 궁합의 글을 처음 만들 때만 필요하다(서버에 없어 다시 보낸다). 글이 없는데 보내지 않으면 400 `BIRTH_REQUIRED`,
      * 그 궁합의 상대가 아니면 400 `BIRTH_MISMATCH`, 내 출생 정보가 바뀌었으면 409 `PROFILE_CHANGED` 가 code 로 온다.
@@ -956,19 +1508,85 @@ export function createApi(config: ApiConfig) {
       });
     },
 
-    /**
-     * `POST /reports` 심층 리포트를 써 달라고 한다. 본문은 없고 서버가 저장된 출생 정보로 쓴다(없으면 404).
-     * 글은 뒤에서 1~2분 동안 쓰이므로 여기서는 상태만 온다. 이미 쓰는 중이거나 써 두었으면 새로 쓰지 않는다.
-     */
-    async requestReport(): Promise<ApiResult<ReportRequest>> {
+    /** `POST /me-report` 나 탭 풀이를 쓰기 시작한다(결정 048). 202 로 바로 답하고 글은 뒤에서 쓴다. 402 `PURCHASE_REQUIRED` 는 1.1.0 예약 */
+    async requestMeReport(): Promise<ApiResult<MeReportRequest>> {
       if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
-      return request('POST', '/reports', { validate: isReportRequest });
+      return request('POST', '/me-report', { validate: isMeReportRequest });
     },
 
-    /** `GET /reports/me` 내 리포트의 상태. 다 썼으면(DONE) 글이 함께 온다 */
-    async getReport(): Promise<ApiResult<ReportState>> {
-      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.report } };
-      return request('GET', '/reports/me', { validate: isReportState });
+    /** `GET /me-report` 나 탭 풀이의 상태와(DONE 이면) 글 */
+    async getMeReport(): Promise<ApiResult<MeReportState>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.meReport } };
+      return request('GET', '/me-report', { validate: isMeReportState });
+    },
+
+    /**
+     * `GET /timing/month` 이번 달(결정 049 의 2). month(`YYYY-MM`)가 없으면 서버의 이번 달이다. 앞뒤 한 달 밖이면 400 `MONTH_OUT_OF_RANGE`,
+     * 서버에 출생 정보가 없으면 404 `NO_PROFILE`. 모의 서버는 예시의 달이 아니면 눈여겨볼 날 없이 그 달로 답한다
+     */
+    async getMonth(month?: string): Promise<ApiResult<MonthSky>> {
+      if (config.useFixtures)
+        return {
+          ok: true,
+          data: !month || month === fixtures.monthSky.month ? fixtures.monthSky : { ...fixtures.monthSky, month, days: [] },
+        };
+      return request('GET', month ? `/timing/month?month=${encodeURIComponent(month)}` : '/timing/month', { validate: isMonthSky });
+    },
+
+    /** `POST /timing-report` 시기 풀이를 쓰기 시작한다(결정 049 의 7). 202 로 바로 답하고 글은 뒤에서 쓴다. 402 `PURCHASE_REQUIRED` 는 1.1.0 예약 */
+    async requestTimingReport(): Promise<ApiResult<TimingReportRequest>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE' } };
+      return request('POST', '/timing-report', { validate: isTimingReportRequest });
+    },
+
+    /** `GET /timing-report` 시기 풀이의 상태와(DONE 이면) 글. 지금(current) · 대표 구간은 부를 때마다 서버의 오늘로 붙는다 */
+    async getTimingReport(): Promise<ApiResult<TimingReportState>> {
+      if (config.useFixtures) return { ok: true, data: { status: 'DONE', report: fixtures.timingReport } };
+      return request('GET', '/timing-report', { validate: isTimingReportState });
+    },
+
+    /**
+     * `POST /day-sky` 그날의 하늘(결정 049 의 6). date 가 없으면 본문 없이 = 오늘의 하늘. 처음 만들 때는 수십 초가 걸릴 수 있고(동기 응답),
+     * 새로 만들어야 할 때 생성 한도를 넘으면 429, 못 쓰면 502 `GENERATION_FAILED`(다시 보내면 된다)
+     */
+    async postDaySky(date?: string): Promise<ApiResult<DaySky>> {
+      if (config.useFixtures) return { ok: true, data: date ? { ...fixtures.daySky, date } : fixtures.daySky };
+      return request('POST', '/day-sky', { ...(date ? { body: { date } } : {}), validate: isDaySky });
+    },
+
+    /** `GET /account` 내 계정 — 홈 별명 카드(닉네임 · 프로필, 결정 047)와 마이 · 계정 화면(결정 056)이 함께 쓴다. 동의 일시는 버리고, 알림 칸(푸시 동의 · 오늘의 하늘)은 꼴이 맞을 때만 둔다 */
+    async getMyAccount(): Promise<ApiResult<MyAccount>> {
+      if (config.useFixtures) return { ok: true, data: FIXTURE_MY_ACCOUNT };
+      const res = await request('GET', '/account', { validate: isMyAccount });
+      if (!res.ok) return res;
+      // 정지된 계정에도 이 경로는 200 이다 — 403 대신 이 값으로 정지를 알린다(서버 결정 044)
+      if (res.data.suspended === true) config.onSuspended?.();
+      return { ok: true, data: myAccountOf(res.data) };
+    },
+
+    /**
+     * `PATCH /account` 닉네임 · 프로필 · 동의 · 오늘의 하늘을 바꾼다(보낸 칸만). 400 `INVALID_NICKNAME` · `INVALID_AVATAR` ·
+     * `INVALID_TODAY_SKY_TIME`, 409 `NICKNAME_TAKEN` 은 code 로 온다 — 그때는 같이 보낸 칸도 바뀌지 않는다.
+     */
+    async updateAccount(patch: AccountPatch): Promise<ApiResult<MyAccount>> {
+      if (config.useFixtures) return { ok: true, data: { ...FIXTURE_MY_ACCOUNT, ...patch } };
+      const res = await request('PATCH', '/account', { body: patch, validate: isMyAccount });
+      return res.ok ? { ok: true, data: myAccountOf(res.data) } : res;
+    },
+
+    /**
+     * `POST /push/devices` 이 기기의 Expo 푸시 토큰을 내 계정에 등록한다(서버 S10-2). 같은 토큰이면 계정 · 시각만 갱신. 성공은 204.
+     * 400 `INVALID_PUSH_TOKEN` · `INVALID_PLATFORM` 은 code 로 온다.
+     */
+    async registerPushDevice(device: PushDevice): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('POST', '/push/devices', { body: device, validate: (v): v is null => v === null });
+    },
+
+    /** `DELETE /push/devices/{토큰}` 로그아웃 때 이 기기 등록을 지운다(정지 중에도 된다). 성공은 204, 남의 것 · 없는 것은 404 */
+    async deletePushDevice(expoToken: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('DELETE', `/push/devices/${encodeURIComponent(expoToken)}`, { validate: (v): v is null => v === null });
     },
 
     /** `DELETE /account` 계정과 그 사람의 모든 것(세션 · 출생 정보 · 글)을 서버에서 지운다. 성공은 204 이고 본문이 없다 */
@@ -978,15 +1596,44 @@ export function createApi(config: ApiConfig) {
     },
 
     /**
-     * `POST /inquiries` 문의를 보낸다(결정 024). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` ·
-     * `INVALID_BODY` · `INVALID_EMAIL`). 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용과 주소는 어디에도 남기지 않는다.
+     * `POST /inquiries` 문의를 보낸다(결정 058). 400 은 code 로 온다(`INVALID_REQUEST` · `INVALID_CATEGORY` · `INVALID_BODY`).
+     * 한 계정에 한 시간 5번을 넘으면 429(LIMIT)다. 내용은 어디에도 남기지 않는다.
      */
     async createInquiry(input: InquiryInput): Promise<ApiResult<InquiryCreated>> {
       if (config.useFixtures) return { ok: true, data: { id: 'fixture-inquiry' } };
       return request('POST', '/inquiries', {
-        body: { category: input.category, body: input.body, replyEmail: input.replyEmail },
+        body: { category: input.category, body: input.body },
         validate: isInquiryCreated,
       });
+    },
+
+    /** `GET /inquiries` 내 문의 전부, 새것부터(서버 순서 그대로). 없으면 빈 목록. 한 줄이라도 모양이 틀리면 INVALID */
+    async getInquiries(): Promise<ApiResult<InquiryItem[]>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.inquiries };
+      const res = await request('GET', '/inquiries', { validate: isInquiryList });
+      return res.ok ? { ok: true, data: res.data.map(inquiryItemOf) } : res;
+    },
+
+    /** `GET /notifications` 알림함(결정 052) — 최근 30일의 줄과 안 읽은 수. 문구는 앱이 갖는다 */
+    async getNotifications(): Promise<ApiResult<NotificationList>> {
+      if (config.useFixtures) return { ok: true, data: fixtures.notifications };
+      return request('GET', '/notifications', { validate: isNotificationList });
+    },
+
+    /** `POST /notifications/{id}/read` 읽음으로(204 — 이미 읽었어도). 남의 것 · 없는 것 · UUID 가 아닌 값은 404 `NOT_FOUND` */
+    async markNotificationRead(id: string): Promise<ApiResult<null>> {
+      if (config.useFixtures) return { ok: true, data: null };
+      return request('POST', `/notifications/${encodeURIComponent(id)}/read`, { validate: isEmpty });
+    },
+
+    /** `GET /inquiries/{id}` 내 문의 한 건과 답. 남의 것 · 없는 것은 404 `NOT_FOUND` */
+    async getInquiry(id: string): Promise<ApiResult<InquiryItem>> {
+      if (config.useFixtures) {
+        const found = fixtures.inquiries.find((item) => item.id === id);
+        return found ? { ok: true, data: found } : { ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' };
+      }
+      const res = await request('GET', `/inquiries/${encodeURIComponent(id)}`, { validate: isInquiryItemWire });
+      return res.ok ? { ok: true, data: inquiryItemOf(res.data) } : res;
     },
 
     /**
@@ -1000,6 +1647,19 @@ export function createApi(config: ApiConfig) {
         body: shareBody(input),
         validate: (v): v is ShareCreated => isShareCreated(v) && v.card.kind === input.kind,
       });
+    },
+
+    /**
+     * `POST /shares/preview` 공유 카드를 미리 받는다(서버 결정 051 — 소유자 2026-11-21). 요청은 `POST /shares` 와 같고 응답은 `{ card }` 뿐이다.
+     * 서버에 공유가 저장되지 않아(공유 행 · shareId · 감사 기록 없음) 화면에 들어올 때 불러도 된다. 공유를 누르면 그때 `POST /shares`.
+     */
+    async previewShare(input: ShareRequest): Promise<ApiResult<ShareCard>> {
+      if (config.useFixtures) return { ok: true, data: fixtureShare(input).card };
+      const res = await request('POST', '/shares/preview', {
+        body: shareBody(input),
+        validate: (v): v is { card: ShareCard } => isObject(v) && isShareCard(v.card) && v.card.kind === input.kind,
+      });
+      return res.ok ? { ok: true, data: res.data.card } : res;
     },
 
     /** `GET /shared/{shareId}` 공유 카드 하나. 세션 없이 부른다(공유 페이지). 없는 · 지워진 식별자는 404 `NOT_FOUND` */
@@ -1116,6 +1776,13 @@ export function setMaintenanceHandler(handler: (() => void) | null) {
   maintenanceHandler = handler;
 }
 
+let suspendedHandler: (() => void) | null = null;
+
+/** 이용 정지(403 `ACCOUNT_SUSPENDED`)를 받았을 때 부를 것을 정한다. 정지 문(`features/auth/suspension-gate.tsx`)이 건다 */
+export function setSuspendedHandler(handler: (() => void) | null) {
+  suspendedHandler = handler;
+}
+
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
@@ -1125,5 +1792,6 @@ export const api = createApi({
   client: appClient,
   onUpdateRequired: () => updateRequiredHandler?.(),
   onMaintenance: () => maintenanceHandler?.(),
+  onSuspended: () => suspendedHandler?.(),
   cookieSession: Platform.OS === 'web',
 });

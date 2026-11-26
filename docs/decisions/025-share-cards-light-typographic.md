@@ -3,7 +3,7 @@ type: decision
 tags: [공유, 공유 카드, 디자인, 공유 페이지, 세션, 이미지]
 status: active
 last_reviewed: 2026-11-12
-superseded_by:
+superseded_by: 033-brand-dark-design-system.md (2 의 흰 바탕만) · 036-share-card-byeoli.md (1 의 "더하는 것은 앱 이름과 한 줄 소개뿐". 나머지는 유효) · 053-share-v2.md (카드 모양 · 종류)
 ---
 # 025. 공유 카드는 흰 바탕에 글자만으로 그리고, 받은 `card` 만으로 만든다
 

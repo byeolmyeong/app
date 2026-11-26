@@ -1,0 +1,221 @@
+/**
+ * 오늘의 하늘(결정 051): 홈의 오늘의 하늘 카드와 `/today` 가 함께 쓴다. `POST /day-sky` 를 날짜 없이 부르면 서버가 한국 날짜의 오늘 것을 준다 —
+ * 그날 처음이면 서버가 그때 써서 저장하고(수십 초, 동기 응답), 다시 부르면 저장본이 바로 온다.
+ * 받은 글은 그날 동안 기기에 둔다(`byeolmyeong.daySky.v1` — 마지막에 받은 것 하나, 출생 정보와 함께). 다시 열면 그것을 먼저 그리고 뒤에서 한 번
+ * 새로 받는다(같은 날 · 같은 차트는 서버도 같은 글이라 저장본이 바로 온다). 받아 둔 날이 오늘(기기의 한국 날짜)이 아니면 지난날 것은 그리지 않고 다시 부른다 — 화면이 보일 때 · 앱으로 돌아올 때도 견준다.
+ * 홈 카드와 오늘의 하늘이 같은 때 열려도 서버에는 한 번만 묻는다(같은 출생 정보의 요청을 함께 기다린다).
+ * 서버에 출생 정보가 없으면(404 `NO_PROFILE`) 저장하고 한 번만 더 부른다. 다시 쓰기(retry)는 사람이 누를 때만 — 스스로 다시 부르지 않는다.
+ */
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+
+import { onPushReceived } from '@/features/push/push';
+import { daySkyMadeGeneration, markDaySkyMade, wasDaySkyMade } from '@/features/timing/day-sky-made';
+import { koreaToday } from '@/features/timing/dates';
+import { api, isDaySky, type ApiErrorKind, type ApiResult, type BirthInput, type DaySky } from '@/lib/api';
+import { getStored, peekStored, setStored } from '@/lib/device-memory';
+import { isSameGeneration, storageGeneration } from '@/lib/storage-generation';
+import { GENERATION_MAX_WAIT_MS, withTimeout } from '@/lib/with-timeout';
+
+export const DAY_SKY_STORAGE_KEY = 'byeolmyeong.daySky.v1';
+const NO_PROFILE_STATUS = 404;
+/** 세대 표식(lib/storage-generation): 요청을 시작할 때 읽고, 끝났을 때 같을 때만 기기에 둔다 — 로그아웃 · 탈퇴 뒤 앞사람의 하늘을 다시 쓰지 않게 */
+const GENERATION_KEY = 'byeolmyeong.daySkyGen.v1';
+
+/** failed 의 code 는 서버가 적어 준 이름(`GENERATION_FAILED` · `NO_PROFILE` …), httpStatus 는 상태 번호 */
+export type TodaySkyState =
+  | { status: 'loading' }
+  | { status: 'done'; sky: DaySky }
+  | { status: 'failed'; error: ApiErrorKind; code?: string; httpStatus?: number };
+
+type Stored = { key: string; sky: DaySky };
+
+const keyOf = (input: BirthInput) => JSON.stringify([input.date, input.time, input.placeId]);
+
+/** 기기에 둔 것: 같은 출생 정보 · 모양이 맞는 것만. 날짜는 쓰는 쪽이 오늘과 견준다 */
+function parseStored(raw: string | null, key: string): DaySky | null {
+  try {
+    const v: unknown = raw ? JSON.parse(raw) : null;
+    if (typeof v !== 'object' || v === null) return null;
+    const stored = v as Partial<Stored>;
+    return stored.key === key && isDaySky(stored.sky) ? stored.sky : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 이번 실행에 읽었으면 메모리에서 */
+const readStored = async (key: string) => parseStored(await getStored(DAY_SKY_STORAGE_KEY), key);
+
+/** 이번 실행에 읽은 오늘 것 — 동기(다시 붙은 화면의 첫 그림, lib/device-memory). 오늘 것이 아니거나 모르면 null */
+function peekToday(key: string | null): DaySky | null {
+  if (key === null) return null;
+  const raw = peekStored(DAY_SKY_STORAGE_KEY);
+  const sky = raw === undefined ? null : parseStored(raw, key);
+  return sky && sky.date === koreaToday() ? sky : null;
+}
+
+/** 같은 출생 정보로 서버를 기다리는 중인 요청(홈 카드 · 오늘의 하늘이 함께 기다린다) */
+const pending = new Map<string, Promise<ApiResult<DaySky>>>();
+
+/** fresh 면 기다리는 요청이 있어도 새로 묻는다(사람이 누른 "다시 쓰기" — 멈춘 요청에 묶이지 않게) */
+function load(key: string, input: BirthInput, fresh: boolean): Promise<ApiResult<DaySky>> {
+  const running = pending.get(key);
+  if (running && !fresh) return running;
+  const request = (async () => {
+    const gen = await storageGeneration(GENERATION_KEY).catch(() => null);
+    const madeGen = await daySkyMadeGeneration();
+    // 쓰는 중 화면에는 머리가 없어 3분이 넘으면 기다리지 않는다(못 썼을 때로 — 빌드 13)
+    let r = await withTimeout(api.postDaySky(), GENERATION_MAX_WAIT_MS);
+    if (!r.ok && r.status === NO_PROFILE_STATUS && (await api.saveProfile(input)).ok) r = await withTimeout(api.postDaySky(), GENERATION_MAX_WAIT_MS);
+    if (r.ok && gen !== null && (await isSameGeneration(GENERATION_KEY, gen)))
+      await setStored(DAY_SKY_STORAGE_KEY, JSON.stringify({ key, sky: r.data } satisfies Stored)).catch(() => undefined);
+    // 받은 날을 기억한다(그날의 하늘과 같은 기억 — 결정 075 의 2)
+    if (r.ok) await markDaySkyMade(key, r.data.date, madeGen);
+    return r;
+  })().finally(() => {
+    if (pending.get(key) === request) pending.delete(key);
+  });
+  pending.set(key, request);
+  return request;
+}
+
+/** input 이 null 이면(출생 정보 · 세션을 읽는 중) 부르지 않는다 */
+export function useTodaySky(input: BirthInput | null) {
+  const key = input ? keyOf(input) : null;
+  // 이번 실행에 받아 둔 오늘 것이 메모리에 있으면 첫 그림부터 그 글(탭을 바꿔 다시 붙은 화면)
+  const [state, setState] = useState<TodaySkyState>(() => {
+    const sky = peekToday(key);
+    return sky ? { status: 'done', sky } : { status: 'loading' };
+  });
+  /** 오늘(기기의 한국 날짜)을 이 기기에서 받은 적이 있는가(결정 075 — 없으면 뼈대 없이 곧바로 만드는 중). 읽기 전에는 null */
+  const [made, setMade] = useState<{ key: string; made: boolean } | null>(null);
+  useEffect(() => {
+    if (key === null) return;
+    let alive = true;
+    void wasDaySkyMade(key, koreaToday()).then((m) => {
+      if (alive) setMade({ key, made: m });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+  /** 지금 그린 글의 날짜 — 화면이 보일 때 · 앱으로 돌아올 때 오늘과 견준다 */
+  const shownDate = useRef<string | null>(state.status === 'done' ? state.sky.date : null);
+  const latest = useRef(0);
+
+  const fetchToday = useCallback((fresh = false) => {
+    if (key === null) return;
+    const [date, time, placeId] = JSON.parse(key) as [string, string | null, number | null];
+    const mine = ++latest.current;
+    setState({ status: 'loading' });
+    void load(key, { date, time, placeId }, fresh).then((r) => {
+      if (latest.current !== mine) return;
+      if (r.ok) shownDate.current = r.data.date;
+      setState(r.ok ? { status: 'done', sky: r.data } : { status: 'failed', error: r.error, code: r.code, httpStatus: r.status });
+    });
+  }, [key]);
+
+  // 처음: 기기에 둔 오늘 것이 있으면 그것만 그린다. 없거나 지난날 것이면 서버에 묻는다
+  useEffect(() => {
+    if (key === null) return;
+    let alive = true;
+    const requests = latest;
+    void readStored(key).then((stored) => {
+      if (!alive) return;
+      if (stored && stored.date === koreaToday()) {
+        shownDate.current = stored.date;
+        setState({ status: 'done', sky: stored });
+        // 기기에 둔 오늘 것이 있으면 그 날은 만든 적 있음(이 기억이 생기기 전의 보관본으로 채움, 리뷰 #87 의 4)
+        setMade({ key, made: true });
+        void daySkyMadeGeneration().then((g) => markDaySkyMade(key, stored.date, g));
+        // 뒤에서 한 번 새로 받는다(같은 날 · 같은 차트면 서버도 같은 글이라 저장본이 바로 온다). 못 받으면 보관본 그대로
+        const [date, time, placeId] = JSON.parse(key) as [string, string | null, number | null];
+        const mine = ++requests.current;
+        void load(key, { date, time, placeId }, false).then((r) => {
+          if (!alive || !r.ok || requests.current !== mine) return;
+          shownDate.current = r.data.date;
+          setState({ status: 'done', sky: r.data });
+        });
+      } else fetchToday();
+    });
+    return () => {
+      alive = false;
+      // 출생 정보가 바뀌거나 떠나면 기다리던 답을 버린다
+      requests.current++;
+    };
+  }, [key, fetchToday]);
+
+  /** 지금 상태(화면이 다시 보일 때 · 푸시가 왔을 때 견준다) */
+  const status = useRef<TodaySkyState['status']>('loading');
+  useEffect(() => {
+    status.current = state.status;
+  }, [state.status]);
+
+  // 화면이 다시 보일 때 · 앱으로 돌아올 때:
+  // - 못 썼으면 기기를 다시 읽는다 — 다른 화면(오늘의 하늘의 다시 쓰기)이 받아 둔 오늘 것이 있을 수 있다. 서버는 부르지 않는다(리뷰 #66 의 5)
+  // - 날이 바뀌었으면 다시 부른다(앱을 켜 둔 채 자정을 넘긴 다음 날 아침)
+  const recheckDay = useCallback(() => {
+    if (key === null) return;
+    if (status.current === 'failed') {
+      void readStored(key).then((stored) => {
+        if (!stored || stored.date !== koreaToday() || status.current !== 'failed') return;
+        shownDate.current = stored.date;
+        setState({ status: 'done', sky: stored });
+      });
+      return;
+    }
+    if (shownDate.current !== null && shownDate.current !== koreaToday()) fetchToday();
+  }, [key, fetchToday]);
+  // 오늘의 하늘 푸시(아침 — 서버가 미리 만들어 두었다): 오늘 것을 그리고 있지 않으면(못 씀 · 지난날) 새로 묻는다. 묻는 중이면 그대로(리뷰 #66 의 8)
+  useEffect(
+    () =>
+      onPushReceived((push) => {
+        if (push.type !== 'TODAY_SKY') return;
+        // 아침 푸시가 온 날은 서버가 미리 만들었다 — 만든 적 있음으로 기억해 열 때 만드는 중이 잠깐 비치지 않게(리뷰 #87 의 4)
+        if (key !== null) void daySkyMadeGeneration().then((g) => markDaySkyMade(key, push.date, g));
+        if (push.date === koreaToday() && key !== null) setMade({ key, made: true });
+        if (status.current === 'loading') return;
+        if (status.current === 'failed' || shownDate.current !== koreaToday()) fetchToday();
+      }),
+    [key, fetchToday],
+  );
+  useFocusEffect(recheckDay);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') recheckDay();
+    });
+    return () => sub.remove();
+  }, [recheckDay]);
+
+  /** 못 썼을 때의 "다시 쓰기" · 연결이 돌아왔을 때 — 늘 새로 묻는다 */
+  const retry = useCallback(() => fetchToday(true), [fetchToday]);
+  return { state, retry, made: made && made.key === key ? made.made : null };
+}
+
+/**
+ * 받아 둔 날이면 서버가 곧바로 준다 — 이만큼 넘게 기다리면 그날을 처음 쓰는 중으로 보고 쓰는 중 모양으로 바꾼다(그날의 하늘 화면과 같은 기준).
+ * 서버는 쓰는 중인지 알려 주지 않는다(동기 응답).
+ */
+const WRITING_AFTER_MS = 3000;
+
+/**
+ * 홈 카드는 더 일찍 쓰는 중으로 본다: 처음 들어올 때 스플래시가 홈 카드의 첫 상태까지 가리는데(결정 068 의 2), 그날 처음 쓰는 글(수십 초)을
+ * 기다리지 않게 이만큼 넘으면 쓰는 중 카드로 그리고 스플래시를 걷는다 — 뼈대 없이(소유자 "접속하자마자 바로")
+ */
+export const TODAY_CARD_WRITING_AFTER_MS = 1000;
+
+/** loading 이 ms(기본 3초) 넘게 이어졌는가(쓰는 중으로 볼 때) */
+export function useWritingAfter(loading: boolean, ms: number = WRITING_AFTER_MS): boolean {
+  const [writing, setWriting] = useState(false);
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => setWriting(true), ms);
+    return () => {
+      clearTimeout(timer);
+      setWriting(false);
+    };
+  }, [loading, ms]);
+  return writing;
+}

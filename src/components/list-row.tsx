@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Txt } from '@/components/txt';
-import { Colors, LineWidth, Sizes, Spacing, type ColorName } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, Sizes, Spacing, type ColorName } from '@/constants/theme';
 
 export type ListRowProps = {
   label: string;
@@ -50,5 +50,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: LineWidth,
     borderBottomColor: Colors.hair,
   },
-  label: { fontWeight: '500' },
+  label: { fontWeight: FontWeight.medium },
 });

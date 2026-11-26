@@ -9,5 +9,10 @@ export type LoginButtonProps = {
   onCredential: (credential: ProviderCredential) => void;
   /** 공급자 쪽에서 실패했다(사용자가 닫은 것은 빼고) */
   onError: () => void;
+  /** 누를 수 없다 — 흐리게(다른 버튼으로 로그인하고 서버를 기다리는 중) */
   disabled?: boolean;
+  /** 이 버튼으로 받은 자격 증명으로 서버를 기다리는 중 — 버튼 안에 돌기(결정 067 의 2) */
+  loading?: boolean;
+  /** 이 기기에서 마지막에 쓴 공급자다 — 버튼에 "최근 로그인" 배지를 얹는다(결정 044). 버튼을 그리지 않으면 배지도 없다 */
+  recent?: boolean;
 };

@@ -38,8 +38,8 @@ export type MyCardProps = {
 /**
  * 마이 위의 별명 카드(결정 056 의 1 · 084, 보드 16): 프로필 그림 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄.
  * 카드 전체를 누르면 내 정보로 간다(버튼 둘은 결정 084 로 뺐다 — 출생 정보 수정은 내 정보 안에서 들어간다).
- * 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 꺾쇠는 닉네임 글자 줄(첫 줄)의 오른쪽 끝, 그 줄의 세로 가운데에 놓인다 —
- * 다른 홈 카드의 꺾쇠가 첫 줄(이름표)에 붙는 것과 같은 규칙(소유자 빌드 15, 결정 080 덧붙임). 별자리는 그 꺾쇠 둘레를 비운다(결정 080).
+ * 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 닉네임 줄과 별자리 · 날 수 줄은 프로필 그림의 위아래 끝에 맞추고,
+ * 꺾쇠는 닉네임 줄(첫 줄 = 그림 위쪽)의 오른쪽 끝, 그 줄의 세로 가운데에 놓인다(소유자 빌드 15 확정안, 결정 080 덧붙임). 별자리는 그 꺾쇠 둘레를 비운다(결정 080).
  */
 export function MyCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, birthLine, onOpen }: MyCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
@@ -118,8 +118,11 @@ const styles = StyleSheet.create({
   },
   /** 프로필 그림 · 이름 칸 — 이름 칸(닉네임 줄 + 별자리 · 날 수 줄)이 그림의 세로 가운데에 온다 */
   row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
-  /** 이름 칸이 남은 폭을 써서 첫 줄의 꺾쇠가 카드 오른쪽 끝에 붙는다 */
-  names: { flex: 1, gap: L.namesGap },
+  /**
+   * 이름 칸은 남은 폭을 써서 첫 줄의 꺾쇠가 카드 오른쪽 끝에 붙는다. 높이는 프로필 그림과 같고 위아래로 벌려,
+   * 닉네임 줄은 그림 위 끝 · 별자리 · 날 수 줄은 그림 아래 끝에 맞는다(소유자 빌드 15 확정안)
+   */
+  names: { flex: 1, height: L.avatar, justifyContent: 'space-between', gap: L.namesGap },
   /** 닉네임 줄: 글자와 꺾쇠를 한 줄에 세로 가운데로 */
   firstLine: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
   firstText: { flex: 1, minWidth: 0 },

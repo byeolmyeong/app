@@ -77,7 +77,9 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     const card = within(await screen.findByTestId('my-card'));
     const row = card.getByTestId('my-card-row');
     expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
-    // 첫 줄에 닉네임과 꺾쇠가 같이 있고, 그 줄 안에서 세로 가운데
+    // 이름 칸은 프로필 그림과 같은 높이에 위아래로 벌린다 — 닉네임 줄은 그림 위 끝, 별자리 · 날 수 줄은 그림 아래 끝(소유자 빌드 15 확정안)
+    expect(StyleSheet.flatten(card.getByTestId('my-card-names').props.style)).toMatchObject({ height: MyLayout.card.avatar, justifyContent: 'space-between' });
+    // 첫 줄에 닉네임과 꺾쇠가 같이 있고, 그 줄 안에서 세로 가운데 — 꺾쇠가 위쪽(닉네임 줄)에 온다
     const line = card.getByTestId('my-card-first-line');
     expect(StyleSheet.flatten(line.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
     expect(within(line).getByText('새벽별')).toBeTruthy();

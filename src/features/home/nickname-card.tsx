@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Avatar, isAvatarId } from '@/components/avatar';
@@ -33,19 +34,28 @@ export type NicknameCardProps = {
 
 /**
  * 홈의 별명 카드(결정 047 의 1-2, 보드 11 · 11-1): 프로필 그림 · "○○ 님" · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 오른쪽 위 꺾쇠.
- * 카드 전체를 누르면 내 별명(풀이 글)으로 간다. 꺾쇠는 다른 홈 카드의 이름표 줄 꺾쇠와 같은 자리 · 크기 · 색이고 "풀이 읽기" 글자는 없다 —
- * 화면 읽기 이름에만 남긴다(결정 080). 브랜드 자리라 오른쪽 위에 옅은 빛과 별자리 장식이 있고, 꺾쇠는 그 위에 놓인다(결정 035).
+ * 카드 전체를 누르면 내 별명(풀이 글)으로 간다. 꺾쇠는 프로필 그림 · 닉네임 줄의 오른쪽 끝, 그 줄의 세로 가운데에 놓이고(소유자 빌드 14)
+ * 크기 · 색은 다른 홈 카드의 꺾쇠와 같다. "풀이 읽기" 글자는 없고 화면 읽기 이름에만 남긴다(결정 080).
+ * 브랜드 자리라 오른쪽 위에 옅은 빛과 별자리 장식이 있고, 별자리는 꺾쇠 둘레를 비운다 — 그 줄의 실제 자리를 재서 따라간다(결정 035 · 080).
  */
 export function NicknameCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, onOpen }: NicknameCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
   const label = [nickname ? `${nickname}${C.nicknameSuffix}` : null, meta, headline ?? M.readingEmpty, headline ? C.read : M.readingCta]
     .filter(Boolean)
     .join(C.labelSeparator);
+  // 프로필 줄의 자리(카드 안, 테두리 포함 좌표). 재기 전에는 그림이 있는 줄로 본다
+  const [row, setRow] = useState<{ y: number; height: number }>({ y: LineWidth + L.padding, height: L.avatar });
+  const onRowLayout = (e: LayoutChangeEvent) => {
+    const { y, height } = e.nativeEvent.layout;
+    setRow((was) => (was.y === y && was.height === height ? was : { y, height }));
+  };
+  // 꺾쇠 칸의 위 끝 — 별자리 그림과 같은 기준(테두리 안쪽)으로
+  const chevronTop = row.y - LineWidth + (row.height - L.chevron) / 2;
   return (
     <Pressable testID="nickname-card" accessibilityRole="button" accessibilityLabel={label} onPress={onOpen} style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
-      <CardConstellation art={art} clear={{ top: L.padding, right: L.padding, size: L.chevron }} />
-      <View style={styles.row}>
+      <CardConstellation art={art} clear={{ top: chevronTop, right: L.padding, size: L.chevron }} />
+      <View testID="nickname-card-row" style={styles.row} onLayout={onRowLayout}>
         {accountPending ? <PlaceholderCircle testID="avatar-placeholder" size={L.avatar} /> : isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>
           {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="subhead" width={L.namePlaceholder} /> : null}
@@ -61,6 +71,9 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
             </Txt>
           ) : null}
         </View>
+        <Svg testID="nickname-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+          <Path testID="nickname-card-chevron-path" d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
       </View>
       {headline ? (
         <Txt variant="section" keepAll style={styles.headline}>
@@ -71,9 +84,6 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
           {M.readingEmpty}
         </Txt>
       )}
-      <Svg testID="nickname-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none" style={styles.chevron}>
-        <Path testID="nickname-card-chevron-path" d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      </Svg>
     </Pressable>
   );
 }
@@ -107,10 +117,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.raised,
     padding: L.padding,
   },
-  /** 오른쪽 끝은 꺾쇠 자리 — 긴 닉네임 · 해 별자리 줄이 꺾쇠 밑으로 들어가지 않게 */
-  row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap, paddingRight: L.chevron },
-  names: { flexShrink: 1 },
+  /** 프로필 그림 · 이름 · 꺾쇠 — 세로 가운데 맞춤이라 꺾쇠가 그림 · 닉네임과 높이가 맞는다 */
+  row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
+  /** 이름 칸이 남은 폭을 써서 꺾쇠가 줄 끝에 붙는다 */
+  names: { flex: 1 },
   headline: { marginTop: L.headlineTop },
-  /** 다른 홈 카드의 이름표 줄 꺾쇠와 같은 자리: 안쪽 여백 그대로 오른쪽 위, 별자리 장식 위 */
-  chevron: { position: 'absolute', top: L.padding, right: L.padding },
 });

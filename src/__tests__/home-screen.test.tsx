@@ -498,7 +498,7 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(router.push).toHaveBeenCalledWith('/today');
   });
 
-  it('그 아래 "오늘의 작은 실천" — 같은 응답의 실천 셋, 누르면 /today. 오늘의 하늘을 받기 전에는 칸이 없다(결정 092)', async () => {
+  it('그 아래 "오늘의 작은 실천" — 같은 응답의 실천 셋, 이름표 아래 간격은 시기 카드와 같게, 누르면 /today. 오늘의 하늘을 받기 전에는 칸이 없다(결정 092 · 095)', async () => {
     let resolve: (v: unknown) => void = () => {};
     mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (resolve = r)) as never);
     await saveBirth({ profile, chart: fixtures.chart });
@@ -510,6 +510,9 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(within(card).getByText(strings.today.practices)).toBeTruthy();
     expect(within(card).getAllByTestId('timing-todo')).toHaveLength(3);
     expect(within(card).getByText(sky.practices[0].title)).toBeTruthy();
+    // 이름표 줄 아래 15 에 첫 번호 위 — "지금 나의 시기" 제목 글자 위와 같은 자리, 줄 사이 14(결정 095)
+    expect(StyleSheet.flatten(within(card).getByTestId('home-today-todos').props.style)).toMatchObject({ marginTop: 15 });
+    expect(StyleSheet.flatten(within(card).getByTestId('timing-todos').props.style)).toMatchObject({ gap: 14 });
     await fireEvent.press(card);
     expect(router.push).toHaveBeenCalledWith('/today');
   });

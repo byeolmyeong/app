@@ -153,10 +153,11 @@ export function SectionTitle({ title, note }: { title: string; note?: string }) 
   );
 }
 
+/** 작은 실천의 번호(결정 095): 동그라미 32 · 숫자 본문 굵게 15/22. 글이 두 줄이면 줄의 가운데에 온다(줄이 가운데 정렬) */
 function Badge({ n }: { n: number }) {
   return (
-    <View style={styles.badge}>
-      <Txt variant="label" color="accentText" style={styles.semibold}>
+    <View testID="timing-badge" style={styles.badge}>
+      <Txt variant="bodyStrong" color="accentText">
         {String(n)}
       </Txt>
     </View>
@@ -183,11 +184,18 @@ export function PracticeCards({ practices }: { practices: { title: string }[] })
 }
 
 /** 번호 붙은 할 일 줄(카드 없이 — 홈의 작은 실천 · 그날의 작은 실천, 보드 11 · 14-4) */
-export function TodoList({ items }: { items: { title: string }[] }) {
+export function TodoList({
+  items,
+  spaced = false,
+}: {
+  items: { title: string }[];
+  /** 홈 카드: 줄 최소 높이는 번호 높이, 줄 사이 14(결정 095). 아니면 줄 높이 44 를 이어 붙인다(그날의 작은 실천) */
+  spaced?: boolean;
+}) {
   return (
-    <View>
+    <View testID="timing-todos" style={spaced ? styles.todosSpaced : null}>
       {items.map((p, i) => (
-        <View key={i} testID="timing-todo" style={styles.todo}>
+        <View key={i} testID="timing-todo" style={[styles.todo, spaced && styles.todoSpaced]}>
           <Badge n={i + 1} />
           <Txt variant="body" color="body" style={styles.flex} keepAll>
             {p.title}
@@ -448,6 +456,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   todo: { flexDirection: 'row', alignItems: 'center', gap: L.card.gap, minHeight: L.day.todo },
+  todosSpaced: { gap: L.home.todoGap },
+  todoSpaced: { minHeight: L.badge },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

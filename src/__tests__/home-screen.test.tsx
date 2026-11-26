@@ -706,6 +706,9 @@ describe('홈은 접속하자마자 — 받아 둔 것 먼저 · 첫 상태까�
     await act(async () => void (await jest.advanceTimersByTimeAsync(600)));
     expect(homeReady.getHomeReady()).toBe(true);
     expect(screen.getByTestId('home-today-making')).toBeTruthy();
+    // 걸리는 시간을 약속하지 않는다(소유자 빌드 15 — "몇 초면 돼요" 는 10초 넘게 걸려 약속처럼 들렸다)
+    expect(within(screen.getByTestId('home-today-making')).getByText('금방 보여 드릴게요')).toBeTruthy();
+    expect(screen.queryByText('몇 초면 돼요')).toBeNull();
     expect(skeletons()).toHaveLength(0);
     await act(async () => finish({ ok: true, data: sky }));
     expect(screen.getByTestId('home-today-card')).toBeTruthy();

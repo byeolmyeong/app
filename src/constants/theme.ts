@@ -584,7 +584,11 @@ export const ReadingLayout = {
   listsGap: 32,
   listGap: 12,
   itemGap: 8,
-  card: { radius: 20, padTop: 24, padX: 16, padBottom: 20, picture: 154, nameTop: 12, gridTop: 20, gridPadV: 20, gridGap: 8, cellGap: 4, mapRow: 52, chevron: 18 },
+  /**
+   * 별자리 카드. padBottom 은 맨 아래 "내 하늘 지도 보기" 줄(높이 mapRow 52 — 누르는 칸, 글 위아래 16) 밑의 안쪽 여백이다 —
+   * 글 아래가 16 + 4 = 20 으로 셋 칸의 위아래 여백(gridPadV)과 같다(소유자 빌드 14 "조금 좁혀", 전에는 36)
+   */
+  card: { radius: 20, padTop: 24, padX: 16, padBottom: 4, picture: 154, nameTop: 12, gridTop: 20, gridPadV: 20, gridGap: 8, cellGap: 4, mapRow: 52, chevron: 18 },
   /**
    * 처음 불러올 때 뼈대(결정 071 — 보드 12 의 줄 수): 한 줄 별명 두 줄 · 문단 다섯(제목 한 줄 · 본문 다섯 줄) · 강점 셋 · 보완점 둘의 막대 폭,
    * 별자리 카드의 이름 · 셋 칸(이름 · 별자리 · 뜻) · "내 하늘 지도 보기" 막대 폭

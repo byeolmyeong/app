@@ -258,6 +258,8 @@ export const strings = {
     empty: '아직 등록된 질문이 없어요',
     emptyNote: '궁금한 점은 문의하기로 보내 주세요.',
     toInquiry: '문의하기',
+    /** 관리자가 답에 이 말을 넣으면 펼친 답 아래에 문의하기로 가는 링크가 나온다(결정 089 — 서버 변경 없이 글로 켜고 끈다) */
+    inquiryKeyword: '문의하기',
     retry: '다시 시도',
     failed: {
       NETWORK: '인터넷 연결을 확인하고 다시 시도해 주세요.',

@@ -1,8 +1,10 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { getAnimatedStyle } from 'react-native-reanimated';
 
 import { Motion } from '@/constants/theme';
+import { strings } from '@/content/strings';
 import { FaqList } from '@/features/support/faq-list';
 import type { Faq } from '@/lib/api';
 
@@ -13,6 +15,8 @@ const items: Faq[] = [
 /** 펼친 답의 잰 높이(항목마다 다르게) */
 const HEIGHTS = [60, 96];
 const HIDDEN = { includeHiddenElements: true };
+
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 
 beforeEach(() => jest.clearAllMocks());
 // 단언이 실패해도 가짜 시계가 다음 시험으로 넘어가지 않게
@@ -117,5 +121,28 @@ describe('FaqList: 질문을 누르면 답이 높이로 펼쳐지고 꺾쇠가 �
     await press();
     await act(async () => jest.advanceTimersByTime(16));
     expect(now(0)).toEqual({ deg: 0, height: 0, opacity: 0 });
+  });
+
+  describe('답에 "문의하기" 가 있으면 펼친 답 아래에 문의하기로 가는 링크(결정 089, 소유자 빌드 15)', () => {
+    const withInquiry: Faq[] = [
+      { id: 'faq-place', question: '태어난 곳이 목록에 없어요', answer: '지금은 국내 시 · 군 · 구만 고를 수 있어요. 찾는 곳이 없거나 해외에서 태어났다면 아래 문의하기로 알려 주세요.' },
+      { id: 'faq-free', question: '요금이 있나요?', answer: '지금은 모두 무료예요.' },
+    ];
+
+    it('그 답에만 링크가 있고, 누르면 새 문의로 간다', async () => {
+      await render(<FaqList items={withInquiry} />);
+      const [place, free] = screen.getAllByTestId('faq-answer', HIDDEN);
+      expect(within(place).getByRole('link', { name: strings.faq.toInquiry, hidden: true })).toBeTruthy();
+      expect(within(free).queryByRole('link', { hidden: true })).toBeNull();
+      await fireEvent.press(screen.getByRole('button', { name: withInquiry[0].question }));
+      await fireEvent.press(within(place).getByRole('link', { name: strings.faq.toInquiry }));
+      expect(router.push).toHaveBeenCalledWith('/my/inquiries/new');
+    });
+
+    it('링크는 잰 답 칸 안에 있어 펼친 높이에 함께 들어간다', async () => {
+      await render(<FaqList items={withInquiry} />);
+      const measure = screen.getAllByTestId('faq-measure', HIDDEN)[0];
+      expect(within(measure).getByRole('link', { name: strings.faq.toInquiry, hidden: true })).toBeTruthy();
+    });
   });
 });

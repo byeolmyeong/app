@@ -44,7 +44,7 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
   return (
     <Pressable testID="nickname-card" accessibilityRole="button" accessibilityLabel={label} onPress={onOpen} style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
-      <CardConstellation art={art} />
+      <CardConstellation art={art} clear={{ top: L.padding, right: L.padding, size: L.chevron }} />
       <View style={styles.row}>
         {accountPending ? <PlaceholderCircle testID="avatar-placeholder" size={L.avatar} /> : isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>

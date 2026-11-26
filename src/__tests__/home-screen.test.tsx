@@ -152,6 +152,8 @@ describe('홈', () => {
     const view = await render(<HomeScreen />);
     const card = within(await screen.findByTestId('nickname-card'));
     expect(card.getByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeTruthy();
+    // 오른쪽 위 꺾쇠 둘레는 비운다(결정 080) — 어느 별자리든 선이 꺾쇠 밑을 지나지 않게
+    expect(card.getByTestId('card-constellation-clear', { includeHiddenElements: true })).toBeTruthy();
     await view.unmount();
     // 해가 처녀자리인 차트 — 달 · 상승궁이 아니라 해의 별자리로 고른다
     const virgo = { ...fixtures.chart, positions: fixtures.chart.positions.map((p) => (p.body === 'SUN' ? { ...p, sign: 'VIRGO' } : p)) };

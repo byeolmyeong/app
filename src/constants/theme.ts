@@ -275,8 +275,11 @@ export const NicknameCardLayout = {
   /** 오른쪽 위 꺾쇠 22 — 다른 홈 카드의 이름표 줄 꺾쇠와 같은 크기 · 자리(안쪽 여백 padding 그대로, 결정 080 · 크기는 소유자 2026-11-23) */
   chevron: 22,
   glow: { x: 0.88, y: 0.08, extent: 0.58 },
-  /** 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기 */
-  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8 },
+  /**
+   * 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기,
+   * 오른쪽 위 꺾쇠 둘레를 비우는 폭(꺾쇠 바깥으로 — 홈 · 마이 카드 같은 규칙, 결정 080)
+   */
+  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8, clear: 8 },
   /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." 막대 폭 */
   skeleton: { name: 72, meta: 64, empty: 168 },
   /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
@@ -877,7 +880,7 @@ export const MyLayout = {
     headlineTop: 16,
     headlineLine: 25,
     birthTop: 12,
-    /** 이름 줄 끝 꺾쇠 — 홈 카드들의 꺾쇠와 같은 크기(결정 084) */
+    /** 오른쪽 위 꺾쇠 — 홈 별명 카드와 같은 크기 · 자리(안쪽 여백 그대로, 결정 084 · 080). 별자리 그림은 그 둘레를 비운다 */
     chevron: 22,
     /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
     namePlaceholder: 104,

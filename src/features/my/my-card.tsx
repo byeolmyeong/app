@@ -36,8 +36,8 @@ export type MyCardProps = {
 
 /**
  * 마이 위의 별명 카드(결정 056 의 1 · 084, 보드 16): 프로필 그림 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄.
- * 카드 전체를 누르면 내 정보로 가고, 이름 줄 끝에 꺾쇠를 둔다(버튼 둘은 결정 084 로 뺐다 — 출생 정보 수정은 내 정보 안에서 들어간다).
- * 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다.
+ * 카드 전체를 누르면 내 정보로 간다(버튼 둘은 결정 084 로 뺐다 — 출생 정보 수정은 내 정보 안에서 들어간다).
+ * 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 두고, 꺾쇠도 홈 별명 카드와 같은 자리(오른쪽 위)에 둔다 — 별자리는 꺾쇠 둘레를 비운다(결정 080).
  */
 export function MyCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, birthLine, onOpen }: MyCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
@@ -46,7 +46,7 @@ export function MyCard({ nickname, avatar, accountPending = false, sunSign, art,
   return (
     <Pressable testID="my-card" accessibilityRole="button" accessibilityLabel={label} onPress={onOpen} style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
-      <CardConstellation art={art} />
+      <CardConstellation art={art} clear={{ top: L.paddingTop, right: L.padding, size: L.chevron }} />
       <View style={styles.row}>
         {accountPending ? <PlaceholderCircle testID="avatar-placeholder" size={L.avatar} /> : isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>
@@ -58,9 +58,6 @@ export function MyCard({ nickname, avatar, accountPending = false, sunSign, art,
             </Txt>
           ) : null}
         </View>
-        <Svg testID="my-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
-          <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
       </View>
       {headline ? (
         <Txt variant="input" color="inkSoft" keepAll style={styles.headline}>
@@ -72,6 +69,9 @@ export function MyCard({ nickname, avatar, accountPending = false, sunSign, art,
           {birthLine}
         </Txt>
       ) : null}
+      <Svg testID="my-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none" style={styles.chevron}>
+        <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
     </Pressable>
   );
 }
@@ -87,9 +87,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: L.padding,
     paddingBottom: L.padding,
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
-  /** 이름 칸이 남은 폭을 써서 꺾쇠가 줄 끝에 붙는다 */
+  /** 오른쪽 끝은 꺾쇠 자리 — 긴 닉네임 · 해 별자리 줄이 꺾쇠 밑으로 들어가지 않게 */
+  row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap, paddingRight: L.chevron },
   names: { flex: 1, gap: L.namesGap },
   headline: { marginTop: L.headlineTop, lineHeight: L.headlineLine, fontWeight: FontWeight.medium },
   birth: { marginTop: L.birthTop },
+  /** 홈 별명 카드와 같은 자리: 안쪽 여백 그대로 오른쪽 위, 별자리 장식 위 */
+  chevron: { position: 'absolute', top: L.paddingTop, right: L.padding },
 });

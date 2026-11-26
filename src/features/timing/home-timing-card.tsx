@@ -37,7 +37,7 @@ function NowLine({ nextYear }: { nextYear: number | null }) {
   const id = `homeLine${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <View style={styles.lineBox}>
-      <View style={styles.track}>
+      <View testID="home-track" style={styles.track}>
         <Svg style={styles.trackLine} width="100%" height={LineWidth * 2}>
           <Defs>
             <LinearGradient id={id} x1="0" y1="0" x2="1" y2="0">
@@ -50,14 +50,17 @@ function NowLine({ nextYear }: { nextYear: number | null }) {
         </Svg>
         <View style={[styles.dot, styles.dotStart]} />
         <View style={[styles.dot, styles.dotEnd]} />
-        <View style={[styles.now, { left: `${H.nowAt * 100}%` }]} />
+        <View testID="home-now" style={[styles.now, { left: `${H.nowAt * 100}%` }]} />
       </View>
       <View style={styles.labels}>
         <Txt variant="badge" color="hint" style={styles.labelStart}>
           {T.home.past}
         </Txt>
-        <View style={[styles.nowLabel, { left: `${H.nowAt * 100}%` }]}>
-          <Txt variant="badge">{T.home.now}</Txt>
+        {/* "지금" 은 트랙과 같은 좌우 여백의 칸에서 점과 같은 % — 기준 폭이 같아야 가운데가 맞는다(소유자 빌드 15) */}
+        <View testID="home-now-lane" pointerEvents="none" style={styles.nowLane}>
+          <View testID="home-now-label" style={[styles.nowLabel, { left: `${H.nowAt * 100}%` }]}>
+            <Txt variant="badge">{T.home.now}</Txt>
+          </View>
         </View>
         {nextYear !== null ? (
           <Txt variant="badge" color="hint" style={styles.labelEnd}>
@@ -213,7 +216,9 @@ const styles = StyleSheet.create({
   labels: { marginTop: P.labelsTop, height: P.labels },
   labelStart: { position: 'absolute', left: 0, fontWeight: FontWeight.regular },
   labelEnd: { position: 'absolute', right: 0, fontWeight: FontWeight.regular },
-  nowLabel: { position: 'absolute', width: L.hero.art, marginLeft: P.trackInset - L.hero.art / 2, alignItems: 'center' },
+  /** "지금" 글자의 칸 — 트랙(track)과 같은 좌우 여백이라 같은 % 가 점과 같은 자리다 */
+  nowLane: { position: 'absolute', top: 0, bottom: 0, left: P.trackInset, right: P.trackInset },
+  nowLabel: { position: 'absolute', width: L.hero.art, marginLeft: -L.hero.art / 2, alignItems: 'center' },
   title: { marginTop: H.titleTop },
   emptyTitle: { marginTop: H.emptyTitleTop },
   sub: { marginTop: H.subTop },

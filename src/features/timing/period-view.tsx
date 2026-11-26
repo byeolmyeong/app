@@ -34,9 +34,12 @@ function Track({ interval, today }: { interval: TimingInterval; today: string })
         <Txt variant="badge" color="hint" style={[styles.regular, styles.labelStart]}>
           {`${formatMonthOnly(interval.from)}${T.period.start}`}
         </Txt>
+        {/* "지금" 은 트랙과 같은 좌우 여백의 칸에서 점과 같은 % — 기준 폭이 같아야 가운데가 맞는다(소유자 빌드 15) */}
         {now !== null ? (
-          <View style={[styles.nowLabel, { left: `${now * 100}%` }]}>
-            <Txt variant="badge">{T.period.now}</Txt>
+          <View testID="period-now-lane" pointerEvents="none" style={styles.nowLane}>
+            <View testID="period-now-label" style={[styles.nowLabel, { left: `${now * 100}%` }]}>
+              <Txt variant="badge">{T.period.now}</Txt>
+            </View>
           </View>
         ) : null}
         <Txt variant="badge" color="hint" style={[styles.regular, styles.labelEnd]}>
@@ -205,7 +208,9 @@ const styles = StyleSheet.create({
   labels: { marginTop: P.labelsTop, height: P.labels },
   labelStart: { position: 'absolute', left: 0 },
   labelEnd: { position: 'absolute', right: 0 },
-  nowLabel: { position: 'absolute', width: H.art, marginLeft: P.trackInset - H.art / 2, alignItems: 'center' },
+  /** "지금" 글자의 칸 — 트랙(track)과 같은 좌우 여백이라 같은 % 가 점과 같은 자리다 */
+  nowLane: { position: 'absolute', top: 0, bottom: 0, left: P.trackInset, right: P.trackInset },
+  nowLabel: { position: 'absolute', width: H.art, marginLeft: -H.art / 2, alignItems: 'center' },
   number: { fontWeight: FontWeight.semibold, letterSpacing: L.period.numberTracking },
   /** 이유 상자의 뼈대 — ReasonLine(접힌 상자)의 여백 · 모서리 그대로 */
   reasonBox: {

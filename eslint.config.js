@@ -6,7 +6,8 @@ const expoConfig = require('eslint-config-expo/flat');
 
 // 의존 규칙: docs/architecture.md "의존 규칙", 결정 017.
 // 다른 기능이 가져다 써도 되는 파일(features/ 기준 경로).
-const SHARED_FEATURE_FILES = ['./chart/ChartWheel.tsx', './auth/use-session.ts', './audio/use-soundtrack.ts', './reason/reason-sentence.ts', './reason/reason-line.tsx', './push/push.ts', './push/push-data.ts', './me/area-art.tsx', './update/update-gate.tsx'];
+// reason-reveal.tsx: 이유 상자의 펼침 움직임(앱 Reanimated · 웹은 같은 이름의 .web.tsx 가 대신 — 웹 번들에 Reanimated 를 싣지 않는다)을 자주 묻는 질문(support)도 쓴다.
+const SHARED_FEATURE_FILES = ['./chart/ChartWheel.tsx', './auth/use-session.ts', './audio/use-soundtrack.ts', './reason/reason-sentence.ts', './reason/reason-line.tsx', './reason/reason-reveal.tsx', './push/push.ts', './push/push-data.ts', './me/area-art.tsx', './update/update-gate.tsx'];
 
 // 폴더 목록은 설정을 읽을 때 만든다. 에디터의 ESLint 는 새 폴더를 만든 뒤 재시작해야 반영된다.
 const subdirs = (dir) =>

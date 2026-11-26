@@ -13,10 +13,14 @@ import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { api } from '@/lib/api';
 
-// Stack.Screen 은 받은 화면 옵션을 mockScreen 에 남긴다(약관 글이 아래에서 올라오는지 본다)
+// Stack.Screen 은 받은 화면 옵션을 mockScreen 에 남긴다(약관 글이 아래에서 올라오는지 본다). Stack 은 화면 쌓기 기본 옵션을 mockStack 에
 const mockScreen = jest.fn();
+const mockStack = jest.fn();
 jest.mock('expo-router', () => ({
-  Stack: Object.assign(({ children }: { children?: ReactNode }) => children ?? null, {
+  Stack: Object.assign((props: { children?: ReactNode }) => {
+    mockStack(props);
+    return props.children ?? null;
+  }, {
     Screen: (props: unknown) => {
       mockScreen(props);
       return null;
@@ -157,11 +161,11 @@ describe('약관 글 화면의 열림', () => {
     });
   });
 
-  it('가입 닉네임 · 출생 정보 단계는 오른쪽에서 밀려 들어오는 화면 옵션으로 연다(앱은 기본 그대로)', async () => {
+  it('가입 닉네임 · 출생 정보 단계는 오른쪽에서 밀려 들어온다(앱은 화면 쌓기의 밀어 넣기 animation default — 결정 068 의 7, 다른 화면의 none 을 덮는다)', async () => {
     await render(<RootLayout />);
     await waitFor(() => {
-      const names = mockScreen.mock.calls.map(([p]) => p.name);
-      expect(names).toEqual(expect.arrayContaining(['signup/nickname', 'signup/birth']));
+      const options = Object.fromEntries(mockScreen.mock.calls.map(([p]) => [p.name, p.options]));
+      for (const name of ['signup/nickname', 'signup/birth']) expect(options[name]).toEqual({ animation: 'default' });
     });
   });
 });
@@ -181,9 +185,12 @@ describe('아래 탭의 첫 화면', () => {
     });
   });
 
-  it('탭 안에서 들어가는 화면(내 별명 · 내 하늘 지도 · 시기 자세히 · 그날의 하늘 · 마이의 하위 화면 · 알림함 · 오늘의 하늘)은 화면 쌓기의 기본(오른쪽에서) 그대로', async () => {
+  // 소유자 2026-11-21 "뎁스가 있는 화면으로 넘어갈 때 오른쪽에서 왼쪽으로 오는 애니메이션" · 빌드 15 "아직도 … 안 되게 하라니까"(결정 094)
+  it('탭 안에서 들어가는 화면(내 별명 · 내 하늘 지도 · 시기 자세히 · 그날의 하늘 · 마이의 하위 화면 · 알림함 · 오늘의 하늘)도 밀려 들어오지 않고 바로 — 화면 쌓기 기본이 animation none', async () => {
     await render(<RootLayout />);
-    await waitFor(() => expect(mockScreen).toHaveBeenCalled());
+    await waitFor(() => expect(mockStack).toHaveBeenCalled());
+    const last = mockStack.mock.calls[mockStack.mock.calls.length - 1][0] as { screenOptions: unknown };
+    expect(last.screenOptions).toMatchObject({ headerShown: false, animation: 'none', contentStyle: { backgroundColor: '#0D0E12' } });
     const names = mockScreen.mock.calls.map(([p]) => p.name);
     for (const name of ['reading', 'chart/index', 'timing/period', 'timing/day', 'my/account', 'my/nickname', 'notifications', 'today']) expect(names).not.toContain(name);
   });

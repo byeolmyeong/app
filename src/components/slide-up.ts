@@ -28,8 +28,9 @@ export function slideUpScreenOptions(os: typeof Platform.OS, reduceMotion: boole
 }
 
 /** 오른쪽에서 밀려 들어오는 화면(가입 단계 사이)의 옵션: 앱은 화면 쌓기의 기본(오른쪽에서) 그대로, 웹만 앞 화면을 남긴다 */
-export function slideInScreenOptions(os: typeof Platform.OS): Partial<SlideUpScreenOptions> {
-  return os === 'web' ? { presentation: 'transparentModal', contentStyle: { backgroundColor: 'transparent' } } : {};
+export function slideInScreenOptions(os: typeof Platform.OS): Partial<SlideUpScreenOptions> | { animation: 'default' } {
+  // 앱은 화면 쌓기의 밀어 넣기 — 다른 화면의 기본(animation none, 결정 094)을 덮는다
+  return os === 'web' ? { presentation: 'transparentModal', contentStyle: { backgroundColor: 'transparent' } } : { animation: 'default' };
 }
 
 /** 루트 레이아웃이 약관 글 화면들에 쓴다 */

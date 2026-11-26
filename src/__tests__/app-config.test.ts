@@ -41,6 +41,12 @@ describe('app.config APP_VARIANT', () => {
     ]);
   });
 
+  // 소유자 빌드 15: 화면이 바뀔 때 모서리에 흰 바탕이 비쳤다 — 앱 뒤 바탕(root view)이 비어 흰색이었다(결정 094)
+  it('앱 뒤 바탕(root view)은 화면 바탕과 같은 #0D0E12 — 운영 · 테스트앱 둘 다', () => {
+    expect(configWith(undefined).backgroundColor).toBe('#0D0E12');
+    expect(configWith('test').backgroundColor).toBe('#0D0E12');
+  });
+
   it('test 변형도 그 밖의 설정은 운영과 같다', () => {
     const prod = configWith(undefined);
     const test = configWith('test');

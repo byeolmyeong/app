@@ -1,5 +1,5 @@
 import { createSessionStore, type SessionStoreDeps } from '@/features/auth/session-store';
-import type { ApiResult, LoginResult, SessionInfo } from '@/lib/api';
+import type { ApiResult, LoginResult } from '@/lib/api';
 
 type Overrides = Partial<SessionStoreDeps> & { stored?: string | null };
 
@@ -16,7 +16,7 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
     login: jest.fn(async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNED_IN' as const, token: 'session-token' })),
     signup: jest.fn(async () => ok({ token: 'new-session' as string | null })),
     checkNickname: jest.fn(async () => ok({ available: true })),
-    getSession: jest.fn(async (): Promise<ApiResult<SessionInfo>> => ok({ analyticsId: null as string | null })),
+    getSession: jest.fn(async (): Promise<ApiResult<null>> => ok(null)),
     logout: jest.fn(async (): Promise<ApiResult<null>> => ok(null)),
     loadToken: jest.fn(async () => kept),
     saveToken: jest.fn(async (token: string) => {
@@ -441,16 +441,16 @@ describe('웹: 시작할 때 서버에 닿지 못함', () => {
   });
 
   it('다시 확인: 살아 있으면 로그인 상태, 401 이면 로그인 전, 또 닿지 못하면 그대로', async () => {
-    const getSession = jest.fn(async (): Promise<ApiResult<SessionInfo>> => fail('NETWORK'));
+    const getSession = jest.fn(async (): Promise<ApiResult<null>> => fail('NETWORK'));
     const { store } = setup({ cookieSession: true, getSession });
     await store.start();
     await store.recheck();
     expect(store.getSnapshot().status).toBe('offline');
-    getSession.mockResolvedValueOnce(ok({ analyticsId: null }));
+    getSession.mockResolvedValueOnce(ok(null));
     await store.recheck();
     expect(store.getSnapshot().status).toBe('signedIn');
 
-    const gone = setup({ cookieSession: true, getSession: jest.fn(async (): Promise<ApiResult<SessionInfo>> => fail('NETWORK')) });
+    const gone = setup({ cookieSession: true, getSession: jest.fn(async (): Promise<ApiResult<null>> => fail('NETWORK')) });
     await gone.store.start();
     (gone.deps.getSession as jest.Mock).mockResolvedValueOnce(fail('LOGIN_REQUIRED', 401));
     await gone.store.recheck();

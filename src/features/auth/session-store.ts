@@ -10,7 +10,6 @@ import type {
   LoginResult,
   NicknameAvailability,
   ProviderCredential,
-  SessionInfo,
   SignupExtra,
   SignupResult,
 } from '@/lib/api';
@@ -40,7 +39,7 @@ export type SessionStoreDeps = {
   login: (credential: ProviderCredential) => Promise<ApiResult<LoginResult>>;
   signup: (signupToken: string, birth: BirthInput, extra: SignupExtra) => Promise<ApiResult<SignupResult>>;
   checkNickname: (signupToken: string, nickname: string) => Promise<ApiResult<NicknameAvailability>>;
-  getSession: () => Promise<ApiResult<SessionInfo>>;
+  getSession: () => Promise<ApiResult<null>>;
   logout: () => Promise<ApiResult<null>>;
   loadToken: () => Promise<string | null>;
   saveToken: (token: string) => Promise<void>;

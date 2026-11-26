@@ -31,6 +31,7 @@ function setup({ stored = null, ...overrides }: Overrides = {}) {
     saveSignup: jest.fn(async () => {}),
     clearSignup: jest.fn(async () => {}),
     clearDeviceData: jest.fn(async () => {}),
+    onSignedIn: jest.fn(),
     ...overrides,
   } satisfies SessionStoreDeps;
   return { deps, store: createSessionStore(deps), kept: () => kept };
@@ -370,6 +371,42 @@ describe('마지막에 쓴 공급자 적기', () => {
     await dev.store.start();
     await dev.store.devSignIn();
     expect(dev.deps.saveLastProvider).not.toHaveBeenCalled();
+  });
+});
+
+// 제품 분석(결정 040 · 081): 로그인 · 가입을 마친 순간을 공급자와 함께 알린다(출생 정보는 시각을 아는지만)
+describe('로그인 · 가입을 마친 순간 알리기', () => {
+  const kakao = { provider: 'KAKAO' as const, idToken: 'k' };
+  const signupRequired = () => jest.fn(async (): Promise<ApiResult<LoginResult>> => ok({ status: 'SIGNUP_REQUIRED' as const, signupToken: 'ticket' }));
+
+  it('계정이 있으면 로그인으로 알린다', async () => {
+    const { deps, store } = setup();
+    await store.start();
+    await store.signIn(kakao);
+    expect(deps.onSignedIn).toHaveBeenCalledWith({ kind: 'login', provider: 'KAKAO' });
+  });
+
+  it('처음 온 사람은 가입을 마칠 때 가입으로 알린다 — 시각을 아는지만 담는다', async () => {
+    const { deps, store } = setup({ login: signupRequired() });
+    await store.start();
+    await store.signIn(kakao);
+    expect(deps.onSignedIn).not.toHaveBeenCalled();
+    await store.completeSignup({ ...signupInput, birth: { date: '1995-05-05', time: '07:30', placeId: 11 } });
+    expect(deps.onSignedIn).toHaveBeenCalledWith({ kind: 'signup', provider: 'KAKAO', timeKnown: true });
+  });
+
+  it('로그인 · 가입이 실패하거나 개발용 세션이면 알리지 않는다', async () => {
+    const failed = setup({ login: jest.fn(async () => fail('LOGIN_REQUIRED', 401, 'INVALID_ID_TOKEN')) });
+    await failed.store.start();
+    await failed.store.signIn(google);
+    const rejected = setup({ login: signupRequired(), signup: jest.fn(async () => fail('SERVER', 400, 'NICKNAME_TAKEN')) });
+    await rejected.store.start();
+    await rejected.store.signIn(google);
+    await rejected.store.completeSignup(signupInput);
+    const dev = setup({ devSession: true });
+    await dev.store.start();
+    await dev.store.devSignIn();
+    for (const s of [failed, rejected, dev]) expect(s.deps.onSignedIn).not.toHaveBeenCalled();
   });
 });
 

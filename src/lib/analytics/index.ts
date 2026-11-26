@@ -52,6 +52,9 @@ export function initAnalytics(): void {
   });
 }
 
+/** 분석이 켜져 있는가(키가 있어 초기화했다). 운영에서만 true — 테스트앱 · 스테이징 · 로컬은 false(결정 081) */
+export const isAnalyticsEnabled = (): boolean => enabled;
+
 export function track<E extends EventName>(event: E, props: EventProps<E>): void {
   const clean = sanitize(event, props as Record<string, unknown>);
   if (!clean) return devWarn(`표에 없는 이벤트라 보내지 않는다: ${event}`);

@@ -9,6 +9,7 @@ import { ReasonLine } from '@/features/reason/reason-line';
 import { formatDayLong } from '@/features/timing/dates';
 import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
 import { SkBlock, TodoList } from '@/features/timing/timing-parts';
+import { useTrackOnce } from '@/lib/analytics';
 import type { Chart, DaySky } from '@/lib/api';
 
 const T = strings.timing;
@@ -21,6 +22,7 @@ const FLOW: (keyof DaySky['flow'])[] = ['people', 'work', 'mind'];
  * 이렇게 풀이한 이유(그날 지나가는 별 — 오늘이면 "오늘", 작은 지도 없음) · 그날의 작은 실천 셋. 면책 문구는 두지 않는다(결정 064).
  */
 export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | null; today: string }) {
+  useTrackOnce('reading_viewed', { kind: 'day_sky' });
   // 오늘이면 "오늘의 흐름" · "오늘의 작은 실천"(오늘의 하늘 11-4, 결정 051 의 3)
   const isToday = sky.date === today;
   return (

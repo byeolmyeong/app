@@ -8,6 +8,7 @@ import { ReasonLine } from '@/features/reason/reason-line';
 import { formatMonthOnly, formatPeriod, periodNow } from '@/features/timing/dates';
 import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/skeleton';
 import { PracticeCards, PracticeCardsSkeleton, SkBlock, Tag, TimingArt, areaLabel } from '@/features/timing/timing-parts';
+import { useTrackOnce } from '@/lib/analytics';
 import type { Chart, TimingDetail, TimingInterval } from '@/lib/api';
 
 const T = strings.timing;
@@ -51,6 +52,7 @@ function Track({ interval, today }: { interval: TimingInterval; today: string })
  * 이렇게 풀이한 이유(지나가는 별 — 작은 지도 없음, 결정 054 의 4) · 01 무엇이 달라지나요 · 02 이렇게 지내 보세요 · 03 이 시기가 지나면 · 작은 실천.
  */
 export function PeriodView({ interval, detail, today, chart }: { interval: TimingInterval; detail: TimingDetail; today: string; chart: Chart | null }) {
+  useTrackOnce('reading_viewed', { kind: 'timing_report' });
   const area = areaLabel(interval.area);
   const badge = interval.from <= today && today <= interval.to ? T.period.ongoing : interval.from > today ? T.period.upcoming : null;
   return (

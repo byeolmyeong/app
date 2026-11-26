@@ -5,6 +5,9 @@ import SharedCardScreen, { generateMetadata } from '@/app/s/[shareId]';
 import { strings } from '@/content/strings';
 import { api, type ApiResult, type ShareCard } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
+import { track } from '@/lib/analytics';
+
+jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: jest.fn() }));
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => false) },
@@ -57,6 +60,15 @@ describe('공유 페이지(/s/<공유 식별자>)', () => {
     expect(otherCalls()).toEqual([]);
     // 출생 정보를 되살리려고 서버에 묻지도 않는다(결정 029)
     expect(mockApi.getProfile).not.toHaveBeenCalled();
+  });
+
+  // 제품 분석(결정 040 · 081): 공유 유입 전환의 분모 — 카드 종류만, 공유 id 는 보내지 않는다. 받지 못하면 보내지 않는다
+  it('카드를 받으면 shared_link_opened 를 카드 종류와 함께 보낸다(옛 READING 은 내 별명으로)', async () => {
+    mockApi.getSharedCard.mockResolvedValue(got(C.reading));
+    await render(<SharedCardScreen />);
+    await screen.findByTestId('share-card');
+    expect((track as jest.Mock).mock.calls).toEqual([['shared_link_opened', { card: 'nickname' }]]);
+    expect(JSON.stringify((track as jest.Mock).mock.calls)).not.toContain('AbCdEfGhIjKlMnOpQrStUv');
   });
 
   it('"나도 보러 가기" 는 첫 화면(/)으로 간다', async () => {

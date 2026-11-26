@@ -6,6 +6,7 @@ import { Txt } from '@/components/txt';
 import { ReadingLayout as L, ReasonLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ReasonLine, ReasonLineSkeleton } from '@/features/reason/reason-line';
+import { useTrackOnce } from '@/lib/analytics';
 import type { Chart, Reading } from '@/lib/api';
 
 const S = strings.reading;
@@ -25,6 +26,7 @@ export type ReadingViewProps = {
  * 면책 문구는 두지 않는다(결정 064).
  */
 export function ReadingView({ reading, chart, card }: ReadingViewProps) {
+  useTrackOnce('reading_viewed', { kind: 'summary' });
   return (
     <View>
       <Txt testID="reading-headline" variant="title" keepAll style={styles.headline}>

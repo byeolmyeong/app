@@ -7,8 +7,10 @@ import { ROUTE_PATTERNS } from './screen';
  */
 const PROVIDERS = ['google', 'apple', 'kakao'] as const;
 const BOOLEAN = [true, false] as const;
-const KINDS = ['summary', 'report', 'synastry', 'direction'] as const;
-const CARDS = ['summary', 'synastry_score', 'ranking', 'next_turning_point'] as const;
+// 2026-11-26 지금 화면에 맞춤(결정 081): 요약 해석(내 별명) · 나 탭 풀이 · 시기 풀이 · 그날의 하늘. 궁합 · 방향성은 1.1.0
+const KINDS = ['summary', 'me_report', 'timing_report', 'day_sky', 'synastry', 'direction'] as const;
+// 공유 v2 넷(결정 053): 내 별명 · 나 탭 영역 · 오늘의/그날의 하늘 · 다음 큰 변화. 궁합 점수 · 랭킹은 1.1.0
+const CARDS = ['nickname', 'me_area', 'day_sky', 'next_big', 'synastry_score', 'ranking'] as const;
 
 export const EVENTS = {
   app_opened: { entry: ['direct', 'share', 'invite'] },
@@ -21,7 +23,8 @@ export const EVENTS = {
   reading_read_to_end: { kind: KINDS },
   share_started: { card: CARDS },
   shared_link_opened: { card: CARDS },
-  screen_viewed: { screen: ROUTE_PATTERNS },
+  // 모르는 주소는 주소를 옮기지 않고 (unknown)
+  screen_viewed: { screen: [...ROUTE_PATTERNS, '(unknown)'] },
 } as const satisfies Record<string, Record<string, readonly (string | boolean)[]>>;
 
 export type EventName = keyof typeof EVENTS;

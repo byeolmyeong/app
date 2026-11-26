@@ -19,7 +19,7 @@ import { useIntroSeen } from '@/features/onboarding/intro-seen';
 import { usePushDeviceSync, usePushTapRouting } from '@/features/push/push';
 import { ChunkErrorBoundary } from '@/features/update/chunk-reload';
 import { UpdateGate } from '@/features/update/update-gate';
-import { initAnalytics } from '@/lib/analytics';
+import { initAnalytics, useRouteAnalytics } from '@/lib/analytics';
 
 SplashScreen.preventAutoHideAsync();
 // 제품 분석(결정 040). 키가 없으면(로컬 개발) 아무것도 보내지 않는다.
@@ -44,6 +44,8 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 }
 
 export default function RootLayout() {
+  // 화면이 바뀔 때 screen_viewed · 첫 화면 app_opened · 출생 정보 입력 시작(결정 040 · 081 — 경로로 정한다)
+  useRouteAnalytics();
   // ── 루트 훅: 세션 · 소개 기록 · 가드 · 글꼴 · 확인하지 못한 세션 다시 확인.
   // 앱이 켜질 때 세션을 시작한다(개발용 세션이 켜져 있을 때만 서버를 부른다).
   // 공유 페이지(/s/…)는 로그인 없이 열리는 화면이라 그 안에서는 시작하지 않는다(결정 025).

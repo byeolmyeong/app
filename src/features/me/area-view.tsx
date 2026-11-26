@@ -28,10 +28,13 @@ const timeKnownOf = (chart: Chart | null) => chart !== null && chart.timeKnown &
 /**
  * 나 탭 칩 하나의 풀이(결정 048 의 3, 보드 12-8~12-12): 영역 카드(○○ 님의 성격 · 제목 · 키워드 셋 · 이 풀이에 쓰인 별) →
  * 영역마다의 칸(서버가 준 칸만: 한눈에 보기 · 연애의 작은 실천 + 이유 · 가까워지는 모습 · 나의 일 방식 막대 · 마음이 흔들릴 때) →
- * 번호 붙은 문단(제목 · 본문 · 접힌 이유). 앱은 글 · 값을 만들거나 다시 셈하지 않는다 — 막대는 서버 값의 자리에 점만 찍고 숫자를 적지 않는다.
+ * 번호 붙은 문단(제목 · 본문 · 접힌 이유). 칩의 첫 이유(연애는 작은 실천 아래, 나머지는 문단 01)는 펼친 채로 연다(결정 083 — 칩마다 새로 그려
+ * 칩을 바꿨다 돌아와도 다시 펼친 채로). 앱은 글 · 값을 만들거나 다시 셈하지 않는다 — 막대는 서버 값의 자리에 점만 찍고 숫자를 적지 않는다.
  */
 export function AreaView({ area, nickname, chart }: AreaViewProps) {
   const timeKnown = timeKnownOf(chart);
+  /** 작은 실천 아래 이유(연애)가 이 칩의 첫 이유인가 — 아니면 문단 01 의 이유(결정 083) */
+  const practiceReasonFirst = Boolean(area.practices && area.reason);
   return (
     <View style={styles.root}>
       <Hero area={area} nickname={nickname} timeKnown={timeKnown} />
@@ -51,7 +54,7 @@ export function AreaView({ area, nickname, chart }: AreaViewProps) {
           <Txt variant="reading" color="body" keepAll style={styles.paragraphBody}>
             {p.body}
           </Txt>
-          <ReasonLine reason={p.reason} chart={chart} style={styles.reason} />
+          <ReasonLine reason={p.reason} chart={chart} defaultOpen={i === 0 && !practiceReasonFirst} style={styles.reason} />
         </View>
       ))}
     </View>
@@ -159,7 +162,7 @@ function Practices({ practices, area, chart }: { practices: NonNullable<MeAreaRe
           </View>
         ))}
       </View>
-      {area.reason ? <ReasonLine reason={area.reason} chart={chart} style={styles.reason} /> : null}
+      {area.reason ? <ReasonLine reason={area.reason} chart={chart} defaultOpen style={styles.reason} /> : null}
     </View>
   );
 }

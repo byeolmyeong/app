@@ -14,15 +14,23 @@ export type Reveal = {
   progress: Animated.Value;
   /** 펼친 내용의 실제 높이 — 0 에서 이 높이까지 늘인다 */
   height: Animated.Value;
+  /** 처음부터 펼친 상자의 첫 누름 전 — 높이를 묶지 않아 내용이 제 높이를 낸다(첫 그림부터 펼친 높이, 결정 083). 앱 파일의 같은 이름을 React 상태로 */
+  free: boolean;
+  /** 높이를 진행 값에 묶는다(묶지 않음 → 묶음 한 방향) */
+  bind: () => void;
 };
 
-export function useReveal(): Reveal {
-  const [reveal] = useState<Reveal>(() => ({ progress: new Animated.Value(0), height: new Animated.Value(0) }));
-  return reveal;
+/** open: 처음부터 펼친 채로(진행 1 · 높이를 묶지 않음) */
+export function useReveal(open = false): Reveal {
+  const [values] = useState(() => ({ progress: new Animated.Value(open ? 1 : 0), height: new Animated.Value(0) }));
+  const [free, setFree] = useState(open);
+  return { ...values, free, bind: () => setFree(false) };
 }
 
 /** 진행 값을 to 로 옮긴다. 끊기지 않고 끝까지 가면 done 을 부른다(새로 누르면 앞 움직임은 끊겨 부르지 않는다) */
 export function runReveal(reveal: Reveal, to: 0 | 1, duration: number, done?: () => void) {
+  // 움직임보다 먼저 높이를 묶는다 — 누름의 다시 그리기에 함께 들어가고, 진행 1 × 잰 높이가 지금 높이라 튀지 않는다
+  if (reveal.free) reveal.bind();
   Animated.timing(reveal.progress, { toValue: to, duration, easing: Easing.bezier(...Motion.openCurve), useNativeDriver: false }).start(
     ({ finished }) => {
       if (finished && done) done();
@@ -52,7 +60,7 @@ export function RevealBody({ reveal, style, children, ...rest }: ViewProps & { r
     opacity: reveal.progress.interpolate({ inputRange: [0, RevealShape.fadeUntil], outputRange: [0, 1], extrapolate: 'clamp' }),
   }));
   return (
-    <Animated.View {...rest} style={[style, grow]}>
+    <Animated.View {...rest} style={[style, reveal.free ? { opacity: grow.opacity } : grow]}>
       {children}
     </Animated.View>
   );

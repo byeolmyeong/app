@@ -24,6 +24,8 @@ export type ReasonLineProps = {
   chart: Chart | null;
   /** DAY 근거가 오늘의 것인가 */
   today?: boolean;
+  /** 처음부터 펼친 채로 연다 — 화면에서 첫 번째 이유(결정 083). 처음 그릴 때만 본다 */
+  defaultOpen?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -100,14 +102,16 @@ const focusName = (key: string) =>
  * (reason-reveal.tsx · .web.tsx, 모양은 reason-reveal-shape.ts — 웹 번들에 Reanimated 를 싣지 않는다). 펼친 내용은 처음부터 그려 두고
  * (접힌 동안 높이 0 · 투명 · 누를 수 없음 · 화면 읽기에서 숨김) 절대 위치로 재 둔다 — 높이 0 칸 안에서도 제 높이를 잰다(iOS 에서 높이를 못 재
  * 회전이 끝난 뒤 내용이 툭 나타나던 것, 소유자 2026-11-21 빌드 8). 내용은 진행의 앞 1/3 에서 나타난다. 동작 줄이기면 바로 바뀐다.
+ * 화면의 첫 이유는 처음부터 펼친 채로 연다(`defaultOpen`, 결정 083) — 내용을 흐름 안에 두고 첫 누름 전까지 높이를 묶지 않아,
+ * 잰 값을 기다리지 않고 첫 그림부터 펼친 높이다. 첫 누름에 높이를 묶고(진행 1 × 잰 높이 = 지금 높이) 그 뒤는 다른 상자와 같다.
  */
-export function ReasonLine({ reason, chart, today = false, style }: ReasonLineProps) {
-  const [open, setOpen] = useState(false);
+export function ReasonLine({ reason, chart, today = false, defaultOpen = false, style }: ReasonLineProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const [tip, setTip] = useState<string | null>(null);
   /** 꺾쇠 회전 · 높이 · 보임을 함께 움직이는 진행 값(접힘 0 → 펼침 1)과 펼친 내용의 실제 높이(처음부터 그려 두고 절대 위치로 잰다) */
-  const reveal = useReveal();
-  /** 다 펼쳐졌다 — 높이를 묶지 않고 잘라내지 않는다(용어 말풍선이 칸 밖으로 나오고, 말풍선으로 줄이 길어져도 그대로) */
-  const [settled, setSettled] = useState(false);
+  const reveal = useReveal(defaultOpen);
+  /** 다 펼쳐졌다 — 잘라내지 않는다(용어 말풍선이 칸 밖으로 나오고, 말풍선으로 줄이 길어지면 잰 높이도 따라간다) */
+  const [settled, setSettled] = useState(defaultOpen);
   /** 누를 때마다 올리는 번호 — 끝난 펼침의 알림이 그 뒤에 시작한 접기를 "다 펼침" 으로 덮지 않게(화면 스레드의 알림은 늦게 온다) */
   const turn = useRef(0);
   const settle = (mine: number) => {
@@ -155,7 +159,8 @@ export function ReasonLine({ reason, chart, today = false, style }: ReasonLinePr
           style={settled ? styles.revealOpen : styles.reveal}>
           <View
             testID="reason-measure"
-            style={styles.measure}
+            // 처음부터 펼친 상자는 흐름 안에 둔다 — 묶지 않은 칸이 내용의 높이를 낸다(절대 위치면 0)
+            style={defaultOpen ? null : styles.measure}
             onLayout={(e) => {
               measureReveal(reveal, e.nativeEvent.layout.height);
             }}>

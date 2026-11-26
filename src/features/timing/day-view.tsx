@@ -59,7 +59,8 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
         </View>
       </View>
       <View testID="day-reason" style={styles.reason}>
-        <ReasonLine reason={sky.reason} chart={chart} today={isToday} />
+        {/* 하나뿐인 이유라 펼친 채로 연다(결정 083) */}
+        <ReasonLine reason={sky.reason} chart={chart} today={isToday} defaultOpen />
       </View>
       <View style={styles.section}>
         <Txt testID="day-section-title" variant="subhead" accessibilityRole="header">

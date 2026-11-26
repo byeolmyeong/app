@@ -109,6 +109,42 @@ describe('ReasonLine 웹(reason-reveal.web.tsx — 웹 번들에 Reanimated 를 
     expect(overflow()).toBe('visible');
   });
 
+  it('처음부터 펼친 상자(화면의 첫 이유, 결정 083)는 첫 그림부터 펼친 높이 — 재기 전에도 높이를 묶지 않고, 첫 누름부터 다른 상자처럼 접고 편다', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    jest.useFakeTimers();
+    await render(<ReasonLine reason={sun} chart={fixtures.chart} defaultOpen />);
+    // 첫 그림: 꺾쇠는 펼침 · 내용은 보이고 · 높이 키가 없어 내용이 제 높이를 낸다
+    const first = StyleSheet.flatten(screen.getByTestId('reason-body').props.style) as { height?: number; opacity: number };
+    expect(first).not.toHaveProperty('height');
+    expect(first.opacity).toBe(1);
+    expect(now().deg).toBe(180);
+    expect(overflow()).toBe('visible');
+    expect(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }).props.accessibilityState).toMatchObject({ expanded: true });
+    expect(screen.getByTestId('reason-wheel')).toBeTruthy();
+    // 내용은 흐름 안에 둔다(절대 위치로 재면 묶지 않은 칸의 높이가 0)
+    expect(StyleSheet.flatten(screen.getByTestId('reason-measure').props.style)?.position).toBeUndefined();
+    await act(async () => {});
+    await fireEvent(screen.getByTestId('reason-measure'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 240 } } });
+    expect(StyleSheet.flatten(screen.getByTestId('reason-body').props.style)).not.toHaveProperty('height');
+
+    // 첫 누름: 그때부터 높이를 진행 값에 묶어 펼친 높이(240)에서 줄어든다
+    await press();
+    await act(async () => jest.advanceTimersByTime(32));
+    const closing = now();
+    expect(closing.deg).toBeLessThan(180);
+    expect(closing.height / 240).toBeCloseTo(closing.deg / 180, 5);
+    expect(overflow()).toBe('hidden');
+    await act(async () => jest.advanceTimersByTime(Motion.closeMs));
+    expect(now()).toEqual({ deg: 0, height: 0, opacity: 0 });
+    expect(screen.getByTestId('reason-body', HIDDEN).props.accessibilityElementsHidden).toBe(true);
+
+    // 다시 누르면 다른 상자처럼 펼친다
+    await press();
+    await act(async () => jest.advanceTimersByTime(Motion.openMs + 32));
+    expect(now()).toEqual({ deg: 180, height: 240, opacity: 1 });
+    expect(overflow()).toBe('visible');
+  });
+
   it('기기의 동작 줄이기가 켜져 있으면 바로 바뀐다(움직이지 않는다)', async () => {
     await renderMeasured(true);
     await press();

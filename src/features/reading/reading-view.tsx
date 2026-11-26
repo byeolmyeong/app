@@ -21,7 +21,7 @@ export type ReadingViewProps = {
 };
 
 /**
- * 내 별명의 글(보드 12): 한 줄 별명 → 별자리 카드 → 문단들(제목 · 본문 · 접힌 "이렇게 풀이한 이유") → 강점 · 보완점.
+ * 내 별명의 글(보드 12): 한 줄 별명 → 별자리 카드 → 문단들(제목 · 본문 · "이렇게 풀이한 이유" — 첫 문단만 펼친 채로, 결정 083) → 강점 · 보완점.
  * 서버가 준 글과 근거를 그대로 그린다. 앱은 글을 만들거나 고치지 않는다. 내 별명 화면과 나 탭(받기 전)이 함께 쓴다.
  * 면책 문구는 두지 않는다(결정 064).
  */
@@ -42,7 +42,8 @@ export function ReadingView({ reading, chart, card }: ReadingViewProps) {
             <Txt variant="reading" color="body" keepAll style={styles.body}>
               {section.body}
             </Txt>
-            <ReasonLine reason={section.reason} chart={chart} style={styles.reason} />
+            {/* 첫 문단의 이유는 펼친 채로 연다(결정 083) */}
+            <ReasonLine reason={section.reason} chart={chart} defaultOpen={i === 0} style={styles.reason} />
           </View>
         ))}
       </View>

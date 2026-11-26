@@ -1,10 +1,13 @@
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { useReduceMotion } from '@/components/byeoli';
+import { TextLink } from '@/components/text-link';
 import { Txt } from '@/components/txt';
 import { Colors, FontWeight, LineWidth, Motion, Sizes, Spacing } from '@/constants/theme';
+import { strings } from '@/content/strings';
 import { measureReveal, RevealBody, RevealTurn, runReveal, useReveal } from '@/features/reason/reason-reveal';
 import type { Faq } from '@/lib/api';
 
@@ -15,6 +18,7 @@ import type { Faq } from '@/lib/api';
  * 꺾쇠가 반 바퀴 돈다 — 진행 값 하나(접힘 0 → 펼침 1)에 같은 Motion 값으로 묶는다. 앱은 Reanimated, 웹은 RN Animated
  * (reason-reveal.tsx · .web.tsx — 웹 번들에 Reanimated 를 싣지 않는다). 답은 처음부터 그려 두고(접힌 동안 높이 0 · 투명 ·
  * 누를 수 없음 · 화면 읽기에서 숨김) 절대 위치로 재 둔다 — 높이 0 칸 안에서도 제 높이를 잰다. 동작 줄이기면 바로 바뀐다.
+ * 답에 "문의하기" 가 있으면 답 아래에 새 문의로 가는 링크를 둔다(결정 089) — 관리자가 글만 고쳐 켜고 끈다. 링크도 잰 칸 안이라 펼친 높이에 들어간다.
  */
 function FaqItem({ question, answer }: Pick<Faq, 'question' | 'answer'>) {
   const [open, setOpen] = useState(false);
@@ -69,9 +73,14 @@ function FaqItem({ question, answer }: Pick<Faq, 'question' | 'answer'>) {
         style={settled ? styles.revealOpen : styles.reveal}
       >
         <View testID="faq-measure" style={styles.measure} onLayout={(e) => measureReveal(reveal, e.nativeEvent.layout.height)}>
-          <Txt variant="body" color="gray" style={styles.answer}>
+          <Txt variant="body" color="gray" style={answer.includes(strings.faq.inquiryKeyword) ? styles.answerWithLink : styles.answer}>
             {answer}
           </Txt>
+          {answer.includes(strings.faq.inquiryKeyword) ? (
+            <View style={styles.inquiry}>
+              <TextLink label={strings.faq.toInquiry} onPress={() => router.push('/my/inquiries/new')} />
+            </View>
+          ) : null}
         </View>
       </RevealBody>
     </View>
@@ -106,4 +115,7 @@ const styles = StyleSheet.create({
   /** 답은 칸의 높이와 상관없이 제 높이로 놓여 잰다 */
   measure: { position: 'absolute', top: 0, left: 0, right: 0 },
   answer: { paddingBottom: Spacing.md },
+  /** 링크가 붙는 답: 글과 링크 사이 Spacing.sm, 링크 아래가 답 칸의 아래 여백(Spacing.md) */
+  answerWithLink: { paddingBottom: Spacing.sm },
+  inquiry: { paddingBottom: Spacing.md },
 });

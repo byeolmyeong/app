@@ -16,7 +16,7 @@ last_reviewed: 2026-11-26
 
 | 칸 | 값 | 글자 수 · 한도 | 상태 |
 |---|---|---|---|
-| 앱 이름 | 별명 | 2 / 30 | ⚠ App Store Connect 에서 앱을 만들 때 쓸 수 있는지 나온다(대안 셋은 아래) |
+| 앱 이름 | 별명 | 2 / 30 | ✅ 운영 앱을 "별명" 으로 만들었다(App Store Connect Apple ID 6837234413, 소유자 2026-11-26) |
 | 부제 | 점성술 몰라도 읽히는 출생 차트 풀이 | 20 / 30 | ✅ 랜딩 제목과 같은 말 |
 | 홍보 문구 | 아래 | 105 / 170 | ✅ |
 | 설명 | 아래 | 921 / 4,000 | ✅ 1.0.0 기능만 |
@@ -30,7 +30,7 @@ last_reviewed: 2026-11-26
 | 가격 · 배포 국가 | 무료 · 대한민국 | | ⚠ 소유자가 고른다(한국어 · 국내 출생지만이라 대한민국 권장) |
 | 심사 로그인 | Sign in with Apple 로 바로 가입(데모 계정 없음) | | ✅ |
 | App Privacy | 아래 표(추적 안 함) | | ✅ 93 줄 목록과 맞춤 · 대략적 위치(분석)는 적는다(소유자 2026-11-26) |
-| 스크린숏 | 6.9" 1320×2868, 8장 | | ⚠ 운영 빌드 화면으로 찍기 |
+| 스크린숏 | 6.9" 1290×2796, 8장 | | ✅ 피그마 "이력서" › 스토어 섹션(801:23535)의 앱스토어 8장을 1290×2796 JPEG(알파 없음)로 내보냄. 파일은 저장소 밖 `_shared/app-store-1.0.0/screenshots-6.9/` |
 
 ## 1. 스토어 정보(한국어, 그대로 붙여 넣기)
 
@@ -277,7 +277,7 @@ Other notes
 | 지원 URL | ✅ 결정 · ⚠ 반영 대기 | `https://byeolmyeong.com/` + 랜딩 바닥글 연락처 한 줄(소유자 2026-11-26). 운영에 올라간 뒤 입력 |
 | 처리방침의 위탁 표 | ✅ 승인 · ⚠ 반영 대기 | 앰플리튜드 · Expo 위탁, 보관 1년, 바로 시행(소유자 승인 2026-11-26). 93 줄이 앱 #125 · 랜딩을 마무리 |
 | 연령 등급 | ✅ | 16+(소유자 2026-11-26, 2 참고) |
-| 앱 이름 | ⚠ | 앱을 만들 때 확인. 대안 셋 준비 |
+| 앱 이름 | ✅ | 운영 앱 "별명"(Apple ID 6837234413) |
 | 운영 빌드에 개발용 값이 없다 | ⚠ 확인 | EAS `production` 환경 변수에 `EXPO_PUBLIC_USE_FIXTURES` · `EXPO_PUBLIC_DEV_SESSION` 이 없어야 한다(`.env.example` 머리말) |
 
 ## 7. 운영 iOS 첫 빌드 체크리스트
@@ -285,8 +285,8 @@ Other notes
 출시 순서(소유자 2026-11-26): 서버 main → 앱 main → 운영 iOS 첫 빌드 → App Store 심사 → 안드로이드. 관문마다 그날 소유자가 승인한다.
 
 1. 서버 main 이 앱이 부르는 계약을 갖고 있는지 본다(`/me-report` · `/timing-report` · `/auth/analytics-id` 등). 앱 main 보다 서버 main 이 먼저다.
-2. App Store Connect 에서 앱을 만든다. 번들 ID `com.byeolmyeong.app`, 이름 "별명"(안 되면 1 의 대안), 기본 언어 한국어, SKU 는 아무 고유 값(예: `byeolmyeong-ios`).
-3. 만든 앱의 Apple ID(숫자)를 `eas.json` 의 `submit.production.ios.ascAppId` 에 넣는다. 지금은 비어 있어 `--auto-submit` 이 멈춘다. 빌드를 돌릴 워크트리(`.wt-app-eas`)에도 이 값이 있어야 한다.
+2. ✅ App Store Connect 에서 앱을 만든다(소유자 2026-11-26, Apple ID 6837234413). 번들 ID `com.byeolmyeong.app`, 이름 "별명"(안 되면 1 의 대안), 기본 언어 한국어, SKU 는 아무 고유 값(예: `byeolmyeong-ios`).
+3. 만든 앱의 Apple ID(숫자)를 `eas.json` 의 `submit.production.ios.ascAppId` 에 넣는다 — ✅ `6837234413`(2026-11-26). 빌드를 돌릴 워크트리(`.wt-app-eas`)도 이 커밋 뒤의 develop 이어야 한다.
 4. EAS `production` 환경 변수를 확인한다. `EXPO_PUBLIC_API_URL`(운영 `https://api.byeolmyeong.com`), 구글 iOS 클라이언트 ID, 카카오 네이티브 앱 키, Meta 앱 ID(스토리 공유), `EXPO_PUBLIC_AMPLITUDE_API_KEY`(운영에만, 결정 081). 개발용 두 값은 없어야 한다.
 5. 푸시: EAS 자격 증명에 APNs 키(74LB3QSH49)가 운영 번들에 연결돼 있는지 본다.
 6. 소유자가 Mac 터미널에서 `.wt-app-eas` 로 가서 돌린다.

@@ -736,10 +736,23 @@ const HangulInk = { top: 0.05, bottom: 0.07 } as const;
 /**
  * 줄 상자의 위(아래) 끝에서 보이는 한글 글자까지의 여백 = 줄높이 여백((줄높이 - 글자 크기) / 2) + 글자 크기 × 한글 안쪽 비율.
  * 글자를 다른 것의 끝(프로필 그림의 위 · 아래)에 "보이는 글자 기준" 으로 붙일 때 그만큼 칸을 내민다(마이 카드, 결정 080 덧붙임).
- * 글자 단계의 크기 · 줄높이가 바뀌어도 따라간다
+ * 글자 단계의 크기 · 줄높이가 바뀌어도 따라간다. iOS 는 남는 행간을 글자 위에 붙여 그 반만큼 더 · 덜 내민다(임시 보정, 아래)
  */
-export const inkTrim = (t: { fontSize: number; lineHeight: number }, side: 'top' | 'bottom') =>
-  (t.lineHeight - t.fontSize) / 2 + t.fontSize * HangulInk[side];
+/** Pretendard 의 기본 줄높이 비율 — hhea (ascender 1950 − descender −494 + lineGap 0) / unitsPerEm 2048(assets/fonts 의 OTF, typo · win 도 같다) */
+const PretendardNaturalLine = (1950 + 494) / 2048;
+
+export const inkTrim = (
+  t: { fontSize: number; lineHeight: number },
+  side: 'top' | 'bottom',
+  os: typeof Platform.OS = Platform.OS,
+) => {
+  const web = (t.lineHeight - t.fontSize) / 2 + t.fontSize * HangulInk[side];
+  if (os !== 'ios') return web;
+  // iOS 임시 보정(빌드 23 실기기 확인 필요, 소유자 빌드 22 "프로필 이미지 벗어나는 것 같은데"): RN iOS 는 줄높이가 글꼴 기본 줄높이보다
+  // 크면 남는 행간을 글자 위에 다 붙여 글자가 웹보다 (줄높이 − 기본 줄높이) / 2 만큼 아래에 있다 — 위 여백은 그만큼 더, 아래는 그만큼 덜
+  const shift = (t.lineHeight - t.fontSize * PretendardNaturalLine) / 2;
+  return side === 'top' ? web + shift : web - shift;
+};
 
 /**
  * 글자 단계 v2(결정 080 — 결정 033 의 37단을 역할로 줄였다). 크기/줄높이 · 굵기. 역할 13 + 부품 전용 8.

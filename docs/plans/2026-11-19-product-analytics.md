@@ -2,11 +2,11 @@
 type: plan
 status: approved
 tags: [제품 분석, 앰플리튜드, 파이어베이스, GA4]
-last_reviewed: 2026-11-19
+last_reviewed: 2026-11-26
 ---
 # 제품 분석 — 앰플리튜드 + 파이어베이스 애널리틱스(GA4), 1.0.0
 
-> 상태: 승인(2026-11-19, 소유자 "승인") · 기준 2026-11-19 · 서버 저장소 태스크 하나(분석용 id, 태스크 2) 포함
+> 상태: 승인(2026-11-19, 소유자 "승인") · 기준 2026-11-19 · 2026-11-26 결정 081 로 바뀜(앰플리튜드만 · 운영 프로젝트 하나 · 분석용 id 는 `GET /auth/analytics-id` · 태스크 4·5 는 1.1.0) · 서버 저장소 태스크 하나(분석용 id, 태스크 2) 포함
 
 ## 목표
 - 무엇을: iOS·안드로이드·웹에 앰플리튜드와 파이어베이스 애널리틱스(GA4)를 넣고, 성공 지표(docs/product.md "성공 지표")에 맞춘 이벤트 11개를 두 곳에 같이 보낸다.
@@ -47,11 +47,11 @@ last_reviewed: 2026-11-19
 | `signup_completed` | 가입 201 | `provider`, `time_known`: 참거짓 | 가입 완료율의 분자 |
 | `birth_input_started` | 출생 정보 입력 첫 화면 | `context`: signup · profile_edit · synastry_direct | 차트 생성 완료율의 분모 |
 | `chart_viewed` | 차트 화면이 그려졌을 때 | `time_known` | 차트 생성 완료율의 분자, 공유 유입 전환 |
-| `reading_viewed` | 해석 글이 화면에 보일 때 | `kind`: summary · report · synastry · direction | 가입자 중 요약 해석을 본 비율 |
-| `reading_read_to_end` | 해석 글의 끝까지 스크롤했을 때 | `kind` | 끝까지 읽은 비율 |
-| `share_started` | 공유 시트를 열 때 | `card`: summary · synastry_score · ranking · next_turning_point | 공유 카드를 올린 비율 |
+| `reading_viewed` | 해석 글이 화면에 보일 때 | `kind`: summary(내 별명) · me_report(나 탭 풀이) · timing_report(시기 풀이) · day_sky(오늘의/그날의 하늘) · synastry · direction(1.1.0) | 가입자 중 요약 해석을 본 비율 |
+| `reading_read_to_end` | 해석 글의 끝까지 스크롤했을 때(`/reading` · `/me` · `/timing/period` · `/today` · `/timing/day`) | `kind` | 끝까지 읽은 비율 |
+| `share_started` | 공유 시트를 열 때 | `card`: nickname · me_area · day_sky · next_big(공유 v2, 결정 053) · synastry_score · ranking(1.1.0) | 공유 카드를 올린 비율 |
 | `shared_link_opened` | 공유 링크 화면이 열릴 때(웹) | `card` | 공유 유입 전환의 분모 |
-| `screen_viewed` | 화면이 바뀔 때 | `screen`: 경로 패턴 | 이탈 지점 |
+| `screen_viewed` | 화면이 바뀔 때 | `screen`: 경로 패턴(모르는 주소는 `(unknown)`) | 이탈 지점 |
 
 ## 범위 밖
 - 광고·결제 이벤트(1.1.0, 결정 015).
@@ -77,7 +77,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약: `docs/decisions/040-product-analytics-amplitude-ga4.md`(무료 한도의 단일 출처 포함), release-1.0.0 에 F12·출시 기준·사용자 준비 두 줄.
 
-### 2. server-analytics-id (서버 저장소 byeolmyeong-api) · 상태: 대기
+### 2. server-analytics-id (서버 저장소 byeolmyeong-api) · 상태: 완료(결정 081 로 바뀜)
 - 읽을 것: 서버 `docs/architecture.md` 계약 표의 `GET /auth/session`, `src/main/kotlin/com/byeolmyeong/api/auth/AuthController.kt`, 서버 결정 021, 앱 결정 040
 - 할 것: `GET /auth/session` 을 204 → 200 `{ "analyticsId": string }` 로. `analyticsId` = SHA-256(`"byeolmyeong-analytics:" + ownerId`)의 16진수 앞 32자. 순수 함수 `analyticsIdOf(ownerId: UUID): String`. 계약 표를 같은 커밋에서 고친다.
 - 불변식: 같은 계정 → 같은 값, 다른 계정 → 다른 값, 계정 id 는 응답에 나오지 않는다.
@@ -97,7 +97,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약: `src/lib/analytics/`(events.ts 표 · screen.ts 경로 패턴 22개 · index.ts), 루트 레이아웃에서 `initAnalytics()`, `api.getSession()` → `SessionInfo { analyticsId }`(204·200). 파이어베이스는 태스크 4·5 가 index.ts 의 `track`·`identify`·`resetAnalytics` 안에 붙인다.
 
-### 4. firebase-native · 상태: 대기
+### 4. firebase-native · 상태: 1.1.0 으로 옮김(결정 081)
 - 읽을 것: 태스크 3 결과, React Native Firebase 의 Expo 설치 공식 문서, `app.config.ts`, `eas.json`
 - 할 것: `@react-native-firebase/app` · `@react-native-firebase/analytics` 와 config plugin(iOS 정적 프레임워크 설정 포함, 공식 문서대로). `app.config.ts` 가 `GOOGLE_SERVICES_JSON` · `GOOGLE_SERVICE_INFO_PLIST` 로 설정 파일을 고르고, 없으면 파이어베이스 플러그인을 빼서 로컬 개발이 깨지지 않게. `firebase.json`: 자동 화면 수집 끔, 광고 id 수집 끔, 기본 수집 끔(`initAnalytics` 가 키가 있을 때만 켠다). iOS 는 광고 id 없는 파이어베이스 판. 태스크 3 의 자리에 네이티브 파이어베이스를 붙인다.
 - 주는 것: 네이티브 파이어베이스 앱 설정(푸시가 다시 쓴다).
@@ -107,7 +107,7 @@ last_reviewed: 2026-11-19
 - 차단 예상: 파이어베이스 프로젝트·설정 파일(소유자).
 - 결과 요약:
 
-### 5. firebase-web · 상태: 대기
+### 5. firebase-web · 상태: 1.1.0 으로 옮김(결정 081)
 - 읽을 것: 태스크 3 결과, Firebase JS SDK 애널리틱스 공식 문서
 - 할 것: 웹은 `firebase/analytics`. 자동 `page_view` 를 끄고, 보내는 위치 값은 `screenNameOf` 로 만든 값만. 태스크 3 의 자리에 웹 파이어베이스를 붙인다.
 - 하지 말 것: gtag 스크립트를 따로 넣기. 이유: 한 SDK 로 설정을 한 곳에 둔다.
@@ -115,7 +115,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약:
 
-### 6. track-events · 상태: 대기
+### 6. track-events · 상태: 완료
 - 읽을 것: 이 계획의 "이벤트" 표, 태스크 3 의 `track`·`screenNameOf`, 각 이벤트가 붙을 화면(로그인·가입·출생 정보 입력·차트·해석·공유·공유 링크 화면)
 - 할 것: 표의 11개 이벤트를 해당 화면·동작에 단다. 이벤트마다 부르는 곳은 한 곳. `screen_viewed` 는 Expo Router 의 경로 변화에서 한 번.
 - 하지 말 것: 표에 없는 이벤트·속성 추가. 이유: 표가 단일 출처다. 더하려면 표부터 고친다.
@@ -123,7 +123,7 @@ last_reviewed: 2026-11-19
 - 실행 패턴: 혼자
 - 결과 요약:
 
-### 7. identify-and-reset · 상태: 대기
+### 7. identify-and-reset · 상태: 완료
 - 읽을 것: 태스크 2·3 결과, `src/features/auth/session-store.ts`, 로그아웃·계정 삭제 코드
 - 할 것: 로그인·가입 성공 뒤와 앱 시작 때 세션이 있으면 `GET /auth/session` 의 `analyticsId` 로 `identify`. 로그아웃·계정 삭제 뒤 `resetAnalytics`.
 - 하지 말 것: 계정 id·이메일을 사용자 id 로 쓰기. 이유: "보내지 않는 것".
@@ -183,4 +183,20 @@ last_reviewed: 2026-11-19
   - 결정: IDFV·통신사도 끈다(결정 040 의 IP·광고 id 에 더해) — 성공 지표에 필요 없다 — 틀리면 비용: iOS 재설치 뒤 같은 기기를 못 알아본다(로그인하면 분석용 id 로 이어진다).
   - 결정: `initAnalytics()` 를 루트 레이아웃에서 부르는 일까지 이 태스크에서 했다 — 웹 묶음에 SDK 가 실제로 들어가는지 확인하려고. 키가 없으면 아무것도 하지 않는다.
   - 결정: 기존 테스트 2곳의 기대값을 바꿨다(`getSession` 의 `data: null` → `{ analyticsId: null }`, 세션 저장소 테스트의 가짜 응답) — 결정 040 의 계약 변경이다.
-
+- 2026-11-26 다시 시작(앱 #30 · 서버 #21 을 develop 위로, 558 · 188 개 뒤).
+  - 결정 081(소유자 2026-11-26): GA4 는 1.1.0, 앰플리튜드 프로젝트는 운영 하나(키는 EAS production · Vercel byeolmyeong-app Production 에만, 소유자 확인 뒤 넣고 지문으로 같은 값 확인).
+  - 2(server-analytics-id): `GET /auth/session` 200 안은 지금 웹을 '확인하지 못함'에 가둔다(jest 재현: `getSession → INVALID`, 웹 `offline`). 그래서 `GET /auth/analytics-id` 를 더하기만 했다. 빨강(경로 없음 5개 중 1 실패) → auth 174 통과 → 서버 #21 CI 초록 → 8a 가 develop 에 합침(2033b88).
+  - 3 의 "204 · 200 둘 다 받기"는 되돌렸다. 대신 `api.getAnalyticsId()`.
+  - 7(identify-and-reset): `features/auth/analytics-link.ts`.
+    - 키가 있을 때만, 로그인 상태가 되면 한 세션에 한 번 받아 identify 한다.
+    - 로그인 상태에서 로그인 전이 되면 reset 한다. 켰을 때 처음부터 로그인 전이면 reset 하지 않는다.
+    - 받는 중에 로그아웃하면 늦게 온 값을 버린다.
+    - 세션 저장소 `onSignedIn` → `login_completed` · `signup_completed`. 시험: 잇기 7개, 저장소 3개.
+  - 6(track-events): 화면 파일은 되도록 손대지 않았다.
+    - 경로로 정하는 것(`routes.ts`, 루트 레이아웃의 `useRouteAnalytics` 하나): `app_opened` · `screen_viewed` · `birth_input_started`.
+    - 끝까지 읽음: `Screen` 의 스크롤에 `onReadScroll`. 내용이 화면보다 짧으면 세지 않는다.
+    - 그 밖: `chart_viewed`(차트 화면 한 줄), `reading_viewed`(ReadingView · YearView · LifeView · PeriodView · DayView · 나 탭 한 줄), `login_started`(SocialButton), `share_started`(ShareEntry 열기), `shared_link_opened`(공유 카드를 받았을 때).
+    - 시험: 경로 6 · 훅 3 · 로그인 버튼 1 · 공유 1(지운 줄로 빨강 확인) · 공유 페이지 1.
+  - 결정: 해석 종류 · 공유 카드 값 목록을 지금 화면에 맞췄다(결정 081 결과). 틀리면 비용: 11-19 표 이름으로 만든 차트가 없어 비용 없음.
+  - 결정: 끝까지 읽음은 스크롤로만 잰다. 틀리면 비용: 화면보다 짧은 글은 끝까지 읽음이 안 잡힌다(해석 글은 대개 화면보다 길다).
+  - 웹 CSP: `connect-src` 에 `https://api2.amplitude.com`(결정 081 의 5).

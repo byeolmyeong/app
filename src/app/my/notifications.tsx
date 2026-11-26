@@ -28,19 +28,14 @@ const TIME_STEP = 5;
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/my'));
 
-/** 뼈대의 한 줄: 다 그려진 줄과 같은 자리(이름 · 설명 / 오른쪽 스위치 또는 값) */
-function SkeletonRow({ descLines = 0, trailing }: { descLines?: number; trailing: 'switch' | 'value' }) {
+/** 뼈대의 한 줄: 다 그려진 줄과 같은 자리(이름 / 오른쪽 스위치 또는 값) */
+function SkeletonRow({ trailing }: { trailing: 'switch' | 'value' }) {
   return (
     <View style={styles.skeletonRow}>
       <View style={styles.skeletonNames}>
         <View style={styles.labelLine}>
           <Skeleton width={NL.skeleton.labelWidth} height={NL.skeleton.label} />
         </View>
-        {Array.from({ length: descLines }, (_, i) => (
-          <View key={i} style={styles.descLine}>
-            <Skeleton width={NL.skeleton.descWidth} height={NL.skeleton.desc} />
-          </View>
-        ))}
       </View>
       {trailing === 'switch' ? (
         <Skeleton width={L.switch.width} height={L.switch.height} pill />
@@ -90,7 +85,7 @@ function OsOffRow() {
 
 /**
  * 처음 불러올 때 0.3초가 넘으면: 다 그려진 화면과 같은 카드 셋 · 같은 줄 수 · 같은 높이(결정 065 의 뼈대 규칙) — 막대는 글자 줄 높이 칸 가운데에
- * 둬 줄 높이가 실제 줄과 같다. 이벤트 · 혜택 설명은 앱 화면 폭에서 두 줄이다.
+ * 둬 줄 높이가 실제 줄과 같다. 설명 줄은 없다(소유자 2026-11-26).
  */
 function NotificationsSkeleton() {
   return (
@@ -103,7 +98,7 @@ function NotificationsSkeleton() {
         <SkeletonRow trailing="value" />
       </ListCard>
       <ListCard>
-        <SkeletonRow descLines={2} trailing="switch" />
+        <SkeletonRow trailing="switch" />
       </ListCard>
     </View>
   );
@@ -202,7 +197,6 @@ export default function NotificationsScreen() {
           <ListCard>
             <ListCardRow
               label={N.marketing.label}
-              description={N.marketing.description}
               toggle={{ value: s.marketingConsent, onChange: (on) => save({ marketingConsent: on }) }}
             />
           </ListCard>
@@ -265,5 +259,4 @@ const styles = StyleSheet.create({
   },
   skeletonNames: { flex: 1, gap: L.descGap },
   labelLine: { height: Typography.item.lineHeight, justifyContent: 'center' },
-  descLine: { height: Typography.caption.lineHeight, justifyContent: 'center' },
 });

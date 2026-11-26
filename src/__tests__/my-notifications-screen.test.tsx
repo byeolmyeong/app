@@ -40,14 +40,15 @@ beforeEach(async () => {
 });
 
 describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
-  it('푸시 알림 / 오늘의 하늘 알림 · 받는 시간 / 이벤트 · 혜택 알림을 서버 값대로 — 설명은 이벤트 · 혜택에만(소유자 2026-11-21)', async () => {
+  it('푸시 알림 / 오늘의 하늘 알림 · 받는 시간 / 이벤트 · 혜택 알림을 서버 값대로 — 줄마다 이름만, 설명 줄은 없다(소유자 2026-11-21 · 2026-11-26)', async () => {
     await render(<NotificationsScreen />);
     expect(await screen.findByText(N.push.label)).toBeTruthy();
     // 첫 줄 이름은 "푸시 알림"(소유자 2026-11-26) — 가입 약관의 "[선택] 푸시 알림 받기" 는 그대로
     expect(sw('푸시 알림')).toBeTruthy();
     expect(screen.queryByText('푸시 알림 받기')).toBeNull();
-    expect(screen.getByText(N.marketing.description)).toBeTruthy();
-    expect(N.marketing.description).not.toMatch(/선택/);
+    // 이벤트 · 혜택 알림도 이름만(소유자 2026-11-26 "디스크립션도 없애줘")
+    expect(screen.queryByText('새 기능과 혜택 소식을 푸시와 이메일로 보내요')).toBeNull();
+    expect(within(sw(N.marketing.label)).getAllByText(/./)).toHaveLength(1);
     expect(screen.queryByText('풀이 완성 · 문의 답변 · 오늘의 하늘을 알려 드려요')).toBeNull();
     expect(screen.queryByText('매일 아침 오늘의 하늘을 보내 드려요')).toBeNull();
     expect(isOn(N.push.label)).toBe(true);
@@ -255,6 +256,8 @@ describe('마이 › 알림(/my/notifications, 보드 16-2 · 16-2-2)', () => {
       const skeleton = screen.getByLabelText(strings.states.loading);
       // 카드 셋, 줄은 1 · 2 · 1
       expect(skeleton.children).toHaveLength(3);
+      // 줄마다 이름 막대 하나 + 오른쪽(스위치 · 값) 막대 하나 — 설명 줄 막대는 없다(소유자 2026-11-26)
+      expect(within(skeleton).getAllByTestId('skeleton', { includeHiddenElements: true })).toHaveLength(8);
     } finally {
       jest.useRealTimers();
     }

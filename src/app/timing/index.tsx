@@ -206,17 +206,19 @@ export default function TimingScreen() {
   else if (chip === 'year') content = <YearView report={report} onPeriod={(id) => router.push(`/timing/period?id=${id}`)} />;
   else content = <LifeView report={report} share={<ShareEntry target={{ kind: 'NEXT_BIG' }} trigger="cardIcon" label={strings.share.openNextBig} />} />;
 
+  // 잠긴 칩(받기 전의 올해 · 인생): 칩 아래 남은 칸을 채워 자물쇠 카드를 그 칸의 세로 가운데에 — 칩 줄은 위에서 그대로라 움직이지 않는다(소유자 2026-11-26)
+  const lockedChip = !report && chip !== 'month';
   return (
     <Screen nav={nav} footer={tabs}>
       {online ? null : <OfflineBanner />}
       {/* 한 덩어리로 둔다 — 화면의 칸 사이 간격(16)이 끼지 않게 시안 14 의 간격 그대로 */}
-      <View>
+      <View style={lockedChip ? styles.fill : null}>
         {main ? <NowCard interval={main} onPress={main.detail ? () => router.push(`/timing/period?id=${main.id}`) : undefined} /> : null}
         {/* 칩 줄은 세 칩에서 같은 자리 — 잠긴 칩을 골라도 이번 달의 자리 그대로(소유자 지적 2026-11-21) */}
         <View testID="timing-chips-slot" style={main ? styles.chips : styles.chipsBare}>
           <ChipRow value={chip} locked={!report} onChange={setPicked} />
         </View>
-        <View style={styles.content}>{content}</View>
+        <View style={[styles.content, lockedChip ? styles.lockedContent : null]}>{content}</View>
       </View>
     </Screen>
   );
@@ -271,4 +273,7 @@ const styles = StyleSheet.create({
   chipsBare: { marginTop: L.chips.topBare },
   content: { paddingTop: L.contentTop, gap: L.sectionGap },
   reserved: { opacity: 0 },
+  fill: { flex: 1 },
+  /** 잠긴 칩: 칩 아래 남은 칸의 세로 가운데에 자물쇠 카드 */
+  lockedContent: { flex: 1, justifyContent: 'center' },
 });

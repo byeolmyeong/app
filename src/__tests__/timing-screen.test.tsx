@@ -113,6 +113,30 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(chipsTop()).toBe(top);
   });
 
+  it('잠긴 칩의 자물쇠 카드는 칩 아래 남은 칸의 세로 가운데에 — 칩 줄은 그대로, 이번 달은 위에서부터(소유자 2026-11-26)', async () => {
+    await render(<TimingScreen />);
+    await screen.findByTestId('timing-detail-card');
+    const top = chipsTop();
+    // 칩 줄을 감싼 덩어리 · 그 아래 칸
+    const slot = () => screen.getByTestId('timing-chips-slot');
+    const area = () => {
+      const block = slot().parent!;
+      const next = block.children[block.children.indexOf(slot()) + 1];
+      return StyleSheet.flatten(typeof next === 'string' ? undefined : next?.props.style);
+    };
+    const block = () => StyleSheet.flatten(slot().parent?.props.style);
+    expect(area().justifyContent).toBeUndefined();
+    await fireEvent.press(chip('year'));
+    expect(block()?.flex).toBe(1);
+    expect(area()).toMatchObject({ flex: 1, justifyContent: 'center' });
+    expect(chipsTop()).toBe(top);
+    await fireEvent.press(chip('life'));
+    expect(area()).toMatchObject({ flex: 1, justifyContent: 'center' });
+    await fireEvent.press(chip('month'));
+    expect(area().justifyContent).toBeUndefined();
+    expect(block()?.flex).toBeUndefined();
+  });
+
   it('받기 전인 것을 기기가 기억하면 뼈대 없이 곧바로 받기 화면 — 이번 달이 늦으면 달력 자리만 0.3초 뒤 뼈대(소유자 지적 3)', async () => {
     jest.useFakeTimers();
     await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'NONE' }));

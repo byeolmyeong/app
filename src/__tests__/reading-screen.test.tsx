@@ -21,13 +21,19 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
+  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   // 공유는 시트를 열 때 만든다 — 이 화면의 시험에서는 끝나지 않는 요청으로 둔다
-  api: { createReading: jest.fn(), saveProfile: jest.fn(), createShare: jest.fn(() => new Promise(() => {})) },
+  api: {
+    createReading: jest.fn(),
+    saveProfile: jest.fn(),
+    createShare: jest.fn(() => new Promise(() => {})),
+    getMeReport: jest.fn(),
+    requestMeReport: jest.fn(),
+  },
 }));
 jest.mock('@/features/audio/use-soundtrack', () => ({ useSoundtrack: jest.fn() }));
 jest.mock('@/features/auth/use-session', () => ({
@@ -53,6 +59,8 @@ beforeEach(async () => {
   (useLocalSearchParams as jest.Mock).mockReturnValue({});
   mockUseSession.mockReturnValue({ status: 'signedIn' as const, token: 'dev-token', ready: true, lastError: null });
   mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
+  // 나 탭 풀이는 대개 이미 받은 것으로 둔다 — 받기 전의 카드(결정 082)는 그 시험에서만
+  mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
   await saveBirth({ profile, chart: fixtures.chart });
   netListener = null;
   (NetInfo.addEventListener as jest.Mock).mockImplementation((cb: NetListener) => {
@@ -489,6 +497,66 @@ describe('별명 공개', () => {
     expect(screen.getByText(reading.sections[0].title)).toBeTruthy();
     // 한 번 쓰면 지운다 — 다시 열면 글로 바로 간다
     expect(pendingReveal()).toBeNull();
+  });
+
+  describe('나 탭 풀이를 받기 전이면 글 맨 아래에 "자세한 풀이" 카드(결정 082, 소유자 2026-11-26)', () => {
+    const D = strings.me.detail;
+
+    it('출생 정보를 바꾸고 오면(from=birth) 별명 공개 → 풀이 읽기 뒤 글 맨 아래에 카드가 있고, 누르면 나 탭에서 받기를 시작한다', async () => {
+      mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+      revealNextReading('새벽별');
+      (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'birth' });
+      let resolve: (r: ApiResult<Reading>) => void = () => {};
+      mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+      await render(<ReadingScreen />);
+      await act(async () => resolve({ ok: true, data: reading }));
+      await fireEvent.press(await screen.findByRole('button', { name: V.read }));
+      const card = await screen.findByTestId('me-detail-card');
+      expect(within(card).getByText(D.title)).toBeTruthy();
+      await fireEvent.press(within(card).getByRole('button', { name: D.request }));
+      // 받기는 나 탭이 맡는다 — 여기서 만들기(POST)를 부르지 않고 나 탭으로 바꿔 간다
+      expect(mockApi.requestMeReport).not.toHaveBeenCalled();
+      expect(router.replace).toHaveBeenCalledWith({ pathname: '/me', params: { request: '1' } });
+    });
+
+    it('가입 직후(from=signup)에도 같다 — 별명 공개 뒤 글 맨 아래에 카드', async () => {
+      mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+      justSignedUp();
+      (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'signup' });
+      await render(<ReadingScreen />);
+      await fireEvent.press(await screen.findByRole('button', { name: V.read }));
+      expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
+    });
+
+    it('기기에 받아 둔 글을 다시 열어도 받기 전이면 카드가 있다', async () => {
+      mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+      mockApi.createReading.mockResolvedValue({ ok: true, data: reading });
+      const first = await render(<ReadingScreen />);
+      expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
+      await first.unmount();
+      await render(<ReadingScreen />);
+      expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
+      expect(mockApi.createReading).toHaveBeenCalledTimes(1);
+    });
+
+    it('이미 받았거나 쓰는 중이거나 상태를 모르면 카드가 없다 — 글만', async () => {
+      for (const answer of [
+        { ok: true as const, data: { status: 'DONE' as const, report: fixtures.meReport } },
+        { ok: true as const, data: { status: 'WRITING' as const } },
+        { ok: false as const, error: 'NETWORK' as const },
+      ]) {
+        await AsyncStorage.clear();
+        await saveBirth({ profile, chart: fixtures.chart });
+        mockApi.getMeReport.mockResolvedValue(answer);
+        const view = await render(<ReadingScreen />);
+        expect(await screen.findByText(reading.sections[0].title)).toBeTruthy();
+        await waitFor(() => expect(mockApi.getMeReport).toHaveBeenCalled());
+        expect(screen.queryByTestId('me-detail-card')).toBeNull();
+        await view.unmount();
+        mockApi.getMeReport.mockClear();
+      }
+    });
+
   });
 
   it('출생 정보 바꾸기에서 온 표시만 있고 넘겨받은 닉네임이 없으면(앱을 다시 켰다) 글로 바로 간다', async () => {

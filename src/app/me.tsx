@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CardFail } from '@/components/card-fail';
@@ -36,12 +36,13 @@ const ST = strings.states;
 /**
  * 나 탭(결정 048 · 050 · 061 · 065 · 071, 보드 12 받기 전 · 12-8~12-12 · 11-8 · 11-9 · 24-1).
  * - 나 탭 풀이가 다 쓰이지 않았으면: 내 별명 내용(ReadingView) + 맨 아래 "자세한 풀이" 카드. 받기 → 쓰는 중(11-8) → 다 쓰면 성격 칩.
+ *   내 별명(`/reading`)의 같은 카드는 `/me?request=1` 로 와서 여기서 받기를 누른 것과 같이 시작한다(결정 082).
  * - 다 쓰였으면: 맨 위 별명 카드(→ 내 별명) + 칩 다섯(`/me?area=LOVE` 로 고를 수 있다) + 고른 칩의 풀이.
  * - 처음 불러올 때 0.3초가 넘으면 다 그려질 화면과 같은 배치의 뼈대(받기 전 · 칩을 골라 들어오면 받은 뒤), 한 번 받은 풀이는 기기의 것을 먼저 보인다. 못 불러옴 · 끊김은 결정 061 의 틀.
  * 탭의 첫 화면이라 뒤로 가기가 없고 아래 탭이 있다(결정 046 의 2). 면책 문구는 두지 않는다(결정 064).
  */
 export default function MeScreen() {
-  const { area } = useLocalSearchParams<{ area?: string }>();
+  const { area, request } = useLocalSearchParams<{ area?: string; request?: string }>();
   const { ready } = useSession();
   const { loaded, profile, chart } = useBirthProfile();
   const birth = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
@@ -57,6 +58,16 @@ export default function MeScreen() {
   const selected = picked ?? askedArea ?? 'PERSONALITY';
   // 쓰는 중이거나 방금 다 쓰인 풀이가 떠 있는 동안 강제 업데이트를 미룬다(결정 027)
   useGenerationBusy(me.state.status === 'writing', me.state.status === 'done');
+  // 내 별명의 "자세한 풀이 받기"(결정 082)로 왔으면 받기 전인 것을 확인한 뒤 한 번만 시작한다 — 이미 받았거나 쓰는 중이면 그 화면만
+  const requested = useRef(false);
+  const { start: startMe } = me;
+  const meStatus = me.state.status;
+  useEffect(() => {
+    if (request !== '1' || requested.current || meStatus !== 'none') return;
+    requested.current = true;
+    startMe();
+    router.setParams({ request: undefined });
+  }, [request, meStatus, startMe]);
   // 연결이 돌아오면 상태만 다시 묻는다(GET) — 만들기(POST)는 사람이 누를 때만(결정 061 의 4)
   useOnReconnect(online, () => {
     const s = me.state;

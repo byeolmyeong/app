@@ -1,5 +1,6 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { View } from 'react-native';
 
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
@@ -18,6 +19,8 @@ import { keyThree } from '@/features/chart/chart-rows';
 import { SignCard, SignCardSkeleton } from '@/features/chart/sign-card';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
+import { DetailCard, DetailCardSkeleton } from '@/features/me/me-parts';
+import { useMeReport } from '@/features/me/use-me-report';
 import { MakingView } from '@/components/making-view';
 import { ReadingSkeleton, ReadingView } from '@/features/reading/reading-view';
 import { clearPendingReveal, pendingReveal } from '@/features/reading/reveal-once';
@@ -35,6 +38,8 @@ const MF = strings.making.fail;
  * 문단마다 접힌 "이렇게 풀이한 이유" · 강점 · 보완점. 머리는 꺾쇠 뒤로 가기(나 탭 · 홈에서 들어온다)와 오른쪽 공유하기, 아래 탭은 나.
  * 다시 생성은 없다(같은 차트 = 같은 글). 실패했을 때만 "다시 시도" 가 보인다. 면책 문구는 두지 않는다(결정 064).
  * 가입을 마치고 바로 와서(from=signup) 글이 다 지어지면 별명 공개(보드 10)를 한 번 보이고, "풀이 읽기" 로 이 글을 보인다(결정 044 · 048).
+ * 나 탭 풀이를 아직 받지 않았으면 나 탭의 받기 전과 같이 글 맨 아래에 "자세한 풀이" 카드(결정 082) — 가입 직후 · 출생 정보를 바꾼 직후
+ * 처음 오는 곳이 여기라 카드가 없으면 받을 길이 보이지 않았다(소유자 2026-11-26). 누르면 나 탭으로 가서(`/me?request=1`) 거기서 받기를 시작한다.
  */
 export default function ReadingScreen() {
   const { ready } = useSession();
@@ -64,6 +69,19 @@ export default function ReadingScreen() {
   const readNav = <NavBar title={S.title} onBack={goBackOrHome} chevron right={<ShareEntry target={{ kind: 'NICKNAME' }} trigger="icon" />} />;
   // 나 탭 안에서 들어온 화면이라 아래 탭은 나(결정 046 의 2 — 시안 12 에 탭이 있다)
   const tabs = <MainTabs active="me" nested />;
+  // 나 탭 풀이를 받기 전인가(결정 082) — 받기 전이라고 서버가 답했을 때만 글 아래에 카드. 받기 · 쓰는 중 · 다 쓴 풀이는 나 탭이 맡는다
+  const me = useMeReport(ready ? birth : null);
+  const detail =
+    me.state.status === 'none' ? (
+      <DetailCard
+        blocked={me.state.blocked === true}
+        onRequest={() => {
+          // 나 탭의 첫 화면으로 바꿔 간다(아래 탭과 같은 길 — 쌓인 화면을 치우고 replace)
+          if (router.canDismiss()) router.dismissAll();
+          router.replace({ pathname: '/me', params: { request: '1' } });
+        }}
+      />
+    ) : null;
   // 연결 끊김(결정 061 의 4): 받아 둔 글은 그대로 두고 위에 띠, 끊겨서 못 받았으면 연결이 돌아올 때 다시 부른다
   const online = useOnline();
   useOnReconnect(online, () => {
@@ -98,7 +116,11 @@ export default function ReadingScreen() {
     return (
       <Screen nav={readNav} footer={tabs}>
         {banner}
-        <ReadingView reading={stored.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
+        {/* 한 덩어리로 둔다 — 글과 카드 사이에 화면의 칸 사이 간격(16)이 끼지 않게(나 탭과 같은 간격) */}
+        <View>
+          <ReadingView reading={stored.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
+          {detail}
+        </View>
       </Screen>
     );
 
@@ -116,7 +138,11 @@ export default function ReadingScreen() {
       <Screen nav={nav} footer={tabs}>
         {phase === 'skeleton' ? (
           <SkeletonGroup testID="reading-skeleton">
-            <ReadingSkeleton card={chart ? <SignCardSkeleton chart={chart} /> : null} />
+            {/* 나 탭 풀이를 받기 전인 것을 이미 알면 글 아래 카드 자리도 뼈대로(결정 071 · 082) */}
+            <View>
+              <ReadingSkeleton card={chart ? <SignCardSkeleton chart={chart} /> : null} />
+              {me.state.status === 'none' ? <DetailCardSkeleton /> : null}
+            </View>
           </SkeletonGroup>
         ) : null}
       </Screen>
@@ -153,7 +179,10 @@ export default function ReadingScreen() {
   return (
     <Screen nav={readNav} footer={tabs}>
       {banner}
-      <ReadingView reading={state.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
+      <View>
+        <ReadingView reading={state.reading} chart={chart} card={chart ? <SignCard chart={chart} /> : null} />
+        {detail}
+      </View>
     </Screen>
   );
 }

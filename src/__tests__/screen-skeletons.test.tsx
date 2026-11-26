@@ -123,7 +123,8 @@ const readingBlocks = [
 ];
 
 describe('뼈대 = 다 그려진 화면의 칸 · 순서(결정 071)', () => {
-  it('내 별명: 한 줄 별명 → 별자리 카드(셋 칸) → 문단 다섯(이유 상자) → 강점 셋 · 보완점 둘', async () => {
+  it('내 별명(나 탭 풀이를 받은 뒤): 한 줄 별명 → 별자리 카드(셋 칸) → 문단 다섯(이유 상자) → 강점 셋 · 보완점 둘', async () => {
+    mockApi.getMeReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.meReport } });
     // 받아 오는 동안(홈 · 나 탭에서 들어옴, 기기에 글 없음) — 끝에 답해 다음 시험이 이 요청을 기다리지 않게 한다
     let resolve: (r: { ok: true; data: Reading }) => void = () => {};
     mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
@@ -136,6 +137,20 @@ describe('뼈대 = 다 그려진 화면의 칸 · 순서(결정 071)', () => {
     expect(await screen.findByText(boardReading.headline)).toBeTruthy();
     expect(blocks()).toEqual(readingBlocks);
     expect(skeleton).toEqual(readingBlocks);
+  });
+
+  it('내 별명(나 탭 풀이를 받기 전): 글의 칸 그대로 + 맨 아래 "자세한 풀이" 카드 — 뼈대도 같다(결정 071 · 082)', async () => {
+    let resolve: (r: { ok: true; data: Reading }) => void = () => {};
+    mockApi.createReading.mockReturnValue(new Promise((r) => (resolve = r)));
+    const { names: skeleton, view } = await skeletonOf(<ReadingScreen />, 'reading-skeleton');
+    await act(async () => resolve({ ok: true, data: boardReading }));
+    await view.unmount();
+
+    await storeReading();
+    await render(<ReadingScreen />);
+    expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
+    expect(blocks()).toEqual([...readingBlocks, 'me-detail-card']);
+    expect(skeleton).toEqual([...readingBlocks, 'me-detail-card']);
   });
 
   it('나 탭 받기 전: 내 별명 글의 칸 그대로 + 맨 아래 "자세한 풀이" 카드', async () => {

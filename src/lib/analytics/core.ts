@@ -43,7 +43,8 @@ function run(call: (s: Sdk) => void) {
 /** 앱이 켜질 때 한 번. 두 번 불러도 한 번만 초기화한다 */
 export function initAnalytics(): void {
   const apiKey = process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY?.trim();
-  if (enabled || !apiKey) return;
+  // 웹 서버 렌더링(정적 내보내기 · 개발 서버의 Node)에서는 켜지 않는다 — 루트 레이아웃이 그때도 실행되어, 빌드 기계에서 세션 이벤트가 생기지 않게
+  if (enabled || !apiKey || typeof window === 'undefined') return;
   enabled = true;
   loadSdk()
     .then((amplitude) => {

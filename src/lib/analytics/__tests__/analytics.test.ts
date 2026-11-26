@@ -64,6 +64,24 @@ describe('키가 없으면', () => {
   });
 });
 
+describe('웹 서버 렌더링(Node — 정적 내보내기 · 개발 서버)', () => {
+  it('window 가 없으면 키가 있어도 SDK 를 불러오지 않는다 — 빌드 기계에서 세션 이벤트가 나가지 않게', async () => {
+    const { analytics, amplitude } = load('amp-key');
+    const g = globalThis as { window?: unknown };
+    const saved = g.window;
+    // 모듈을 읽은 뒤에 없앤다(읽는 동안은 다른 라이브러리가 window 를 본다) — 초기화하는 순간만 Node 와 같게
+    delete g.window;
+    try {
+      analytics.initAnalytics();
+      await loaded();
+      expect(analytics.isAnalyticsEnabled()).toBe(false);
+      expect(amplitude.init).not.toHaveBeenCalled();
+    } finally {
+      g.window = saved;
+    }
+  });
+});
+
 describe('키가 있으면', () => {
   it('자동 수집·광고 식별자·IP 를 끄고 세션만 켜서 한 번 초기화한다', async () => {
     const { analytics, amplitude } = load('amp-key');

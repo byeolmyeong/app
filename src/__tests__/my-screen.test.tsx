@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
 import MyScreen from '@/app/my';
-import { MyLayout } from '@/constants/theme';
+import { MyLayout, NicknameCardLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -71,14 +71,20 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
   });
 
-  it('꺾쇠는 홈 별명 카드와 같은 규칙 — 카드 오른쪽 위(안쪽 여백 그대로), 별자리 그림은 꺾쇠 둘레를 비워 선이 꺾쇠 밑을 지나지 않는다(결정 080)', async () => {
+  it('꺾쇠는 홈 별명 카드와 같은 규칙 — 프로필 그림 · 닉네임 줄의 오른쪽 끝 세로 가운데, 별자리 그림은 그 꺾쇠 둘레를 비운다(결정 080, 소유자 빌드 14)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<MyScreen />);
     const card = within(await screen.findByTestId('my-card'));
-    const chevron = card.getByTestId('my-card-chevron');
+    const row = card.getByTestId('my-card-row');
+    expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+    const chevron = within(row).getByTestId('my-card-chevron');
     expect(chevron.props.width).toBe(22);
-    expect(StyleSheet.flatten(chevron.props.style)).toMatchObject({ position: 'absolute', top: MyLayout.card.paddingTop, right: MyLayout.card.padding });
-    expect(card.getByTestId('card-constellation-clear', { includeHiddenElements: true })).toBeTruthy();
+    expect(StyleSheet.flatten(chevron.props.style)?.position).not.toBe('absolute');
+    // 빈 둘레는 그 줄의 실제 자리를 따라간다(프로필 그림 64 · 위 여백 22 · 테두리 1)
+    const A = NicknameCardLayout.art;
+    await fireEvent(row, 'layout', { nativeEvent: { layout: { x: 21, y: 23, width: 300, height: MyLayout.card.avatar } } });
+    const hole = card.getByTestId('card-constellation-clear', { includeHiddenElements: true });
+    expect(hole.props.cy).toBeCloseTo((23 - 1 + (MyLayout.card.avatar - 22) / 2 + 11 - A.top) * (A.view.h / A.height));
   });
 
   it('카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 홈 카드와 같은 그림, 출생 정보가 없으면 그림도 없다', async () => {

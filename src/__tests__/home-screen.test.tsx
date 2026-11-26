@@ -129,17 +129,24 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
-  it('홈 별명 카드는 "풀이 읽기" 글자 없이 오른쪽 위 꺾쇠만 — 다른 홈 카드의 이름표 줄 꺾쇠와 같은 자리 · 크기 · 색, 카드 전체가 눌린다(결정 080 — 078 의 정정 대체)', async () => {
+  it('홈 별명 카드는 "풀이 읽기" 글자 없이 꺾쇠만 — 프로필 그림 · 닉네임 줄의 오른쪽 끝 세로 가운데, 다른 카드의 꺾쇠와 같은 크기 · 색, 카드 전체가 눌린다(결정 080)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
     await render(<HomeScreen />);
     const card = await screen.findByTestId('nickname-card');
     await within(card).findByText(fixtures.reading.headline);
     expect(within(card).queryByText(strings.home.card.read)).toBeNull();
-    const chevron = within(card).getByTestId('nickname-card-chevron');
+    // 자리: 프로필 줄(세로 가운데 맞춤) 안 마지막 칸 — 그림 · 닉네임과 높이가 맞는다(소유자 빌드 14). 색: 다른 카드의 꺾쇠와 같은 hint
+    const row = within(card).getByTestId('nickname-card-row');
+    expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+    const chevron = within(row).getByTestId('nickname-card-chevron');
     expect(chevron.props.width).toBe(22);
-    // 자리: 카드 안쪽 여백 그대로 오른쪽 위(이름표 줄의 꺾쇠가 놓이는 자리) · 색: 다른 카드의 꺾쇠와 같은 hint
-    expect(StyleSheet.flatten(chevron.props.style)).toMatchObject({ position: 'absolute', top: NicknameCardLayout.padding, right: NicknameCardLayout.padding });
+    expect(StyleSheet.flatten(chevron.props.style)?.position).not.toBe('absolute');
+    // 별자리 그림의 빈 둘레는 그 줄의 실제 자리를 따라간다(줄 위 끝 · 높이 → 꺾쇠 가운데)
+    const A = NicknameCardLayout.art;
+    await fireEvent(row, 'layout', { nativeEvent: { layout: { x: 21, y: 21, width: 300, height: 52 } } });
+    const hole = within(card).getByTestId('card-constellation-clear', { includeHiddenElements: true });
+    expect(hole.props.cy).toBeCloseTo((21 - 1 + (52 - 22) / 2 + 11 - A.top) * (A.view.h / A.height));
     expect(within(card).getByTestId('nickname-card-chevron-path').props.stroke).toEqual({ type: 0, payload: parseInt(`ff${Colors.hint.slice(1)}`, 16) });
     // 화면 읽기는 보이는 글 차례대로 + "풀이 읽기"(나 탭 카드와 같은 규칙, 결정 078 의 1)
     expect(screen.getByRole('button', { name: ['새벽별 님', '쌍둥이자리', fixtures.reading.headline, strings.home.card.read].join(', ') })).toBe(card);

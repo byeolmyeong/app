@@ -366,6 +366,16 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     expect(router.replace).toHaveBeenLastCalledWith('/timing');
   });
 
+  it('"지금" 글자의 가운데가 점의 가운데와 같다 — 같은 좌우 여백의 칸에서 같은 %(소유자 빌드 15)', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-timing-card');
+    for (const W of [280, 350]) {
+      const { dotCenter, labelCenter } = nowCenters('home', W);
+      expect(labelCenter).toBeCloseTo(dotCenter, 5);
+    }
+  });
+
   it('받아 둔 시기 풀이는 기기에서 먼저 그린다(결정 047 의 2)', async () => {
     await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report }));
     mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
@@ -760,3 +770,19 @@ describe('홈을 다시 붙여도 종 점 · 카드가 첫 그림부터(이번 �
     }
   });
 });
+
+/** 폭 W 인 줄에서 점과 "지금" 글자의 가운데(x) — 스타일만으로 센다(시험에는 레이아웃이 없다). 점은 트랙 안, 글자는 "지금" 칸 안의 같은 % */
+function nowCenters(prefix: string, W = 300) {
+  const st = (id: string) => StyleSheet.flatten(screen.getByTestId(id).props.style) as Record<string, number | string | undefined>;
+  const pct = (v: unknown) => parseFloat(String(v)) / 100;
+  const track = st(`${prefix}-track`);
+  const dot = st(`${prefix}-now`);
+  const lane = st(`${prefix}-now-lane`);
+  const label = st(`${prefix}-now-label`);
+  const inset = Number(track.marginHorizontal ?? 0);
+  const dotCenter = inset + pct(dot.left) * (W - 2 * inset) + Number(dot.marginLeft ?? 0) + Number(dot.width) / 2;
+  const laneLeft = Number(lane.left ?? 0);
+  const laneRight = Number(lane.right ?? 0);
+  const labelCenter = laneLeft + pct(label.left) * (W - laneLeft - laneRight) + Number(label.marginLeft ?? 0) + Number(label.width) / 2;
+  return { dotCenter, labelCenter };
+}

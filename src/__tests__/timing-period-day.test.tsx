@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
@@ -73,6 +74,11 @@ describe('시기 자세히 /timing/period(결정 049 의 5, 캔버스 14-3)', ()
     expect(within(hero).getByText('9월 시작')).toBeTruthy();
     expect(within(hero).getByText('1월 끝')).toBeTruthy();
     expect(screen.getByTestId('period-now')).toBeTruthy();
+    // "지금" 글자의 가운데가 점의 가운데와 같다(소유자 빌드 15 — 홈과 같은 줄)
+    for (const W of [280, 350]) {
+      const { dotCenter, labelCenter } = nowCenters('period', W);
+      expect(labelCenter).toBeCloseTo(dotCenter, 5);
+    }
     expect(screen.getByText(/지금 책임을 맡은 별\(토성\)이 내 나의 중심\(해\)과 부딪히는 각도\(사분\)를 지나요/)).toBeTruthy();
     const sections = screen.getAllByTestId('period-section');
     expect(sections.map((s) => within(s).getByText(/^0\d$/).props.children)).toEqual(['01', '02', '03']);
@@ -350,3 +356,19 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
   });
 });
+
+/** 폭 W 인 줄에서 점과 "지금" 글자의 가운데(x) — 스타일만으로 센다(시험에는 레이아웃이 없다). 점은 트랙 안, 글자는 "지금" 칸 안의 같은 % */
+function nowCenters(prefix: string, W = 300) {
+  const st = (id: string) => StyleSheet.flatten(screen.getByTestId(id).props.style) as Record<string, number | string | undefined>;
+  const pct = (v: unknown) => parseFloat(String(v)) / 100;
+  const track = st(`${prefix}-track`);
+  const dot = st(`${prefix}-now`);
+  const lane = st(`${prefix}-now-lane`);
+  const label = st(`${prefix}-now-label`);
+  const inset = Number(track.marginHorizontal ?? 0);
+  const dotCenter = inset + pct(dot.left) * (W - 2 * inset) + Number(dot.marginLeft ?? 0) + Number(dot.width) / 2;
+  const laneLeft = Number(lane.left ?? 0);
+  const laneRight = Number(lane.right ?? 0);
+  const labelCenter = laneLeft + pct(label.left) * (W - laneLeft - laneRight) + Number(label.marginLeft ?? 0) + Number(label.width) / 2;
+  return { dotCenter, labelCenter };
+}

@@ -3,7 +3,7 @@ type: decision
 tags: [홈, 별명 카드, 오늘의 하늘, 지금 나의 시기, 작은 실천, 알림 종, 궁합 랭킹]
 status: active
 last_reviewed: 2026-11-20
-superseded_by: 055-synastry-to-1.1.0-four-tabs.md (궁합 칸 — 1.0.0 홈에 없음) · 075-skeleton-only-when-content-exists.md (1-5 쓰는 중이면 칸 없음 → 쓰는 중 카드)
+superseded_by: 055-synastry-to-1.1.0-four-tabs.md (궁합 칸 — 1.0.0 홈에 없음) · 075-skeleton-only-when-content-exists.md (1-5 쓰는 중이면 칸 없음 → 쓰는 중 카드) · 080-typography-v2-and-home-chevron.md (1-2 · 1-4 의 "풀이 읽기 ›" · "자세한 풀이 받기 ›" 글자 → 오른쪽 위 꺾쇠만)
 ---
 # 047. 홈은 별명 카드 · 오늘의 하늘 · 지금 나의 시기 · 작은 실천을 쌓은 한 화면이고, 궁합 칸은 궁합 시안을 보고 정한다
 

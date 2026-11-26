@@ -3,7 +3,7 @@ type: decision
 tags: [홈, 나 탭, 별명 카드, 내 하늘 지도, 차트 자세히, 화면 읽기]
 status: active
 last_reviewed: 2026-11-21
-superseded_by:
+superseded_by: 080-typography-v2-and-home-chevron.md (1 의 정정 — 홈 별명 카드도 꺾쇠만, 자리는 오른쪽 위. 나머지는 유효)
 ---
 # 078. 빌드 11 — 별명 카드는 꺾쇠만, 내 하늘 지도에서 안내 글 · "차트 자세히" 줄을 뺀다
 

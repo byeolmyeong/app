@@ -3,7 +3,7 @@ type: decision
 tags: [마이, 별명 카드, 내 정보, 계정, 출생 정보 수정, 화면 읽기]
 status: active
 last_reviewed: 2026-11-26
-superseded_by:
+superseded_by: 080-typography-v2-and-home-chevron.md (마이 카드 꺾쇠의 자리 — 이름 줄 끝 → 오른쪽 위, 별자리 그림은 꺾쇠 둘레를 비움. 나머지는 유효)
 ---
 # 084. 마이 카드의 버튼 둘("프로필 수정" · "출생 정보 수정")을 "내 정보" 하나로 합친다 — 카드 전체가 내 정보로 가고, 출생 정보는 내 정보 안에 둔다
 

@@ -9,7 +9,7 @@ import { BIRTH_STORAGE_KEY, loadBirth, saveBirth } from '@/features/chart/use-bi
 import { resetHomeReady } from '@/features/home/home-ready';
 import { INTRO_SEEN_KEY } from '@/features/onboarding/intro-seen';
 import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
-import { api, type ApiResult, type BirthInput } from '@/lib/api';
+import { api, type ApiResult, type BirthInput, type SessionInfo } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
 // 리뷰(개인정보): 세션 만료(401 → 로그인 전) 뒤 같은 기기에서 다른 계정이 로그인하면 앞사람의 출생 정보 · 풀이가 기기에 남아
@@ -74,7 +74,7 @@ function setupStore(over: Partial<SessionStoreDeps> = {}) {
     login: jest.fn(async () => ok({ status: 'SIGNED_IN' as const, token: 'tB' as string | null })),
     signup: jest.fn(async () => ok({ token: 'tB' as string | null })),
     checkNickname: jest.fn(async () => ok({ available: true })),
-    getSession: jest.fn(async (): Promise<ApiResult<null>> => ok(null)),
+    getSession: jest.fn(async (): Promise<ApiResult<SessionInfo>> => ok({ analyticsId: null })),
     logout: jest.fn(async () => ok(null)),
     loadToken: jest.fn(async () => kept),
     saveToken: jest.fn(async (t: string) => {
@@ -192,7 +192,7 @@ describe('401 로 로그인 전이 되면 기기의 사람 것도 비운다', ()
     expect(await hasA()).toBe(false);
 
     await leaveA();
-    const getSession = jest.fn(async (): Promise<ApiResult<null>> => ({ ok: false, error: 'NETWORK' }));
+    const getSession = jest.fn(async (): Promise<ApiResult<SessionInfo>> => ({ ok: false, error: 'NETWORK' }));
     const offline = setupStore({ cookieSession: true, getSession });
     await offline.store.start();
     expect(offline.store.getSnapshot().status).toBe('offline');

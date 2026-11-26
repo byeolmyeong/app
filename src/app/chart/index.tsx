@@ -4,12 +4,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
-import { usePushSettled } from '@/components/use-push-settled';
 import { Spacing } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ChartEmpty, goBackOrHome } from '@/features/chart/chart-empty';
 import { skyDetail } from '@/features/chart/chart-rows';
-import { ChartWheel, ChartWheelPlaceholder } from '@/features/chart/ChartWheel';
+import { ChartWheel } from '@/features/chart/ChartWheel';
 import { SkyList } from '@/features/chart/sky-list';
 import { SkySheet } from '@/features/chart/sky-sheet';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
@@ -34,8 +33,6 @@ export default function ChartScreen() {
   const [picked, setPicked] = useState<string | null>(null);
   const selected = picked ?? (asked && chart && skyDetail(chart, asked) ? asked : FIRST_SELECTED);
   const [sheetOpen, setSheetOpen] = useState(false);
-  // 휠 SVG(고리 · 하우스 · 별 점과 이름)는 무겁다 — 미는 동안에는 같은 크기의 자리만, 밀기가 끝난 뒤 그린다(빌드 10)
-  const settled = usePushSettled();
   const nav = <NavBar title={S.title} onBack={goBackOrHome} chevron />;
   if (!loaded) return <Screen nav={nav}>{null}</Screen>;
   if (!chart)
@@ -54,7 +51,8 @@ export default function ChartScreen() {
     <Screen nav={nav}>
       <View>
         <View style={styles.wheel}>
-          {settled ? <ChartWheel chart={chart} selected={selected} /> : <ChartWheelPlaceholder chart={chart} />}
+          {/* 휠은 미루지 않는다 — 화면이 열릴 때 원과 글자를 한 번에(소유자 빌드 14, 결정 090 — 빌드 10 의 "밀기 뒤에" 대체) */}
+          <ChartWheel chart={chart} selected={selected} />
         </View>
         <View style={styles.list}>
           <SkyList chart={chart} selected={selected} onSelect={select} />

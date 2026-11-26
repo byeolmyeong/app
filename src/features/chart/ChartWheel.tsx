@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, G, Line, Path, Polygon, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 
@@ -147,7 +147,8 @@ export function SignArt({ sign, width, height }: { sign: string; width: number; 
  * 시각 "모름" 차트는 하우스와 축 없이 그리고, 별자리 경계만 가운데 원까지 옅게 늘린다(결정 079 · golden-rules "프로젝트 규칙").
  */
 export function ChartWheel({ chart, selected }: ChartWheelProps) {
-  const w = wheelLayout(chart);
+  // 자리 계산은 차트가 바뀔 때만 — 별을 고를 때마다 다시 셈하지 않는다(결정 090: 미루지 않고 바로 그리니 가볍게)
+  const w = useMemo(() => wheelLayout(chart), [chart]);
   const text = { fontFamily: FontFamily, textAnchor: 'middle', alignmentBaseline: 'central' } as const;
   const withHouses = w.axes.length > 0;
   // 고른 것이 있던 별자리 · 하우스(서버 값). 상승점은 1하우스, 중천은 10하우스가 시작되는 곳이다.
@@ -329,23 +330,6 @@ export function MiniWheel({ chart, bodies, houses, label }: MiniWheelProps) {
               <Circle testID="mini-wheel-dot" cx={b.dot.x} cy={b.dot.y} r={L.wheelDot} fill={Colors.primary} />
             </G>
           ))}
-      </Svg>
-    </View>
-  );
-}
-
-/**
- * 휠을 그리기 전의 자리(내 하늘 지도 — 밀기가 끝난 뒤 휠을 그린다, components/use-push-settled). 휠과 같은 상자에 바탕 고리 셋만 —
- * 휠이 들어와도 아래 목록이 움직이지 않고, 고리 위에 선 · 이름 · 별 점만 더해진다.
- */
-export function ChartWheelPlaceholder({ chart }: { chart: Chart }) {
-  const w = wheelLayout(chart);
-  return (
-    <View testID="wheel-placeholder" style={styles.box} aria-hidden importantForAccessibility="no-hide-descendants">
-      <Svg width="100%" height="100%" viewBox={`0 0 ${w.size} ${w.size}`}>
-        <Circle cx={w.center} cy={w.center} r={w.rOuter} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1.2} />
-        <Circle cx={w.center} cy={w.center} r={w.rSign} fill={Colors.paper} stroke={Colors.hair} strokeWidth={1} />
-        <Circle cx={w.center} cy={w.center} r={w.rInner} fill={Colors.fieldOff} stroke={Colors.hair} strokeWidth={1} />
       </Svg>
     </View>
   );

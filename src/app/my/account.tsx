@@ -14,8 +14,6 @@ import { Colors, MyLayout, ScreenPaddingX, Sizes, Spacing, StateLayout } from '@
 import { strings } from '@/content/strings';
 import { AvatarSheet } from '@/features/auth/avatar-sheet';
 import { signOut } from '@/features/auth/sign-out';
-import { formatBirthLine } from '@/features/chart/birth-input';
-import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { maskEmail } from '@/features/my/mask-email';
 import { ProviderBadge } from '@/features/my/provider-badge';
 import { useMyAccount } from '@/features/my/use-my-account';
@@ -29,16 +27,14 @@ const L = MyLayout.account;
 const providerName = (provider: string) => (A.providers as Record<string, string>)[provider] ?? '';
 
 /**
- * 내 정보(결정 084 — 056 의 3 의 계정 화면, 보드 16-1): 위 가운데 프로필 그림(누르면 고르기 시트 16-6) · 닉네임(16-5) · 출생 정보(지금 값 한 줄 +
- * "수정 ›" — 누르면 출생 정보 수정 16-4) · 연결된 계정(공급자 + 가린 이메일)을 한 카드에, 로그아웃(가운데 창 16-9)은 따로 한 카드,
+ * 내 정보(결정 084 — 056 의 3 의 계정 화면, 보드 16-1): 위 가운데 프로필 그림(누르면 고르기 시트 16-6) · 닉네임(16-5) · 출생 정보(누르면
+ * 출생 정보 수정 16-4) · 연결된 계정(공급자 + 가린 이메일)을 한 카드에, 로그아웃(가운데 창 16-9)은 따로 한 카드,
  * 맨 아래 작은 밑줄 글자 "계정 삭제"(16-10). 화면이 스크롤되지 않으니 줄을 따로 카드로 나누지 않는다.
- * 기기에 출생 정보가 없어도 출생 정보 줄은 이름과 "수정 ›" 으로 남는다(들어가는 길은 늘 있다).
+ * 닉네임 · 출생 정보 줄은 이름과 꺾쇠 › 만 — 지금 값은 마이 별명 카드에 있다(결정 087). 그래서 기기에 출생 정보가 없어도 줄 모양은 같다.
  * 계정을 받지 못해도(끊김) 로그아웃 · 계정 삭제는 늘 보인다. 프로필은 고르면 바로 저장하고 바뀐 모습만 보인다 — 못 바꿨을 때만 짧은 알림(결정 065 의 1, 소유자 2026-11-21).
  */
 export default function AccountScreen() {
   const { account, setAccount } = useMyAccount();
-  // 출생 정보는 기기에 받아 둔 것(마이 카드의 한 줄과 같은 값)
-  const { profile } = useBirthProfile();
   const { toast, show, hide } = useToast();
   const [sheet, setSheet] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -81,13 +77,8 @@ export default function AccountScreen() {
           </View>
         </Pressable>
         <ListCard>
-          <ListCardRow label={A.nickname} value={account?.nickname ?? ''} onPress={() => router.push('/my/nickname')} />
-          <ListCardRow
-            label={A.birth}
-            description={profile ? formatBirthLine(profile) : undefined}
-            value={A.birthEdit}
-            onPress={() => router.push('/my/birth')}
-          />
+          <ListCardRow label={A.nickname} onPress={() => router.push('/my/nickname')} />
+          <ListCardRow label={A.birth} onPress={() => router.push('/my/birth')} />
           {linked !== null ? (
             <ListCardRow
               label={A.linked}

@@ -28,7 +28,7 @@ export type ListCardRowProps = {
   label: string;
   /** 이름 아래 작은 설명 한두 줄(알림 설정의 스위치 줄, 보드 16-2) */
   description?: string;
-  /** 오른쪽에 적는 값(받는 시간 · 닉네임 · 앱 버전 · 내 정보의 출생 정보 "수정") */
+  /** 오른쪽에 적는 값(받는 시간 · 앱 버전) */
   value?: string;
   /** 값 대신 오른쪽에 둘 것(연결된 계정의 공급자 표시) */
   trailing?: ReactNode;
@@ -89,7 +89,7 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
       {toggle ? (
         <SwitchMark on={toggle.value} />
       ) : onPress && chevron ? (
-        <Svg width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+        <Svg testID="list-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
           <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       ) : null}

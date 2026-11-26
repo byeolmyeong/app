@@ -165,6 +165,18 @@ describe('api: 세션 확인과 로그아웃', () => {
     });
   });
 
+  it('GET /auth/analytics-id 는 분석용 id 를 돌려준다 — 모양이 다르면 INVALID, 401 은 로그인 필요(결정 081)', async () => {
+    const id = '0123456789abcdef0123456789abcdef';
+    const fetchFn = fakeFetch(200, { analyticsId: id });
+    expect(await createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }).getAnalyticsId()).toEqual({ ok: true, data: { analyticsId: id } });
+    expect(fetchFn.mock.calls[0][0]).toBe(`${BASE}/auth/analytics-id`);
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer t');
+    const odd = createApi({ baseUrl: BASE, fetchFn: fakeFetch(200, { analyticsId: 42 }), getToken: () => 't' });
+    expect(await odd.getAnalyticsId()).toEqual({ ok: false, error: 'INVALID', status: 200 });
+    const gone = createApi({ baseUrl: BASE, fetchFn: fakeFetch(401), getToken: () => 't' });
+    expect(await gone.getAnalyticsId()).toEqual({ ok: false, error: 'LOGIN_REQUIRED', status: 401 });
+  });
+
   it('DELETE /auth/session 으로 로그아웃한다', async () => {
     const fetchFn = fakeFetch(204);
     expect(await createApi({ baseUrl: BASE, fetchFn, getToken: () => 't' }).logout()).toEqual({ ok: true, data: null });

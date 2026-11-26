@@ -28,7 +28,7 @@ jest.mock('expo-router', () => ({
 }));
 // 글꼴을 받았는지는 시험이 정한다(기본: 받음)
 let mockFontsLoaded = true;
-jest.mock('expo-font', () => ({ useFonts: () => [mockFontsLoaded, null] }));
+jest.mock('@/components/use-app-fonts', () => ({ useAppFonts: () => [mockFontsLoaded, null] }));
 // 스플래시가 몇 번 새로 그려졌는지 센다(걷는 때 판단 useSplashDone 은 진짜)
 let mockSplashMounts = 0;
 jest.mock('@/components/splash-view', () => {

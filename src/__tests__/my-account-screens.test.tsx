@@ -46,40 +46,59 @@ beforeEach(async () => {
 });
 
 describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
-  it('제목은 "내 정보", 프로필 · 출생 정보 · 연결된 계정 · 로그아웃 · 계정 삭제 순서다(결정 084)', async () => {
+  it('제목은 "내 정보", 프로필 · 닉네임 · 출생 정보 · 연결된 계정 · 로그아웃 · 계정 삭제 순서다(결정 084)', async () => {
     await saveBirth({ profile: { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } }, chart: fixtures.chart });
     await render(<AccountScreen />);
-    expect(await screen.findByText('1999년 3월 8일 · 오후 2:10 · 서울 강남구')).toBeTruthy();
+    expect(await screen.findByText('dawn****@kakao.com')).toBeTruthy();
     expect(screen.getByText('내 정보')).toBeTruthy();
     expect(screen.queryByText('계정')).toBeNull();
-    const labels = [N.avatars[2], A.nickname, '출생 정보', '1999년 3월 8일 · 오후 2:10 · 서울 강남구', '수정', A.linked, A.logout, A.delete];
+    const labels = [N.avatars[2], A.nickname, A.birth, A.linked, A.logout, A.delete];
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
     expect(places.every((p) => p >= 0)).toBe(true);
     expect(places).toEqual([...places].sort((a, b) => a - b));
   });
 
-  it('출생 정보 줄(지금 값 한 줄 + "수정 ›")을 누르면 출생 정보 수정(/my/birth)으로 간다. 시각을 모르면 "시각 모름"', async () => {
+  it('닉네임 · 출생 정보 줄은 이름과 꺾쇠 › 만 — 지금 닉네임 · 출생 정보 한 줄 · "수정" 글자가 없다(결정 087)', async () => {
+    await saveBirth({ profile: { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } }, chart: fixtures.chart });
+    await render(<AccountScreen />);
+    await screen.findByText('dawn****@kakao.com');
+    for (const label of [A.nickname, A.birth]) {
+      const row = screen.getByRole('button', { name: label });
+      // 줄 안의 글자는 이름 하나뿐, 오른쪽 끝에 꺾쇠
+      expect(within(row).getAllByText(/.+/).map((t) => t.props.children)).toEqual([label]);
+      expect(within(row).getByTestId('list-card-chevron')).toBeTruthy();
+    }
+    expect(screen.queryByText('새벽별')).toBeNull();
+    expect(screen.queryByText('1999년 3월 8일 · 오후 2:10 · 서울 강남구')).toBeNull();
+    expect(screen.queryByText('수정')).toBeNull();
+    // 꺾쇠는 닉네임 · 출생 정보 줄에만 — 연결된 계정(보여 주기만) · 로그아웃(가운데 창)에는 없다
+    expect(screen.getAllByTestId('list-card-chevron')).toHaveLength(2);
+  });
+
+  it('출생 정보 줄을 누르면 출생 정보 수정(/my/birth)으로 간다. 시각을 몰라도 줄 모양은 같다(값 줄 없음)', async () => {
     await saveBirth({ profile: { date: '1999-03-08', time: null, place: null }, chart: fixtures.chartTimeUnknown });
     await render(<AccountScreen />);
-    expect(await screen.findByText('1999년 3월 8일 · 시각 모름')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: '출생 정보' }));
+    await screen.findByText('dawn****@kakao.com');
+    expect(screen.queryByText('1999년 3월 8일 · 시각 모름')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: A.birth }));
     expect(router.push).toHaveBeenLastCalledWith('/my/birth');
   });
 
-  it('기기에 출생 정보가 없어도 출생 정보 줄은 이름과 "수정 ›" 으로 남아 들어갈 수 있다', async () => {
+  it('기기에 출생 정보가 없어도 출생 정보 줄은 이름과 꺾쇠로 남아 들어갈 수 있다', async () => {
     await render(<AccountScreen />);
-    await screen.findByText('새벽별');
-    const row = screen.getByRole('button', { name: '출생 정보' });
-    expect(within(row).getByText('수정')).toBeTruthy();
+    await screen.findByText('dawn****@kakao.com');
+    const row = screen.getByRole('button', { name: A.birth });
+    expect(within(row).getByTestId('list-card-chevron')).toBeTruthy();
     expect(within(row).queryByText(/년 .*월/)).toBeNull();
     await fireEvent.press(row);
     expect(router.push).toHaveBeenLastCalledWith('/my/birth');
   });
 
-  it('프로필 그림 · 닉네임 · 연결된 계정(공급자 + 가린 이메일) / 로그아웃 / 맨 아래 계정 삭제를 보인다', async () => {
+  it('프로필 그림 · 닉네임 줄 · 연결된 계정(공급자 + 가린 이메일) / 로그아웃 / 맨 아래 계정 삭제를 보인다', async () => {
     await render(<AccountScreen />);
-    expect(await screen.findByText('새벽별')).toBeTruthy();
+    expect(await screen.findByText('dawn****@kakao.com')).toBeTruthy();
+    expect(screen.getByText(A.nickname)).toBeTruthy();
     expect(screen.getByLabelText(N.avatars[2])).toBeTruthy();
     expect(screen.getByText(A.linked)).toBeTruthy();
     expect(screen.getByText('dawn****@kakao.com')).toBeTruthy();
@@ -120,14 +139,14 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
 
   it('프로필 그림 버튼의 읽기 이름은 "프로필 수정"(소유자 2026-11-21)', async () => {
     await render(<AccountScreen />);
-    await screen.findByText('새벽별');
+    await screen.findByText('dawn****@kakao.com');
     expect(screen.getByRole('button', { name: '프로필 수정' })).toBeTruthy();
   });
 
   it('프로필 그림을 누르면 고르기 시트(제목 없음), 다른 그림을 확인하면 PATCH 하고 바뀐 그림만 — 성공 알림은 없다(소유자 2026-11-21)', async () => {
     mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...account, avatar: 5 } });
     await render(<AccountScreen />);
-    await screen.findByText('새벽별');
+    await screen.findByText('dawn****@kakao.com');
     await fireEvent.press(screen.getByRole('button', { name: A.editAvatar }));
     await fireEvent.press(await screen.findByRole('radio', { name: N.avatars[4] }));
     await fireEvent.press(screen.getByText(N.confirm));
@@ -138,7 +157,7 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
 
   it('같은 그림을 확인하면 서버를 부르지 않고, 저장에 실패하면 그림은 그대로 두고 실패 알림', async () => {
     await render(<AccountScreen />);
-    await screen.findByText('새벽별');
+    await screen.findByText('dawn****@kakao.com');
     await fireEvent.press(screen.getByRole('button', { name: A.editAvatar }));
     await fireEvent.press(await screen.findByText(N.confirm));
     expect(mockApi.updateAccount).not.toHaveBeenCalled();

@@ -26,9 +26,7 @@ export function ListCard({ children }: { children: ReactNode }) {
 
 export type ListCardRowProps = {
   label: string;
-  /** 이름 아래 작은 설명 한두 줄(알림 설정의 스위치 줄, 보드 16-2) */
-  description?: string;
-  /** 오른쪽에 적는 값(받는 시간 · 닉네임 · 앱 버전 · 내 정보의 출생 정보 "수정") */
+  /** 오른쪽에 적는 값(받는 시간 · 앱 버전) */
   value?: string;
   /** 값 대신 오른쪽에 둘 것(연결된 계정의 공급자 표시) */
   trailing?: ReactNode;
@@ -51,21 +49,12 @@ function SwitchMark({ on }: { on: boolean }) {
   );
 }
 
-/** 목록 카드의 한 줄: 왼쪽 이름(과 설명), 오른쪽 값 · 덧붙일 것 · 화살표 또는 스위치. 최소 높이 52 */
-export function ListCardRow({ label, description, value, trailing, onPress, chevron = true, toggle, disabled = false }: ListCardRowProps) {
+/** 목록 카드의 한 줄: 왼쪽 이름, 오른쪽 값 · 덧붙일 것 · 화살표 또는 스위치. 최소 높이 52 */
+export function ListCardRow({ label, value, trailing, onPress, chevron = true, toggle, disabled = false }: ListCardRowProps) {
   const hasRight = value !== undefined || trailing !== undefined;
   const content = (
     <>
-      {description !== undefined ? (
-        <View style={styles.names}>
-          <Txt variant="body" style={styles.labelText}>
-            {label}
-          </Txt>
-          <Txt variant="caption" color="hint" keepAll>
-            {description}
-          </Txt>
-        </View>
-      ) : hasRight ? (
+      {hasRight ? (
         // 오른쪽에 값이 있으면 이름은 늘 한 줄 · 줄지 않는다 — 값이 남은 폭 안에서 줄어든다(소유자 2026-11-21)
         <Txt variant="body" numberOfLines={1} style={styles.labelFixed}>
           {label}
@@ -76,7 +65,7 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
         </Txt>
       )}
       {hasRight ? (
-        <View style={description !== undefined ? styles.rightFit : styles.right}>
+        <View style={styles.right}>
           {value !== undefined ? (
             // 넘치면 가운데를 줄여 앞과 끝(이메일의 도메인 등)이 보이게. 화면 읽기는 전체를 읽는다
             <Txt variant="small" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={value} style={styles.valueText}>
@@ -89,7 +78,7 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
       {toggle ? (
         <SwitchMark on={toggle.value} />
       ) : onPress && chevron ? (
-        <Svg width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+        <Svg testID="list-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
           <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       ) : null}
@@ -137,12 +126,7 @@ const styles = StyleSheet.create({
   labelFixed: { flexShrink: 0, fontWeight: FontWeight.medium },
   /** 오른쪽 값 · 덧붙일 것: 남은 폭을 차지하고 오른쪽에 붙는다(넘치면 안에서 줄어든다) */
   right: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
-  /** 설명이 있는 줄의 오른쪽 값은 제 폭만 — 이름 · 설명 칸이 남은 폭을 쓴다(내 정보의 출생 정보 "수정 ›", 결정 084) */
-  rightFit: { flexShrink: 0, flexDirection: 'row', alignItems: 'center' },
   valueText: { flexShrink: 1 },
-  /** 설명이 있으면 이름과 설명을 한 칸에 위아래로(사이 2) */
-  names: { flex: 1, gap: L.descGap },
-  labelText: { fontWeight: FontWeight.medium },
   switch: { width: L.switch.width, height: L.switch.height, borderRadius: L.switch.height / 2, justifyContent: 'center' },
   switchOn: { backgroundColor: Colors.primary },
   switchOff: { backgroundColor: Colors.hair },

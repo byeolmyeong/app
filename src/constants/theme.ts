@@ -175,8 +175,6 @@ export const StepLayout = {
   back: 40,
   backIcon: 24,
   backInset: -10,
-  /** 키보드가 올라왔을 때 다음 버튼과 키보드 사이 */
-  keyboardGap: 12,
   /** 단계가 바뀔 때 진행 막대의 칸이 차오르거나 줄어드는 시간(소유자 2026-11-19) */
   progressMs: 300,
 } as const;
@@ -852,6 +850,8 @@ export const Sizes = {
   /** 소개 · 가입 단계 화면의 머리(건너뛰기 · 뒤로) 높이와 바닥 여백(결정 042 시안) */
   stepHeader: 56,
   stepBottom: 34,
+  /** 화면 키패드가 떠 있을 때 맨 아래 주 버튼과 키패드 사이 — 모든 입력 화면(결정 085, 보드 7-1) */
+  keyboardGap: 12,
   /** 소개의 그림 칸 · 장 표시 점(지금 장은 길게) */
   introArt: 260,
   introDot: 6,

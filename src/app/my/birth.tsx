@@ -1,6 +1,6 @@
 import { router, usePreventRemove } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button } from '@/components/button';
@@ -9,7 +9,8 @@ import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { Toast, useToast } from '@/components/toast';
 import { Txt } from '@/components/txt';
-import { Colors, MyLayout, ScreenPaddingX, Spacing, StateLayout } from '@/constants/theme';
+import { useKeyboardHeight } from '@/components/use-keyboard-height';
+import { Colors, MyLayout, ScreenPaddingX, Sizes, Spacing, StateLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { clearDeviceData } from '@/features/auth/delete-account';
 import { BirthFields, useBirthFields } from '@/features/chart/birth-fields';
@@ -59,6 +60,8 @@ function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (
   const [leave, setLeave] = useState<'reading' | 'back' | null>(null);
   /** 바꾸는 중(두 번 눌러도 한 번만) */
   const sending = useRef(false);
+  // 키패드가 떠 있으면 Screen 이 키패드 높이만큼 띄우고, 버튼은 키패드 12 위(결정 085)
+  const keyboard = useKeyboardHeight() > 0;
 
   // 바꾸는 동안은 뒤로(머리 · 손짓 · 기기 뒤로 단추)를 막는다 — 떠난 화면에서 결과가 보이지 않게
   usePreventRemove(busy, () => {});
@@ -119,6 +122,7 @@ function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (
   return (
     <Screen
       scroll={false}
+      avoidKeyboard
       nav={
         <NavBar
           chevron
@@ -128,7 +132,7 @@ function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (
           }}
         />
       }>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.fill}>
         <ScrollView style={styles.fill} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.notice}>
             <Svg width={L.noticeIcon} height={L.noticeIcon} viewBox="0 0 24 24" fill="none" style={styles.noticeIcon}>
@@ -141,14 +145,14 @@ function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (
           </View>
           <BirthFields control={fields} />
         </ScrollView>
-        <View style={styles.footer}>
+        <View style={[styles.footer, keyboard && styles.footerKeyboard]}>
           {/* 알림이 버튼 폭 그대로 뜨게 여백 없는 칸으로 감싼다 */}
           <View>
             <Toast toast={toast} onClose={hide} above="button" />
             <Button label={B.submit} onPress={onSubmit} disabled={busy} />
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
       {asking ? (
         <Dialog
           title={B.confirm.title}
@@ -176,4 +180,6 @@ const styles = StyleSheet.create({
   noticeIcon: { marginTop: L.noticeIconTop },
   noticeText: { flex: 1 },
   footer: { paddingHorizontal: ScreenPaddingX, paddingBottom: StateLayout.bottom },
+  /** 키패드가 떠 있으면 버튼과 키패드 사이 12(결정 085) */
+  footerKeyboard: { paddingBottom: Sizes.keyboardGap },
 });

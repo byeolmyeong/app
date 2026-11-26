@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { FieldInput } from '@/components/field';
@@ -8,7 +8,8 @@ import { NavBar } from '@/components/nav-bar';
 import { Screen } from '@/components/screen';
 import { Toast, useToast } from '@/components/toast';
 import { Txt } from '@/components/txt';
-import { FontWeight, MyLayout, ScreenPaddingX, Spacing, StateLayout } from '@/constants/theme';
+import { useKeyboardHeight } from '@/components/use-keyboard-height';
+import { FontWeight, MyLayout, ScreenPaddingX, Sizes, Spacing, StateLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { NICKNAME_MAX, checkNickname, isComposingOnly, nicknameLength } from '@/features/auth/nickname-rule';
 import { useMyAccount } from '@/features/my/use-my-account';
@@ -42,6 +43,8 @@ export default function NicknameScreen() {
   const [checking, setChecking] = useState(false);
   /** 보내는 중(두 번 누르기 · 엔터가 겹쳐도 한 번만) */
   const sending = useRef(false);
+  // 키패드가 떠 있으면 Screen 이 키패드 높이만큼 띄우고, 버튼은 키패드 12 위(결정 085)
+  const keyboard = useKeyboardHeight() > 0;
   const current = account?.nickname ?? '';
   // 사람이 치기 전에는 받은 닉네임을 칸에 둔다(계정을 받기 전이면 빈 칸)
   const raw = typed ?? current;
@@ -111,8 +114,11 @@ export default function NicknameScreen() {
   }
 
   return (
-    <Screen scroll={false} nav={<NavBar chevron title={MN.title} onBack={() => (router.canGoBack() ? router.back() : router.replace('/my/account'))} />}>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <Screen
+      scroll={false}
+      avoidKeyboard
+      nav={<NavBar chevron title={MN.title} onBack={() => (router.canGoBack() ? router.back() : router.replace('/my/account'))} />}>
+      <View style={styles.fill}>
         <View style={styles.body}>
           <FieldInput
             boxTestID="nickname-box"
@@ -138,14 +144,14 @@ export default function NicknameScreen() {
             {error ?? (confirmed ? N.available : N.rule)}
           </Txt>
         </View>
-        <View style={styles.footer}>
+        <View style={[styles.footer, keyboard && styles.footerKeyboard]}>
           {/* 알림이 버튼 폭 그대로 뜨게 여백 없는 칸으로 감싼다(absolute 는 바깥 여백을 무시한다) */}
           <View>
             <Toast toast={toast} onClose={hide} above="button" />
             <Button label={MN.save} onPress={() => void save()} disabled={!canSave} />
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Screen>
   );
 }
@@ -155,5 +161,7 @@ const styles = StyleSheet.create({
   /** 머리 아래 12, 칸과 안내 사이 8(보드 16-5) */
   body: { flex: 1, gap: Spacing.xs, paddingTop: MyLayout.gap, paddingHorizontal: ScreenPaddingX },
   footer: { paddingHorizontal: ScreenPaddingX, paddingBottom: StateLayout.bottom },
+  /** 키패드가 떠 있으면 버튼과 키패드 사이 12(결정 085) */
+  footerKeyboard: { paddingBottom: Sizes.keyboardGap },
   count: { fontWeight: FontWeight.regular },
 });

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { Avatar, isAvatarId } from '@/components/avatar';
 import { CardConstellation, type CardConstellationArt } from '@/components/card-constellation';
@@ -10,6 +11,8 @@ import { strings } from '@/content/strings';
 
 const L = MyLayout.card;
 const C = strings.my.card;
+/** 카드를 누르면 가는 곳 — 화면 읽기 이름 끝에 붙인다 */
+const OPEN = strings.my.account.title;
 
 export type MyCardProps = {
   /** `GET /account` 의 닉네임 · 프로필 그림. 받지 못했거나 옛 계정이면 null — 그 칸을 빼고 그린다 */
@@ -27,28 +30,21 @@ export type MyCardProps = {
   headline: string | null;
   /** 출생 정보 한 줄. 기기에 출생 정보가 없으면 null */
   birthLine: string | null;
-  onAccount: () => void;
-  onBirth: () => void;
+  /** 카드 어디를 눌러도 내 정보(`/my/account`)로 간다 */
+  onOpen: () => void;
 };
 
-function CardButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.button}>
-      <Txt variant="table" numberOfLines={1} style={styles.buttonText}>
-        {label}
-      </Txt>
-    </Pressable>
-  );
-}
-
 /**
- * 마이 위의 별명 카드(결정 056 의 1, 보드 16): 프로필 그림 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄,
- * 아래 버튼 둘(프로필 수정 / 출생 정보 수정 — 소유자 2026-11-21, 늘 한 줄). 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 카드 자체는 누르지 않는다.
+ * 마이 위의 별명 카드(결정 056 의 1 · 084, 보드 16): 프로필 그림 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄.
+ * 카드 전체를 누르면 내 정보로 가고, 이름 줄 끝에 꺾쇠를 둔다(버튼 둘은 결정 084 로 뺐다 — 출생 정보 수정은 내 정보 안에서 들어간다).
+ * 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다.
  */
-export function MyCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, birthLine, onAccount, onBirth }: MyCardProps) {
+export function MyCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, birthLine, onOpen }: MyCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
+  // 보이는 글 차례대로 + 가는 곳(결정 078 의 1 과 같은 방식) — 비어 있는 칸은 빼고 읽는다
+  const label = [nickname, meta, headline, birthLine, OPEN].filter(Boolean).join(C.labelSeparator);
   return (
-    <View testID="my-card" style={styles.card}>
+    <Pressable testID="my-card" accessibilityRole="button" accessibilityLabel={label} onPress={onOpen} style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
       <CardConstellation art={art} />
       <View style={styles.row}>
@@ -62,6 +58,9 @@ export function MyCard({ nickname, avatar, accountPending = false, sunSign, art,
             </Txt>
           ) : null}
         </View>
+        <Svg testID="my-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+          <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
       </View>
       {headline ? (
         <Txt variant="input" color="inkSoft" keepAll style={styles.headline}>
@@ -73,11 +72,7 @@ export function MyCard({ nickname, avatar, accountPending = false, sunSign, art,
           {birthLine}
         </Txt>
       ) : null}
-      <View style={styles.buttons}>
-        <CardButton label={C.account} onPress={onAccount} />
-        <CardButton label={C.birth} onPress={onBirth} />
-      </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -93,17 +88,8 @@ const styles = StyleSheet.create({
     paddingBottom: L.padding,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
-  names: { flexShrink: 1, gap: L.namesGap },
+  /** 이름 칸이 남은 폭을 써서 꺾쇠가 줄 끝에 붙는다 */
+  names: { flex: 1, gap: L.namesGap },
   headline: { marginTop: L.headlineTop, lineHeight: L.headlineLine, fontWeight: FontWeight.medium },
   birth: { marginTop: L.birthTop },
-  buttons: { flexDirection: 'row', gap: L.buttonGap, marginTop: L.buttonsTop },
-  button: {
-    flex: 1,
-    height: L.button,
-    borderRadius: L.buttonRadius,
-    backgroundColor: L.buttonFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: { fontWeight: FontWeight.semibold },
 });

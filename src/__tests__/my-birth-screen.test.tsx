@@ -72,6 +72,18 @@ describe('출생 정보 수정(/my/birth, 보드 16-4)', () => {
     expect(dialog.getByText('별명과 풀이를 새로 만들어요.\n지금 것은 되돌릴 수 없어요.')).toBeTruthy();
   });
 
+  it('주소로 바로 열어 돌아갈 곳이 없으면 뒤로 가기는 내 정보(/my/account)로 바꾼다 — 들어오는 곳이 내 정보다(결정 084)', async () => {
+    (router.canGoBack as jest.Mock).mockReturnValue(false);
+    try {
+      await render(<BirthChangeScreen />);
+      await screen.findByText(B.notice);
+      await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
+      expect(router.replace).toHaveBeenCalledWith('/my/account');
+    } finally {
+      (router.canGoBack as jest.Mock).mockReturnValue(true);
+    }
+  });
+
   it('바뀐 것이 없으면 묻지 않고 돌아간다(서버를 부르지 않는다)', async () => {
     await render(<BirthChangeScreen />);
     await screen.findByText(B.notice);

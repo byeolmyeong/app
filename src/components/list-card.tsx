@@ -28,7 +28,7 @@ export type ListCardRowProps = {
   label: string;
   /** 이름 아래 작은 설명 한두 줄(알림 설정의 스위치 줄, 보드 16-2) */
   description?: string;
-  /** 오른쪽에 적는 값(받는 시간 · 닉네임 · 앱 버전) */
+  /** 오른쪽에 적는 값(받는 시간 · 닉네임 · 앱 버전 · 내 정보의 출생 정보 "수정") */
   value?: string;
   /** 값 대신 오른쪽에 둘 것(연결된 계정의 공급자 표시) */
   trailing?: ReactNode;
@@ -76,7 +76,7 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
         </Txt>
       )}
       {hasRight ? (
-        <View style={styles.right}>
+        <View style={description !== undefined ? styles.rightFit : styles.right}>
           {value !== undefined ? (
             // 넘치면 가운데를 줄여 앞과 끝(이메일의 도메인 등)이 보이게. 화면 읽기는 전체를 읽는다
             <Txt variant="desc" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={value} style={styles.valueText}>
@@ -137,6 +137,8 @@ const styles = StyleSheet.create({
   labelFixed: { flexShrink: 0, fontWeight: FontWeight.medium },
   /** 오른쪽 값 · 덧붙일 것: 남은 폭을 차지하고 오른쪽에 붙는다(넘치면 안에서 줄어든다) */
   right: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+  /** 설명이 있는 줄의 오른쪽 값은 제 폭만 — 이름 · 설명 칸이 남은 폭을 쓴다(내 정보의 출생 정보 "수정 ›", 결정 084) */
+  rightFit: { flexShrink: 0, flexDirection: 'row', alignItems: 'center' },
   valueText: { flexShrink: 1 },
   /** 설명이 있으면 이름과 설명을 한 칸에 위아래로(사이 2) */
   names: { flex: 1, gap: L.descGap },

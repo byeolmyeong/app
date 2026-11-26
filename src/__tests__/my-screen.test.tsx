@@ -50,7 +50,7 @@ afterEach(() => {
 });
 
 describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보드 16)', () => {
-  it('카드에 프로필 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄 · 버튼 둘을 보인다', async () => {
+  it('카드에 프로필 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄 · 꺾쇠를 보인다(버튼 없음, 결정 084)', async () => {
     // 한국 날짜로 2026-11-20, 받은 날 2026-11-09 → 12일째
     nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
     await saveBirth({ profile, chart: fixtures.chart });
@@ -63,8 +63,9 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(await card.findByText('쌍둥이자리 · 별명을 받은 지 12일')).toBeTruthy();
     expect(card.getByText(fixtures.reading.headline)).toBeTruthy();
     expect(card.getByText('1999년 3월 8일 · 오후 2:10 · 서울 강남구')).toBeTruthy();
-    expect(card.getByText(M.card.account)).toBeTruthy();
-    expect(card.getByText(M.card.birth)).toBeTruthy();
+    expect(card.getByTestId('my-card-chevron')).toBeTruthy();
+    expect(card.queryByText('프로필 수정')).toBeNull();
+    expect(card.queryByText('출생 정보 수정')).toBeNull();
     expect(card.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
   });
 
@@ -102,11 +103,11 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(await card.findByText(old.headline)).toBeTruthy();
   });
 
-  it('출생 정보 · 풀이가 기기에 없으면 카드는 닉네임과 버튼만, 줄들과 아래 탭은 그대로 보인다', async () => {
+  it('출생 정보 · 풀이가 기기에 없으면 카드는 닉네임과 꺾쇠만, 줄들과 아래 탭은 그대로 보인다', async () => {
     await render(<MyScreen />);
     const card = within(await screen.findByTestId('my-card'));
     expect(await card.findByText('새벽별')).toBeTruthy();
-    expect(card.getByText(M.card.birth)).toBeTruthy();
+    expect(card.getByTestId('my-card-chevron')).toBeTruthy();
     expect(card.queryByText(/년 .*월/)).toBeNull();
     for (const label of [R.notifications, R.faq, R.inquiry, R.terms, R.privacy, R.version]) expect(screen.getByText(label)).toBeTruthy();
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
@@ -126,7 +127,7 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
   it('줄은 카드 아래 알림 · 자주 묻는 질문 · 문의하기 / 이용약관 · 개인정보 처리방침 · 앱 버전(숫자만) 순서다. 로그아웃 · 계정 삭제는 없다', async () => {
     await render(<MyScreen />);
     await screen.findByText('새벽별');
-    const labels = [M.card.account, R.notifications, R.faq, R.inquiry, R.terms, R.privacy, R.version];
+    const labels = ['새벽별', R.notifications, R.faq, R.inquiry, R.terms, R.privacy, R.version];
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
     expect(places.every((p) => p >= 0)).toBe(true);
@@ -142,8 +143,6 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
   });
 
   it.each([
-    [M.card.account, '/my/account'],
-    [M.card.birth, '/my/birth'],
     [R.notifications, '/my/notifications'],
     [R.faq, '/settings/faq'],
     [R.inquiry, '/my/inquiries'],
@@ -165,11 +164,20 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(within(row).getAllByText(/./).map((t) => t.props.children)).toEqual([R.notifications]);
   });
 
-  it('별명 카드의 버튼은 "프로필 수정" · "출생 정보 수정" 이고 늘 한 줄(소유자 2026-11-21)', async () => {
+  it('별명 카드 전체를 누르면 내 정보(/my/account)로 간다 — 화면 읽기 이름은 보이는 글 차례대로 + "내 정보"(결정 084)', async () => {
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading({ ...fixtures.reading, createdAt: '2026-11-09T01:00:00Z' });
     await render(<MyScreen />);
-    const card = within(await screen.findByTestId('my-card'));
-    expect(card.getByText('프로필 수정').props.numberOfLines).toBe(1);
-    expect(card.getByText('출생 정보 수정').props.numberOfLines).toBe(1);
+    await screen.findByText(fixtures.reading.headline);
+    const card = screen.getByRole('button', {
+      name: ['새벽별', '쌍둥이자리 · 별명을 받은 지 12일', fixtures.reading.headline, '1999년 3월 8일 · 오후 2:10 · 서울 강남구', '내 정보'].join(', '),
+    });
+    expect(card.props.testID).toBe('my-card');
+    await fireEvent.press(card);
+    expect(router.push).toHaveBeenLastCalledWith('/my/account');
+    // 출생 정보 수정은 내 정보 안에서만 들어간다
+    expect(router.push).not.toHaveBeenCalledWith('/my/birth');
   });
 
   it('문의 메일 주소를 어디에도 적지 않는다(결정 024)', async () => {

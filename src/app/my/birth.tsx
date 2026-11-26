@@ -23,7 +23,8 @@ const B = strings.my.birth;
 const H = strings.home;
 const L = MyLayout.birth;
 
-const back = () => (router.canGoBack() ? router.back() : router.replace('/my'));
+// 주소로 바로 열어 돌아갈 곳이 없으면 들어오는 곳인 내 정보로(결정 084)
+const back = () => (router.canGoBack() ? router.back() : router.replace('/my/account'));
 
 /**
  * 출생 정보 수정(결정 056 의 6, 보드 16-4): 안내 · 생년월일 · 시각(모름) · 태어난 곳(온보딩 8 과 같은 칸) · 맨 아래 "수정하기".

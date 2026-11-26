@@ -46,12 +46,12 @@ function TextPageScreen({ doc, onBack, onAgree }: TextPageProps) {
           <Txt variant="caption" color="hint">
             {`${L.effectiveLabel} ${legalInfo.effective}`}
           </Txt>
-          <Txt variant="legal" color="gray" keepAll style={styles.intro}>
+          <Txt variant="small" color="gray" keepAll style={styles.intro}>
             {doc.intro}
           </Txt>
           {doc.sections.map((section) => (
             <View key={section.title} testID="legal-section" style={styles.section}>
-              <Txt variant="clause" accessibilityRole="header">
+              <Txt variant="bodyStrong" accessibilityRole="header">
                 {section.title}
               </Txt>
               {section.blocks.map((block, i) => (
@@ -93,7 +93,7 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
           <Path d="M15 5l-7 7 7 7" stroke={Colors.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </Pressable>
-      <Txt variant="emphasis" accessibilityRole="header" numberOfLines={1} style={styles.title}>
+      <Txt variant="subhead" accessibilityRole="header" numberOfLines={1} style={styles.title}>
         {title}
       </Txt>
     </View>
@@ -103,7 +103,7 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 function Block({ block }: { block: LegalBlock }) {
   if ('p' in block) {
     return (
-      <Txt variant="legal" color="gray" keepAll style={styles.block}>
+      <Txt variant="small" color="gray" keepAll style={styles.block}>
         {block.p}
       </Txt>
     );
@@ -114,10 +114,10 @@ function Block({ block }: { block: LegalBlock }) {
       <View style={[styles.block, styles.list]}>
         {items.map((item, i) => (
           <View key={item} style={styles.item}>
-            <Txt variant="legal" color="hint" style={styles.marker}>
+            <Txt variant="small" color="hint" style={styles.marker}>
               {'ul' in block ? L.bullet : `${i + 1}${L.numberSuffix}`}
             </Txt>
-            <Txt variant="legal" color="gray" keepAll style={styles.itemText}>
+            <Txt variant="small" color="gray" keepAll style={styles.itemText}>
               {item}
             </Txt>
           </View>
@@ -132,10 +132,10 @@ function Block({ block }: { block: LegalBlock }) {
         <View key={row.join('|')} testID="legal-table-card" style={styles.card}>
           {row.map((cell, c) => (
             <View key={c}>
-              <Txt variant="legal" color="hint">
+              <Txt variant="small" color="hint">
                 {head[c]}
               </Txt>
-              <Txt variant="legal" color={c === 0 ? 'ink' : 'gray'} keepAll>
+              <Txt variant="small" color={c === 0 ? 'ink' : 'gray'} keepAll>
                 {cell}
               </Txt>
             </View>

@@ -90,7 +90,7 @@ export function NowCard({ interval, onPress }: { interval: TimingInterval; onPre
       <View style={styles.heroArt}>
         <TimingArt size={H.art} />
       </View>
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {T.now}
       </Txt>
       <Txt variant="title" keepAll style={styles.heroTitle}>
@@ -98,12 +98,12 @@ export function NowCard({ interval, onPress }: { interval: TimingInterval; onPre
       </Txt>
       <View style={styles.meta}>
         {area ? <Tag label={area} /> : null}
-        <Txt variant="desc" color="gray">
+        <Txt variant="small" color="gray">
           {formatPeriod(interval.from, interval.to)}
         </Txt>
       </View>
       {interval.summary ? (
-        <Txt variant="body" color="inkSoft" keepAll style={styles.summary}>
+        <Txt variant="body" color="body" keepAll style={styles.summary}>
           {interval.summary}
         </Txt>
       ) : null}
@@ -127,7 +127,7 @@ export function ChipRow({ value, locked, onChange }: { value: TimingChip; locked
             accessibilityState={{ selected: on }}
             onPress={() => onChange(chip)}
             style={[styles.chip, on ? styles.chipOn : styles.chipOff]}>
-            <Txt variant="desc" color={on ? 'paper' : isLocked ? 'hint' : 'gray'} style={on ? styles.semibold : styles.medium}>
+            <Txt variant="small" color={on ? 'paper' : isLocked ? 'hint' : 'gray'} style={on ? styles.semibold : styles.medium}>
               {T.chips[chip]}
             </Txt>
           </Pressable>
@@ -137,15 +137,15 @@ export function ChipRow({ value, locked, onChange }: { value: TimingChip; locked
   );
 }
 
-/** 칸 제목(19/27)과 그 아래 한 줄 안내 */
+/** 칸 제목(소제목 20/28, 결정 080)과 그 아래 한 줄 안내 */
 export function SectionTitle({ title, note }: { title: string; note?: string }) {
   return (
     <View testID="timing-section-title" style={styles.sectionTitle}>
-      <Txt variant="paragraphTitle" accessibilityRole="header" keepAll>
+      <Txt variant="section" accessibilityRole="header" keepAll>
         {title}
       </Txt>
       {note ? (
-        <Txt variant="desc" color="gray" keepAll>
+        <Txt variant="small" color="gray" keepAll>
           {note}
         </Txt>
       ) : null}
@@ -172,7 +172,7 @@ export function PracticeCards({ practices }: { practices: { title: string }[] })
         {practices.map((p, i) => (
           <View key={i} testID="timing-practice" style={styles.practice}>
             <Badge n={i + 1} />
-            <Txt variant="clause" style={[styles.flex, styles.medium]} keepAll>
+            <Txt variant="bodyStrong" style={[styles.flex, styles.medium]} keepAll>
               {p.title}
             </Txt>
           </View>
@@ -189,7 +189,7 @@ export function TodoList({ items }: { items: { title: string }[] }) {
       {items.map((p, i) => (
         <View key={i} testID="timing-todo" style={styles.todo}>
           <Badge n={i + 1} />
-          <Txt variant="item" color="inkSoft" style={styles.flex} keepAll>
+          <Txt variant="body" color="body" style={styles.flex} keepAll>
             {p.title}
           </Txt>
         </View>
@@ -209,7 +209,7 @@ export function IntervalRow({ interval, meta, onPress }: { interval: TimingInter
       onPress={onPress}
       style={styles.row}>
       <View style={styles.rowText}>
-        <Txt variant="stat" keepAll>
+        <Txt variant="subhead" keepAll>
           {interval.title}
         </Txt>
         <View style={styles.rowMeta}>
@@ -235,13 +235,13 @@ export function DetailCard({ blocked, onRequest }: { blocked: boolean; onRequest
       <View style={styles.detailArt}>
         <TimingArt size={D.art} />
       </View>
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {T.detail.kicker}
       </Txt>
-      <Txt variant="cardTitle" keepAll style={styles.detailTitle}>
+      <Txt variant="section" keepAll style={styles.detailTitle}>
         {T.detail.title}
       </Txt>
-      <Txt variant="desc" color="gray" keepAll style={styles.detailBody}>
+      <Txt variant="small" color="gray" keepAll style={styles.detailBody}>
         {T.detail.body}
       </Txt>
       {blocked ? (
@@ -270,10 +270,10 @@ export function LockedView({ chip, blocked, onRequest }: { chip: 'year' | 'life'
           <Path d="M8 11V8a4 4 0 0 1 8 0v3" stroke={Colors.accentText} strokeWidth={1.8} strokeLinecap="round" />
         </Svg>
       </View>
-      <Txt variant="paragraphTitle" keepAll style={styles.lockedTitle}>
+      <Txt variant="section" keepAll style={styles.lockedTitle}>
         {text.title}
       </Txt>
-      <Txt variant="desc" color="gray" keepAll style={styles.lockedBody}>
+      <Txt variant="small" color="gray" keepAll style={styles.lockedBody}>
         {text.body}
       </Txt>
       {blocked ? (
@@ -304,14 +304,14 @@ export function SkBlock({ of, style, children }: { of: string; style?: StyleProp
 export function NowCardSkeleton() {
   return (
     <SkBlock of="timing-now-card" style={styles.hero}>
-      <SkeletonText widths={['30%']} variant="captionStrong" />
+      <SkeletonText widths={['30%']} variant="kicker" />
       <View style={styles.heroTitle}>
         <SkeletonText widths={['90%']} variant="title" />
         <SkeletonText widths={['50%']} variant="title" />
       </View>
       <View style={styles.meta}>
         <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
-        <SkeletonText widths={['44%']} variant="desc" />
+        <SkeletonText widths={['44%']} variant="small" />
       </View>
       <View style={styles.summary}>
         <SkeletonText widths={['100%']} variant="body" />
@@ -338,8 +338,8 @@ export function ChipsSkeleton() {
 export function SectionTitleSkeleton({ width = '44%', note = false }: { width?: DimensionValue; note?: boolean }) {
   return (
     <SkBlock of="timing-section-title" style={styles.sectionTitle}>
-      <SkeletonText widths={[width]} variant="paragraphTitle" />
-      {note ? <SkeletonText widths={['86%']} variant="desc" /> : null}
+      <SkeletonText widths={[width]} variant="section" />
+      {note ? <SkeletonText widths={['86%']} variant="small" /> : null}
     </SkBlock>
   );
 }
@@ -353,7 +353,7 @@ export function PracticeCardsSkeleton() {
         {[0, 1, 2].map((i) => (
           <SkBlock key={i} of="timing-practice" style={styles.practice}>
             <Skeleton width={L.badge} height={L.badge} pill />
-            <SkeletonText widths={[i === 1 ? '54%' : '64%']} variant="clause" style={styles.flex} />
+            <SkeletonText widths={[i === 1 ? '54%' : '64%']} variant="bodyStrong" style={styles.flex} />
           </SkBlock>
         ))}
       </View>
@@ -366,7 +366,7 @@ export function IntervalRowSkeleton() {
   return (
     <SkBlock of="timing-interval" style={styles.row}>
       <View style={styles.rowText}>
-        <SkeletonText widths={['70%']} variant="stat" />
+        <SkeletonText widths={['70%']} variant="subhead" />
         <View style={styles.rowMeta}>
           <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
           <SkeletonText widths={['30%']} variant="caption" />
@@ -380,11 +380,11 @@ export function IntervalRowSkeleton() {
 export function DetailCardSkeleton() {
   return (
     <SkBlock of="timing-detail-card" style={styles.detail}>
-      <SkeletonText widths={['24%']} variant="captionStrong" />
-      <SkeletonText widths={['70%']} variant="cardTitle" style={styles.detailTitle} />
+      <SkeletonText widths={['24%']} variant="kicker" />
+      <SkeletonText widths={['70%']} variant="section" style={styles.detailTitle} />
       <View style={styles.detailBody}>
-        <SkeletonText widths={['100%']} variant="desc" />
-        <SkeletonText widths={['40%']} variant="desc" />
+        <SkeletonText widths={['100%']} variant="small" />
+        <SkeletonText widths={['40%']} variant="small" />
       </View>
       <View style={styles.request}>
         <Skeleton width="100%" height={Sizes.buttonHeight} />

@@ -46,13 +46,13 @@ function Row({ item, nickname, now, onOpen }: { item: NotificationItem; nickname
       style={[styles.row, unread && styles.unreadRow]}>
       <KindIcon kind={item.kind} read={item.read} />
       <View style={[styles.text, unread && styles.unreadText]}>
-        <Txt variant="item" keepAll style={styles.title}>
+        <Txt variant="body" keepAll style={styles.title}>
           {text.title}
         </Txt>
-        <Txt variant="notice" color="gray" keepAll>
+        <Txt variant="small" color="gray" keepAll>
           {text.body}
         </Txt>
-        <Txt variant="meta" color="hint" style={styles.time}>
+        <Txt variant="label" color="hint" style={styles.time}>
           {time}
         </Txt>
       </View>
@@ -102,7 +102,7 @@ export function NotificationsEmpty() {
           <Path d="M10 20a2 2 0 0 0 4 0" />
         </Svg>
       </View>
-      <Txt variant="heading" accessibilityRole="header" style={styles.emptyTitle}>
+      <Txt variant="subhead" accessibilityRole="header" style={styles.emptyTitle}>
         {N.empty.title}
       </Txt>
       <Txt color="gray" keepAll style={styles.emptyBody}>
@@ -123,9 +123,9 @@ export function NotificationsSkeleton() {
         <View key={i} testID="notification-skeleton-row" style={[styles.row, styles.unreadRow]}>
           <Skeleton width={L.icon} height={L.icon} pill />
           <View style={[styles.text, styles.unreadText]}>
-            <SkeletonText variant="item" widths={[i === 1 ? '50%' : '58%']} />
-            <SkeletonText variant="notice" widths={[i === 2 ? '72%' : '90%']} />
-            <SkeletonText variant="meta" widths={[44]} style={styles.time} />
+            <SkeletonText variant="body" widths={[i === 1 ? '50%' : '58%']} />
+            <SkeletonText variant="small" widths={[i === 2 ? '72%' : '90%']} />
+            <SkeletonText variant="label" widths={[44]} style={styles.time} />
           </View>
         </View>
       ))}

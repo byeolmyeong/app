@@ -32,7 +32,7 @@ export function SynastrySummary({ synastry }: { synastry: Synastry }) {
           ) : null}
         </View>
       </View>
-      <Txt variant="heading">{synastry.headline}</Txt>
+      <Txt variant="subhead">{synastry.headline}</Txt>
       <View style={styles.keywords}>
         {synastry.keywords.map((keyword, i) => (
           <View key={i} testID="synastry-keyword" style={styles.keyword}>

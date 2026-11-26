@@ -44,9 +44,9 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
       <View style={styles.row}>
         {accountPending ? <PlaceholderCircle testID="avatar-placeholder" size={L.avatar} /> : isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>
-          {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="heading" width={L.namePlaceholder} /> : null}
+          {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="subhead" width={L.namePlaceholder} /> : null}
           {nickname ? (
-            <Txt variant="heading">
+            <Txt variant="subhead">
               {nickname}
               {C.nicknameSuffix}
             </Txt>
@@ -59,7 +59,7 @@ export function NicknameCard({ nickname, avatar, accountPending = false, sunSign
         </View>
       </View>
       {headline ? (
-        <Txt variant="cardTitle" keepAll style={styles.headline}>
+        <Txt variant="section" keepAll style={styles.headline}>
           {headline}
         </Txt>
       ) : (
@@ -90,7 +90,7 @@ export function NicknameCardSkeleton() {
       <View style={styles.row}>
         <Skeleton width={L.avatar} height={L.avatar} pill />
         <View style={styles.names}>
-          <SkeletonText variant="heading" widths={[K.name]} />
+          <SkeletonText variant="subhead" widths={[K.name]} />
           <SkeletonText variant="caption" widths={[K.meta]} />
         </View>
       </View>

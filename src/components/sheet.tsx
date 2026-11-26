@@ -128,7 +128,7 @@ export function Sheet({ visible, onClose, title, gap, height, flush = false, foo
             ]}>
             {title ? (
               <View style={styles.head}>
-                <Txt variant="sheetTitle" style={styles.title}>
+                <Txt variant="section" style={styles.title}>
                   {title}
                 </Txt>
               </View>

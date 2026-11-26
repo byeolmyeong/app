@@ -24,7 +24,7 @@ const NOT_FOUND = 404;
 function Head({ label }: { label: string }) {
   return (
     <View style={styles.head}>
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {label}
       </Txt>
       <ChevronRight size={H.chevron} testID="home-card-chevron" />
@@ -92,13 +92,13 @@ export function HomeTimingCards({
   if (state.status === 'none')
     return (
       <View testID="home-timing-empty" style={styles.card}>
-        <Txt variant="captionStrong" color="accentText">
+        <Txt variant="kicker" color="accentText">
           {T.now}
         </Txt>
-        <Txt variant="emphasis" keepAll style={styles.emptyTitle}>
+        <Txt variant="subhead" keepAll style={styles.emptyTitle}>
           {T.home.emptyTitle}
         </Txt>
-        <Txt variant="desc" color="gray" keepAll style={styles.sub}>
+        <Txt variant="small" color="gray" keepAll style={styles.sub}>
           {T.home.emptyBody}
         </Txt>
         <Pressable accessibilityRole="button" onPress={onOpen} style={styles.link}>
@@ -120,7 +120,7 @@ export function HomeTimingCards({
         <View style={styles.writingRow}>
           <MakingArt />
           <View style={styles.writingText}>
-            <Txt variant="stat">{T.home.writing.title}</Txt>
+            <Txt variant="subhead">{T.home.writing.title}</Txt>
             <Txt variant="caption" color="gray">
               {T.home.writing.body}
             </Txt>
@@ -137,10 +137,10 @@ export function HomeTimingCards({
       <Pressable testID="home-timing-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
         <Head label={T.now} />
         <NowLine nextYear={report.current.nextMilestone?.year ?? null} />
-        <Txt variant="emphasis" keepAll style={styles.title}>
+        <Txt variant="subhead" keepAll style={styles.title}>
           {main.title}
         </Txt>
-        <Txt variant="desc" color="gray" style={styles.sub}>
+        <Txt variant="small" color="gray" style={styles.sub}>
           {`${formatMonth(main.to)}${T.date.untilSuffix}`}
         </Txt>
       </Pressable>
@@ -162,21 +162,21 @@ export function HomeTimingSkeleton() {
     <SkeletonGroup testID="home-timing-skeleton">
       <View style={styles.cards}>
       <SkBlock of="home-timing-card" style={styles.card}>
-        <SkeletonText widths={['36%']} variant="captionStrong" />
+        <SkeletonText widths={['36%']} variant="kicker" />
         <View style={styles.lineBox}>
           <Skeleton width="100%" height={P.track} pill />
           <View style={styles.labels} />
         </View>
-        <SkeletonText widths={['66%']} variant="emphasis" style={styles.title} />
-        <SkeletonText widths={['40%']} variant="desc" style={styles.sub} />
+        <SkeletonText widths={['66%']} variant="subhead" style={styles.title} />
+        <SkeletonText widths={['40%']} variant="small" style={styles.sub} />
       </SkBlock>
       <SkBlock of="home-timing-practices" style={styles.card}>
-        <SkeletonText widths={['40%']} variant="captionStrong" />
+        <SkeletonText widths={['40%']} variant="kicker" />
         <View style={styles.todos}>
           {[0, 1, 2].map((i) => (
             <View key={i} testID="sk-timing-todo" style={styles.todo}>
               <Skeleton width={L.badge} height={L.badge} pill />
-              <SkeletonText widths={[i === 1 ? '50%' : '62%']} variant="item" style={styles.flex} />
+              <SkeletonText widths={[i === 1 ? '50%' : '62%']} variant="body" style={styles.flex} />
             </View>
           ))}
         </View>

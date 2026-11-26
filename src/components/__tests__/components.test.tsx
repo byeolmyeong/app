@@ -19,17 +19,20 @@ import { Colors, FontFamily, FontWeight, Radius, SheetRadius, Sizes, Spacing, Ty
 import { strings } from '@/content/strings';
 
 describe('테마', () => {
-  it('어두운 바탕·밝은 글씨·푸른 보라 주색을 갖는다(결정 033)', () => {
+  it('어두운 바탕·밝은 글씨·푸른 보라 주색을 갖는다(결정 033 · 글씨 색은 결정 080)', () => {
     expect(Colors).toEqual({
       paper: '#0D0E12',
       raised: '#16171D',
       // 화면 밖 여백: 웹 넓은 화면만 흰색이고, 앱(태블릿·폴드)은 바탕색이다. jest 는 앱(ios)으로 돈다
       canvas: '#0D0E12',
       ink: '#F2F3F7',
-      // 말풍선의 설명 · 관계의 각도 말(시안 13-1 · 13-2)
+      // 달력의 날짜 · 마이 카드의 한 줄 별명만(결정 080)
       inkSoft: '#DADCE3',
+      // 본문 회색: 제목보다 한 단, 보조보다 한 단 밝다(결정 080, 시안 "본문 회색 ②")
+      body: '#BCBFC8',
       gray: '#A9ABB7',
-      hint: '#7C7E8A',
+      // 메타: 카드(#16171D) 위 작은 글씨도 4.5 를 넘게(결정 080 — 옛 #7C7E8A 는 4.4)
+      hint: '#868894',
       muted: '#4D4F5A',
       hair: '#2A2B33',
       fill: '#1C1D24',
@@ -70,16 +73,27 @@ describe('테마', () => {
   });
 
   it('글자는 Pretendard 하나이고, 간격·모서리·부품 크기를 갖는다', () => {
+    // 글자 단계 v2(결정 080): 역할 13 + 부품 전용 8. 옛 37단(결정 033)에서 겹친 것을 합쳤다
     expect(Object.keys(Typography)).toEqual([
-      'display', 'hero', 'title', 'kicker', 'stat', 'statLabel', 'yearBig', 'headline', 'sheetTitle', 'heading', 'cardTitle', 'button', 'input', 'body', 'lead', 'desc', 'reason', 'paragraphTitle', 'paragraph', 'term', 'emphasis', 'clause', 'legal', 'item', 'table', 'notice', 'caption', 'badge', 'captionStrong', 'note', 'label', 'micro', 'meta', 'mono', 'number', 'picker', 'pickerOn',
+      'display', 'title', 'section', 'subhead', 'kicker', 'reading', 'body', 'bodyStrong', 'small', 'caption', 'captionStrong', 'label', 'badge',
+      'button', 'input', 'table', 'term', 'number', 'yearBig', 'picker', 'pickerOn',
     ]);
-    // 소개 · 가입 단계의 큰 제목과 그 아래 안내(결정 042 시안)
-    expect(Typography.hero).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600' });
-    expect(Typography.lead).toMatchObject({ fontSize: 15, lineHeight: 23, fontWeight: '400' });
     expect(Object.values(Typography).every((t) => t.fontFamily === FontFamily)).toBe(true);
     expect(Typography.display).toMatchObject({ fontSize: 28, lineHeight: 38, fontWeight: '500' });
+    expect(Typography.title).toMatchObject({ fontSize: 24, lineHeight: 34, fontWeight: '600' });
+    expect(Typography.section).toMatchObject({ fontSize: 20, lineHeight: 28, fontWeight: '600' });
+    expect(Typography.subhead).toMatchObject({ fontSize: 17, lineHeight: 24, fontWeight: '600' });
+    // 카드 이름표는 15(소유자 2026-11-26 — 꺾쇠 22 옆에서 13 은 작다)
+    expect(Typography.kicker).toMatchObject({ fontSize: 15, lineHeight: 22, fontWeight: '500' });
+    // 긴 글은 회색을 오래 읽으니 한 단 크게(안 B 의 17/28)
+    expect(Typography.reading).toMatchObject({ fontSize: 17, lineHeight: 28, fontWeight: '400' });
+    expect(Typography.body).toMatchObject({ fontSize: 15, lineHeight: 23, fontWeight: '400' });
+    expect(Typography.bodyStrong).toMatchObject({ fontSize: 15, lineHeight: 22, fontWeight: '600' });
+    // 작은 본문 14 는 남긴다(안 A — 본문과 보조의 크기 차이)
+    expect(Typography.small).toMatchObject({ fontSize: 14, lineHeight: 21, fontWeight: '400' });
+    expect(Typography.caption).toMatchObject({ fontSize: 13, lineHeight: 18, fontWeight: '400' });
+    expect(Typography.label).toMatchObject({ fontSize: 12, lineHeight: 17, fontWeight: '500' });
     expect(Typography.button).toMatchObject({ fontSize: 16, fontWeight: '600' });
-    expect(Typography.body).toMatchObject({ fontSize: 15, lineHeight: 24, fontWeight: '400' });
     // 자간: 20 이상 -2%, 15~18 -1%, 14 이하 0(결정 033)
     expect(Typography.display.letterSpacing).toBeCloseTo(-0.56);
     expect(Typography.body.letterSpacing).toBeCloseTo(-0.15);
@@ -349,7 +363,7 @@ describe('Paragraph', () => {
     await render(<Paragraph title="제목" body="본문" basis={['태양', '쌍둥이', '6하우스']} />);
     const basis = screen.getByText('근거 · 태양 · 쌍둥이 · 6하우스');
     expect(StyleSheet.flatten(basis.props.style)).toMatchObject({ ...Typography.label, color: Colors.gray });
-    expect(StyleSheet.flatten(screen.getByText('제목').props.style)).toMatchObject(Typography.heading);
+    expect(StyleSheet.flatten(screen.getByText('제목').props.style)).toMatchObject(Typography.subhead);
     expect(StyleSheet.flatten(screen.getByText('본문').props.style)).toMatchObject(Typography.body);
   });
 
@@ -523,7 +537,7 @@ describe('StatusView', () => {
       </StatusView>,
     );
     expect(screen.getByTestId('byeoli-face-think', { includeHiddenElements: true })).toBeTruthy();
-    expect(StyleSheet.flatten(screen.getByText('짓는 중').props.style)).toMatchObject({ ...Typography.heading, textAlign: 'center' });
+    expect(StyleSheet.flatten(screen.getByText('짓는 중').props.style)).toMatchObject({ ...Typography.subhead, textAlign: 'center' });
     expect(screen.getByText('1분쯤 걸려요')).toBeTruthy();
     await fireEvent.press(screen.getByText('다시 시도'));
     expect(onPress).toHaveBeenCalledTimes(1);

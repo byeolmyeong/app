@@ -36,8 +36,8 @@ describe('inputText — 치는 칸의 글자 모양', () => {
 
   it('웹은 그 단계 그대로(lineHeight 가 줄 높이라 가운데에 온다) — 플랫폼 전용 값을 붙이지 않는다', () => {
     Platform.OS = 'web';
-    const style = inputText('item');
-    expect(style).toMatchObject({ fontSize: Typography.item.fontSize, lineHeight: Typography.item.lineHeight, paddingVertical: 0 });
+    const style = inputText('body');
+    expect(style).toMatchObject({ fontSize: Typography.body.fontSize, lineHeight: Typography.body.lineHeight, paddingVertical: 0 });
     expect(style.includeFontPadding).toBeUndefined();
     expect(style.textAlignVertical).toBeUndefined();
   });

@@ -46,7 +46,7 @@ export function NavBar({ title, onBack, left, chevron = false, tall = false, rig
         )}
       </View>
       {title ? (
-        <Txt variant={chevron ? 'emphasis' : 'table'} style={chevron ? null : styles.title}>
+        <Txt variant={chevron ? 'subhead' : 'table'} style={chevron ? null : styles.title}>
           {title}
         </Txt>
       ) : null}

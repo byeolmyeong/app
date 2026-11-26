@@ -142,7 +142,7 @@ export function RevealView({ nickname, headline, signs, onRead }: RevealViewProp
               <Txt variant="kicker" color="gray">{`${nickname} ${R.nicknameSuffix}`}</Txt>
             </Animated.View>
             <Animated.View testID="reveal-up-1" style={[styles.headline, up(1)]}>
-              <Txt variant="hero" accessibilityRole="header" keepAll style={styles.center}>
+              <Txt variant="title" accessibilityRole="header" keepAll style={styles.center}>
                 {headline}
               </Txt>
             </Animated.View>
@@ -151,10 +151,10 @@ export function RevealView({ nickname, headline, signs, onRead }: RevealViewProp
             <View testID="reveal-cells" style={styles.cells}>
               {signs.map((sign) => (
                 <View key={sign.label} testID="reveal-cell" style={styles.cell}>
-                  <Txt variant="statLabel" color="hint">
+                  <Txt variant="label" color="hint">
                     {sign.label}
                   </Txt>
-                  <Txt variant="stat">{sign.value}</Txt>
+                  <Txt variant="subhead">{sign.value}</Txt>
                 </View>
               ))}
             </View>

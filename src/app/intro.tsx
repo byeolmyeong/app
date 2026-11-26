@@ -110,8 +110,8 @@ const Page = memo(function Page({ index: i, width }: { index: number; width: num
         <IntroArt index={i} />
       </View>
       <View style={styles.text}>
-        <Txt variant="hero">{slide.title}</Txt>
-        <Txt variant="lead" color="gray">
+        <Txt variant="title">{slide.title}</Txt>
+        <Txt variant="body" color="gray">
           {slide.body}
         </Txt>
       </View>

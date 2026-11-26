@@ -20,7 +20,7 @@ export type SkyListProps = {
 export function SkyList({ chart, selected, onSelect }: SkyListProps) {
   return (
     <View>
-      <Txt variant="emphasis">{strings.skyMap.listHeading}</Txt>
+      <Txt variant="subhead">{strings.skyMap.listHeading}</Txt>
       <View style={styles.rows}>
         {skyRows(chart).map((row) => (
           <Row key={row.key} row={row} on={row.key === selected} onPress={() => onSelect(row.key)} />
@@ -45,7 +45,7 @@ function Row({ row, on, onPress }: { row: SkyRow; on: boolean; onPress: () => vo
         <View style={[styles.dot, ...dot]} />
       </View>
       <View style={styles.left}>
-        <Txt variant="item" style={styles.title}>
+        <Txt variant="body" style={styles.title}>
           {row.title}
         </Txt>
         <Txt variant="caption" color="hint">
@@ -53,7 +53,7 @@ function Row({ row, on, onPress }: { row: SkyRow; on: boolean; onPress: () => vo
         </Txt>
       </View>
       <View style={styles.right}>
-        <Txt variant="item" style={styles.sign}>
+        <Txt variant="body" style={styles.sign}>
           {row.sign}
         </Txt>
         {row.place ? (

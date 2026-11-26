@@ -8,7 +8,7 @@ import { Spacing } from '@/constants/theme';
 export function SectionHead({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <View style={styles.row}>
-      <Txt variant="heading">{title}</Txt>
+      <Txt variant="subhead">{title}</Txt>
       {children}
     </View>
   );

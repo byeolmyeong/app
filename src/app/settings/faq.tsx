@@ -49,7 +49,7 @@ export default function FaqScreen() {
     return (
       <Screen nav={nav}>
         <View style={styles.status}>
-          <Txt variant="heading">{F.empty}</Txt>
+          <Txt variant="subhead">{F.empty}</Txt>
           <Txt variant="table" color="gray">
             {F.emptyNote}
           </Txt>

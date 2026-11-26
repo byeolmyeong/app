@@ -115,7 +115,7 @@ export default function LoginScreen() {
       <View style={styles.head}>
         <GlowBackdrop color={BrandColors.backdropDim} extent={GLOW.extent} centerY={GLOW.centerY} />
         <Image source={LOGO} accessibilityLabel={strings.appName} style={styles.logo} />
-        <Txt variant="lead" color="gray">
+        <Txt variant="body" color="gray">
           {S.tagline}
         </Txt>
       </View>

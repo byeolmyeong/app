@@ -25,7 +25,7 @@ const NOT_FOUND = 404;
 function Head({ label }: { label: string }) {
   return (
     <View style={styles.head}>
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {label}
       </Txt>
       <ChevronRight size={H.chevron} testID="home-card-chevron" />
@@ -64,10 +64,10 @@ export function HomeTodaySkeleton() {
   return (
     <SkeletonGroup testID="sk-home-today-card">
       <View style={styles.card}>
-        <SkeletonText variant="captionStrong" widths={['44%']} />
+        <SkeletonText variant="kicker" widths={['44%']} />
         {/* 제목은 시안 11 처럼 두 줄 */}
-        <SkeletonText variant="emphasis" widths={['92%', '24%']} style={styles.title} />
-        <SkeletonText variant="desc" widths={['60%']} style={styles.sub} />
+        <SkeletonText variant="subhead" widths={['92%', '24%']} style={styles.title} />
+        <SkeletonText variant="small" widths={['60%']} style={styles.sub} />
       </View>
     </SkeletonGroup>
   );
@@ -103,7 +103,7 @@ export function HomeTodayCard({
           <View style={styles.makingRow}>
             <MakingArt />
             <View style={styles.makingText}>
-              <Txt variant="stat">{T.making.title}</Txt>
+              <Txt variant="subhead">{T.making.title}</Txt>
               <Txt variant="caption" color="gray">
                 {T.making.card}
               </Txt>
@@ -129,11 +129,11 @@ export function HomeTodayCard({
   return (
     <Pressable testID="home-today-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
       <Head label={`${T.title}${T.separator}${formatMonthDay(sky.date)}`} />
-      <Txt variant="emphasis" keepAll style={styles.title}>
+      <Txt variant="subhead" keepAll style={styles.title}>
         {sky.title}
       </Txt>
       {brief ? (
-        <Txt variant="desc" color="gray" keepAll style={styles.sub}>
+        <Txt variant="small" color="gray" keepAll style={styles.sub}>
           {brief}
         </Txt>
       ) : null}

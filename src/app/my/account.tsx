@@ -97,7 +97,7 @@ export default function AccountScreen() {
                     <ProviderBadge provider={account?.provider ?? ''} />
                   </View>
                   {/* 이메일이 길면 가운데를 줄여 앞과 도메인이 보이게(그림은 줄지 않는다). 화면 읽기는 전체를 읽는다 */}
-                  <Txt variant="desc" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={linked} style={styles.linkedText}>
+                  <Txt variant="small" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={linked} style={styles.linkedText}>
                     {linked}
                   </Txt>
                 </View>

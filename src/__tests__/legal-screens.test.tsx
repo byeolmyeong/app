@@ -31,22 +31,22 @@ describe('약관 글 화면의 모양(보드 6-2)', () => {
     expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
     const date = screen.getByText(`${L.effectiveLabel} ${legalInfo.effective}`);
     expect(`${L.effectiveLabel} ${legalInfo.effective}`).toBe('시행일 2026년 11월 20일');
-    expect(flat(date)).toMatchObject({ fontSize: 13, lineHeight: 18, color: '#7C7E8A' });
+    expect(flat(date)).toMatchObject({ fontSize: 13, lineHeight: 18, color: '#868894' });
   });
 
-  it('조항 제목 15/22 · 600, 문단 · 목록 · 표는 14/22, 조항 사이 24, 좌우 20', async () => {
+  it('조항 제목 15/22 · 600, 문단 · 목록 · 표는 작은 본문 14/21(결정 080), 조항 사이 24, 좌우 20', async () => {
     await render(<PrivacyScreen />);
     const first = privacy.sections[0];
     expect(flat(screen.getByRole('header', { name: first.title }))).toMatchObject({ fontSize: 15, lineHeight: 22, fontWeight: '600' });
     const p = first.blocks.find((b) => 'p' in b) as { p: string };
-    expect(flat(screen.getByText(p.p))).toMatchObject({ fontSize: 14, lineHeight: 22, color: '#A9ABB7' });
+    expect(flat(screen.getByText(p.p))).toMatchObject({ fontSize: 14, lineHeight: 21, color: '#A9ABB7' });
     // 시안 문단의 word-break: keep-all — 낱말 중간에서 줄을 바꾸지 않는다
     expect(screen.getByText(p.p).props.lineBreakStrategyIOS).toBe('hangul-word');
     const ul = first.blocks.find((b) => 'ul' in b) as { ul: string[] };
-    expect(flat(screen.getByText(ul.ul[0]))).toMatchObject({ fontSize: 14, lineHeight: 22 });
+    expect(flat(screen.getByText(ul.ul[0]))).toMatchObject({ fontSize: 14, lineHeight: 21 });
     const table = privacy.sections.flatMap((s) => s.blocks).find((b) => 'table' in b) as { table: { head: string[]; rows: string[][] } };
-    expect(flat(screen.getAllByText(table.table.rows[0][1])[0])).toMatchObject({ fontSize: 14, lineHeight: 22 });
-    expect(flat(screen.getAllByText(table.table.head[0])[0])).toMatchObject({ fontSize: 14, lineHeight: 22 });
+    expect(flat(screen.getAllByText(table.table.rows[0][1])[0])).toMatchObject({ fontSize: 14, lineHeight: 21 });
+    expect(flat(screen.getAllByText(table.table.head[0])[0])).toMatchObject({ fontSize: 14, lineHeight: 21 });
     const sections = screen.getAllByTestId('legal-section');
     expect(sections).toHaveLength(privacy.sections.length);
     expect(flat(sections[1])).toMatchObject({ marginTop: 24 });

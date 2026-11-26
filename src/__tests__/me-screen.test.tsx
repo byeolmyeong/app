@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
 import MeScreen from '@/app/me';
+import { Colors, Typography } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSoundtrack } from '@/features/audio/use-soundtrack';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -328,6 +329,19 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     expect(screen.getByText('04')).toBeTruthy();
     expect(screen.getAllByText(strings.reason.label)).toHaveLength(4);
     expect(screen.queryByText(strings.reading.disclaimer)).toBeNull();
+  });
+
+  it('글자 단계 v2: 제목 · 소제목은 흰색, 긴 글과 한눈에 보기 문장은 본문 회색(결정 080 — 외부 피드백 "다 흰 톤이라 읽기 힘들다")', async () => {
+    const p = report.areas[0];
+    await render(<MeScreen />);
+    await screen.findByText(p.title);
+    const style = (text: string) => StyleSheet.flatten(screen.getByText(text).props.style);
+    expect(style(p.title)).toMatchObject({ ...Typography.title, color: Colors.ink });
+    expect(style(`새벽별${M.areaOf}${M.areas.PERSONALITY}`)).toMatchObject({ ...Typography.kicker, color: Colors.accentText });
+    const first = p.paragraphs[0];
+    expect(style(first.title)).toMatchObject({ ...Typography.section, color: Colors.ink });
+    expect(style(first.body)).toMatchObject({ ...Typography.reading, color: Colors.body });
+    expect(style(p.glance!.shining[0])).toMatchObject({ ...Typography.small, color: Colors.body });
   });
 
   it('연애: 작은 실천 셋 + 이유 하나, 문단은 없다', async () => {

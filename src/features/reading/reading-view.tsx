@@ -27,17 +27,17 @@ export type ReadingViewProps = {
 export function ReadingView({ reading, chart, card }: ReadingViewProps) {
   return (
     <View>
-      <Txt testID="reading-headline" variant="hero" keepAll style={styles.headline}>
+      <Txt testID="reading-headline" variant="title" keepAll style={styles.headline}>
         {reading.headline}
       </Txt>
       {card ? <View style={styles.card}>{card}</View> : null}
       <View style={styles.sections}>
         {reading.sections.map((section, i) => (
           <View key={i} testID="reading-section">
-            <Txt variant="paragraphTitle" keepAll>
+            <Txt variant="section" keepAll>
               {section.title}
             </Txt>
-            <Txt variant="paragraph" color="inkSoft" keepAll style={styles.body}>
+            <Txt variant="reading" color="body" keepAll style={styles.body}>
               {section.body}
             </Txt>
             <ReasonLine reason={section.reason} chart={chart} style={styles.reason} />
@@ -56,14 +56,14 @@ function ItemList({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
   return (
     <View testID="reading-list" style={styles.list}>
-      <Txt variant="emphasis">{title}</Txt>
+      <Txt variant="subhead">{title}</Txt>
       <View style={styles.items}>
         {items.map((item, i) => (
           <View key={i} testID="reading-item" style={styles.item}>
-            <Txt variant="paragraph" color="hint" aria-hidden>
+            <Txt variant="reading" color="hint" aria-hidden>
               {S.bullet}
             </Txt>
-            <Txt variant="paragraph" color="inkSoft" keepAll style={styles.itemText}>
+            <Txt variant="reading" color="body" keepAll style={styles.itemText}>
               {item}
             </Txt>
           </View>
@@ -81,14 +81,14 @@ export function ReadingSkeleton({ card }: { card?: ReactNode }) {
   return (
     <View>
       <View testID="reading-headline-skeleton" style={styles.headline}>
-        <SkeletonText variant="hero" widths={K.headline} />
+        <SkeletonText variant="title" widths={K.headline} />
       </View>
       {card ? <View style={styles.card}>{card}</View> : null}
       <View style={styles.sections}>
         {Array.from({ length: K.sections }, (_, i) => (
           <View key={i} testID="reading-section-skeleton">
-            <SkeletonText variant="paragraphTitle" widths={K.title} />
-            <SkeletonText variant="paragraph" widths={K.body} style={styles.body} />
+            <SkeletonText variant="section" widths={K.title} />
+            <SkeletonText variant="reading" widths={K.body} style={styles.body} />
             <ReasonLineSkeleton style={styles.reason} />
           </View>
         ))}
@@ -104,11 +104,11 @@ export function ReadingSkeleton({ card }: { card?: ReactNode }) {
 function ItemListSkeleton({ title, items }: { title: number; items: readonly DimensionValue[] }) {
   return (
     <View testID="reading-list-skeleton" style={styles.list}>
-      <SkeletonText variant="emphasis" widths={[title]} />
+      <SkeletonText variant="subhead" widths={[title]} />
       <View style={styles.items}>
         {items.map((width, i) => (
           <View key={i} testID="reading-item-skeleton">
-            <SkeletonText variant="paragraph" widths={[width]} />
+            <SkeletonText variant="reading" widths={[width]} />
           </View>
         ))}
       </View>

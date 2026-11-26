@@ -18,13 +18,13 @@ export type CardFailProps = {
 export function CardFail({ kicker, title, body, retry }: CardFailProps) {
   return (
     <View testID="card-fail" style={styles.card}>
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {kicker}
       </Txt>
-      <Txt variant="stat" style={styles.title}>
+      <Txt variant="subhead" style={styles.title}>
         {title}
       </Txt>
-      <Txt variant="desc" color="gray" keepAll style={styles.body}>
+      <Txt variant="small" color="gray" keepAll style={styles.body}>
         {body}
       </Txt>
       <Pressable accessibilityRole="button" onPress={retry.onPress} style={styles.button}>

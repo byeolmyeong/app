@@ -108,12 +108,12 @@ export default function InquiryDetailScreen() {
       <ScrollView style={styles.fill} contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <CardHead label={`${D.mine}${D.separator}${I.categories[item.category]}`} date={formatInquiryDate(item.createdAt, now)} />
-          <Txt keepAll>{item.body}</Txt>
+          <Txt color="body" keepAll>{item.body}</Txt>
         </View>
         {item.answer ? (
           <View testID="inquiry-answer" style={[styles.card, styles.answerCard]}>
             <CardHead label={D.answer} date={formatInquiryDate(item.answer.answeredAt, now)} answer />
-            <Txt keepAll>{item.answer.body}</Txt>
+            <Txt color="body" keepAll>{item.answer.body}</Txt>
           </View>
         ) : (
           <Txt variant="caption" color="hint" keepAll style={styles.note}>

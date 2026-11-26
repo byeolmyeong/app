@@ -52,7 +52,7 @@ export function StateScreen({ title, body, primary, later, nav, tabs }: StateScr
           <View style={[styles.twinkle, styles.twinkleSmall, styles.twinkleC]} />
           <Image source={BYEOLI} accessible={false} style={styles.byeoli} />
         </View>
-        <Txt variant="headline" accessibilityRole="header" style={styles.title}>
+        <Txt variant="title" accessibilityRole="header" style={styles.title}>
           {title}
         </Txt>
         <Txt color="gray" keepAll style={styles.text}>

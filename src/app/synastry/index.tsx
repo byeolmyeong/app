@@ -73,7 +73,7 @@ export default function SynastryEntryScreen() {
     return (
       <Screen nav={nav}>
         <View style={styles.status}>
-          <Txt variant="heading">{E.calculating}</Txt>
+          <Txt variant="subhead">{E.calculating}</Txt>
           <Txt variant="table" color="gray">
             {E.calculatingNote}
           </Txt>

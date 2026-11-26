@@ -45,10 +45,10 @@ export function AreaView({ area, nickname, chart }: AreaViewProps) {
           <Txt variant="label" style={styles.number}>
             {String(i + 1).padStart(2, '0')}
           </Txt>
-          <Txt variant="paragraphTitle" keepAll style={styles.paragraphTitle}>
+          <Txt variant="section" keepAll style={styles.paragraphTitle}>
             {p.title}
           </Txt>
-          <Txt variant="paragraph" color="inkSoft" keepAll style={styles.paragraphBody}>
+          <Txt variant="reading" color="body" keepAll style={styles.paragraphBody}>
             {p.body}
           </Txt>
           <ReasonLine reason={p.reason} chart={chart} style={styles.reason} />
@@ -67,7 +67,7 @@ function Hero({ area, nickname, timeKnown }: { area: MeAreaReport; nickname: str
       <View style={styles.art}>
         <AreaArt area={area.area} size={H.art} variant="hero" />
       </View>
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {nickname ? `${nickname}${S.areaOf}${S.areas[area.area]}` : `${S.areaOfMine}${S.areas[area.area]}`}
       </Txt>
       <Txt variant="title" keepAll accessibilityRole="header" style={styles.heroTitle}>
@@ -84,7 +84,7 @@ function Hero({ area, nickname, timeKnown }: { area: MeAreaReport; nickname: str
       </View>
       {stars.length > 0 ? (
         <View style={styles.stars}>
-          <Txt variant="statLabel" color="hint">
+          <Txt variant="label" color="hint">
             {S.stars}
           </Txt>
           <View style={styles.starList}>
@@ -93,8 +93,8 @@ function Hero({ area, nickname, timeKnown }: { area: MeAreaReport; nickname: str
                 <Svg width={H.starIcon} height={H.starIcon} viewBox="-1 -1 2 2">
                   <Path d={STAR} fill={Colors.accentText} />
                 </Svg>
-                <Txt variant="statLabel" color="gray">
-                  <Txt variant="statLabel" style={styles.strong}>
+                <Txt variant="label" color="gray">
+                  <Txt variant="label" style={styles.strong}>
                     {s.strong}
                   </Txt>
                   {`${strings.reason.separator}${s.rest}`}
@@ -109,7 +109,7 @@ function Hero({ area, nickname, timeKnown }: { area: MeAreaReport; nickname: str
 }
 
 function SectionTitle({ title }: { title: string }) {
-  return <Txt variant="emphasis">{title}</Txt>;
+  return <Txt variant="subhead">{title}</Txt>;
 }
 
 function Glance({ glance }: { glance: NonNullable<MeAreaReport['glance']> }) {
@@ -119,7 +119,7 @@ function Glance({ glance }: { glance: NonNullable<MeAreaReport['glance']> }) {
         {title}
       </Txt>
       {items.map((t, i) => (
-        <Txt key={i} variant="desc" color="inkSoft" keepAll>
+        <Txt key={i} variant="small" color="body" keepAll>
           {t}
         </Txt>
       ))}
@@ -149,10 +149,10 @@ function Practices({ practices, area, chart }: { practices: NonNullable<MeAreaRe
               </Txt>
             </View>
             <View style={styles.practiceText}>
-              <Txt variant="stat" keepAll>
+              <Txt variant="subhead" keepAll>
                 {p.title}
               </Txt>
-              <Txt variant="desc" color="gray" keepAll>
+              <Txt variant="small" color="gray" keepAll>
                 {p.body}
               </Txt>
             </View>
@@ -205,7 +205,7 @@ function Closer({ closer }: { closer: NonNullable<MeAreaReport['closer']> }) {
             <Txt variant="captionStrong" style={styles.strongOnly}>
               {s.label}
             </Txt>
-            <Txt variant="statLabel" color="gray" keepAll style={styles.center}>
+            <Txt variant="label" color="gray" keepAll style={styles.center}>
               {s.text}
             </Txt>
           </View>
@@ -267,7 +267,7 @@ function Shaken({ shaken }: { shaken: NonNullable<MeAreaReport['shaken']> }) {
       <Txt variant="captionStrong" color="accentText" style={styles.strongOnly}>
         {title}
       </Txt>
-      <Txt variant="desc" color="inkSoft" keepAll>
+      <Txt variant="small" color="body" keepAll>
         {text}
       </Txt>
     </View>
@@ -302,7 +302,7 @@ export function AreaViewSkeleton() {
         <View style={styles.art}>
           <Skeleton width={H.art} height={H.art} pill />
         </View>
-        <SkeletonText variant="captionStrong" widths={[K.kicker]} />
+        <SkeletonText variant="kicker" widths={[K.kicker]} />
         <SkeletonText variant="title" widths={K.title} style={styles.heroTitle} />
         <View style={styles.keywords}>
           {K.keywords.map((width, i) => (
@@ -312,11 +312,11 @@ export function AreaViewSkeleton() {
           ))}
         </View>
         <View style={styles.stars}>
-          <SkeletonText variant="statLabel" widths={[K.stars]} />
+          <SkeletonText variant="label" widths={[K.stars]} />
           <View style={styles.starList}>
             {K.star.map((width, i) => (
               <View key={i} testID="me-star-skeleton">
-                <SkeletonText variant="statLabel" widths={[width]} />
+                <SkeletonText variant="label" widths={[width]} />
               </View>
             ))}
           </View>

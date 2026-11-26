@@ -105,7 +105,7 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
             <BackChevron size={Sizes.sheetBackIcon} />
           </Pressable>
         ) : null}
-        <Txt variant="sheetTitle" accessibilityRole="header" style={styles.title}>
+        <Txt variant="section" accessibilityRole="header" style={styles.title}>
           {region && !searching ? shortRegion(region) : H.placeSheetTitle}
         </Txt>
       </View>
@@ -129,7 +129,7 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
           autoCapitalize="none"
           returnKeyType="search"
           // 글자는 칸의 세로 가운데(iOS 한 줄은 lineHeight 없이 — components/input-text.ts)
-          style={[inputText('item'), styles.searchInput, searching && styles.searchValue]}
+          style={[inputText('body'), styles.searchInput, searching && styles.searchValue]}
         />
         {searching ? (
           <Pressable accessibilityRole="button" accessibilityLabel={B.clearSearch} hitSlop={Spacing.xs} onPress={() => setQuery('')} style={styles.clear}>
@@ -169,7 +169,7 @@ export function PlaceSheet({ visible, places, failed, onRetry, selectedId, onPic
                 accessibilityRole="button"
                 onPress={() => pressRegion(name)}
                 style={[styles.chip, { width: chipWidth ?? '30%' }]}>
-                <Txt variant="item" style={styles.chipText}>
+                <Txt variant="body" style={styles.chipText}>
                   {shortRegion(name)}
                 </Txt>
               </Pressable>
@@ -259,11 +259,11 @@ function Match({ name, query }: { name: string; query: string }) {
 const noOutline = (Platform.OS === 'web' ? { outlineStyle: 'none', caretColor: Colors.primary } : {}) as TextStyle;
 
 const styles = StyleSheet.create({
-  head: { minHeight: Typography.sheetTitle.lineHeight, justifyContent: 'center' },
+  head: { minHeight: Typography.section.lineHeight, justifyContent: 'center' },
   back: {
     position: 'absolute',
     left: StepLayout.backInset,
-    top: (Typography.sheetTitle.lineHeight - StepLayout.back) / 2,
+    top: (Typography.section.lineHeight - StepLayout.back) / 2,
     width: StepLayout.back,
     height: StepLayout.back,
     alignItems: 'center',

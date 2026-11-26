@@ -50,8 +50,8 @@ export function MyCard({ nickname, avatar, accountPending = false, sunSign, art,
       <View style={styles.row}>
         {accountPending ? <PlaceholderCircle testID="avatar-placeholder" size={L.avatar} /> : isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
         <View style={styles.names}>
-          {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="sheetTitle" width={L.namePlaceholder} /> : null}
-          {nickname ? <Txt variant="sheetTitle">{nickname}</Txt> : null}
+          {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="section" width={L.namePlaceholder} /> : null}
+          {nickname ? <Txt variant="section">{nickname}</Txt> : null}
           {meta ? (
             <Txt variant="caption" color="gray">
               {meta}

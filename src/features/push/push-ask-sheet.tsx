@@ -155,17 +155,17 @@ export function PushAskSheet({ time: savedTime, ready = true }: { time?: string;
             </View>
             <Image source={BYEOLI} accessible={false} style={styles.byeoli} />
           </View>
-          <Txt variant="sheetTitle" accessibilityRole="header" style={styles.title}>
+          <Txt variant="section" accessibilityRole="header" style={styles.title}>
             {A.title}
           </Txt>
           <Txt color="gray" keepAll style={styles.text}>
             {A.body}
           </Txt>
           <Pressable accessibilityRole="button" accessibilityLabel={`${A.time} ${formatClock(time)}`} onPress={openTime} style={styles.row}>
-            <Txt variant="item" style={styles.rowLabel}>
+            <Txt variant="body" style={styles.rowLabel}>
               {A.time}
             </Txt>
-            <Txt variant="desc" color="gray">
+            <Txt variant="small" color="gray">
               {formatClock(time)}
             </Txt>
             <Svg width={L.row.chevron} height={L.row.chevron} viewBox="0 0 24 24" fill="none" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -174,7 +174,7 @@ export function PushAskSheet({ time: savedTime, ready = true }: { time?: string;
           </Pressable>
           <View style={styles.buttons}>
             <Pressable accessibilityRole="button" onPress={later} style={styles.later}>
-              <Txt variant="item" color="gray" style={styles.laterText}>
+              <Txt variant="body" color="gray" style={styles.laterText}>
                 {A.later}
               </Txt>
             </Pressable>

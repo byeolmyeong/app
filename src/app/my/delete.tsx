@@ -85,7 +85,7 @@ export default function DeleteAccountScreen() {
               <Path d="M15.5 4.2A8.5 8.5 0 1 0 19.8 15.5A7 7 0 0 1 15.5 4.2Z" stroke={Colors.accentText} strokeWidth={1.8} strokeLinejoin="round" />
             </Svg>
           </View>
-          <Txt variant="headline" accessibilityRole="header" style={styles.doneTitle}>
+          <Txt variant="title" accessibilityRole="header" style={styles.doneTitle}>
             {D.doneTitle}
           </Txt>
           <Txt color="gray" keepAll style={styles.doneText}>
@@ -114,14 +114,14 @@ export default function DeleteAccountScreen() {
       }>
       {stackOptions}
       <View style={styles.body}>
-        <Txt variant="headline" keepAll style={styles.heading}>
+        <Txt variant="title" keepAll style={styles.heading}>
           {D.heading}
         </Txt>
         <View style={styles.note}>
           {D.items.map((item) => (
             <View key={item} style={styles.item}>
               <View style={styles.dot} />
-              <Txt variant="lead" color="inkSoft" keepAll style={styles.itemText}>
+              <Txt variant="body" color="body" keepAll style={styles.itemText}>
                 {item}
               </Txt>
             </View>
@@ -133,7 +133,7 @@ export default function DeleteAccountScreen() {
           onPress={() => setChecked((on) => !on)}
           style={styles.check}>
           <CheckBox checked={checked} size={Sizes.checkSquare} />
-          <Txt variant="item" style={styles.checkText}>
+          <Txt variant="body" style={styles.checkText}>
             {D.check}
           </Txt>
         </Pressable>

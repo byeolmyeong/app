@@ -55,24 +55,24 @@ export function LifeView({ report: received, share }: { report: TimingReport; sh
             <View testID="life-share-spot" style={styles.shareSpot}>
               {share}
             </View>
-            <Txt variant="captionStrong" color="accentText">
+            <Txt variant="kicker" color="accentText">
               {T.life.next}
             </Txt>
             <View style={styles.yearRow}>
               <Txt variant="yearBig">{String(next.year)}</Txt>
-              <Txt variant="clause" color="gray" style={styles.regular}>
+              <Txt variant="bodyStrong" color="gray" style={styles.regular}>
                 {ageText(next)}
               </Txt>
             </View>
-            <Txt variant="heading" keepAll style={styles.nextTitle}>
+            <Txt variant="subhead" keepAll style={styles.nextTitle}>
               {next.title}
             </Txt>
-            <Txt variant="reason" color="gray" keepAll style={styles.nextBody}>
+            <Txt variant="small" color="gray" keepAll style={styles.nextBody}>
               {next.body}
             </Txt>
           </View>
         ) : (
-          <Txt variant="desc" color="gray" style={styles.done}>
+          <Txt variant="small" color="gray" style={styles.done}>
             {T.life.done}
           </Txt>
         )}
@@ -92,7 +92,7 @@ export function LifeView({ report: received, share }: { report: TimingReport; sh
                   <Txt variant="captionStrong" color={isNext ? 'accentText' : 'hint'} style={styles.stepYear}>
                     {`${m.year}${D.separator}${ageText(m)}`}
                   </Txt>
-                  <Txt variant="clause" keepAll>
+                  <Txt variant="bodyStrong" keepAll>
                     {isNext ? `${m.title}${T.life.nextMark}` : m.title}
                   </Txt>
                 </View>
@@ -113,15 +113,15 @@ export function LifeSkeleton() {
       <View>
         <SectionTitleSkeleton width="40%" note />
         <SkBlock of="life-next" style={styles.next}>
-          <SkeletonText widths={['24%']} variant="captionStrong" />
+          <SkeletonText widths={['24%']} variant="kicker" />
           <View style={styles.yearRow}>
             <SkeletonText widths={[F.yearBar]} variant="yearBig" />
-            <SkeletonText widths={['24%']} variant="clause" />
+            <SkeletonText widths={['24%']} variant="bodyStrong" />
           </View>
-          <SkeletonText widths={['64%']} variant="heading" style={styles.nextTitle} />
+          <SkeletonText widths={['64%']} variant="subhead" style={styles.nextTitle} />
           <View style={styles.nextBody}>
-            <SkeletonText widths={['100%']} variant="reason" />
-            <SkeletonText widths={['56%']} variant="reason" />
+            <SkeletonText widths={['100%']} variant="small" />
+            <SkeletonText widths={['56%']} variant="small" />
           </View>
         </SkBlock>
         <SkBlock of="life-path" style={styles.path}>
@@ -134,7 +134,7 @@ export function LifeSkeleton() {
               </View>
               <View style={[styles.stepText, i < 3 && styles.stepGap]}>
                 <SkeletonText widths={['36%']} variant="captionStrong" style={styles.stepYearBox} />
-                <SkeletonText widths={[i === 1 ? '76%' : '58%']} variant="clause" />
+                <SkeletonText widths={[i === 1 ? '76%' : '58%']} variant="bodyStrong" />
               </View>
             </View>
           ))}

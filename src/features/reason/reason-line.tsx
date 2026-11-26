@@ -38,10 +38,10 @@ function SentenceText({ sentence }: { sentence: ReasonSentence }) {
   }
   if (at < sentence.text.length) parts.push({ t: sentence.text.slice(at), b: false });
   return (
-    <Txt variant="reason" color="gray" keepAll>
+    <Txt variant="small" color="gray" keepAll>
       {parts.map((p, i) =>
         p.b ? (
-          <Txt key={i} variant="reason" style={styles.bold}>
+          <Txt key={i} variant="small" style={styles.bold}>
             {p.t}
           </Txt>
         ) : (
@@ -80,7 +80,7 @@ function TermRow({ term, open, onToggle }: { term: ReasonTerm; open: boolean; on
           </Txt>
         </Txt>
       </InfoTip>
-      <Txt variant="note" color="gray">
+      <Txt variant="caption" color="gray">
         {term.meaning}
       </Txt>
     </View>
@@ -192,7 +192,7 @@ export function ReasonLineSkeleton({ style }: { style?: StyleProp<ViewStyle> }) 
       <View style={styles.head}>
         <View style={styles.texts}>
           <SkeletonText variant="label" widths={[L.skeleton.label]} />
-          <SkeletonText variant="reason" widths={L.skeleton.sentence} />
+          <SkeletonText variant="small" widths={L.skeleton.sentence} />
         </View>
         <View testID="reason-chevron-space" style={styles.chevronSpace} />
       </View>

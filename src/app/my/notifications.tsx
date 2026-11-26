@@ -64,7 +64,7 @@ function OsOffRow() {
         </Svg>
       </View>
       <View style={styles.osOffText}>
-        <Txt variant="item" style={styles.osOffTitle}>
+        <Txt variant="body" style={styles.osOffTitle}>
           {O.title}
         </Txt>
         <Txt variant="caption" color="hint" keepAll>
@@ -258,5 +258,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: L.paddingH,
   },
   skeletonNames: { flex: 1, gap: L.descGap },
-  labelLine: { height: Typography.item.lineHeight, justifyContent: 'center' },
+  labelLine: { height: Typography.body.lineHeight, justifyContent: 'center' },
 });

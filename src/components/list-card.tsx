@@ -1,4 +1,4 @@
-import { Children, type ReactNode } from 'react';
+import { Children, createContext, useContext, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -6,20 +6,35 @@ import { Txt } from '@/components/txt';
 import { Colors, FontWeight, LineWidth, MyLayout } from '@/constants/theme';
 
 const L = MyLayout.list;
+const T = L.titled;
+
+/** 줄이 묶음 제목이 있는 카드 안에 있는가 — 있으면 줄 모양이 달라진다(결정 093) */
+const TitledCard = createContext(false);
 
 /**
- * 묶음 제목 없는 목록 카드(결정 056, 보드 16 · 16-1 · 16-2 · 16-11): 떠 있는 면에 옅은 테두리 · 모서리 16, 줄 사이에 옅은 선.
+ * 목록 카드(결정 056, 보드 16 · 16-1 · 16-2 · 16-11): 떠 있는 면에 옅은 테두리 · 모서리 16, 줄 사이에 옅은 선.
  * 줄은 `ListCardRow` 를 넣는다(조건으로 빠진 줄은 선도 같이 빠진다).
+ * `title` 이 있으면(마이 아래, 결정 093) 카드 안 맨 위에 묶음 제목(본문 굵게)을 두고, 줄은 본문 보통 · 높이 48 · 줄 사이 선 없이 그린다.
  */
-export function ListCard({ children }: { children: ReactNode }) {
+export function ListCard({ title, children }: { title?: string; children: ReactNode }) {
   const rows = Children.toArray(children);
+  const titled = title !== undefined;
   return (
-    <View style={styles.card}>
-      {rows.map((row, i) => (
-        <View key={i} style={i > 0 ? styles.divided : null}>
-          {row}
+    <View testID="list-card" style={[styles.card, titled && styles.cardTitled]}>
+      {titled ? (
+        <View style={styles.titleRow}>
+          <Txt variant="bodyStrong" accessibilityRole="header">
+            {title}
+          </Txt>
         </View>
-      ))}
+      ) : null}
+      <TitledCard.Provider value={titled}>
+        {rows.map((row, i) => (
+          <View key={i} testID="list-card-item" style={i > 0 && !titled ? styles.divided : null}>
+            {row}
+          </View>
+        ))}
+      </TitledCard.Provider>
     </View>
   );
 }
@@ -51,16 +66,19 @@ function SwitchMark({ on }: { on: boolean }) {
 
 /** 목록 카드의 한 줄: 왼쪽 이름, 오른쪽 값 · 덧붙일 것 · 화살표 또는 스위치. 최소 높이 52 */
 export function ListCardRow({ label, value, trailing, onPress, chevron = true, toggle, disabled = false }: ListCardRowProps) {
+  const titled = useContext(TitledCard);
   const hasRight = value !== undefined || trailing !== undefined;
+  // 묶음 제목이 있는 카드의 줄은 본문 보통 굵기 · 높이 48(결정 093)
+  const rowStyle = titled ? [styles.row, styles.rowTitled] : styles.row;
   const content = (
     <>
       {hasRight ? (
         // 오른쪽에 값이 있으면 이름은 늘 한 줄 · 줄지 않는다 — 값이 남은 폭 안에서 줄어든다(소유자 2026-11-21)
-        <Txt variant="body" numberOfLines={1} style={styles.labelFixed}>
+        <Txt variant="body" numberOfLines={1} style={[styles.labelFixed, titled && styles.labelRegular]}>
           {label}
         </Txt>
       ) : (
-        <Txt variant="body" style={styles.label}>
+        <Txt variant="body" style={[styles.label, titled && styles.labelRegular]}>
           {label}
         </Txt>
       )}
@@ -92,17 +110,17 @@ export function ListCardRow({ label, value, trailing, onPress, chevron = true, t
         accessibilityState={{ checked: toggle.value, disabled }}
         disabled={disabled}
         onPress={() => toggle.onChange(!toggle.value)}
-        style={styles.row}>
+        style={rowStyle}>
         {content}
       </Pressable>
     );
   if (onPress)
     return (
-      <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={styles.row}>
+      <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={rowStyle}>
         {content}
       </Pressable>
     );
-  return <View style={styles.row}>{content}</View>;
+  return <View style={rowStyle}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -113,6 +131,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.hair,
     backgroundColor: Colors.raised,
   },
+  cardTitled: { paddingVertical: T.padV },
+  titleRow: { minHeight: T.title, justifyContent: 'center', paddingHorizontal: L.paddingH },
   divided: { borderTopWidth: LineWidth, borderTopColor: Colors.hair },
   row: {
     minHeight: L.row,
@@ -122,8 +142,10 @@ const styles = StyleSheet.create({
     paddingVertical: L.paddingV,
     paddingHorizontal: L.paddingH,
   },
+  rowTitled: { minHeight: T.row },
   label: { flex: 1, fontWeight: FontWeight.medium },
   labelFixed: { flexShrink: 0, fontWeight: FontWeight.medium },
+  labelRegular: { fontWeight: FontWeight.regular },
   /** 오른쪽 값 · 덧붙일 것: 남은 폭을 차지하고 오른쪽에 붙는다(넘치면 안에서 줄어든다) */
   right: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
   valueText: { flexShrink: 1 },

@@ -33,6 +33,7 @@ jest.mock('@/lib/api', () => ({
 const mockApi = api as jest.Mocked<typeof api>;
 const M = strings.my;
 const R = M.rows;
+const G = M.groups;
 const account: MyAccount = { nickname: '새벽별', avatar: 3, email: 'dawnstar@kakao.com', provider: 'KAKAO', marketingConsent: false, suspended: false };
 const profile = { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } };
 type Profile = { date: string; time: string | null; place: { id: number; name: string } | null };
@@ -51,7 +52,7 @@ afterEach(() => {
   nowSpy = null;
 });
 
-describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보드 16)', () => {
+describe('마이 v2(/my) — 별명 카드 · 묶음 카드 셋(결정 056 · 093, 보드 16)', () => {
   it('카드에 프로필 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄 · 꺾쇠를 보인다(버튼 없음, 결정 084)', async () => {
     // 한국 날짜로 2026-11-20, 받은 날 2026-11-09 → 12일째
     nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T03:00:00Z'));
@@ -136,7 +137,7 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(await card.findByText('새벽별')).toBeTruthy();
     expect(card.getByTestId('my-card-chevron')).toBeTruthy();
     expect(card.queryByText(/년 .*월/)).toBeNull();
-    for (const label of [R.notifications, R.faq, R.inquiry, R.terms, R.privacy, R.version]) expect(screen.getByText(label)).toBeTruthy();
+    for (const label of [R.notifications, R.version, R.faq, R.inquiry, R.terms, R.privacy, R.marketing, R.privacyConsent]) expect(screen.getByText(label)).toBeTruthy();
     expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
   });
 
@@ -151,22 +152,41 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.queryByLabelText(strings.nickname.avatars[2])).toBeNull();
   });
 
-  it('줄은 카드 아래 알림 · 자주 묻는 질문 · 문의하기 / 이용약관 · 개인정보 처리방침 · 앱 버전(숫자만) 순서다. 로그아웃 · 계정 삭제는 없다', async () => {
+  it('아래는 묶음 카드 셋 — 기본 설정(알림 · 버전 정보 숫자만) · 고객 지원(자주 묻는 질문 · 문의하기) · 약관 및 정책(네 편), 묶음 제목은 카드 안 맨 위. 로그아웃 · 계정 삭제는 없다(결정 093)', async () => {
     await render(<MyScreen />);
     await screen.findByText('새벽별');
-    const labels = ['새벽별', R.notifications, R.faq, R.inquiry, R.terms, R.privacy, R.version];
+    const groups: [string, string[]][] = [
+      [G.settings, [R.notifications, R.version]],
+      [G.support, [R.faq, R.inquiry]],
+      [G.legal, [R.terms, R.privacy, R.marketing, R.privacyConsent]],
+    ];
+    expect([G.settings, G.support, G.legal]).toEqual(['기본 설정', '고객 지원', '약관 및 정책']);
+    // 약관 네 편의 이름은 랜딩 바닥글과 같다 · 앱 버전 줄은 "버전 정보"
+    expect([R.terms, R.privacy, R.marketing, R.privacyConsent, R.version]).toEqual([
+      '이용약관',
+      '개인정보 처리방침',
+      '마케팅 정보 수신 동의',
+      '개인정보 수집 · 이용 동의',
+      '버전 정보',
+    ]);
+    const cards = screen.getAllByTestId('list-card');
+    expect(cards).toHaveLength(3);
+    groups.forEach(([title, rows], i) => {
+      const card = within(cards[i]);
+      expect(card.getByRole('header', { name: title })).toBeTruthy();
+      expect(card.getAllByTestId('list-card-item')).toHaveLength(rows.length);
+      for (const row of rows) expect(card.getByText(row)).toBeTruthy();
+    });
+    const labels = ['새벽별', ...groups.flatMap(([title, rows]) => [title, ...rows])];
     const shown = JSON.stringify(screen.toJSON());
     const places = labels.map((label) => shown.indexOf(`"${label}"`));
     expect(places.every((p) => p >= 0)).toBe(true);
     expect(places).toEqual([...places].sort((a, b) => a - b));
     expect(Constants.expoConfig?.version).toBe('9.8.7');
-    expect(screen.getByText('9.8.7')).toBeTruthy();
-    // 056 의 2 · 3: 로그아웃 · 계정 삭제는 계정 화면에. 묶음 제목(도움 · 정보)도 없다
+    expect(within(cards[0]).getByText('9.8.7')).toBeTruthy();
+    // 056 의 3 · 084: 로그아웃 · 계정 삭제는 내 정보에
     expect(screen.queryByText(strings.my.account.logout)).toBeNull();
     expect(screen.queryByText(strings.my.account.delete)).toBeNull();
-    expect(screen.queryByText('도움')).toBeNull();
-    // 개인정보 수집 · 이용 동의 줄은 두지 않는다(056 의 2 — 카드 둘째 줄은 셋뿐)
-    expect(screen.queryByText(/수집 · 이용 동의/)).toBeNull();
   });
 
   it.each([
@@ -175,6 +195,9 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     [R.inquiry, '/my/inquiries'],
     [R.terms, '/settings/terms'],
     [R.privacy, '/settings/privacy'],
+    // 약관 네 편(결정 093) — 가입 단계 표시(?from=signup) 없이 열어 읽기만 된다(동의하기 없음, 결정 044)
+    [R.marketing, '/settings/marketing'],
+    [R.privacyConsent, '/settings/privacy-consent'],
   ])('"%s" 는 %s 로 간다', async (label, path) => {
     await render(<MyScreen />);
     await screen.findByText('새벽별');

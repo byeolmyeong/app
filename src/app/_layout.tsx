@@ -62,7 +62,7 @@ export default function RootLayout() {
     if (target) router.replace(target);
   }, [target]);
   const slideUp = useSlideUpScreenOptions();
-  // 글꼴: 앱은 기기에 실린 OTF, 웹은 공식 부분 글꼴 woff2 의 핵심 묶음 셋(성능 계획 1 — components/use-app-fonts)
+  // 글꼴: 앱은 빌드 때 넣어 기다리지 않고(결정 086), 웹은 공식 부분 글꼴 woff2 의 핵심 묶음 셋을 기다린다(성능 계획 1 — components/use-app-fonts)
   const [loaded, error] = useAppFonts();
   const fontsDone = loaded || !!error;
   // 이용 정지 문(결정 065 의 5): 로그인이 확인되면 정지인지 답이 올 때까지 가리고, 정지면 정지 화면으로. 그동안 스플래시도 둔다

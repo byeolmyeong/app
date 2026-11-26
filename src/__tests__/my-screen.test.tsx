@@ -71,20 +71,29 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
   });
 
-  it('꺾쇠는 홈 별명 카드와 같은 규칙 — 프로필 그림 · 닉네임 줄의 오른쪽 끝 세로 가운데, 별자리 그림은 그 꺾쇠 둘레를 비운다(결정 080, 소유자 빌드 14)', async () => {
+  it('꺾쇠는 닉네임 글자 줄(첫 줄)의 오른쪽 끝 세로 가운데, 별자리 그림은 그 꺾쇠 둘레를 비운다(결정 080, 소유자 빌드 15)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<MyScreen />);
     const card = within(await screen.findByTestId('my-card'));
     const row = card.getByTestId('my-card-row');
     expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
-    const chevron = within(row).getByTestId('my-card-chevron');
+    // 이름 칸은 프로필 그림과 같은 높이에 위아래로 벌린다 — 닉네임 줄은 그림 위 끝, 별자리 · 날 수 줄은 그림 아래 끝(소유자 빌드 15 확정안)
+    expect(StyleSheet.flatten(card.getByTestId('my-card-names').props.style)).toMatchObject({ height: MyLayout.card.avatar, justifyContent: 'space-between' });
+    // 첫 줄에 닉네임과 꺾쇠가 같이 있고, 그 줄 안에서 세로 가운데 — 꺾쇠가 위쪽(닉네임 줄)에 온다
+    const line = card.getByTestId('my-card-first-line');
+    expect(StyleSheet.flatten(line.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+    expect(within(line).getByText('새벽별')).toBeTruthy();
+    const chevron = within(line).getByTestId('my-card-chevron');
     expect(chevron.props.width).toBe(22);
-    expect(StyleSheet.flatten(chevron.props.style)?.position).not.toBe('absolute');
-    // 빈 둘레는 그 줄의 실제 자리를 따라간다(프로필 그림 64 · 위 여백 22 · 테두리 1)
+    // 별자리 · 날 수 줄은 첫 줄 밖(아래)
+    expect(within(line).queryByText(/쌍둥이자리/)).toBeNull();
+    // 빈 둘레는 첫 줄의 실제 자리를 따라간다 — 프로필 줄 y 23(위 여백 22 · 테두리 1) + 이름 칸 y 8 + 첫 줄 y 0, 첫 줄 높이 28
     const A = NicknameCardLayout.art;
     await fireEvent(row, 'layout', { nativeEvent: { layout: { x: 21, y: 23, width: 300, height: MyLayout.card.avatar } } });
+    await fireEvent(card.getByTestId('my-card-names'), 'layout', { nativeEvent: { layout: { x: 78, y: 8, width: 220, height: 48 } } });
+    await fireEvent(line, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 220, height: 28 } } });
     const hole = card.getByTestId('card-constellation-clear', { includeHiddenElements: true });
-    expect(hole.props.cy).toBeCloseTo((23 - 1 + (MyLayout.card.avatar - 22) / 2 + 11 - A.top) * (A.view.h / A.height));
+    expect(hole.props.cy).toBeCloseTo((23 - 1 + 8 + 0 + (28 - 22) / 2 + 11 - A.top) * (A.view.h / A.height));
   });
 
   it('카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 홈 카드와 같은 그림, 출생 정보가 없으면 그림도 없다', async () => {

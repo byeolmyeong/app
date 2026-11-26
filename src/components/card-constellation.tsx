@@ -18,11 +18,23 @@ export type CardConstellationArt = {
   lines: readonly (readonly [number, number])[];
 };
 
+/** 선분 from–to 가 원(hole)을 지나는가 — 원의 가운데에서 선분까지 가장 가까운 거리가 반지름보다 짧으면 지난다 */
+export function lineHitsHole(from: { x: number; y: number }, to: { x: number; y: number }, hole: { cx: number; cy: number; r: number }): boolean {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((hole.cx - from.x) * dx + (hole.cy - from.y) * dy) / len2));
+  const nx = from.x + t * dx - hole.cx;
+  const ny = from.y + t * dy - hole.cy;
+  return nx * nx + ny * ny < hole.r * hole.r;
+}
+
 /**
  * 별명 카드(홈 보드 11 · 마이 보드 16) 오른쪽 위에 옅게 깔린 그 사람의 해 별자리 — 별을 잇는 선 · 별 점 · 가장 밝은 별 자리의 네 갈래 별.
  * 두 카드가 같은 그림을 쓴다(결정 047 · 056). 별 모양의 둘레 상자를 그림 칸 가운데에 둔다. 해 별자리를 모르면 그리지 않는다.
  * 카드의 오른쪽 위에 떠 있는 장식이라 카드(`overflow: hidden`) 안에 둔다. 화면 읽기에서 숨기고 누르기를 받지 않는다.
  * `clear` 로 카드의 오른쪽 위 꺾쇠 칸(카드 안 좌표)을 받으면 그 둘레를 그림에서 비운다 — 어느 별자리든 선 · 별이 꺾쇠 밑을 지나지 않는다(결정 080).
+ * 둘레를 지나는 선은 통째로 빼서 둘레 밖에 짧은 토막이 남지 않게 한다(소유자 빌드 15).
  */
 export function CardConstellation({ art, clear }: { art: CardConstellationArt | null; clear?: { top: number; right: number; size: number } }) {
   const maskId = `cardClear${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -64,14 +76,16 @@ export function CardConstellation({ art, clear }: { art: CardConstellationArt | 
             {art.lines.map(([a, b], i) => {
               const from = at(art.stars[a]);
               const to = at(art.stars[b]);
-              return <Line key={`l${i}`} x1={from.x} y1={from.y} x2={to.x} y2={to.y} />;
+              // 꺾쇠 둘레를 지나는 선은 통째로 뺀다 — 가리기만 하면 둘레 밖에 짧은 토막이 남는다(소유자 빌드 15)
+              if (hole && lineHitsHole(from, to, hole)) return null;
+              return <Line key={`l${i}`} testID="card-constellation-line" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />;
             })}
           </G>
           <G fill={Colors.ink}>
             {art.stars.map((star, i) => {
               if (star === bright) return null;
               const p = at(star);
-              return <Circle key={`s${i}`} cx={p.x} cy={p.y} r={L.dot} />;
+              return <Circle key={`s${i}`} testID="card-constellation-star" cx={p.x} cy={p.y} r={L.dot} />;
             })}
           </G>
           <Path transform={`translate(${core.x} ${core.y}) scale(${L.core})`} fill={BrandColors.core} d={FOUR_STAR} />

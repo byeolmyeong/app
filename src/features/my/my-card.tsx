@@ -38,39 +38,58 @@ export type MyCardProps = {
 /**
  * 마이 위의 별명 카드(결정 056 의 1 · 084, 보드 16): 프로필 그림 · 닉네임 · "해 별자리 · 별명을 받은 지 N일" · 한 줄 별명 · 출생 정보 한 줄.
  * 카드 전체를 누르면 내 정보로 간다(버튼 둘은 결정 084 로 뺐다 — 출생 정보 수정은 내 정보 안에서 들어간다).
- * 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 꺾쇠는 홈 별명 카드와 같은 규칙으로 프로필 그림 · 닉네임 줄의 오른쪽 끝,
- * 그 줄의 세로 가운데에 놓이고(소유자 빌드 14), 별자리는 그 꺾쇠 둘레를 비운다(결정 080).
+ * 홈 카드와 같은 빛과 별자리 장식을 오른쪽 위에 둔다. 닉네임 줄과 별자리 · 날 수 줄은 프로필 그림의 위아래 끝에 맞추고,
+ * 꺾쇠는 닉네임 줄(첫 줄 = 그림 위쪽)의 오른쪽 끝, 그 줄의 세로 가운데에 놓인다(소유자 빌드 15 확정안, 결정 080 덧붙임). 별자리는 그 꺾쇠 둘레를 비운다(결정 080).
  */
 export function MyCard({ nickname, avatar, accountPending = false, sunSign, art, days, headline, birthLine, onOpen }: MyCardProps) {
   const meta = [sunSign, days !== null ? `${C.daysPrefix}${days}${C.daysSuffix}` : null].filter(Boolean).join(C.separator);
   // 보이는 글 차례대로 + 가는 곳(결정 078 의 1 과 같은 방식) — 비어 있는 칸은 빼고 읽는다
   const label = [nickname, meta, headline, birthLine, OPEN].filter(Boolean).join(C.labelSeparator);
-  // 프로필 줄의 자리(카드 안, 테두리 포함 좌표). 재기 전에는 그림이 있는 줄로 본다
+  // 꺾쇠가 놓이는 첫 줄(닉네임 줄)의 자리 = 프로필 줄의 위치 + 이름 칸의 위치 + 첫 줄의 위치(카드 안, 테두리 포함 좌표).
+  // 재기 전에는 그림이 있는 줄의 가운데로 본다
   const [row, setRow] = useState<{ y: number; height: number }>({ y: LineWidth + L.paddingTop, height: L.avatar });
+  const [namesY, setNamesY] = useState<number | null>(null);
+  const [line, setLine] = useState<{ y: number; height: number } | null>(null);
   const onRowLayout = (e: LayoutChangeEvent) => {
     const { y, height } = e.nativeEvent.layout;
     setRow((was) => (was.y === y && was.height === height ? was : { y, height }));
   };
+  const onNamesLayout = (e: LayoutChangeEvent) => {
+    const { y } = e.nativeEvent.layout;
+    setNamesY((was) => (was === y ? was : y));
+  };
+  const onLineLayout = (e: LayoutChangeEvent) => {
+    const { y, height } = e.nativeEvent.layout;
+    setLine((was) => (was && was.y === y && was.height === height ? was : { y, height }));
+  };
   // 꺾쇠 칸의 위 끝 — 별자리 그림과 같은 기준(테두리 안쪽)으로
-  const chevronTop = row.y - LineWidth + (row.height - L.chevron) / 2;
+  const chevronTop =
+    namesY !== null && line !== null
+      ? row.y - LineWidth + namesY + line.y + (line.height - L.chevron) / 2
+      : row.y - LineWidth + (row.height - L.chevron) / 2;
   return (
     <Pressable testID="my-card" accessibilityRole="button" accessibilityLabel={label} onPress={onOpen} style={styles.card}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={L.glow.extent} centerX={L.glow.x} centerY={L.glow.y} />
       <CardConstellation art={art} clear={{ top: chevronTop, right: L.padding, size: L.chevron }} />
       <View testID="my-card-row" style={styles.row} onLayout={onRowLayout}>
         {accountPending ? <PlaceholderCircle testID="avatar-placeholder" size={L.avatar} /> : isAvatarId(avatar) ? <Avatar id={avatar} size={L.avatar} /> : null}
-        <View style={styles.names}>
-          {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="section" width={L.namePlaceholder} /> : null}
-          {nickname ? <Txt variant="section">{nickname}</Txt> : null}
+        <View testID="my-card-names" style={styles.names} onLayout={onNamesLayout}>
+          {/* 첫 줄: 닉네임과 꺾쇠 — 꺾쇠가 닉네임 글자 줄의 세로 가운데에 온다 */}
+          <View testID="my-card-first-line" style={styles.firstLine} onLayout={onLineLayout}>
+            <View style={styles.firstText}>
+              {accountPending ? <PlaceholderLine testID="nickname-placeholder" variant="section" width={L.namePlaceholder} /> : null}
+              {nickname ? <Txt variant="section">{nickname}</Txt> : null}
+            </View>
+            <Svg testID="my-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
+              <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </View>
           {meta ? (
             <Txt variant="caption" color="gray">
               {meta}
             </Txt>
           ) : null}
         </View>
-        <Svg testID="my-card-chevron" width={L.chevron} height={L.chevron} viewBox="0 0 24 24" fill="none">
-          <Path d="M9 6l6 6-6 6" stroke={Colors.hint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
       </View>
       {headline ? (
         <Txt variant="input" color="inkSoft" keepAll style={styles.headline}>
@@ -97,10 +116,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: L.padding,
     paddingBottom: L.padding,
   },
-  /** 프로필 그림 · 이름 · 꺾쇠 — 세로 가운데 맞춤이라 꺾쇠가 그림 · 닉네임과 높이가 맞는다 */
+  /** 프로필 그림 · 이름 칸 — 이름 칸(닉네임 줄 + 별자리 · 날 수 줄)이 그림의 세로 가운데에 온다 */
   row: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
-  /** 이름 칸이 남은 폭을 써서 꺾쇠가 줄 끝에 붙는다 */
-  names: { flex: 1, gap: L.namesGap },
+  /**
+   * 이름 칸은 남은 폭을 써서 첫 줄의 꺾쇠가 카드 오른쪽 끝에 붙는다. 높이는 프로필 그림과 같고 위아래로 벌려,
+   * 닉네임 줄은 그림 위 끝 · 별자리 · 날 수 줄은 그림 아래 끝에 맞는다(소유자 빌드 15 확정안)
+   */
+  names: { flex: 1, height: L.avatar, justifyContent: 'space-between', gap: L.namesGap },
+  /** 닉네임 줄: 글자와 꺾쇠를 한 줄에 세로 가운데로 */
+  firstLine: { flexDirection: 'row', alignItems: 'center', gap: L.rowGap },
+  firstText: { flex: 1, minWidth: 0 },
   headline: { marginTop: L.headlineTop, lineHeight: L.headlineLine, fontWeight: FontWeight.medium },
   birth: { marginTop: L.birthTop },
 });

@@ -553,6 +553,23 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(router.push).toHaveBeenCalledWith('/timing/day?date=2026-11-21');
   });
 
+  it('눈여겨볼 날은 오늘 · 다가오는 날을 날짜 순서로 앞에, 지난 날은 맨 뒤에(날짜 순서) — 소유자 빌드 15 "지난 건 맨 뒤에", 결정 096', async () => {
+    const day = fixtures.monthSky.days[0];
+    const at = (date: string, text: string) => ({ ...day, date, text });
+    mockApi.getMonth.mockResolvedValue({
+      ok: true,
+      data: {
+        ...fixtures.monthSky,
+        days: [at('2026-11-03', '지난 날 하나'), at('2026-11-10', '지난 날 둘'), at('2026-11-19', '오늘'), at('2026-11-21', '다가오는 날 하나'), at('2026-11-28', '다가오는 날 둘')],
+      },
+    });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-month-days');
+    const order = screen.getAllByTestId('home-month-day').map((d) => within(d).getAllByText(/./)[1].props.children);
+    expect(order).toEqual(['오늘', '다가오는 날 하나', '다가오는 날 둘', '지난 날 하나', '지난 날 둘']);
+  });
+
   it('오늘인 날은 "19일 · 오늘"(주색 글자 · 주색 테두리) — 누르면 오늘의 하늘(/today)', async () => {
     mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...fixtures.monthSky.days[0], date: '2026-11-19' }] } });
     await saveBirth({ profile, chart: fixtures.chart });

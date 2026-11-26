@@ -16,11 +16,8 @@ import { strings } from '@/content/strings';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { BirthForm } from '@/features/chart/birth-form';
 import { birthInputOf } from '@/features/chart/birth-input';
-import { signName } from '@/features/chart/chart-rows';
-import { CONSTELLATIONS } from '@/features/chart/constellations';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { useBirthRestore } from '@/features/chart/use-birth-restore';
-import { daysSince } from '@/features/home/days-since';
 import { markHomeReady } from '@/features/home/home-ready';
 import { MainTabs } from '@/features/home/main-tabs';
 import { NicknameCard, NicknameCardSkeleton } from '@/features/home/nickname-card';
@@ -32,15 +29,18 @@ import { useStoredHeadline } from '@/features/reading/use-reading';
 import { onPushReceived } from '@/features/push/push';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
 import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timing-card';
-import { HomeTodayCard, HomeTodaySkeleton } from '@/features/timing/home-today-card';
+import { HomeMonthDays } from '@/features/timing/home-month-days';
+import { HomeTodayCard, HomeTodayPractices, HomeTodaySkeleton } from '@/features/timing/home-today-card';
 import { prefetchMeReport } from '@/features/me/use-me-report';
-import { prefetchMonth } from '@/features/timing/use-month';
+import { koreaToday } from '@/features/timing/dates';
+import { useThisMonth } from '@/features/timing/use-month';
 import { TODAY_CARD_WRITING_AFTER_MS, useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { useTimingReport } from '@/features/timing/use-timing-report';
 
 /**
- * 홈 v2(결정 047 · 055, 보드 11 · 11-1 · 11-2). 출생 정보가 있으면 머리(로고) · 별명 카드 · 지금 나의 시기 · 작은 실천 · 아래 탭 넷을 보여 주고
- * 머리 오른쪽에 알림 종, 별명 카드 아래 오늘의 하늘 카드(A④), 없으면 출생 정보 입력부터 받는다. 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
+ * 홈 "오늘을 크게"(결정 092 — 047 의 1 대체, 결정 055). 출생 정보가 있으면 머리(로고 · 알림 종) 아래로 오늘의 하늘 큰 카드 · 오늘의 작은 실천 ·
+ * 지금 나의 시기 한 줄 · 이번 달 눈여겨볼 날(가로 슬라이드) · 별명 한 줄 · 아래 탭 넷, 없으면 출생 정보 입력부터 받는다.
+ * 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
  * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
  * 기기에 출생 정보가 없고 세션이 있으면 서버에 저장된 것으로 한 번 되살려 본다(결정 029). 그동안 0.3초가 넘으면 되살린 뒤의 홈을 본뜬 뼈대를
  * 보여 주고(결정 071), 되살리지 못하면 입력부터 받는다. 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts) —
@@ -62,8 +62,6 @@ function Home({ onRetry }: { onRetry: () => void }) {
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 옛 모양으로 받아 둔 풀이도 한 줄 별명은 그대로(업데이트 직후 — 홈은 풀이를 부르지 않는다)
   const { stored: reading } = useStoredHeadline(input);
-  // "별명을 받은 지 N일" 의 오늘 — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
-  const [now] = useState(Date.now);
   // 연결 끊김(결정 061 의 4): 받아 둔 것은 그대로 보이고 머리 아래에 띠(보드 20)
   const online = useOnline();
   // 웹이 시작할 때 서버에 닿지 못해 세션을 확인하지 못했다(결정 068 의 4) — 받아 둔 것을 보이고 띠를 둔다
@@ -108,12 +106,15 @@ function Home({ onRetry }: { onRetry: () => void }) {
     });
     return () => sub.remove();
   }, [recheckTiming]);
-  // 앱을 켤 때 이번 달 달력 · 나 탭 풀이의 상태를 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4). 스플래시는 이것을 기다리지 않는다
+  // 앱을 켤 때 나 탭 풀이의 상태를 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4). 스플래시는 이것을 기다리지 않는다
   useEffect(() => {
     if (!asking) return;
-    void prefetchMonth(asking);
     void prefetchMeReport(asking);
   }, [asking]);
+  // 이번 달(결정 092): 앱을 켤 때 한 번 받아 두고(시기 탭을 열면 곧바로, 결정 075 의 4) 홈의 눈여겨볼 날 칸이 읽는다. 스플래시는 기다리지 않는다
+  const month = useThisMonth(asking);
+  // 눈여겨볼 날의 "오늘" — 화면이 뜬 때의 한국 날짜로 한 번 정한다
+  const [todayDate] = useState(koreaToday);
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);
   const todayLoading = asking !== null && today.state.status === 'loading';
@@ -175,46 +176,48 @@ function Home({ onRetry }: { onRetry: () => void }) {
         {phase === 'skeleton' ? (
           <SkeletonGroup testID="home-skeleton">
             <View style={styles.column}>
-              <NicknameCardSkeleton />
               <HomeTodaySkeleton />
               <HomeTimingSkeleton />
+              <NicknameCardSkeleton />
             </View>
           </SkeletonGroup>
         ) : null}
       </Screen>
     );
   if (profile && chart) {
-    // 해 별자리는 서버 차트의 SUN 그대로(날짜로 셈하지 않는다, 결정 006)
-    const sun = chart.positions.find((p) => p.body === 'SUN');
+    const openToday = () => router.push('/today');
     return (
       <Screen nav={homeNav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>
           {/* "인터넷 연결이 끊겼어요" 띠는 정말 끊겼을 때만 — 서버만 닿지 않을 때는 받아 둔 것을 그대로 보인다 */}
           {online ? null : <OfflineBanner />}
-          <NicknameCard
-            nickname={account?.nickname ?? null}
-            avatar={account?.avatar ?? null}
-            accountPending={account === undefined}
-            sunSign={sun ? signName(sun.sign) + strings.chart.signSuffix : null}
-            // 오른쪽 위 그림도 해 별자리(서버 값)로 고른다 — 사람마다 다르다
-            art={sun && CONSTELLATIONS[sun.sign] ? { sign: sun.sign, ...CONSTELLATIONS[sun.sign] } : null}
-            days={reading?.createdAt ? daysSince(reading.createdAt, now) : null}
-            headline={reading?.headline ?? null}
-            onOpen={() => router.push('/reading')}
-          />
           <HomeTodayCard
             state={today.state}
             making={todayWriting || today.made === false}
             online={online}
             timeKnown={chart.timeKnown}
-            onOpen={() => router.push('/today')}
+            onOpen={openToday}
             onRetry={today.retry}
           />
+          <HomeTodayPractices state={today.state} onOpen={openToday} />
           {/* 누르면 시기 탭 — 탭을 바꾸는 것과 같이 쌓지 않는다(결정 046 의 2) */}
           <HomeTimingCards
             state={timing.state}
             skeleton={timingPhase === 'skeleton' || timingPhase === 'timeout'}
             online={online} onOpen={() => router.replace('/timing')} onRetry={timing.recheck} />
+          {/* 그날을 누르면 그날의 하늘(오늘이면 오늘의 하늘) — 시기 탭의 달력과 같다 */}
+          <HomeMonthDays
+            sky={month}
+            today={todayDate}
+            onDay={(date) => router.push(date === todayDate ? '/today' : `/timing/day?date=${date}`)}
+          />
+          <NicknameCard
+            nickname={account?.nickname ?? null}
+            avatar={account?.avatar ?? null}
+            accountPending={account === undefined}
+            headline={reading?.headline ?? null}
+            onOpen={() => router.push('/reading')}
+          />
         </View>
         {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때) */}
         <PushAskSheet time={account?.todaySkyTime} ready={!!reading?.headline} />

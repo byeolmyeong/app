@@ -6,7 +6,7 @@ import { StyleSheet } from 'react-native';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
-import { Colors, NicknameCardLayout } from '@/constants/theme';
+import { Colors, TimingLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -113,14 +113,17 @@ describe('홈', () => {
     (useSession as jest.Mock).mockReturnValue({ status: 'signedIn', token: 't', ready: true, lastError: null });
   });
 
-  it('출생 정보가 있으면 머리의 로고와 별명 카드 — 프로필 그림 · "새벽별 님" · "쌍둥이자리 · 별명을 받은 지 12일" · 한 줄 별명 · 풀이 읽기(결정 047, 보드 11). 카테고리 · 궁합 칸은 없다(결정 055)', async () => {
+  it('출생 정보가 있으면 머리의 로고, 맨 아래 별명 한 줄 카드 — 프로필 그림 · "새벽별 님의 별명" · 한 줄 별명(결정 092). 해 별자리 · 받은 날 · 별자리 장식 · 카테고리 · 궁합 칸은 없다', async () => {
     nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-11-20T01:00:00Z').getTime());
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading({ ...fixtures.reading, createdAt: '2026-11-09T01:00:00Z' });
     await render(<HomeScreen />);
-    expect(await screen.findByText('새벽별 님')).toBeTruthy();
-    expect(screen.getByText('쌍둥이자리 · 별명을 받은 지 12일')).toBeTruthy();
-    expect(screen.getByText(fixtures.reading.headline)).toBeTruthy();
+    const card = within(await screen.findByTestId('nickname-card'));
+    expect(await card.findByText('새벽별 님의 별명')).toBeTruthy();
+    expect(card.getByText(fixtures.reading.headline)).toBeTruthy();
+    expect(screen.queryByText(/별명을 받은 지/)).toBeNull();
+    expect(screen.queryByText('쌍둥이자리')).toBeNull();
+    expect(screen.queryByTestId(/^card-constellation/, { includeHiddenElements: true })).toBeNull();
     expect(screen.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
     expect(screen.getByTestId('brand-mark')).toBeTruthy();
     expect(screen.queryByTestId('home-category')).toBeNull();
@@ -129,76 +132,42 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
-  it('홈 별명 카드는 "풀이 읽기" 글자 없이 꺾쇠만 — 프로필 그림 · 닉네임 줄의 오른쪽 끝 세로 가운데, 다른 카드의 꺾쇠와 같은 크기 · 색, 카드 전체가 눌린다(결정 080)', async () => {
+  it('별명 한 줄 카드는 "풀이 읽기" 글자 없이 꺾쇠만(카드 세로 가운데) — 다른 카드의 꺾쇠와 같은 크기 · 색, 카드 전체가 눌린다(결정 092 · 080)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
     await render(<HomeScreen />);
     const card = await screen.findByTestId('nickname-card');
     await within(card).findByText(fixtures.reading.headline);
     expect(within(card).queryByText(strings.home.card.read)).toBeNull();
-    // 자리: 프로필 줄(세로 가운데 맞춤) 안 마지막 칸 — 그림 · 닉네임과 높이가 맞는다(소유자 빌드 14). 색: 다른 카드의 꺾쇠와 같은 hint
-    const row = within(card).getByTestId('nickname-card-row');
-    expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
-    const chevron = within(row).getByTestId('nickname-card-chevron');
+    expect(StyleSheet.flatten(card.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+    const chevron = within(card).getByTestId('nickname-card-chevron');
     expect(chevron.props.width).toBe(22);
-    expect(StyleSheet.flatten(chevron.props.style)?.position).not.toBe('absolute');
-    // 별자리 그림의 빈 둘레는 그 줄의 실제 자리를 따라간다(줄 위 끝 · 높이 → 꺾쇠 가운데)
-    const A = NicknameCardLayout.art;
-    await fireEvent(row, 'layout', { nativeEvent: { layout: { x: 21, y: 21, width: 300, height: 52 } } });
-    const hole = within(card).getByTestId('card-constellation-clear', { includeHiddenElements: true });
-    expect(hole.props.cy).toBeCloseTo((21 - 1 + (52 - 22) / 2 + 11 - A.top) * (A.view.h / A.height));
     expect(within(card).getByTestId('nickname-card-chevron-path').props.stroke).toEqual({ type: 0, payload: parseInt(`ff${Colors.hint.slice(1)}`, 16) });
     // 화면 읽기는 보이는 글 차례대로 + "풀이 읽기"(나 탭 카드와 같은 규칙, 결정 078 의 1)
-    expect(screen.getByRole('button', { name: ['새벽별 님', '쌍둥이자리', fixtures.reading.headline, strings.home.card.read].join(', ') })).toBe(card);
+    expect(screen.getByRole('button', { name: ['새벽별 님의 별명', fixtures.reading.headline, strings.home.card.read].join(', ') })).toBe(card);
     await fireEvent.press(card);
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
-  it('별명 카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 사람마다 다르다(소유자 지적: 처녀자리인데 다른 자리)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    const view = await render(<HomeScreen />);
-    const card = within(await screen.findByTestId('nickname-card'));
-    expect(card.getByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeTruthy();
-    // 오른쪽 위 꺾쇠 둘레는 비운다(결정 080) — 어느 별자리든 선이 꺾쇠 밑을 지나지 않게
-    expect(card.getByTestId('card-constellation-clear', { includeHiddenElements: true })).toBeTruthy();
-    await view.unmount();
-    // 해가 처녀자리인 차트 — 달 · 상승궁이 아니라 해의 별자리로 고른다
-    const virgo = { ...fixtures.chart, positions: fixtures.chart.positions.map((p) => (p.body === 'SUN' ? { ...p, sign: 'VIRGO' } : p)) };
-    await saveBirth({ profile, chart: virgo });
-    await render(<HomeScreen />);
-    const again = within(await screen.findByTestId('nickname-card'));
-    expect(again.getByTestId('card-constellation-VIRGO', { includeHiddenElements: true })).toBeTruthy();
-    expect(again.queryByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeNull();
-  });
-
-  it('만든 때(createdAt)가 없는 옛 풀이면 해 별자리만 적는다(결정 047 의 3)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
-    await render(<HomeScreen />);
-    expect(within(await screen.findByTestId('nickname-card')).getByText('쌍둥이자리')).toBeTruthy();
-    expect(screen.queryByText(/별명을 받은 지/)).toBeNull();
-  });
-
-  it('시각 "모름" 이어도 같은 카드다 — 해 별자리는 서버 차트의 값(결정 047 의 4)', async () => {
+  it('시각 "모름" 이어도 같은 카드다(결정 047 의 4)', async () => {
     const unknown = { date: '2000-06-15', time: null, place: null };
     await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });
     await storeReading(fixtures.reading, unknown);
     await render(<HomeScreen />);
     expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
-    expect(screen.getByText('새벽별 님')).toBeTruthy();
-    expect(within(screen.getByTestId('nickname-card')).getByText('쌍둥이자리')).toBeTruthy();
+    expect(within(screen.getByTestId('nickname-card')).getByText('새벽별 님의 별명')).toBeTruthy();
   });
 
-  it('계정을 받지 못했거나 옛 계정(닉네임 · 프로필 null)이면 이름 줄 없이 그린다', async () => {
+  it('계정을 받지 못했거나 옛 계정(닉네임 · 프로필 null)이면 "내 별명" · 그림 없이 그린다', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
     for (const result of [{ ok: false, error: 'NETWORK' } as const, { ok: true, data: { nickname: null, avatar: null, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } } as const]) {
       mockApi.getMyAccount.mockResolvedValueOnce(result);
       const view = await render(<HomeScreen />);
       expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
-      expect(screen.queryByText(/ 님$/)).toBeNull();
+      expect(screen.queryByText(/ 님의 별명$/)).toBeNull();
       expect(screen.queryByRole('image')).toBeNull();
-      expect(within(screen.getByTestId('nickname-card')).getByText('쌍둥이자리')).toBeTruthy();
+      expect(within(screen.getByTestId('nickname-card')).getByText(strings.home.card.fallback)).toBeTruthy();
       await view.unmount();
     }
   });
@@ -208,7 +177,7 @@ describe('홈', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
     await render(<HomeScreen />);
-    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
     expect(screen.queryByRole('image')).toBeNull();
   });
 
@@ -277,7 +246,7 @@ describe('홈', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('머리는 높이 56, 별명 카드는 그 아래 12(보드 11 · 11-1)', async () => {
+  it('머리는 높이 56, 첫 카드는 그 아래 12 · 카드 사이 12(보드 11 · 11-1)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     const card = await screen.findByTestId('nickname-card');
@@ -295,7 +264,7 @@ describe('홈', () => {
     expect(style('나')).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '500', color: Colors.hint });
   });
 
-  it('끊기면 별명 카드 위에 띠가 뜨고, 돌아오면 사라진다(결정 061 의 4, 보드 20)', async () => {
+  it('끊기면 홈 카드들 맨 위에 띠가 뜨고, 돌아오면 사라진다(결정 061 의 4, 보드 20)', async () => {
     let listener: ((s: { isConnected: boolean; isInternetReachable: boolean }) => void) | null = null;
     (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
       listener = cb;
@@ -324,10 +293,10 @@ describe('홈', () => {
     await storeReading(fixtures.reading);
     await render(<HomeScreen />);
     await screen.findByTestId('nickname-card');
-    expect(screen.queryByText('새벽별 님')).toBeNull();
+    expect(screen.queryByText('새벽별 님의 별명')).toBeNull();
     await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
     await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
-    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(2);
   });
 
@@ -348,32 +317,20 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     await storeReading(fixtures.reading);
   });
 
-  it('시기 풀이가 다 됐으면 "지금 나의 시기"(지나온 시기 — 지금 — 2028 큰 변화, 대표 구간 이름 · "2027년 1월까지") · 작은 실천 셋, 누르면 시기 탭', async () => {
+  it('시기 풀이가 다 됐으면 "지금 나의 시기" 한 줄 카드 — 대표 구간 이름 · "2027년 1월까지 · 다음 큰 변화 2028년". 줄 그림 · 시기의 작은 실천은 홈에 없다(결정 092), 누르면 시기 탭', async () => {
     mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
     await render(<HomeScreen />);
     const card = await screen.findByTestId('home-timing-card');
     expect(within(card).getByText(T.now)).toBeTruthy();
     // 카드 머리의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
     expect(within(card).getByTestId('home-card-chevron').props.width).toBe(22);
-    expect(within(card).getByText(T.home.past)).toBeTruthy();
-    expect(within(card).getByText('2028 큰 변화')).toBeTruthy();
     expect(within(card).getByText(main.title)).toBeTruthy();
-    expect(within(card).getByText('2027년 1월까지')).toBeTruthy();
-    const practices = screen.getByTestId('home-timing-practices');
-    expect(within(practices).getAllByTestId('timing-todo')).toHaveLength(3);
-    expect(within(practices).getByText(main.practices![0].title)).toBeTruthy();
+    expect(within(card).getByText('2027년 1월까지 · 다음 큰 변화 2028년')).toBeTruthy();
+    expect(within(card).queryByText('지나온 시기')).toBeNull();
+    expect(screen.queryByTestId('home-timing-practices')).toBeNull();
+    expect(screen.queryByText(main.practices![0].title)).toBeNull();
     await fireEvent.press(card);
     expect(router.replace).toHaveBeenLastCalledWith('/timing');
-  });
-
-  it('"지금" 글자의 가운데가 점의 가운데와 같다 — 같은 좌우 여백의 칸에서 같은 %(소유자 빌드 15)', async () => {
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
-    await render(<HomeScreen />);
-    await screen.findByTestId('home-timing-card');
-    for (const W of [280, 350]) {
-      const { dotCenter, labelCenter } = nowCenters('home', W);
-      expect(labelCenter).toBeCloseTo(dotCenter, 5);
-    }
   });
 
   it('받아 둔 시기 풀이는 기기에서 먼저 그린다(결정 047 의 2)', async () => {
@@ -389,8 +346,7 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     await render(<HomeScreen />);
     await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
     expect(screen.getByTestId('sk-home-timing-card')).toBeTruthy();
-    expect(screen.getByTestId('sk-home-timing-practices')).toBeTruthy();
-    expect(screen.getAllByTestId('sk-timing-todo')).toHaveLength(3);
+    expect(screen.queryByTestId('sk-home-timing-practices')).toBeNull();
     jest.useRealTimers();
   });
 
@@ -522,17 +478,81 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky });
   });
 
-  it('"오늘의 하늘 · 11월 19일" · 제목 · 짧은 이유 — 별명 카드 바로 아래, 누르면 /today', async () => {
+  it('맨 위 큰 카드 — "오늘의 하늘 · 11월 19일 목요일" · 제목(제목 단계) · 짧은 이유 · 사람 · 일 · 마음 흐름 셋, 누르면 /today(결정 092)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     const card = await screen.findByTestId('home-today-card');
     // 카드 머리의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
     expect(within(card).getByTestId('home-card-chevron').props.width).toBe(22);
-    expect(within(card).getByText('오늘의 하늘 · 11월 19일')).toBeTruthy();
-    expect(within(card).getByText(sky.title)).toBeTruthy();
+    expect(within(card).getByText('오늘의 하늘 · 11월 19일 목요일')).toBeTruthy();
+    expect(StyleSheet.flatten(within(card).getByText(sky.title).props.style)).toMatchObject({ fontSize: 24, lineHeight: 34 });
     expect(within(card).getByText('오늘은 달이 내 금성 자리를 지나요')).toBeTruthy();
+    const flows = within(card).getAllByTestId('home-today-flow');
+    expect(flows).toHaveLength(3);
+    for (const [i, key] of (['people', 'work', 'mind'] as const).entries()) {
+      expect(within(flows[i]).getByText(strings.timing.day.flowRows[key])).toBeTruthy();
+      expect(within(flows[i]).getByText(sky.flow[key])).toBeTruthy();
+    }
     expect(mockApi.postDaySky).toHaveBeenCalledWith();
     await fireEvent.press(card);
+    expect(router.push).toHaveBeenCalledWith('/today');
+  });
+
+  it('그 아래 "오늘의 작은 실천" — 같은 응답의 실천 셋, 누르면 /today. 오늘의 하늘을 받기 전에는 칸이 없다(결정 092)', async () => {
+    let resolve: (v: unknown) => void = () => {};
+    mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (resolve = r)) as never);
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('nickname-card');
+    expect(screen.queryByTestId('home-today-practices')).toBeNull();
+    await act(async () => resolve({ ok: true, data: sky }));
+    const card = await screen.findByTestId('home-today-practices');
+    expect(within(card).getByText(strings.today.practices)).toBeTruthy();
+    expect(within(card).getAllByTestId('timing-todo')).toHaveLength(3);
+    expect(within(card).getByText(sky.practices[0].title)).toBeTruthy();
+    await fireEvent.press(card);
+    expect(router.push).toHaveBeenCalledWith('/today');
+  });
+
+  it('홈의 차례: 오늘의 하늘 → 오늘의 작은 실천 → 지금 나의 시기 → 이번 달 눈여겨볼 날 → 별명 한 줄(결정 092)', async () => {
+    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.timingReport } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await storeReading(fixtures.reading);
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-month-days');
+    await screen.findByTestId('home-today-practices');
+    await screen.findByTestId('home-timing-card');
+    const order = ['home-today-card', 'home-today-practices', 'home-timing-card', 'home-month-days', 'nickname-card'];
+    const seen = screen
+      .getAllByTestId(/./)
+      .map((e) => String(e.props.testID))
+      .filter((id) => order.includes(id));
+    expect(seen).toEqual(order);
+  });
+
+  it('이번 달 눈여겨볼 날은 칸 폭이 정해진 가로 슬라이드 — "21일 · 토" · 그날 한 줄, 누르면 그날의 하늘(소유자 "많으면 슬라이드", 결정 092)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    const strip = await screen.findByTestId('home-month-days');
+    expect(within(strip).getByText(strings.home.monthDays.title)).toBeTruthy();
+    expect(within(strip).getByTestId('home-month-days-scroll').props.horizontal).toBe(true);
+    const days = within(strip).getAllByTestId('home-month-day');
+    expect(days).toHaveLength(fixtures.monthSky.days.length);
+    expect(StyleSheet.flatten(days[0].props.style)).toMatchObject({ width: TimingLayout.home.days.width });
+    expect(within(days[0]).getByText('21일 · 토')).toBeTruthy();
+    expect(within(days[0]).getByText(fixtures.monthSky.days[0].text)).toBeTruthy();
+    await fireEvent.press(days[0]);
+    expect(router.push).toHaveBeenCalledWith('/timing/day?date=2026-11-21');
+  });
+
+  it('오늘인 날은 "19일 · 오늘"(주색 글자 · 주색 테두리) — 누르면 오늘의 하늘(/today)', async () => {
+    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...fixtures.monthSky.days[0], date: '2026-11-19' }] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    const day = await screen.findByTestId('home-month-day');
+    expect(within(day).getByText('19일 · 오늘')).toBeTruthy();
+    expect(StyleSheet.flatten(day.props.style)).toMatchObject({ borderColor: Colors.primary });
+    await fireEvent.press(day);
     expect(router.push).toHaveBeenCalledWith('/today');
   });
 
@@ -591,7 +611,7 @@ describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071, 보드 24)
   const report = fixtures.timingReport;
   const restored = { date: profile.date, time: profile.time, placeId: profile.place.id };
   /** 칸 이름(뼈대는 sk- 를 앞에, -skeleton 을 뒤에 붙인다) */
-  const BLOCKS = ['nickname-card', 'home-today-card', 'home-timing-card', 'home-timing-practices'];
+  const BLOCKS = ['home-today-card', 'home-timing-card', 'nickname-card'];
   const blocks = () =>
     screen
       .queryAllByTestId(/./, { includeHiddenElements: true })
@@ -599,7 +619,7 @@ describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071, 보드 24)
       .filter((id) => BLOCKS.includes(id));
   afterEach(() => jest.useRealTimers());
 
-  it('0.3초 전에는 머리(로고) · 아래 탭만, 넘으면 별명 카드(받아 둔 풀이가 없는 꼴) · 오늘의 하늘 · 시기 · 작은 실천의 뼈대 — 종은 없다(리뷰 #66)', async () => {
+  it('0.3초 전에는 머리(로고) · 아래 탭만, 넘으면 오늘의 하늘 큰 카드 · 시기 한 줄 · 별명 한 줄(받아 둔 풀이가 없는 꼴)의 뼈대 — 종은 없다(리뷰 #66, 결정 092)', async () => {
     jest.useFakeTimers();
     mockApi.getProfile.mockReturnValue(new Promise(() => {}));
     await render(<HomeScreen />);
@@ -621,7 +641,7 @@ describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071, 보드 24)
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
     mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
     await render(<HomeScreen />);
-    expect(await screen.findByTestId('home-timing-practices')).toBeTruthy();
+    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
     expect(await screen.findByTestId('home-today-card')).toBeTruthy();
     expect(screen.getByText(M.readingEmpty)).toBeTruthy();
     expect(blocks()).toEqual(BLOCKS);
@@ -726,7 +746,7 @@ describe('계정은 기기 · 메모리에서 첫 그림부터(소유자 "이름
     await AsyncStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify({ account: me }));
     mockApi.getMyAccount.mockReturnValue(new Promise(() => {}));
     await render(<HomeScreen />);
-    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
     expect(screen.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
     expect(screen.queryByTestId('avatar-placeholder', { includeHiddenElements: true })).toBeNull();
   });
@@ -740,7 +760,7 @@ describe('계정은 기기 · 메모리에서 첫 그림부터(소유자 "이름
     expect(await screen.findByTestId('avatar-placeholder', hidden)).toBeTruthy();
     expect(screen.getByTestId('nickname-placeholder', hidden)).toBeTruthy();
     await act(async () => answer({ ok: true, data: me }));
-    expect(screen.getByText('새벽별 님')).toBeTruthy();
+    expect(screen.getByText('새벽별 님의 별명')).toBeTruthy();
     expect(screen.queryByTestId('avatar-placeholder', hidden)).toBeNull();
   });
 
@@ -748,7 +768,7 @@ describe('계정은 기기 · 메모리에서 첫 그림부터(소유자 "이름
     await refreshAccount();
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
     await render(<HomeScreen />);
-    expect(await screen.findByText('새벽별 님')).toBeTruthy();
+    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
   });
 });
@@ -773,19 +793,3 @@ describe('홈을 다시 붙여도 종 점 · 카드가 첫 그림부터(이번 �
     }
   });
 });
-
-/** 폭 W 인 줄에서 점과 "지금" 글자의 가운데(x) — 스타일만으로 센다(시험에는 레이아웃이 없다). 점은 트랙 안, 글자는 "지금" 칸 안의 같은 % */
-function nowCenters(prefix: string, W = 300) {
-  const st = (id: string) => StyleSheet.flatten(screen.getByTestId(id).props.style) as Record<string, number | string | undefined>;
-  const pct = (v: unknown) => parseFloat(String(v)) / 100;
-  const track = st(`${prefix}-track`);
-  const dot = st(`${prefix}-now`);
-  const lane = st(`${prefix}-now-lane`);
-  const label = st(`${prefix}-now-label`);
-  const inset = Number(track.marginHorizontal ?? 0);
-  const dotCenter = inset + pct(dot.left) * (W - 2 * inset) + Number(dot.marginLeft ?? 0) + Number(dot.width) / 2;
-  const laneLeft = Number(lane.left ?? 0);
-  const laneRight = Number(lane.right ?? 0);
-  const labelCenter = laneLeft + pct(label.left) * (W - laneLeft - laneRight) + Number(label.marginLeft ?? 0) + Number(label.width) / 2;
-  return { dotCenter, labelCenter };
-}

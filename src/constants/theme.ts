@@ -265,22 +265,22 @@ export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, ico
 
 /** 홈 별명 카드(결정 047, 보드 11 · 11-1): 모서리 · 안 여백 · 프로필 그림 · 그림과 이름 사이 · 위와의 사이 · 빛 · 뒤의 별자리 그림 */
 export const NicknameCardLayout = {
-  radius: 24,
-  padding: 20,
-  avatar: 52,
-  rowGap: 12,
-  headlineTop: 18,
-  /** 꺾쇠 22 — 프로필 그림 · 닉네임 줄의 오른쪽 끝, 세로 가운데(결정 080 · 소유자 빌드 14). 크기는 다른 홈 카드의 꺾쇠와 같다(소유자 2026-11-23) */
+  /** 홈 맨 아래 별명 한 줄 카드(결정 092): 위아래 · 좌우 안 여백 · 모서리 · 프로필 그림 · 그림과 글 사이 · 두 줄 사이 · 꺾쇠(카드 세로 가운데) */
+  padV: 14,
+  padH: 16,
+  radius: 20,
+  avatar: 40,
+  gap: 12,
+  textGap: 2,
   chevron: 22,
-  glow: { x: 0.88, y: 0.08, extent: 0.58 },
   /**
    * 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기,
    * 꺾쇠 둘레를 비우는 폭(꺾쇠 바깥으로 — 홈 · 마이 카드 같은 규칙, 결정 080)
    */
   art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8, clear: 8 },
-  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." 막대 폭 */
-  skeleton: { name: 72, meta: 64, empty: 168 },
-  /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
+  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): "○○ 님의 별명" · "아직 별명을 짓지 않았어요." 막대 폭 */
+  skeleton: { name: 84, empty: 168 },
+  /** 계정을 아직 모를 때 "○○ 님의 별명" 자리표의 폭(components/placeholder) */
   namePlaceholder: 96,
 } as const;
 
@@ -532,9 +532,20 @@ export const TimingLayout = {
     todosTop: 8,
     todo: 44,
   },
-  /** 홈의 시기 칸(보드 11): 카드 · 이름표 줄 · 지나온 — 지금 — 큰 변화 줄(지금 점의 자리는 시안의 그림 그대로) · 제목 */
-  /** chevron: 홈 오늘의 하늘 · 시기 칸 카드의 꺾쇠(머리 · "자세한 풀이 받기 ›") 22(소유자 2026-11-23, 빌드 13 — 선 굵기는 같은 비율) */
-  home: { radius: 20, pad: 20, cardGap: 12, chevron: 22, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, todosTop: 6 },
+  /**
+   * 홈의 카드(결정 092): 모서리 · 안 여백 · 카드 사이 · 이름표 줄의 꺾쇠 22(소유자 2026-11-23) · 이름표 아래 제목 · 제목 아래 한 줄 · 작은 실천 줄 위.
+   * days: 이번 달 눈여겨볼 날의 가로 슬라이드 — 칸 폭(390 화면에서 두 칸 반이 보이게) · 칸 사이 · 칸 안 여백 · 모서리 · 제목 아래 · 날짜와 글 사이
+   */
+  home: {
+    radius: 20,
+    pad: 20,
+    cardGap: 12,
+    chevron: 22,
+    emptyTitleTop: 10,
+    subTop: 2,
+    todosTop: 4,
+    days: { width: 136, gap: 8, pad: 12, radius: 16, titleBottom: 8, textTop: 4 },
+  },
   /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */
   detail: { radius: 24, padTop: 22, padX: 18, padBottom: 18, art: 76, artInset: 12, titleTop: 6, titleRight: 80, bodyTop: 6, buttonTop: 18, glow: { x: 0.85, y: 0.1, extent: 0.58 } },
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */
@@ -548,7 +559,40 @@ export const TimingLayout = {
  * 홈의 오늘의 하늘 카드(보드 11 · 11 쓰는 중): 이름표 아래 제목 · 쓰는 중 줄(위 · 그림과 글 사이 · 글 줄 사이) · 작은 그림(칸 · 빛이 칸에서 들어간 거리 ·
  * 궤도의 점 · 별이 · 둥실 높이 · 빛이 가장 흐릴 때). 카드 모양 · 꺾쇠 · 짧은 이유 위는 홈의 시기 칸(TimingLayout.home)과 같다.
  */
-export const TodayCardLayout = { titleTop: 10, rowTop: 14, rowGap: 14, textGap: 4, art: 56, glowInset: 9, dot: 8, byeoli: 33, float: 8, glowDim: 0.55 } as const;
+export const TodayCardLayout = {
+  titleTop: 10,
+  rowTop: 14,
+  rowGap: 14,
+  textGap: 4,
+  art: 56,
+  glowInset: 9,
+  dot: 8,
+  byeoli: 33,
+  float: 8,
+  glowDim: 0.55,
+  /**
+   * 홈 맨 위 큰 카드(결정 092): 모서리 · 안 여백(위 · 좌우 · 아래) · 오른쪽 위 달(크기 · 위 · 오른쪽) · 제목의 오른쪽 비움 · 이름표 아래 제목 ·
+   * 제목 아래 이유 · 흐름 줄(위 틈 · 위 선 아래 · 줄 사이 · 이름 칸 폭 · 이름과 글 사이) · 빛(가로 · 세로 · 퍼짐)
+   */
+  hero: {
+    radius: 24,
+    padTop: 22,
+    padX: 20,
+    padBottom: 20,
+    moon: 64,
+    moonTop: 46,
+    moonRight: 20,
+    titleRight: 80,
+    titleTop: 8,
+    briefTop: 6,
+    flowTop: 16,
+    flowPadTop: 14,
+    flowGap: 10,
+    flowLabel: 30,
+    flowLabelGap: 12,
+    glow: { x: 0.82, y: 0.12, extent: 0.62 },
+  },
+} as const;
 
 /**
  * 알림함(결정 052, 보드 11-3 · 11-3-1): 묶음 이름(위 · 아래) · 한 줄(안 여백 · 사이 · 아래 · 모서리 — 안 읽은 줄만 떠 있는 면) · 둥근 아이콘 칸 ·

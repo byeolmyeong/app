@@ -272,14 +272,13 @@ export const NicknameCardLayout = {
   avatar: 52,
   rowGap: 12,
   headlineTop: 18,
-  moreTop: 14,
-  /** "풀이 읽기 ›" 의 꺾쇠 22(소유자 2026-11-23, 빌드 13 — 글자와 세로 가운데, 선 굵기는 viewBox 24 의 2 그대로 비율) */
+  /** 오른쪽 위 꺾쇠 22 — 다른 홈 카드의 이름표 줄 꺾쇠와 같은 크기 · 자리(안쪽 여백 padding 그대로, 결정 080 · 크기는 소유자 2026-11-23) */
   chevron: 22,
   glow: { x: 0.88, y: 0.08, extent: 0.58 },
   /** 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기 */
   art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8 },
-  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." · "내 별명 읽기" 막대 폭 */
-  skeleton: { name: 72, meta: 64, empty: 168, more: 72 },
+  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." 막대 폭 */
+  skeleton: { name: 72, meta: 64, empty: 168 },
   /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
   namePlaceholder: 96,
 } as const;
@@ -534,7 +533,7 @@ export const TimingLayout = {
   },
   /** 홈의 시기 칸(보드 11): 카드 · 이름표 줄 · 지나온 — 지금 — 큰 변화 줄(지금 점의 자리는 시안의 그림 그대로) · 제목 */
   /** chevron: 홈 오늘의 하늘 · 시기 칸 카드의 꺾쇠(머리 · "자세한 풀이 받기 ›") 22(소유자 2026-11-23, 빌드 13 — 선 굵기는 같은 비율) */
-  home: { radius: 20, pad: 20, cardGap: 12, chevron: 22, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, linkTop: 14, todosTop: 6 },
+  home: { radius: 20, pad: 20, cardGap: 12, chevron: 22, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, todosTop: 6 },
   /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */
   detail: { radius: 24, padTop: 22, padX: 18, padBottom: 18, art: 76, artInset: 12, titleTop: 6, titleRight: 80, bodyTop: 6, buttonTop: 18, glow: { x: 0.85, y: 0.1, extent: 0.58 } },
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */

@@ -4,7 +4,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { CardFail } from '@/components/card-fail';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, Spacing, TimingLayout as L, TodayCardLayout } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, TimingLayout as L, TodayCardLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth } from '@/features/timing/dates';
 import { MakingArt } from '@/features/timing/home-today-card';
@@ -91,22 +91,21 @@ export function HomeTimingCards({
   if (state.status === 'checking') return skeleton ? <HomeTimingSkeleton /> : null;
   if (state.status === 'none')
     return (
-      <View testID="home-timing-empty" style={styles.card}>
-        <Txt variant="kicker" color="accentText">
-          {T.now}
-        </Txt>
+      // 다른 홈 카드처럼 이름표 줄 오른쪽 위 꺾쇠, 카드 전체가 눌린다 — "자세한 풀이 받기" 는 화면 읽기 이름에만(결정 080)
+      <Pressable
+        testID="home-timing-empty"
+        accessibilityRole="button"
+        accessibilityLabel={[T.now, T.home.emptyTitle, T.home.emptyBody, T.home.request].join(T.home.labelSeparator)}
+        onPress={onOpen}
+        style={styles.card}>
+        <Head label={T.now} />
         <Txt variant="subhead" keepAll style={styles.emptyTitle}>
           {T.home.emptyTitle}
         </Txt>
         <Txt variant="small" color="gray" keepAll style={styles.sub}>
           {T.home.emptyBody}
         </Txt>
-        <Pressable accessibilityRole="button" onPress={onOpen} style={styles.link}>
-          <Txt variant="term">{T.home.request}</Txt>
-          {/* 홈 카드의 꺾쇠는 22(소유자 2026-11-23) — 시기 탭의 같은 부품 기본(18)은 그대로 */}
-          <ChevronRight size={H.chevron} color={Colors.ink} testID="home-timing-request-chevron" />
-        </Pressable>
-      </View>
+      </Pressable>
     );
   if (state.status === 'unknown')
     return state.code === NOT_FOUND || !online ? null : (
@@ -218,7 +217,6 @@ const styles = StyleSheet.create({
   title: { marginTop: H.titleTop },
   emptyTitle: { marginTop: H.emptyTitleTop },
   sub: { marginTop: H.subTop },
-  link: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: Spacing.hairline, marginTop: H.linkTop },
   todos: { marginTop: H.todosTop },
   /** 뼈대 두 카드 사이 — 홈의 카드 사이(보드 11)와 같다 */
   cards: { gap: H.cardGap },

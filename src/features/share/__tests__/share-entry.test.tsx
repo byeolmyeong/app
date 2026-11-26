@@ -12,6 +12,9 @@ import * as story from '@/features/share/story';
 import * as webStory from '@/features/share/story.web';
 import { api, type ShareCard, type ShareRequest } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
+import { track } from '@/lib/analytics';
+
+jest.mock('@/lib/analytics', () => ({ track: jest.fn() }));
 
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -434,5 +437,15 @@ describe('궁합 점수 카드 공유', () => {
     // 다시 열면 이름부터 다시 묻되, 마지막에 적은 이름이 들어 있다
     expect((await screen.findByPlaceholderText(S.myName.placeholder)).props.value).toBe('동환');
     expect(mockApi.createShare).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 제품 분석(결정 040 · 081): "공유했다"는 시트를 연 것으로 센다 — 카드 종류만, 글 · 공유 id 는 보내지 않는다
+describe('공유 이벤트', () => {
+  it('시트를 열면 share_started 를 카드 종류와 함께 한 번 보낸다', async () => {
+    await render(<ShareEntry target={{ kind: 'ME_AREA', area: 'LOVE' }} />);
+    expect(track).not.toHaveBeenCalled();
+    await open();
+    expect((track as jest.Mock).mock.calls).toEqual([['share_started', { card: 'me_area' }]]);
   });
 });

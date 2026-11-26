@@ -3,6 +3,9 @@ import { StyleSheet } from 'react-native';
 
 import { strings } from '@/content/strings';
 import { SocialButton } from '@/features/auth/providers/social-button';
+import { track } from '@/lib/analytics';
+
+jest.mock('@/lib/analytics', () => ({ track: jest.fn() }));
 
 const flat = (testID: string) => StyleSheet.flatten(screen.getByTestId(testID).props.style);
 
@@ -120,5 +123,16 @@ describe('공급자 버튼: 커서 · 글자 선택', () => {
   it('누를 수 없으면(흐림 · 기다리는 중) 손가락이 아니다', async () => {
     await render(<SocialButton provider="APPLE" label="Apple로 로그인" onPress={jest.fn()} disabled />);
     expect(flat('social-button-APPLE').cursor).toBe('default');
+  });
+});
+
+// 제품 분석(결정 040 · 081): 누르는 순간 login_started 를 공급자(소문자)와 함께 — 그다음 원래 동작
+describe('로그인 버튼 이벤트', () => {
+  it('누르면 login_started 를 보내고 onPress 를 부른다', async () => {
+    const onPress = jest.fn();
+    await render(<SocialButton provider="KAKAO" label="Kakao로 로그인" onPress={onPress} />);
+    await fireEvent.press(screen.getByTestId('social-button-KAKAO'));
+    expect(track).toHaveBeenCalledWith('login_started', { provider: 'kakao' });
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });

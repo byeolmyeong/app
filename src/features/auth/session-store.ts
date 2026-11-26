@@ -58,6 +58,11 @@ export type SessionStoreDeps = {
    * 새 로그인(로그인 · 가입 완료)이 로그인 상태가 되기 전에, 401 로 로그인 전이 될 때 부른다. 같은 기기의 다음 사람이 앞사람의 것을 보지 않게
    */
   clearDeviceData: () => Promise<void>;
+  /**
+   * 로그인(계정이 있다) · 가입을 마친 순간(제품 분석, 결정 040 · 081). 출생 정보는 넘기지 않는다 — 가입은 시각을 아는지만.
+   * 실패 · 가입 중이 됨 · 개발용 세션은 부르지 않는다
+   */
+  onSignedIn?: (done: { kind: 'login'; provider: ProviderCredential['provider'] } | { kind: 'signup'; provider: ProviderCredential['provider']; timeKnown: boolean }) => void;
 };
 
 /** 로그인 한 번의 결과 */
@@ -225,6 +230,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
       }
       await newSession(r.data.token);
       await deps.saveLastProvider(credential.provider);
+      deps.onSignedIn?.({ kind: 'login', provider: credential.provider });
       return 'signedIn';
     },
 
@@ -245,6 +251,7 @@ export function createSessionStore(deps: SessionStoreDeps) {
           // 가입 화면은 이 결과를 받은 뒤에 새 사람의 출생 정보를 기기에 둔다 — 비우기는 그보다 먼저 끝난다
           await newSession(r.data.token);
           if (provider) await deps.saveLastProvider(provider);
+          if (provider) deps.onSignedIn?.({ kind: 'signup', provider, timeKnown: birth.time !== null });
           return r;
         }
         if (r.error === 'LOGIN_REQUIRED') await signedOut(reasonOf(r));

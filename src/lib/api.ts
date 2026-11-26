@@ -1186,6 +1186,10 @@ const isNicknameAvailability = (v: unknown): v is NicknameAvailability => isObje
 /** 본문이 없는 성공(204) */
 const isEmpty = (v: unknown): v is null => v === null;
 
+/** `GET /auth/analytics-id` 의 응답. 분석용 id 는 서버가 계정 id 로 만든 되돌릴 수 없는 값이다(결정 040 · 081) */
+export type AnalyticsIdResult = { analyticsId: string };
+const isAnalyticsId = (v: unknown): v is AnalyticsIdResult => isObject(v) && typeof v.analyticsId === 'string';
+
 /** `PUT /profile` · `GET /profile` 의 응답. 보낸 것과 같은 모양이다. time 이 null 이면 placeId 는 null 이거나 없다(결정 020) */
 const isBirthInput = (v: unknown): v is BirthInput =>
   isObject(v) &&
@@ -1453,6 +1457,12 @@ export function createApi(config: ApiConfig) {
     async getSession(): Promise<ApiResult<null>> {
       if (config.useFixtures) return { ok: true, data: null };
       return request('GET', '/auth/session', { validate: isEmpty });
+    },
+
+    /** `GET /auth/analytics-id` 분석 도구에 보낼 사용자 id(결정 081). 앰플리튜드 키가 있을 때(운영)만 부른다 */
+    async getAnalyticsId(): Promise<ApiResult<AnalyticsIdResult>> {
+      if (config.useFixtures) return { ok: true, data: { analyticsId: '0'.repeat(32) } };
+      return request('GET', '/auth/analytics-id', { validate: isAnalyticsId });
     },
 
     /** `DELETE /auth/session` 로그아웃. 이 기기의 세션만 지운다(웹은 쿠키도) */

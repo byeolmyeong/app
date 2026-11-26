@@ -28,6 +28,7 @@ import { ReadingSkeleton, ReadingView } from '@/features/reading/reading-view';
 import { useReading, useStoredReading } from '@/features/reading/use-reading';
 import { ShareEntry } from '@/features/share/share-entry';
 import { useGenerationBusy } from '@/features/update/update-gate';
+import { useTrackOnce } from '@/lib/analytics';
 import { ME_AREAS, type MeArea } from '@/lib/api';
 
 const S = strings.me;
@@ -68,6 +69,7 @@ export default function MeScreen() {
     startMe();
     router.setParams({ request: undefined });
   }, [request, meStatus, startMe]);
+  useTrackOnce('reading_viewed', { kind: 'me_report' }, me.state.status === 'done');
   // 연결이 돌아오면 상태만 다시 묻는다(GET) — 만들기(POST)는 사람이 누를 때만(결정 061 의 4)
   useOnReconnect(online, () => {
     const s = me.state;

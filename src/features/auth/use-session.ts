@@ -5,13 +5,17 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
+import { linkAnalytics } from '@/features/auth/analytics-link';
 import { clearDeviceData } from '@/features/auth/delete-account';
 import { setLastProvider } from '@/features/auth/last-provider';
 import { createSessionStore, type Session } from '@/features/auth/session-store';
 import { restoreDraft } from '@/features/auth/signup-draft';
 import { clearResume, loadResume, startResume } from '@/features/auth/signup-resume';
 import { deleteToken, loadToken, saveToken } from '@/features/auth/token-storage';
-import { api, setSessionRefresher, setSessionToken } from '@/lib/api';
+import { identify, isAnalyticsEnabled, resetAnalytics, track } from '@/lib/analytics';
+import { api, setSessionRefresher, setSessionToken, type ProviderCredential } from '@/lib/api';
+
+const providerOf = (p: ProviderCredential['provider']) => p.toLowerCase() as 'google' | 'apple' | 'kakao';
 
 const store = createSessionStore({
   devSession: process.env.EXPO_PUBLIC_DEV_SESSION === '1',
@@ -38,7 +42,15 @@ const store = createSessionStore({
   clearSignup: clearResume,
   // 새 로그인 · 401 때 앞사람이 기기에 남긴 것을 비운다(로그아웃 · 탈퇴와 같은 범위)
   clearDeviceData,
+  // 제품 분석(결정 040 · 081): 로그인 · 가입을 마친 순간
+  onSignedIn: (done) =>
+    done.kind === 'login'
+      ? track('login_completed', { provider: providerOf(done.provider) })
+      : track('signup_completed', { provider: providerOf(done.provider), time_known: done.timeKnown }),
 });
+
+// 로그인 상태가 되면 분석용 id 로 이어 붙이고, 로그아웃 · 계정 삭제 뒤에는 초기화한다(키가 있을 때만 서버를 부른다, 결정 081)
+linkAnalytics(store, { enabled: isAnalyticsEnabled, fetchId: () => api.getAnalyticsId(), identify, reset: resetAnalytics });
 
 // 서버가 401 을 주면 api 가 이 방법을 부른다. 개발용이면 세션을 한 번 다시 받고, 아니면 로그인 전이 된다.
 setSessionRefresher(() => store.refresh());

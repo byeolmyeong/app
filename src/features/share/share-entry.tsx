@@ -15,8 +15,10 @@ import { saveImage, shareStory, type CardRef } from '@/features/share/share-acti
 import { ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
 import { useSession } from '@/features/auth/use-session';
 import { prefetchShare } from '@/features/share/share-cache';
+import { shareCardOf } from '@/features/share/share-analytics';
 import { storyAppId } from '@/features/share/story';
 import { useShareCard } from '@/features/share/use-share-card';
+import { track } from '@/lib/analytics';
 import type { MeArea, Relation, ShareRequest } from '@/lib/api';
 
 const S = strings.share;
@@ -59,6 +61,8 @@ export function ShareEntry({ target, label = S.open, trigger = 'button' }: { tar
     if (prefetchKey && signedIn) void prefetchShare(JSON.parse(prefetchKey) as ShareRequest);
   }, [prefetchKey, signedIn]);
   const open = () => {
+    // "공유했다"는 공유 시트를 연 것으로 센다(결정 040 — 안드로이드는 실제로 올렸는지 알려 주지 않는다)
+    track('share_started', { card: shareCardOf[target.kind] });
     setOpened((n) => n + 1);
     setVisible(true);
   };

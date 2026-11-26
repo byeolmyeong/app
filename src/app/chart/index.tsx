@@ -13,6 +13,7 @@ import { ChartWheel, ChartWheelPlaceholder } from '@/features/chart/ChartWheel';
 import { SkyList } from '@/features/chart/sky-list';
 import { SkySheet } from '@/features/chart/sky-sheet';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
+import { useTrackOnce } from '@/lib/analytics';
 
 const S = strings.skyMap;
 /** 처음 들어오면 해를 고른 채로 보여 준다(시안 13) */
@@ -27,6 +28,7 @@ const FIRST_SELECTED = 'SUN';
  */
 export default function ChartScreen() {
   const { loaded, chart } = useBirthProfile();
+  useTrackOnce('chart_viewed', { time_known: chart?.timeKnown ?? false }, chart !== null);
   const { selected: asked } = useLocalSearchParams<{ selected?: string }>();
   // 실어 온 별은 차트를 읽은 뒤에 가린다(시각 "모름" 이면 상승점 · 중천은 고를 수 없다). 줄을 누르기 전까지만 쓴다
   const [picked, setPicked] = useState<string | null>(null);

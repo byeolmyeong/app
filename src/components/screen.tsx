@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaInsetsContext, SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, LineWidth, ScreenPaddingX, Sizes, Spacing } from '@/constants/theme';
+import { onReadScroll } from '@/lib/analytics';
 
 export type ScreenProps = {
   /** 화면 머리(NavBar). 스크롤되지 않는다 */
@@ -37,7 +38,10 @@ export function Screen({ nav, footer, scroll = true, bottomInset, children }: Sc
             style={styles.scroll}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.content}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+            // 해석 글 화면에서 끝까지 읽었는가(결정 040 · 081 — 재는 화면은 lib/analytics/routes.ts)
+            onScroll={onReadScroll}
+            scrollEventThrottle={250}>
             {children}
           </ScrollView>
         ) : (

@@ -9,6 +9,7 @@ import { Skeleton, SkeletonText } from '@/components/skeleton';
 import { PracticeCards, PracticeCardsSkeleton, SectionTitle, SectionTitleSkeleton, SkBlock } from '@/features/timing/timing-parts';
 import { shownTiming } from '@/features/timing/time-known';
 import { mainInterval } from '@/features/timing/year-view';
+import { useTrackOnce } from '@/lib/analytics';
 import type { TimingMilestone, TimingReport } from '@/lib/api';
 
 const T = strings.timing;
@@ -39,6 +40,7 @@ function CardFill() {
  * 큰 변화 네 줄의 길(지난 것은 흐리게, 다음 큰 변화는 빛나는 점) · 이 시기의 작은 실천. 해 · 나이는 서버 값 그대로 — 셈하지 않는다.
  */
 export function LifeView({ report: received, share }: { report: TimingReport; share?: ReactNode }) {
+  useTrackOnce('reading_viewed', { kind: 'timing_report' });
   const report = shownTiming(received);
   const next = report.current.nextMilestone ?? null;
   const nextIndex = next ? report.milestones.findIndex((m) => m.kind === next.kind) : report.milestones.length;

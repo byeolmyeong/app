@@ -11,6 +11,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Txt } from '@/components/txt';
 import { Colors, LineWidth, RecentBadgeStyle as R, SocialButtonStyle as B } from '@/constants/theme';
 import { strings } from '@/content/strings';
+import { track } from '@/lib/analytics';
 
 export type SocialProvider = 'KAKAO' | 'APPLE' | 'GOOGLE';
 
@@ -105,7 +106,10 @@ export function SocialButton({ provider, label, onPress, disabled = false, loadi
       accessibilityLabel={socialLabel(label, recent)}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
-      onPress={onPress}
+      onPress={() => {
+        track('login_started', { provider: provider.toLowerCase() as 'google' | 'apple' | 'kakao' });
+        onPress();
+      }}
       style={[styles.base, styles[provider], disabled && !loading && styles.disabled, disabled || loading ? styles.idle : styles.pointer]}>
       <Content provider={provider} label={label} loading={loading} recent={recent} />
     </Pressable>

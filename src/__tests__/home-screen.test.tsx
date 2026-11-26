@@ -6,7 +6,7 @@ import { StyleSheet } from 'react-native';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
-import { Colors } from '@/constants/theme';
+import { Colors, NicknameCardLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -129,17 +129,20 @@ describe('홈', () => {
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
 
-  it('홈 별명 카드 아래 줄은 "풀이 읽기 ›" 그대로 — 꺾쇠만 두는 것은 나 탭 카드뿐(결정 078 정정, 소유자 2026-11-21)', async () => {
+  it('홈 별명 카드는 "풀이 읽기" 글자 없이 오른쪽 위 꺾쇠만 — 다른 홈 카드의 이름표 줄 꺾쇠와 같은 자리 · 크기 · 색, 카드 전체가 눌린다(결정 080 — 078 의 정정 대체)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await storeReading(fixtures.reading);
     await render(<HomeScreen />);
     const card = await screen.findByTestId('nickname-card');
     await within(card).findByText(fixtures.reading.headline);
-    expect(within(card).getByText(strings.home.card.read)).toBeTruthy();
-    // "풀이 읽기 ›" 의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
-    expect(within(card).getByTestId('nickname-card-chevron').props.width).toBe(22);
-    // 화면 읽기는 #108 전처럼 카드 안의 글을 읽는다(이름을 따로 덮지 않음)
-    expect(card.props.accessibilityLabel).toBeUndefined();
+    expect(within(card).queryByText(strings.home.card.read)).toBeNull();
+    const chevron = within(card).getByTestId('nickname-card-chevron');
+    expect(chevron.props.width).toBe(22);
+    // 자리: 카드 안쪽 여백 그대로 오른쪽 위(이름표 줄의 꺾쇠가 놓이는 자리) · 색: 다른 카드의 꺾쇠와 같은 hint
+    expect(StyleSheet.flatten(chevron.props.style)).toMatchObject({ position: 'absolute', top: NicknameCardLayout.padding, right: NicknameCardLayout.padding });
+    expect(within(card).getByTestId('nickname-card-chevron-path').props.stroke).toEqual({ type: 0, payload: parseInt(`ff${Colors.hint.slice(1)}`, 16) });
+    // 화면 읽기는 보이는 글 차례대로 + "풀이 읽기"(나 탭 카드와 같은 규칙, 결정 078 의 1)
+    expect(screen.getByRole('button', { name: ['새벽별 님', '쌍둥이자리', fixtures.reading.headline, strings.home.card.read].join(', ') })).toBe(card);
     await fireEvent.press(card);
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
@@ -149,6 +152,8 @@ describe('홈', () => {
     const view = await render(<HomeScreen />);
     const card = within(await screen.findByTestId('nickname-card'));
     expect(card.getByTestId('card-constellation-GEMINI', { includeHiddenElements: true })).toBeTruthy();
+    // 오른쪽 위 꺾쇠 둘레는 비운다(결정 080) — 어느 별자리든 선이 꺾쇠 밑을 지나지 않게
+    expect(card.getByTestId('card-constellation-clear', { includeHiddenElements: true })).toBeTruthy();
     await view.unmount();
     // 해가 처녀자리인 차트 — 달 · 상승궁이 아니라 해의 별자리로 고른다
     const virgo = { ...fixtures.chart, positions: fixtures.chart.positions.map((p) => (p.body === 'SUN' ? { ...p, sign: 'VIRGO' } : p)) };
@@ -200,11 +205,15 @@ describe('홈', () => {
     expect(screen.queryByRole('image')).toBeNull();
   });
 
-  it('받아 둔 풀이가 없으면 "아직 별명을 짓지 않았어요" 와 "내 별명 읽기" — 누르면 /reading(풀이를 부르지 않는다)', async () => {
+  it('받아 둔 풀이가 없으면 "아직 별명을 짓지 않았어요" 와 오른쪽 위 꺾쇠 — 화면 읽기는 "내 별명 읽기", 누르면 /reading(풀이를 부르지 않는다)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
-    await fireEvent.press(screen.getByText(M.readingCta));
+    const card = await screen.findByTestId('nickname-card');
+    expect(within(card).getByText(M.readingEmpty)).toBeTruthy();
+    expect(within(card).queryByText(M.readingCta)).toBeNull();
+    expect(within(card).getByTestId('nickname-card-chevron')).toBeTruthy();
+    expect(card.props.accessibilityLabel.endsWith(`${M.readingEmpty}, ${M.readingCta}`)).toBe(true);
+    await fireEvent.press(card);
     expect(router.push).toHaveBeenCalledWith('/reading');
     expect(screen.queryByText(fixtures.reading.headline)).toBeNull();
   });
@@ -222,7 +231,7 @@ describe('홈', () => {
     const card = await screen.findByTestId('nickname-card');
     expect(await within(card).findByText(old.headline)).toBeTruthy();
     expect(within(card).queryByText(M.readingEmpty)).toBeNull();
-    expect(within(card).getByText(strings.home.card.read)).toBeTruthy();
+    expect(card.props.accessibilityLabel.endsWith(`${old.headline}, ${strings.home.card.read}`)).toBe(true);
     // 만든 때가 없는 옛 글이라 "받은 지 N일" 은 없다
     expect(within(card).queryByText(/별명을 받은 지/)).toBeNull();
     expect(mockApi.createReading).not.toHaveBeenCalled();
@@ -368,13 +377,15 @@ describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2
     jest.useRealTimers();
   });
 
-  it('시기 풀이가 없으면 "지금 나는 어떤 시기일까 · 자세한 풀이 받기" — 누르면 시기 탭(여기서 만들기를 시작하지 않는다)', async () => {
+  it('시기 풀이가 없으면 "지금 나는 어떤 시기일까" 카드 — 글자 단추 없이 이름표 줄 오른쪽 위 꺾쇠, 카드 전체를 누르면 시기 탭(결정 080, 여기서 만들기를 시작하지 않는다)', async () => {
     await render(<HomeScreen />);
     const empty = await screen.findByTestId('home-timing-empty');
     expect(within(empty).getByText(T.home.emptyTitle)).toBeTruthy();
-    // "자세한 풀이 받기 ›" 의 꺾쇠도 22(시기 탭의 같은 부품 기본 18 은 그대로, 소유자 2026-11-23)
-    expect(within(empty).getByTestId('home-timing-request-chevron').props.width).toBe(22);
-    await fireEvent.press(within(empty).getByRole('button', { name: T.home.request }));
+    expect(within(empty).queryByText(T.home.request)).toBeNull();
+    // 꺾쇠는 다른 홈 카드의 머리와 같은 부품 · 22
+    expect(within(empty).getByTestId('home-card-chevron').props.width).toBe(22);
+    // 화면 읽기는 보이는 글 차례대로 + "자세한 풀이 받기"
+    await fireEvent.press(screen.getByRole('button', { name: [T.now, T.home.emptyTitle, T.home.emptyBody, T.home.request].join(', ') }));
     expect(router.replace).toHaveBeenLastCalledWith('/timing');
     expect(screen.queryByTestId('home-timing-card')).toBeNull();
   });

@@ -69,10 +69,10 @@ export function InfoTip({ children, label, title, text, open, onToggle, placemen
           style={[below ? styles.bubbleBelow : styles.bubbleAbove, { left, opacity: measured ? 1 : 0 }]}>
           {below ? arrow : null}
           <View style={styles.bubble} onLayout={(e) => setBubbleWidth(e.nativeEvent.layout.width)}>
-            <Txt variant="note" style={styles.title}>
+            <Txt variant="caption" style={styles.title}>
               {title}
             </Txt>
-            <Txt variant="note" color="inkSoft">
+            <Txt variant="caption" color="body">
               {text}
             </Txt>
           </View>

@@ -32,7 +32,7 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
             <Path d="M58 14 A36 36 0 1 0 86 68 A28 28 0 1 1 58 14 Z" fill={BrandColors.core} />
           </Svg>
         </View>
-        <Txt variant="captionStrong" color="accentText">
+        <Txt variant="kicker" color="accentText">
           {formatDayLong(sky.date)}
         </Txt>
         <Txt variant="title" keepAll style={styles.title}>
@@ -40,16 +40,16 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
         </Txt>
       </View>
       <View style={styles.section}>
-        <Txt testID="day-section-title" variant="emphasis" accessibilityRole="header">
+        <Txt testID="day-section-title" variant="subhead" accessibilityRole="header">
           {isToday ? strings.today.flow : T.day.flow}
         </Txt>
         <View style={styles.flow}>
           {FLOW.map((key, i) => (
             <View key={key} testID="day-flow" style={[styles.row, i > 0 && styles.rowLine]}>
-              <Txt variant="item" color="accentText" style={styles.rowLabel}>
+              <Txt variant="body" color="accentText" style={styles.rowLabel}>
                 {T.day.flowRows[key]}
               </Txt>
-              <Txt variant="paragraph" color="inkSoft" keepAll style={styles.rowText}>
+              <Txt variant="reading" color="body" keepAll style={styles.rowText}>
                 {sky.flow[key]}
               </Txt>
             </View>
@@ -60,7 +60,7 @@ export function DayView({ sky, chart, today }: { sky: DaySky; chart: Chart | nul
         <ReasonLine reason={sky.reason} chart={chart} today={isToday} />
       </View>
       <View style={styles.section}>
-        <Txt testID="day-section-title" variant="emphasis" accessibilityRole="header">
+        <Txt testID="day-section-title" variant="subhead" accessibilityRole="header">
           {isToday ? strings.today.practices : T.day.practices}
         </Txt>
         <View style={styles.todos}>
@@ -76,23 +76,23 @@ export function DaySkeleton({ titleLines = 1 }: { titleLines?: number }) {
   return (
     <SkeletonGroup testID="day-skeleton">
       <SkBlock of="day-hero" style={styles.hero}>
-        <SkeletonText widths={['34%']} variant="captionStrong" />
+        <SkeletonText widths={['34%']} variant="kicker" />
         {/* 제목 줄 수는 그 화면의 시안대로(14-4 한 줄 · 11-4 세 줄) — 다 그려진 머리 카드와 같은 높이 */}
         <SkeletonText widths={titleLines === 1 ? ['60%'] : [...Array<string>(titleLines - 1).fill('64%'), '30%']} variant="title" style={styles.title} />
       </SkBlock>
       <View style={styles.section}>
         <SkBlock of="day-section-title">
-          <SkeletonText widths={['30%']} variant="emphasis" />
+          <SkeletonText widths={['30%']} variant="subhead" />
         </SkBlock>
         <View style={styles.flow}>
           {[0, 1, 2].map((i) => (
             <SkBlock key={i} of="day-flow" style={[styles.row, i > 0 && styles.rowLine]}>
-              <SkeletonText widths={[D.labelBar]} variant="item" style={styles.rowLabel} />
+              <SkeletonText widths={[D.labelBar]} variant="body" style={styles.rowLabel} />
               {/* 줄 수는 시안 14-4 의 글(세 줄 · 두 줄 · 두 줄) */}
               <View style={styles.rowText}>
-                <SkeletonText widths={['100%']} variant="paragraph" />
-                {i === 0 ? <SkeletonText widths={['96%']} variant="paragraph" /> : null}
-                <SkeletonText widths={['48%']} variant="paragraph" />
+                <SkeletonText widths={['100%']} variant="reading" />
+                {i === 0 ? <SkeletonText widths={['96%']} variant="reading" /> : null}
+                <SkeletonText widths={['48%']} variant="reading" />
               </View>
             </SkBlock>
           ))}
@@ -102,19 +102,19 @@ export function DaySkeleton({ titleLines = 1 }: { titleLines?: number }) {
         <SkeletonText widths={['28%']} variant="label" />
         {/* 이유 문장은 한 글 안의 두 줄 — 줄 사이 틈 없이 */}
         <View>
-          <SkeletonText widths={['96%']} variant="reason" />
-          <SkeletonText widths={['40%']} variant="reason" />
+          <SkeletonText widths={['96%']} variant="small" />
+          <SkeletonText widths={['40%']} variant="small" />
         </View>
       </SkBlock>
       <View style={styles.section}>
         <SkBlock of="day-section-title">
-          <SkeletonText widths={['36%']} variant="emphasis" />
+          <SkeletonText widths={['36%']} variant="subhead" />
         </SkBlock>
         <View style={styles.todos}>
           {[0, 1, 2].map((i) => (
             <SkBlock key={i} of="timing-todo" style={styles.todo}>
               <Skeleton width={L.badge} height={L.badge} pill />
-              <SkeletonText widths={[i === 1 ? '50%' : '60%']} variant="item" style={styles.rowText} />
+              <SkeletonText widths={[i === 1 ? '50%' : '60%']} variant="body" style={styles.rowText} />
             </SkBlock>
           ))}
         </View>

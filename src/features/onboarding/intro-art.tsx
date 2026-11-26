@@ -77,11 +77,11 @@ export function IntroArt({ index }: { index: number }) {
           <View style={styles.dot} />
         </View>
         <View style={styles.labels}>
-          <Txt variant="micro" color="hint">
+          <Txt variant="label" color="hint">
             {T.past}
           </Txt>
-          <Txt variant="micro">{T.now}</Txt>
-          <Txt variant="micro" color="hint">
+          <Txt variant="label">{T.now}</Txt>
+          <Txt variant="label" color="hint">
             {T.ahead}
           </Txt>
         </View>

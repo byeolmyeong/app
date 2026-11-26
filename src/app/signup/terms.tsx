@@ -124,7 +124,7 @@ function TermsStepScreen() {
           onPress={toggleAll}
           style={[styles.all, all && styles.allOn]}>
           <CheckBox checked={all} size={Sizes.checkRound} round />
-          <Txt variant="emphasis">{T.all}</Txt>
+          <Txt variant="subhead">{T.all}</Txt>
         </Pressable>
         <View style={styles.items}>
           {ITEMS.map((item) => {
@@ -142,8 +142,8 @@ function TermsStepScreen() {
                     onPress={() => update({ ...agreed, [item.key]: !agreed[item.key] })}
                     style={styles.check}>
                     <CheckBox checked={agreed[item.key]} size={Sizes.checkSquare} />
-                    <Txt variant="item" style={styles.label}>
-                      <Txt variant="item" color={item.required ? 'accentText' : 'hint'}>
+                    <Txt variant="body" style={styles.label}>
+                      <Txt variant="body" color={item.required ? 'accentText' : 'hint'}>
                         {tag}
                       </Txt>
                       {` ${label}`}
@@ -168,7 +168,7 @@ function TermsStepScreen() {
               </View>
             );
           })}
-          <Txt variant="note" color="hint" style={styles.note}>
+          <Txt variant="caption" color="hint" style={styles.note}>
             {T.marketingNote}
           </Txt>
         </View>

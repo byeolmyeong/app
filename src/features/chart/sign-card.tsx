@@ -23,7 +23,7 @@ export function SignCard({ chart }: { chart: Chart }) {
     <View testID="sign-card" style={styles.card}>
       <ChartPicture chart={chart} size={L.picture} named={false} />
       {sun ? (
-        <Txt testID="sign-card-name" variant="sheetTitle" style={styles.name}>
+        <Txt testID="sign-card-name" variant="section" style={styles.name}>
           {signFullName(sun)}
         </Txt>
       ) : null}
@@ -33,8 +33,8 @@ export function SignCard({ chart }: { chart: Chart }) {
             <Txt variant="caption" color="gray">
               {k.label}
             </Txt>
-            <Txt variant="emphasis">{k.value + strings.chart.signSuffix}</Txt>
-            <Txt variant="statLabel" color="hint" style={styles.center}>
+            <Txt variant="subhead">{k.value + strings.chart.signSuffix}</Txt>
+            <Txt variant="label" color="hint" style={styles.center}>
               {k.caption}
             </Txt>
           </View>
@@ -60,13 +60,13 @@ export function SignCardSkeleton({ chart }: { chart: Chart }) {
   return (
     <View testID="sign-card-skeleton" style={styles.card}>
       <Skeleton width={L.picture} height={L.picture} pill />
-      <SkeletonText variant="sheetTitle" widths={[K.name]} center style={styles.name} />
+      <SkeletonText variant="section" widths={[K.name]} center style={styles.name} />
       <View style={styles.grid}>
         {keyThree(chart).map((k) => (
           <View key={k.label} testID="sign-card-cell-skeleton" style={styles.cell}>
             <SkeletonText variant="caption" widths={[K.label]} center />
-            <SkeletonText variant="emphasis" widths={[K.value]} center />
-            <SkeletonText variant="statLabel" widths={[K.caption]} center />
+            <SkeletonText variant="subhead" widths={[K.value]} center />
+            <SkeletonText variant="label" widths={[K.caption]} center />
           </View>
         ))}
       </View>

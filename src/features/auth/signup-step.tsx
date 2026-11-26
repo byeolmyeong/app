@@ -156,11 +156,11 @@ function SignupStepScreen({ step, onBack, title, guide, footer, children }: Sign
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <View style={styles.titleBlock}>
-            <Txt variant="hero" accessibilityRole="header">
+            <Txt variant="title" accessibilityRole="header">
               {title}
             </Txt>
             {guide ? (
-              <Txt variant="lead" color="gray">
+              <Txt variant="body" color="gray">
                 {guide}
               </Txt>
             ) : null}

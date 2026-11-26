@@ -58,7 +58,7 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
     <>
       {description !== undefined ? (
         <View style={styles.names}>
-          <Txt variant="item" style={styles.labelText}>
+          <Txt variant="body" style={styles.labelText}>
             {label}
           </Txt>
           <Txt variant="caption" color="hint" keepAll>
@@ -67,11 +67,11 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
         </View>
       ) : hasRight ? (
         // 오른쪽에 값이 있으면 이름은 늘 한 줄 · 줄지 않는다 — 값이 남은 폭 안에서 줄어든다(소유자 2026-11-21)
-        <Txt variant="item" numberOfLines={1} style={styles.labelFixed}>
+        <Txt variant="body" numberOfLines={1} style={styles.labelFixed}>
           {label}
         </Txt>
       ) : (
-        <Txt variant="item" style={styles.label}>
+        <Txt variant="body" style={styles.label}>
           {label}
         </Txt>
       )}
@@ -79,7 +79,7 @@ export function ListCardRow({ label, description, value, trailing, onPress, chev
         <View style={description !== undefined ? styles.rightFit : styles.right}>
           {value !== undefined ? (
             // 넘치면 가운데를 줄여 앞과 끝(이메일의 도메인 등)이 보이게. 화면 읽기는 전체를 읽는다
-            <Txt variant="desc" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={value} style={styles.valueText}>
+            <Txt variant="small" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={value} style={styles.valueText}>
               {value}
             </Txt>
           ) : null}

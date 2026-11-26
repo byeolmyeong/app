@@ -23,7 +23,7 @@ export function StatusView({ state, title, note, children }: StatusViewProps) {
     <View style={styles.box}>
       <Byeoli state={state} size={Sizes.byeoli} />
       <View style={styles.text}>
-        <Txt variant={state === 'think' ? 'heading' : 'body'} style={styles.center}>
+        <Txt variant={state === 'think' ? 'subhead' : 'body'} style={styles.center}>
           {title}
         </Txt>
         {note ? (

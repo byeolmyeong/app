@@ -73,7 +73,7 @@ export function PeriodView({ interval, detail, today, chart }: { interval: Timin
           </Txt>
           <View style={styles.meta}>
             {area ? <Tag label={area} /> : null}
-            <Txt variant="desc" color="gray">
+            <Txt variant="small" color="gray">
               {formatPeriod(interval.from, interval.to)}
             </Txt>
           </View>
@@ -92,10 +92,10 @@ export function PeriodView({ interval, detail, today, chart }: { interval: Timin
           <Txt variant="label" color="primaryBright" style={styles.number}>
             {T.period.numbers[key]}
           </Txt>
-          <Txt variant="paragraphTitle" accessibilityRole="header" keepAll style={styles.sectionTitle}>
+          <Txt variant="section" accessibilityRole="header" keepAll style={styles.sectionTitle}>
             {T.period.sections[key]}
           </Txt>
-          <Txt variant="paragraph" color="inkSoft" keepAll style={styles.sectionBody}>
+          <Txt variant="reading" color="body" keepAll style={styles.sectionBody}>
             {detail[key]}
           </Txt>
         </View>
@@ -119,7 +119,7 @@ export function PeriodSkeleton() {
           </View>
           <View style={styles.meta}>
             <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
-            <SkeletonText widths={['44%']} variant="desc" />
+            <SkeletonText widths={['44%']} variant="small" />
           </View>
           <View style={styles.trackTop}>
             <View style={styles.track}>
@@ -132,8 +132,8 @@ export function PeriodSkeleton() {
           <SkeletonText widths={['28%']} variant="label" />
           {/* 이유 문장은 한 글 안의 두 줄 — 줄 사이 틈 없이 */}
           <View>
-            <SkeletonText widths={['96%']} variant="reason" />
-            <SkeletonText widths={['40%']} variant="reason" />
+            <SkeletonText widths={['96%']} variant="small" />
+            <SkeletonText widths={['40%']} variant="small" />
           </View>
         </SkBlock>
       </View>
@@ -141,11 +141,11 @@ export function PeriodSkeleton() {
       {SECTIONS.map((key, n) => (
         <SkBlock key={key} of="period-section">
           <SkeletonText widths={[P.numberBar]} variant="label" />
-          <SkeletonText widths={['44%']} variant="paragraphTitle" style={styles.sectionTitle} />
+          <SkeletonText widths={['44%']} variant="section" style={styles.sectionTitle} />
           <View style={styles.sectionBody}>
-            <SkeletonText widths={['100%']} variant="paragraph" />
-            {n === 0 ? <SkeletonText widths={['96%']} variant="paragraph" /> : null}
-            <SkeletonText widths={['38%']} variant="paragraph" />
+            <SkeletonText widths={['100%']} variant="reading" />
+            {n === 0 ? <SkeletonText widths={['96%']} variant="reading" /> : null}
+            <SkeletonText widths={['38%']} variant="reading" />
           </View>
         </SkBlock>
       ))}

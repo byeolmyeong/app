@@ -73,10 +73,10 @@ describe('소개 화면', () => {
     expect(art.props.viewBox ?? art.props.vbWidth).toBeTruthy();
   });
 
-  it('시기 줄의 글자 줄높이는 16(비교 B11)', async () => {
+  it('시기 줄의 글자는 작은 라벨 12/17(결정 080 — 옛 micro 12/16 을 label 로 합쳤다)', async () => {
     await render(<IntroScreen />);
     const label = screen.getByText(S.timeline.now);
-    expect(StyleSheet.flatten(label.props.style).lineHeight).toBe(16);
+    expect(StyleSheet.flatten(label.props.style)).toMatchObject({ fontSize: 12, lineHeight: 17 });
   });
 
   it('처음 뜨는 순간 본 것으로 적는다(건너뛰기 · 시작하기를 기다리지 않는다)', async () => {

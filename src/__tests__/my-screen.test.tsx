@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
 import MyScreen from '@/app/my';
+import { MyLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -67,6 +69,16 @@ describe('마이 v2(/my) — 별명 카드 · 목록 카드 둘(결정 056, 보�
     expect(card.queryByText('프로필 수정')).toBeNull();
     expect(card.queryByText('출생 정보 수정')).toBeNull();
     expect(card.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
+  });
+
+  it('꺾쇠는 홈 별명 카드와 같은 규칙 — 카드 오른쪽 위(안쪽 여백 그대로), 별자리 그림은 꺾쇠 둘레를 비워 선이 꺾쇠 밑을 지나지 않는다(결정 080)', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<MyScreen />);
+    const card = within(await screen.findByTestId('my-card'));
+    const chevron = card.getByTestId('my-card-chevron');
+    expect(chevron.props.width).toBe(22);
+    expect(StyleSheet.flatten(chevron.props.style)).toMatchObject({ position: 'absolute', top: MyLayout.card.paddingTop, right: MyLayout.card.padding });
+    expect(card.getByTestId('card-constellation-clear', { includeHiddenElements: true })).toBeTruthy();
   });
 
   it('카드 오른쪽 위의 별자리 그림은 차트의 해 별자리(서버 값) 그대로 — 홈 카드와 같은 그림, 출생 정보가 없으면 그림도 없다', async () => {

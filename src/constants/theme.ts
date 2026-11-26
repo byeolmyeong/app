@@ -7,7 +7,10 @@ import { Platform, type TextStyle } from 'react-native';
 
 const paper = '#0D0E12';
 
-/** 색. 면 세 단(바탕·떠 있는 면·채운 면), 글씨 네 단(본문·보조·안내·비활성), 푸른 보라 하나. 대비는 바탕 위 기준. */
+/**
+ * 색. 면 세 단(바탕·떠 있는 면·채운 면), 글씨는 역할마다 하나(결정 080): 제목 `ink` · 본문 `body` · 보조 `gray` · 메타 `hint` · 비활성 `muted`,
+ * 푸른 보라 하나. 대비는 바탕(#0D0E12) / 카드(#16171D) 위 기준.
+ */
 export const Colors = {
   /** 화면·칩·공유 카드의 바탕 */
   paper,
@@ -18,14 +21,19 @@ export const Colors = {
    * 앱(태블릿·폴드 안쪽 화면)은 바탕과 같은 색이다.
    */
   canvas: Platform.OS === 'web' ? '#08090B' : paper,
-  /** 본문 글씨, 주색·빨강 위의 글씨. 대비 17.4 */
+  /** 제목 · 소제목 · 목록 한 줄의 글씨, 주색·빨강 위의 글씨. 대비 17.4 / 16.1 */
   ink: '#F2F3F7',
-  /** 본문보다 한 단 옅은 글씨: 말풍선의 설명 · 관계의 각도 말(시안 13-1 · 13-2) */
+  /**
+   * 제목보다 한 단 옅은 밝은 글씨: 달력의 날짜 · 마이 카드의 한 줄 별명만(결정 080 — 긴 글은 `body` 로 옮겼다).
+   * 대비 14.1 / 13.1
+   */
   inkSoft: '#DADCE3',
-  /** 보조 글씨. 대비 8.5 */
+  /** 본문 글씨: 읽는 글 · 본문 · 할 일 줄 · 말풍선 설명(결정 080, 시안 "본문 회색 ②"). 제목보다 한 단, 보조보다 한 단 밝다. 대비 10.5 / 9.7 */
+  body: '#BCBFC8',
+  /** 보조 글씨: 카드 설명 · 기간 · 이유 문장. 대비 8.4 / 7.8 */
   gray: '#A9ABB7',
-  /** 도움말, 입력 전 안내 글씨. 대비 4.8 */
-  hint: '#7C7E8A',
+  /** 메타 · 도움말, 입력 전 안내 글씨. 카드 위 작은 글씨도 4.5 를 넘게 한 단 밝혔다(결정 080 — 옛 #7C7E8A 는 카드 위 4.4). 대비 5.5 / 5.1 */
+  hint: '#868894',
   /** 고르지 않은 것, 비활성 아이콘·글씨, 시트 손잡이. 대비 2.4(일부러 흐리게) */
   muted: '#4D4F5A',
   /** 테두리, 구분선, 비활성 버튼 바탕 */
@@ -264,14 +272,16 @@ export const NicknameCardLayout = {
   avatar: 52,
   rowGap: 12,
   headlineTop: 18,
-  moreTop: 14,
-  /** "풀이 읽기 ›" 의 꺾쇠 22(소유자 2026-11-23, 빌드 13 — 글자와 세로 가운데, 선 굵기는 viewBox 24 의 2 그대로 비율) */
+  /** 오른쪽 위 꺾쇠 22 — 다른 홈 카드의 이름표 줄 꺾쇠와 같은 크기 · 자리(안쪽 여백 padding 그대로, 결정 080 · 크기는 소유자 2026-11-23) */
   chevron: 22,
   glow: { x: 0.88, y: 0.08, extent: 0.58 },
-  /** 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기 */
-  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8 },
-  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." · "내 별명 읽기" 막대 폭 */
-  skeleton: { name: 72, meta: 64, empty: 168, more: 72 },
+  /**
+   * 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기,
+   * 오른쪽 위 꺾쇠 둘레를 비우는 폭(꺾쇠 바깥으로 — 홈 · 마이 카드 같은 규칙, 결정 080)
+   */
+  art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8, clear: 8 },
+  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): 이름 · 해 별자리 · "아직 별명을 짓지 않았어요." 막대 폭 */
+  skeleton: { name: 72, meta: 64, empty: 168 },
   /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
   namePlaceholder: 96,
 } as const;
@@ -526,7 +536,7 @@ export const TimingLayout = {
   },
   /** 홈의 시기 칸(보드 11): 카드 · 이름표 줄 · 지나온 — 지금 — 큰 변화 줄(지금 점의 자리는 시안의 그림 그대로) · 제목 */
   /** chevron: 홈 오늘의 하늘 · 시기 칸 카드의 꺾쇠(머리 · "자세한 풀이 받기 ›") 22(소유자 2026-11-23, 빌드 13 — 선 굵기는 같은 비율) */
-  home: { radius: 20, pad: 20, cardGap: 12, chevron: 22, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, linkTop: 14, todosTop: 6 },
+  home: { radius: 20, pad: 20, cardGap: 12, chevron: 22, lineTop: 16, nowAt: 0.42, litAt: 0.45, titleTop: 14, emptyTitleTop: 10, subTop: 2, todosTop: 6 },
   /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */
   detail: { radius: 24, padTop: 22, padX: 18, padBottom: 18, art: 76, artInset: 12, titleTop: 6, titleRight: 80, bodyTop: 6, buttonTop: 18, glow: { x: 0.85, y: 0.1, extent: 0.58 } },
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */
@@ -665,75 +675,50 @@ const tracking = (fontSize: number) => (fontSize >= 20 ? fontSize * -0.02 : font
 const type = (fontSize: number, lineHeight: number, fontWeight: Weight) =>
   ({ fontFamily: FontFamily, fontSize, lineHeight, fontWeight, letterSpacing: tracking(fontSize) }) as const;
 
-/** 글자 단계. 크기/줄높이 · 굵기. */
+/**
+ * 글자 단계 v2(결정 080 — 결정 033 의 37단을 역할로 줄였다). 크기/줄높이 · 굵기. 역할 13 + 부품 전용 8.
+ * 색은 역할마다 하나: 제목 · 소제목 `ink` · 읽는 글 · 본문 `body` · 작은 본문 `gray` · 보조 · 메타 `hint` · 이름표 `accentText`.
+ */
 export const Typography = {
-  /** 홈 제목, 한 줄 총평. 로고처럼 크고 가볍게 */
+  /** 큰 제목: 홈 제목. 로고처럼 크고 가볍게 */
   display: type(28, 38, FontWeight.medium),
-  /** 소개 · 가입 단계의 큰 제목(결정 042 시안) */
-  hero: type(26, 36, FontWeight.semibold),
-  /** 화면 제목, 구간 제목 */
+  /** 제목: 화면 · 머리 카드의 이름, 소개 · 가입 단계 · 별명 짓는 중의 큰 제목, 한 줄 별명(옛 hero 26 · headline 22 를 합쳤다) */
   title: type(24, 34, FontWeight.semibold),
-  /** 별명 공개의 "○○ 님의 별명은" · 세 칸의 값 · 세 칸의 이름(결정 044 시안) */
+  /** 소제목: 문단 제목 · 시트 제목 · 홈 카드의 한 줄 별명 · 별자리 이름(옛 cardTitle 21 · sheetTitle 20 · paragraphTitle 19) */
+  section: type(20, 28, FontWeight.semibold),
+  /** 작은 소제목: 머리 줄 제목 · 칸 제목 · 카드 안 굵은 한 줄 · 대화 상자 제목(옛 heading 18 · emphasis 17 · stat 16) */
+  subhead: type(17, 24, FontWeight.semibold),
+  /** 이름표: 카드 · 머리 카드 맨 위 주색 글자, 별명 공개의 "○○ 님의 별명은" · 짧은 알림 · "나중에 하기"(소유자 2026-11-26 — 꺾쇠 22 옆에서 13 은 작다) */
   kicker: type(15, 22, FontWeight.medium),
-  stat: type(16, 24, FontWeight.semibold),
-  statLabel: type(12, 17, FontWeight.regular),
-  /** 시기 · 인생의 "다음 큰 변화" 해(보드 14-2) */
-  yearBig: type(40, 46, FontWeight.semibold),
-  /** 별명 짓는 중의 제목(결정 042 시안) */
-  headline: type(22, 32, FontWeight.semibold),
-  /** 하단 시트의 가운데 제목(결정 042 시안) */
-  sheetTitle: type(20, 28, FontWeight.semibold),
-  /** 시트 제목(옛 시트), 문단 제목 */
-  heading: type(18, 26, FontWeight.semibold),
-  /** 홈 별명 카드의 한 줄 별명(결정 047, 보드 11) */
-  cardTitle: type(21, 30, FontWeight.semibold),
+  /** 읽는 글: 풀이 · 영역 · 시기 자세히 · 그날의 하늘의 긴 글. 회색 글씨를 어두운 바탕에서 오래 읽으니 한 단 크게(옛 paragraph 16/26) */
+  reading: type(17, 28, FontWeight.regular),
+  /** 본문: 짧은 글 · 목록 한 줄 · 할 일 줄 · 큰 제목 아래 안내(옛 body 15/24 · lead 15/23 · item 15/22) */
+  body: type(15, 23, FontWeight.regular),
+  /** 본문 굵게: 카드 안 한 줄 제목 · 약관 조항 제목 · 작은 실천(옛 clause) */
+  bodyStrong: type(15, 22, FontWeight.semibold),
+  /** 작은 본문: 카드 설명 · 기간 · 이유 문장 · 약관 글 · 알림 본문 · 칩(옛 desc 14/21 · reason · legal 14/22 · notice 14/20) */
+  small: type(14, 21, FontWeight.regular),
+  /** 보조: 입력칸 도움말 · 오류 · 메타 한 줄 · 말풍선(옛 caption · note 13/19) */
+  caption: type(13, 18, FontWeight.regular),
+  /** 보조 굵게: 입력칸 이름 · "모름" · 한눈에 보기의 칸 이름 · 키워드 칩 */
+  captionStrong: type(13, 18, FontWeight.medium),
+  /** 작은 라벨: 문단 번호 · 쓰인 별 · 칸 이름 · 알림의 때(옛 label · micro 12/16 · statLabel 400 · meta 12/16) */
+  label: type(12, 17, FontWeight.medium),
+  /** 배지: 로그인 버튼의 "최근 로그인" · 시기 줄의 글자 */
+  badge: type(11, 15, FontWeight.semibold),
+  // ── 부품 전용(역할 글씨가 아니라 그 부품의 모양) ──
   /** 버튼 글씨 */
   button: type(16, 24, FontWeight.semibold),
   /** 입력칸의 값 · 자리 글자, 시트 목록의 한 줄(결정 042 시안). 값은 medium 으로 굵힌다 */
   input: type(16, 24, FontWeight.regular),
-  /** 본문, 입력칸의 값. 긴 글을 어두운 바탕에서 읽으니 줄 간격 1.6 */
-  body: type(15, 24, FontWeight.regular),
-  /** 큰 제목 아래 안내 한두 줄(소개 · 가입 단계 · 로그인 한 줄) */
-  lead: type(15, 23, FontWeight.regular),
-  /** 시트 안의 한 줄 뜻(내 하늘 지도 시트, 시안 13-1) */
-  desc: type(14, 21, FontWeight.regular),
-  /** 이유 줄의 한 문장(보드 12 — 굵은 자리는 semibold) */
-  reason: type(14, 22, FontWeight.regular),
-  /** 풀이 문단의 제목과 본문(보드 12 · 12-8~12-12) */
-  paragraphTitle: type(19, 27, FontWeight.semibold),
-  paragraph: type(16, 26, FontWeight.regular),
-  /** 이유 펼침의 용어 이름 · 하늘 지도 보기 단추(보드 12-1) */
-  term: type(14, 20, FontWeight.semibold),
-  /** 약관의 "모두 동의"(결정 042 시안) · 약관 글 화면의 머리 제목(결정 044 시안) */
-  emphasis: type(17, 24, FontWeight.semibold),
-  /** 약관 글의 조항 제목(결정 044 시안) */
-  clause: type(15, 22, FontWeight.semibold),
-  /** 약관 글의 문단 · 목록 · 표(결정 044 시안) */
-  legal: type(14, 22, FontWeight.regular),
-  /** 약관 항목 한 줄 */
-  item: type(15, 22, FontWeight.regular),
   /** 표의 칸, 보조 문장, 입력칸 라벨. 숫자 폭은 고정 */
   table: { ...type(14, 20, FontWeight.medium), fontVariant: tabular },
-  /** 알림 줄의 본문(보드 11-3) */
-  notice: type(14, 20, FontWeight.regular),
-  /** 입력칸 아래 도움말 · 오류, "보기"(결정 042 시안) */
-  caption: type(13, 18, FontWeight.regular),
-  /** 로그인 버튼의 "최근 로그인" 배지(결정 044 시안) */
-  badge: type(11, 15, FontWeight.semibold),
-  /** 입력칸 이름 · "모름"(결정 042 시안) */
-  captionStrong: type(13, 18, FontWeight.medium),
-  /** 약관의 마케팅 설명처럼 두 줄이 되는 작은 안내 */
-  note: type(13, 19, FontWeight.regular),
-  /** 도움말, 오류, 작은 라벨 */
-  label: type(12, 17, FontWeight.medium),
-  /** 소개 둘째 장(시기)의 시기 줄 글자(결정 042 시안) */
-  micro: type(12, 16, FontWeight.medium),
-  /** 알림 줄의 때(보드 11-3) */
-  meta: type(12, 16, FontWeight.regular),
-  /** 숫자만 있는 작은 글자(날짜, 도수) */
-  mono: { ...type(12, 17, FontWeight.medium), fontVariant: tabular },
+  /** 이유 펼침의 용어 이름 · 하늘 지도 보기 단추 · 작은 글자 단추(보드 12-1) */
+  term: type(14, 20, FontWeight.semibold),
   /** 점수, 순위 */
   number: { ...type(24, 32, FontWeight.medium), fontVariant: tabular },
+  /** 시기 · 인생의 "다음 큰 변화" 해(보드 14-2) */
+  yearBig: type(40, 46, FontWeight.semibold),
   /** 드럼롤 선택의 한 줄과 가운데(고른) 줄(결정 042 시안) */
   picker: { ...type(20, 28, FontWeight.regular), fontVariant: tabular },
   pickerOn: { ...type(22, 28, FontWeight.semibold), fontVariant: tabular },
@@ -895,7 +880,7 @@ export const MyLayout = {
     headlineTop: 16,
     headlineLine: 25,
     birthTop: 12,
-    /** 이름 줄 끝 꺾쇠 — 홈 카드들의 꺾쇠와 같은 크기(결정 084) */
+    /** 오른쪽 위 꺾쇠 — 홈 별명 카드와 같은 크기 · 자리(안쪽 여백 그대로, 결정 084 · 080). 별자리 그림은 그 둘레를 비운다 */
     chevron: 22,
     /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
     namePlaceholder: 104,

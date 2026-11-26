@@ -267,7 +267,7 @@ function CardBody({ card }: { card: ByeoliCard }) {
           <Txt variant="label" color="gray" style={styles.center}>
             {C.readingLabel}
           </Txt>
-          <Txt variant="heading" style={styles.center}>
+          <Txt variant="subhead" style={styles.center}>
             {card.headline}
           </Txt>
           <View style={styles.list}>
@@ -285,7 +285,7 @@ function CardBody({ card }: { card: ByeoliCard }) {
           <Txt variant="label" color="gray" style={styles.center}>
             {C.scoreLabel}
           </Txt>
-          <Txt variant="heading" style={styles.center}>
+          <Txt variant="subhead" style={styles.center}>
             {card.names.join(C.namesSeparator)}
           </Txt>
           <View style={styles.score}>
@@ -304,7 +304,7 @@ function CardBody({ card }: { card: ByeoliCard }) {
     case 'RANKING':
       return (
         <>
-          <Txt variant="heading" style={styles.center}>
+          <Txt variant="subhead" style={styles.center}>
             {`${C.rankingPrefix}${strings.synastry.relations[card.relation]}${C.rankingSuffix}`}
           </Txt>
           <View style={[styles.list, styles.ranks]}>

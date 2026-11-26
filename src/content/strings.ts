@@ -406,7 +406,9 @@ export const strings = {
       separator: ' · ',
       daysPrefix: '별명을 받은 지 ',
       daysSuffix: '일',
+      /** 화면 읽기 이름 끝에만 — 카드에는 오른쪽 위 꺾쇠만 있다(결정 080) · 그 이름에서 글들 사이 */
       read: '풀이 읽기',
+      labelSeparator: ', ',
     },
     dateLabel: '생년월일',
     datePlaceholder: '2000-06-15',
@@ -750,7 +752,9 @@ export const strings = {
       bigSuffix: ' 큰 변화',
       emptyTitle: '지금 나는 어떤 시기일까',
       emptyBody: '자세한 풀이를 받으면 지금의 시기와 다음 큰 변화를 볼 수 있어요.',
+      /** 화면 읽기 이름 끝에만 — 카드에는 오른쪽 위 꺾쇠만 있다(결정 080) · 그 이름에서 글들 사이 */
       request: '자세한 풀이 받기',
+      labelSeparator: ', ',
       /** 쓰는 중에도 칸은 그 자리에(결정 075 — 047 의 1-5 대체): 다 쓰면 같은 자리에서 "지금 나의 시기" 로 */
       writing: { title: '시기 풀이를 쓰고 있어요', body: '다 쓰면 이 자리에 보여 드려요' },
     },

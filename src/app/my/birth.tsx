@@ -135,7 +135,7 @@ function BirthChangeForm({ stored, save }: { stored: StoredBirth | null; save: (
               <Circle cx={12} cy={12} r={9} stroke={Colors.accentText} strokeWidth={1.8} />
               <Path d="M12 7.5v6M12 16.5v.01" stroke={Colors.accentText} strokeWidth={2} strokeLinecap="round" />
             </Svg>
-            <Txt variant="desc" color="inkSoft" keepAll style={styles.noticeText}>
+            <Txt variant="small" color="body" keepAll style={styles.noticeText}>
               {B.notice}
             </Txt>
           </View>

@@ -44,7 +44,7 @@ export function MeNicknameCard({
           {nickname ? `${nickname}${S.card.suffix}` : S.card.fallback}
         </Txt>
         {headline ? (
-          <Txt variant="clause" numberOfLines={1}>
+          <Txt variant="bodyStrong" numberOfLines={1}>
             {headline}
           </Txt>
         ) : null}
@@ -71,7 +71,7 @@ export function AreaChips({ value, onChange }: { value: MeArea; onChange: (area:
             accessibilityState={{ selected: on }}
             onPress={() => onChange(area)}
             style={[styles.chip, on ? styles.chipOn : styles.chipOff]}>
-            <Txt variant="desc" color={on ? 'paper' : 'gray'} style={on ? styles.semibold : styles.medium}>
+            <Txt variant="small" color={on ? 'paper' : 'gray'} style={on ? styles.semibold : styles.medium}>
               {S.areas[area]}
             </Txt>
           </Pressable>
@@ -89,20 +89,20 @@ export function DetailCard({ blocked, onRequest }: { blocked: boolean; onRequest
   return (
     <View testID="me-detail-card" style={styles.detail}>
       <GlowBackdrop color={BrandColors.cardGlow} extent={D.glow.extent} centerX={D.glow.x} centerY={D.glow.y} />
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {S.detail.kicker}
       </Txt>
-      <Txt variant="cardTitle" keepAll style={styles.detailTitle}>
+      <Txt variant="section" keepAll style={styles.detailTitle}>
         {S.detail.title}
       </Txt>
-      <Txt variant="desc" color="gray" keepAll style={styles.detailBody}>
+      <Txt variant="small" color="gray" keepAll style={styles.detailBody}>
         {S.detail.body}
       </Txt>
       <View style={styles.icons}>
         {ME_AREAS.map((area) => (
           <View key={area} style={styles.icon}>
             <AreaArt area={area} size={D.icon} variant="icon" />
-            <Txt variant="statLabel" color="gray">
+            <Txt variant="label" color="gray">
               {S.areas[area]}
             </Txt>
           </View>
@@ -127,7 +127,7 @@ export function MeNicknameCardSkeleton() {
       <Skeleton width={C.avatar} height={C.avatar} pill />
       <View style={styles.cardText}>
         <SkeletonText variant="label" widths={[K.card.label]} />
-        <SkeletonText variant="clause" widths={[K.card.headline]} />
+        <SkeletonText variant="bodyStrong" widths={[K.card.headline]} />
       </View>
       <View style={styles.chevronSpace} />
     </View>
@@ -151,14 +151,14 @@ export function AreaChipsSkeleton() {
 export function DetailCardSkeleton() {
   return (
     <View testID="me-detail-card-skeleton" style={styles.detail}>
-      <SkeletonText variant="captionStrong" widths={[K.detail.kicker]} />
-      <SkeletonText variant="cardTitle" widths={K.detail.title} style={styles.detailTitle} />
-      <SkeletonText variant="desc" widths={K.detail.body} style={styles.detailBody} />
+      <SkeletonText variant="kicker" widths={[K.detail.kicker]} />
+      <SkeletonText variant="section" widths={K.detail.title} style={styles.detailTitle} />
+      <SkeletonText variant="small" widths={K.detail.body} style={styles.detailBody} />
       <View style={styles.icons}>
         {ME_AREAS.map((area) => (
           <View key={area} style={styles.icon}>
             <Skeleton width={D.icon} height={D.icon} pill />
-            <SkeletonText variant="statLabel" widths={[K.detail.icon]} center />
+            <SkeletonText variant="label" widths={[K.detail.icon]} center />
           </View>
         ))}
       </View>

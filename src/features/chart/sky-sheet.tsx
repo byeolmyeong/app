@@ -37,8 +37,8 @@ export function SkySheet({ chart, selected, visible, onClose }: SkySheetProps) {
       {detail ? (
         <>
           <View style={styles.head}>
-            <Txt variant="sheetTitle">{detail.title}</Txt>
-            <Txt variant="desc" color="gray" style={styles.subtitle}>
+            <Txt variant="section">{detail.title}</Txt>
+            <Txt variant="small" color="gray" style={styles.subtitle}>
               {detail.subtitle}
             </Txt>
           </View>
@@ -70,13 +70,13 @@ function Relations({ relations, open, onToggle }: { relations: SkyRelation[]; op
           text={S.relationsTip}
           open={open}
           onToggle={onToggle}>
-          <Txt variant="item" style={styles.strong}>
+          <Txt variant="body" style={styles.strong}>
             {S.relations}
           </Txt>
         </InfoTip>
       </View>
       {relations.length === 0 ? (
-        <Txt variant="desc" color="hint" style={styles.none}>
+        <Txt variant="small" color="hint" style={styles.none}>
           {S.noRelations}
         </Txt>
       ) : (
@@ -85,7 +85,7 @@ function Relations({ relations, open, onToggle }: { relations: SkyRelation[]; op
           {relations.map((r) => (
             <View key={`${r.key}-${r.aspect}`} testID="sky-relation" style={styles.relation}>
               <View style={styles.side}>
-                <Txt variant="item" style={styles.strong}>
+                <Txt variant="body" style={styles.strong}>
                   {r.name}
                 </Txt>
                 <Txt variant="label" color="hint" style={styles.small}>
@@ -93,7 +93,7 @@ function Relations({ relations, open, onToggle }: { relations: SkyRelation[]; op
                 </Txt>
               </View>
               <View style={[styles.side, styles.end]}>
-                <Txt variant="item" color="inkSoft" style={styles.phrase}>
+                <Txt variant="body" color="body" style={styles.phrase}>
                   {r.phrase}
                 </Txt>
                 <Txt variant="label" color="hint" style={styles.small}>
@@ -132,11 +132,11 @@ function Term({
         text={term.tip}
         open={open}
         onToggle={onToggle}>
-        <Txt variant="item" style={styles.strong}>
+        <Txt variant="body" style={styles.strong}>
           {term.name}
         </Txt>
       </InfoTip>
-      <Txt variant="desc" color="gray">
+      <Txt variant="small" color="gray">
         {term.meaning}
       </Txt>
     </View>

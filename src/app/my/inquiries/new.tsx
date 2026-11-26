@@ -48,7 +48,7 @@ export default function NewInquiryScreen() {
               <Path d="M5 12.5L10 17L19 7.5" stroke={Colors.accentText} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
             </Svg>
           </View>
-          <Txt variant="headline" accessibilityRole="header" style={styles.sentTitle}>
+          <Txt variant="title" accessibilityRole="header" style={styles.sentTitle}>
             {I.sent.title}
           </Txt>
           <Txt color="gray" keepAll style={styles.sentText}>

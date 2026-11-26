@@ -26,10 +26,10 @@ export function Dialog({ title, body, cancel, confirm }: DialogProps) {
       <View style={styles.root}>
         <View style={styles.column}>
           <View accessibilityViewIsModal style={styles.card}>
-            <Txt variant="heading" accessibilityRole="header" keepAll style={styles.center}>
+            <Txt variant="subhead" accessibilityRole="header" keepAll style={styles.center}>
               {title}
             </Txt>
-            <Txt variant="desc" color="gray" keepAll style={[styles.center, styles.body]}>
+            <Txt variant="small" color="gray" keepAll style={[styles.center, styles.body]}>
               {body}
             </Txt>
             <View style={styles.actions}>

@@ -26,12 +26,12 @@ async function show(signs = three, onRead = jest.fn()) {
 
 // 별명 공개(결정 044, 보드 10): 별이 · "○○ 님의 별명은" · 별명 한 줄 · 세 칸 · 풀이 읽기
 describe('RevealView', () => {
-  it('"○○ 님의 별명은"(15/22 · 500 회색) · 별명(26/36 · 600 가운데, 제목) · 풀이 읽기(56 · 주색)', async () => {
+  it('"○○ 님의 별명은"(15/22 · 500 회색) · 별명(제목 24/34 · 600 가운데 — 결정 080) · 풀이 읽기(56 · 주색)', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
     const onRead = await show();
     expect(`새벽별 ${R.nicknameSuffix}`).toBe('새벽별 님의 별명은');
     expect(flat(screen.getByText('새벽별 님의 별명은'))).toMatchObject({ fontSize: 15, lineHeight: 22, fontWeight: '500', color: '#A9ABB7' });
-    expect(flat(screen.getByRole('header', { name: headline }))).toMatchObject({ fontSize: 26, lineHeight: 36, fontWeight: '600', textAlign: 'center' });
+    expect(flat(screen.getByRole('header', { name: headline }))).toMatchObject({ fontSize: 24, lineHeight: 34, fontWeight: '600', textAlign: 'center' });
     // 시안의 word-break: keep-all — 별명이 낱말 중간에서 줄이 바뀌지 않는다
     expect(screen.getByRole('header', { name: headline }).props.lineBreakStrategyIOS).toBe('hangul-word');
     const read = screen.getByRole('button', { name: R.read });
@@ -41,15 +41,15 @@ describe('RevealView', () => {
     expect(onRead).toHaveBeenCalledTimes(1);
   });
 
-  it('세 칸: 이름 12/17 안내색 · 값 16/24 · 600, 칸 폭 104 · 사이 12, 가운데', async () => {
+  it('세 칸: 이름 12/17 · 500 메타색 · 값 17/24 · 600(결정 080), 칸 폭 104 · 사이 12, 가운데', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
     await show();
     const cells = screen.getAllByTestId('reveal-cell');
     expect(cells).toHaveLength(3);
     expect(flat(cells[0])).toMatchObject({ width: 104 });
     expect(flat(screen.getByTestId('reveal-cells'))).toMatchObject({ flexDirection: 'row', justifyContent: 'center', gap: 12 });
-    expect(flat(screen.getByText('나의 첫인상'))).toMatchObject({ fontSize: 12, lineHeight: 17, fontWeight: '400', color: '#7C7E8A' });
-    expect(flat(screen.getByText('천칭자리'))).toMatchObject({ fontSize: 16, lineHeight: 24, fontWeight: '600' });
+    expect(flat(screen.getByText('나의 첫인상'))).toMatchObject({ fontSize: 12, lineHeight: 17, fontWeight: '500', color: '#868894' });
+    expect(flat(screen.getByText('천칭자리'))).toMatchObject({ fontSize: 17, lineHeight: 24, fontWeight: '600' });
   });
 
   it('시각 "모름" 처럼 둘만 오면 두 칸만 가운데에(첫인상 없음)', async () => {

@@ -160,7 +160,7 @@ export function MakingView({ nav, tabs, title = M.title, lines = M.lines }: Maki
             <Image source={BYEOLI} accessible={false} style={styles.byeoliImage} />
           </Animated.View>
         </View>
-        <Txt variant="headline" accessibilityRole="header" style={styles.title}>
+        <Txt variant="title" accessibilityRole="header" style={styles.title}>
           {title}
         </Txt>
         {/* 바뀌는 안내 문구는 화면 읽기에서 숨긴다 — 제목만 읽힌다(2.5초마다 알리면 시끄럽다) */}

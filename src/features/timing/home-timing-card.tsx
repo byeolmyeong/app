@@ -4,7 +4,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { CardFail } from '@/components/card-fail';
 import { Txt } from '@/components/txt';
-import { Colors, FontWeight, LineWidth, Spacing, TimingLayout as L, TodayCardLayout } from '@/constants/theme';
+import { Colors, FontWeight, LineWidth, TimingLayout as L, TodayCardLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatMonth } from '@/features/timing/dates';
 import { MakingArt } from '@/features/timing/home-today-card';
@@ -24,7 +24,7 @@ const NOT_FOUND = 404;
 function Head({ label }: { label: string }) {
   return (
     <View style={styles.head}>
-      <Txt variant="captionStrong" color="accentText">
+      <Txt variant="kicker" color="accentText">
         {label}
       </Txt>
       <ChevronRight size={H.chevron} testID="home-card-chevron" />
@@ -91,22 +91,21 @@ export function HomeTimingCards({
   if (state.status === 'checking') return skeleton ? <HomeTimingSkeleton /> : null;
   if (state.status === 'none')
     return (
-      <View testID="home-timing-empty" style={styles.card}>
-        <Txt variant="captionStrong" color="accentText">
-          {T.now}
-        </Txt>
-        <Txt variant="emphasis" keepAll style={styles.emptyTitle}>
+      // 다른 홈 카드처럼 이름표 줄 오른쪽 위 꺾쇠, 카드 전체가 눌린다 — "자세한 풀이 받기" 는 화면 읽기 이름에만(결정 080)
+      <Pressable
+        testID="home-timing-empty"
+        accessibilityRole="button"
+        accessibilityLabel={[T.now, T.home.emptyTitle, T.home.emptyBody, T.home.request].join(T.home.labelSeparator)}
+        onPress={onOpen}
+        style={styles.card}>
+        <Head label={T.now} />
+        <Txt variant="subhead" keepAll style={styles.emptyTitle}>
           {T.home.emptyTitle}
         </Txt>
-        <Txt variant="desc" color="gray" keepAll style={styles.sub}>
+        <Txt variant="small" color="gray" keepAll style={styles.sub}>
           {T.home.emptyBody}
         </Txt>
-        <Pressable accessibilityRole="button" onPress={onOpen} style={styles.link}>
-          <Txt variant="term">{T.home.request}</Txt>
-          {/* 홈 카드의 꺾쇠는 22(소유자 2026-11-23) — 시기 탭의 같은 부품 기본(18)은 그대로 */}
-          <ChevronRight size={H.chevron} color={Colors.ink} testID="home-timing-request-chevron" />
-        </Pressable>
-      </View>
+      </Pressable>
     );
   if (state.status === 'unknown')
     return state.code === NOT_FOUND || !online ? null : (
@@ -120,7 +119,7 @@ export function HomeTimingCards({
         <View style={styles.writingRow}>
           <MakingArt />
           <View style={styles.writingText}>
-            <Txt variant="stat">{T.home.writing.title}</Txt>
+            <Txt variant="subhead">{T.home.writing.title}</Txt>
             <Txt variant="caption" color="gray">
               {T.home.writing.body}
             </Txt>
@@ -137,10 +136,10 @@ export function HomeTimingCards({
       <Pressable testID="home-timing-card" accessibilityRole="button" onPress={onOpen} style={styles.card}>
         <Head label={T.now} />
         <NowLine nextYear={report.current.nextMilestone?.year ?? null} />
-        <Txt variant="emphasis" keepAll style={styles.title}>
+        <Txt variant="subhead" keepAll style={styles.title}>
           {main.title}
         </Txt>
-        <Txt variant="desc" color="gray" style={styles.sub}>
+        <Txt variant="small" color="gray" style={styles.sub}>
           {`${formatMonth(main.to)}${T.date.untilSuffix}`}
         </Txt>
       </Pressable>
@@ -162,21 +161,21 @@ export function HomeTimingSkeleton() {
     <SkeletonGroup testID="home-timing-skeleton">
       <View style={styles.cards}>
       <SkBlock of="home-timing-card" style={styles.card}>
-        <SkeletonText widths={['36%']} variant="captionStrong" />
+        <SkeletonText widths={['36%']} variant="kicker" />
         <View style={styles.lineBox}>
           <Skeleton width="100%" height={P.track} pill />
           <View style={styles.labels} />
         </View>
-        <SkeletonText widths={['66%']} variant="emphasis" style={styles.title} />
-        <SkeletonText widths={['40%']} variant="desc" style={styles.sub} />
+        <SkeletonText widths={['66%']} variant="subhead" style={styles.title} />
+        <SkeletonText widths={['40%']} variant="small" style={styles.sub} />
       </SkBlock>
       <SkBlock of="home-timing-practices" style={styles.card}>
-        <SkeletonText widths={['40%']} variant="captionStrong" />
+        <SkeletonText widths={['40%']} variant="kicker" />
         <View style={styles.todos}>
           {[0, 1, 2].map((i) => (
             <View key={i} testID="sk-timing-todo" style={styles.todo}>
               <Skeleton width={L.badge} height={L.badge} pill />
-              <SkeletonText widths={[i === 1 ? '50%' : '62%']} variant="item" style={styles.flex} />
+              <SkeletonText widths={[i === 1 ? '50%' : '62%']} variant="body" style={styles.flex} />
             </View>
           ))}
         </View>
@@ -218,7 +217,6 @@ const styles = StyleSheet.create({
   title: { marginTop: H.titleTop },
   emptyTitle: { marginTop: H.emptyTitleTop },
   sub: { marginTop: H.subTop },
-  link: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: Spacing.hairline, marginTop: H.linkTop },
   todos: { marginTop: H.todosTop },
   /** 뼈대 두 카드 사이 — 홈의 카드 사이(보드 11)와 같다 */
   cards: { gap: H.cardGap },

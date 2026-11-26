@@ -81,23 +81,23 @@ describe('글 줄 자리 SkeletonText', () => {
   const bars = () => screen.getAllByTestId('skeleton', { includeHiddenElements: true });
 
   it('widths 의 길이가 줄 수 — 줄마다 줄 높이 칸(본문 26)에 글자 크기(16) 막대, 폭은 widths 그대로', async () => {
-    await render(<SkeletonText variant="paragraph" widths={['100%', '64%']} />);
+    await render(<SkeletonText variant="reading" widths={['100%', '64%']} />);
     expect(lines()).toHaveLength(2);
-    for (const line of lines()) expect(StyleSheet.flatten(line.props.style)).toMatchObject({ height: Typography.paragraph.lineHeight, justifyContent: 'center' });
+    for (const line of lines()) expect(StyleSheet.flatten(line.props.style)).toMatchObject({ height: Typography.reading.lineHeight, justifyContent: 'center' });
     expect(bars().map((b) => StyleSheet.flatten(b.props.style))).toEqual([
-      expect.objectContaining({ width: '100%', height: Typography.paragraph.fontSize }),
-      expect.objectContaining({ width: '64%', height: Typography.paragraph.fontSize }),
+      expect.objectContaining({ width: '100%', height: Typography.reading.fontSize }),
+      expect.objectContaining({ width: '64%', height: Typography.reading.fontSize }),
     ]);
   });
 
-  it('글자 단계가 다르면 칸 · 막대도 그 단계대로(한 줄 별명 36 칸 · 26 막대)', async () => {
-    await render(<SkeletonText variant="hero" widths={[120]} />);
-    expect(StyleSheet.flatten(lines()[0].props.style)).toMatchObject({ height: 36 });
-    expect(StyleSheet.flatten(bars()[0].props.style)).toMatchObject({ width: 120, height: 26 });
+  it('글자 단계가 다르면 칸 · 막대도 그 단계대로(한 줄 별명 = 제목 34 칸 · 24 막대)', async () => {
+    await render(<SkeletonText variant="title" widths={[120]} />);
+    expect(StyleSheet.flatten(lines()[0].props.style)).toMatchObject({ height: 34 });
+    expect(StyleSheet.flatten(bars()[0].props.style)).toMatchObject({ width: 120, height: 24 });
   });
 
   it('줄이 없으면 아무것도 그리지 않는다', async () => {
-    const view = await render(<SkeletonText variant="paragraph" widths={[]} />);
+    const view = await render(<SkeletonText variant="reading" widths={[]} />);
     expect(lines()).toHaveLength(0);
     expect(view.toJSON()).toBeNull();
   });
@@ -115,7 +115,7 @@ describe('뼈대 묶음 SkeletonGroup', () => {
   it('화면 하나의 뼈대를 묶어 화면 읽기에는 "불러오는 중이에요" 를 한 번 읽는다', async () => {
     await render(
       <SkeletonGroup testID="x-skeleton">
-        <SkeletonText variant="paragraph" widths={['100%']} />
+        <SkeletonText variant="reading" widths={['100%']} />
       </SkeletonGroup>,
     );
     expect(screen.getAllByLabelText(strings.states.loading)).toHaveLength(1);

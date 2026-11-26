@@ -109,7 +109,7 @@ function Calendar({ sky, base, label, today, onDay }: { sky: MonthSky; base: str
               style={styles.cell}>
               <View style={[styles.day, isToday && styles.today]}>
                 <Txt
-                  variant="desc"
+                  variant="small"
                   color={isToday ? 'ink' : date < today || !pressable ? 'muted' : 'inkSoft'}
                   style={isToday ? styles.semibold : styles.medium}>
                   {String(Number(date.slice(8)))}
@@ -150,7 +150,7 @@ function DayRow({ day, pressable, onPress }: { day: MonthDay; pressable: boolean
       onPress={onPress}
       style={styles.dayRow}>
       <View style={styles.date}>
-        <Txt variant="heading" style={styles.dateNumber}>
+        <Txt variant="subhead" style={styles.dateNumber}>
           {String(Number(day.date.slice(8)))}
         </Txt>
         <Txt variant="badge" color="hint" style={styles.regular}>
@@ -159,7 +159,7 @@ function DayRow({ day, pressable, onPress }: { day: MonthDay; pressable: boolean
       </View>
       <View style={styles.dayText}>
         {category ? <Tag label={category} color={CATEGORY_TEXT[day.category] ?? 'keywordText'} /> : null}
-        <Txt variant="clause" style={styles.medium} keepAll>
+        <Txt variant="bodyStrong" style={styles.medium} keepAll>
           {day.text}
         </Txt>
       </View>
@@ -176,7 +176,7 @@ export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetr
   const label = shown === base ? T.month.thisMonth : `${Number(shown.slice(5, 7))}${T.date.monthSuffix}`;
   const head = (
     <View testID="month-head" style={styles.head}>
-      <Txt variant="paragraphTitle" accessibilityRole="header">
+      <Txt variant="section" accessibilityRole="header">
         {formatMonth(`${shown}-01`)}
       </Txt>
       <View style={styles.arrows}>
@@ -218,10 +218,10 @@ export function MonthView({ base, shown, state, canPrev, canNext, onMove, onRetr
         <SectionTitle title={`${label}${T.month.daysSuffix}`} />
         {days.length === 0 ? (
           <View testID="month-quiet" style={styles.quiet}>
-            <Txt variant="stat" keepAll>
+            <Txt variant="subhead" keepAll>
               {`${label}${T.month.quiet.titleSuffix}`}
             </Txt>
-            <Txt variant="reason" color="gray" keepAll>
+            <Txt variant="small" color="gray" keepAll>
               {T.month.quiet.body}
             </Txt>
           </View>
@@ -243,7 +243,7 @@ export function MonthSkeleton({ head, month }: { head?: ReactNode; month: string
       <View>
         {head ?? (
           <SkBlock of="month-head" style={styles.head}>
-            <SkeletonText widths={['36%']} variant="paragraphTitle" />
+            <SkeletonText widths={['36%']} variant="section" />
             <View style={styles.arrows}>
               <Skeleton width={M.arrow} height={M.arrow} pill />
               <Skeleton width={M.arrow} height={M.arrow} pill />
@@ -282,12 +282,12 @@ export function MonthSkeleton({ head, month }: { head?: ReactNode; month: string
         {[0, 1, 2].map((i) => (
           <SkBlock key={i} of="month-day" style={styles.dayRow}>
             <View style={styles.date}>
-              <SkeletonText widths={[M.dateBar]} variant="heading" style={styles.dateBox} />
+              <SkeletonText widths={[M.dateBar]} variant="subhead" style={styles.dateBox} />
               <SkeletonText widths={[M.weekBar]} variant="badge" />
             </View>
             <View style={styles.dayText}>
               <Skeleton width={L.skeleton.tag} height={L.tag.height} pill />
-              <SkeletonText widths={[i === 1 ? '62%' : '72%']} variant="clause" />
+              <SkeletonText widths={[i === 1 ? '62%' : '72%']} variant="bodyStrong" />
             </View>
           </SkBlock>
         ))}

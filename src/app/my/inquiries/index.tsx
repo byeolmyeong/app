@@ -69,12 +69,12 @@ function Row({ item, now, first }: { item: InquiryItem; now: number; first: bool
   return (
     <Pressable accessibilityRole="button" onPress={() => open(item.id)} style={[styles.row, !first && styles.divided]}>
       <View style={styles.rowText}>
-        <Txt variant="item" numberOfLines={1} style={styles.firstLine}>
+        <Txt variant="body" numberOfLines={1} style={styles.firstLine}>
           {firstLine}
         </Txt>
         <View style={styles.meta}>
           <StatusChip item={item} />
-          <Txt variant="statLabel" color="hint">
+          <Txt variant="label" color="hint">
             {formatInquiryDate(item.createdAt, now)}
           </Txt>
         </View>
@@ -142,7 +142,7 @@ export default function InquiriesScreen() {
                 <Path d="M8 9h8M8 12h5" />
               </Svg>
             </View>
-            <Txt variant="heading" accessibilityRole="header" style={styles.emptyTitle}>
+            <Txt variant="subhead" accessibilityRole="header" style={styles.emptyTitle}>
               {I.empty.title}
             </Txt>
             <Txt color="gray" keepAll style={styles.emptyBody}>
@@ -180,8 +180,8 @@ const styles = StyleSheet.create({
   chipAnsweredText: { color: L.status.answeredText },
   /** 비었을 때: 둥근 그림 칸 · 제목 · 설명 두 줄을 머리 아래 560 칸의 가운데에(보드 16-8 비었을 때) */
   empty: { height: L.empty.height, alignItems: 'center', justifyContent: 'center' },
-  lineBox: { height: Typography.item.lineHeight, justifyContent: 'center' },
-  metaBox: { height: Typography.statLabel.lineHeight, justifyContent: 'center' },
+  lineBox: { height: Typography.body.lineHeight, justifyContent: 'center' },
+  metaBox: { height: Typography.label.lineHeight, justifyContent: 'center' },
   emptyIcon: {
     width: L.empty.icon,
     height: L.empty.icon,

@@ -10,7 +10,7 @@ import { Txt } from '@/components/txt';
 import { Colors, FontWeight, Motion, ReasonLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { MiniWheel } from '@/features/chart/ChartWheel';
-import { measureReveal, RevealBody, RevealTurn, runReveal, useReveal, type Reveal } from '@/features/reason/reason-reveal';
+import { isRevealFree, measureReveal, releaseReveal, RevealBody, RevealTurn, runReveal, useReveal, type Reveal } from '@/features/reason/reason-reveal';
 import { josa, lookup, reasonSentence, type ReasonSentence } from '@/features/reason/reason-sentence';
 import { reasonFocus, reasonTerms, type ReasonTerm } from '@/features/reason/reason-terms';
 import type { Chart, Reason } from '@/lib/api';
@@ -115,7 +115,10 @@ export function ReasonLine({ reason, chart, today = false, defaultOpen = false, 
   /** 누를 때마다 올리는 번호 — 끝난 펼침의 알림이 그 뒤에 시작한 접기를 "다 펼침" 으로 덮지 않게(화면 스레드의 알림은 늦게 온다) */
   const turn = useRef(0);
   const settle = (mine: number) => {
-    if (mine === turn.current) setSettled(true);
+    if (mine !== turn.current) return;
+    setSettled(true);
+    // 처음부터 펼친 상자는 다 펼치면 묶음을 푼다 — 내용이 제 높이를 내고 바탕이 덮는다(결정 088)
+    if (defaultOpen) releaseReveal(reveal);
   };
   const reduce = useReduceMotion();
   const toggle = () => {
@@ -152,6 +155,7 @@ export function ReasonLine({ reason, chart, today = false, defaultOpen = false, 
       </Pressable>
       <RevealBody
           reveal={reveal}
+          flow={defaultOpen}
           testID="reason-body"
           pointerEvents={open ? 'auto' : 'none'}
           accessibilityElementsHidden={!open}
@@ -162,7 +166,8 @@ export function ReasonLine({ reason, chart, today = false, defaultOpen = false, 
             // 처음부터 펼친 상자는 흐름 안에 둔다 — 묶지 않은 칸이 내용의 높이를 낸다(절대 위치면 0)
             style={defaultOpen ? null : styles.measure}
             onLayout={(e) => {
-              measureReveal(reveal, e.nativeEvent.layout.height);
+              // 흐름 안 상자는 묶지 않았을 때(제 높이)만 잰다 — 접고 펴는 동안 눌린 높이를 잰 값으로 삼지 않게(결정 088)
+              if (!defaultOpen || isRevealFree(reveal)) measureReveal(reveal, e.nativeEvent.layout.height);
             }}>
           {map ? (
             <MiniWheel

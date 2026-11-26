@@ -6,6 +6,7 @@ import { getAnimatedStyle } from 'react-native-reanimated';
 import { Motion } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { ReasonLine, ReasonLineSkeleton } from '@/features/reason/reason-line';
+import { RevealShape } from '@/features/reason/reason-reveal-shape';
 import type { Reason } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -107,6 +108,37 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     jest.useRealTimers();
   });
 
+  it('처음부터 펼친 상자를 닫았다 다시 열면 바탕과 함께 0 에서 잰 높이까지 늘고, 다 열리면 묶음을 풀어 제 높이로 — 접힌 동안 잰 값은 받지 않는다(소유자 빌드 14)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    jest.useFakeTimers();
+    await render(<ReasonLine reason={sun} chart={fixtures.chart} defaultOpen />);
+    await act(async () => {});
+    await fireEvent(screen.getByTestId('reason-measure'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 240 } } });
+    const body = () => animated(screen.getByTestId('reason-body', { includeHiddenElements: true })) as { height?: number; maxHeight?: number; opacity: number };
+    const head = () => screen.getByRole('button', { name: /이렇게 풀이한 이유/ });
+    // 처음: 묶지 않은 채(아주 큰 상한) 내용이 제 높이를 낸다 — 높이 키는 쓰지 않는다(키가 늘 같다)
+    expect(body().maxHeight).toBe(RevealShape.freeMaxHeight);
+    expect(body()).not.toHaveProperty('height');
+    // 접기: 잰 높이(240)에서 0 으로
+    await fireEvent.press(head());
+    await act(async () => jest.advanceTimersByTime(Motion.closeMs + 16));
+    expect(body().maxHeight).toBe(0);
+    // 접힌 동안 내용이 눌려 잰 값이 0 으로 와도 받지 않는다
+    await fireEvent(screen.getByTestId('reason-measure', { includeHiddenElements: true }), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 0 } } });
+    // 다시 펼치기: 0 에서 240 사이로 늘어난다(바탕이 함께 자란다)
+    await fireEvent.press(head());
+    await act(async () => jest.advanceTimersByTime(32));
+    const mid = body();
+    expect(mid.maxHeight).toBeGreaterThan(0);
+    expect(mid.maxHeight).toBeLessThan(240);
+    expect(StyleSheet.flatten(screen.getByTestId('reason-body').props.style)).toMatchObject({ overflow: 'hidden' });
+    // 다 열리면 묶음을 푼다 — 잰 값과 상관없이 내용이 제 높이를 내고 바탕이 덮는다
+    await act(async () => jest.advanceTimersByTime(Motion.openMs));
+    expect(body().maxHeight).toBe(RevealShape.freeMaxHeight);
+    expect(StyleSheet.flatten(screen.getByTestId('reason-body').props.style)).toMatchObject({ overflow: 'visible' });
+    jest.useRealTimers();
+  });
+
   it('처음부터 펼친 상자(화면의 첫 이유, 결정 083)는 첫 그림부터 펼친 높이 — 재기 전에도 높이를 묶지 않고, 첫 누름부터 다른 상자처럼 접고 편다', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     jest.useFakeTimers();
@@ -131,19 +163,23 @@ describe('ReasonLine: 접힌 이유 줄 → 그 자리에서 펼침(보드 12 ·
     // 첫 누름: 그때부터 높이를 진행 값에 묶어 펼친 높이(240)에서 줄어든다
     await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
     await act(async () => jest.advanceTimersByTime(16));
+    // 흐름 안 상자라 높이 상한(maxHeight)을 묶는다(결정 088)
+    const cap = () => (animated(screen.getByTestId('reason-body', { includeHiddenElements: true })) as { maxHeight: number }).maxHeight;
     const closing = now();
     expect(closing.deg).toBeLessThan(180);
-    expect(closing.height / 240).toBeCloseTo(closing.deg / 180, 5);
+    expect(cap() / 240).toBeCloseTo(closing.deg / 180, 5);
     expect(StyleSheet.flatten(screen.getByTestId('reason-body', { includeHiddenElements: true }).props.style)).toMatchObject({ overflow: 'hidden' });
     await act(async () => jest.advanceTimersByTime(Motion.closeMs));
-    expect(now()).toEqual({ deg: 0, height: 0, opacity: 0 });
+    expect(now()).toMatchObject({ deg: 0, opacity: 0 });
+    expect(cap()).toBe(0);
     expect(screen.getByTestId('reason-body', { includeHiddenElements: true }).props.accessibilityElementsHidden).toBe(true);
     expect(screen.getByRole('button', { name: `${R.label}, ${TEXT}` }).props.accessibilityState).toMatchObject({ expanded: false });
 
-    // 다시 누르면 다른 상자처럼 펼친다
+    // 다시 누르면 다른 상자처럼 펼치고, 다 펼치면 묶음을 푼다(결정 088)
     await fireEvent.press(screen.getByRole('button', { name: /이렇게 풀이한 이유/ }));
     await act(async () => jest.advanceTimersByTime(Motion.openMs + 16));
-    expect(now()).toEqual({ deg: 180, height: 240, opacity: 1 });
+    expect(now()).toMatchObject({ deg: 180, opacity: 1 });
+    expect(cap()).toBe(RevealShape.freeMaxHeight);
     expect(StyleSheet.flatten(screen.getByTestId('reason-body').props.style)).toMatchObject({ overflow: 'visible' });
     jest.useRealTimers();
   });

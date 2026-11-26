@@ -51,6 +51,9 @@ const goOffline = () => act(async () => netListener?.({ isConnected: false, isIn
 const goOnline = () => act(async () => netListener?.({ isConnected: true, isInternetReachable: true }));
 
 const reading = fixtures.reading;
+/** 이유 줄마다 펼쳐져 있는가(보이는 차례) */
+const reasonsExpanded = () =>
+  screen.getAllByRole('button', { name: new RegExp(`^${strings.reason.label}, `) }).map((b) => b.props.accessibilityState.expanded);
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -196,14 +199,26 @@ describe('요약 해석 화면', () => {
     expect(screen.queryByText(strings.reason.label)).toBeNull();
   });
 
-  it('이유 줄을 누르면 그 자리에서 펼쳐 작은 지도 · 용어 줄 · 하늘 지도에서 보기가 보인다(보드 12-1)', async () => {
+  it('첫 이유는 처음부터 펼친 채로 작은 지도 · 용어 줄 · 하늘 지도에서 보기가 보이고, 나머지는 접혀 있다(결정 083)', async () => {
     await render(<ReadingScreen />);
     const text = '태어날 때 나의 중심(해)이 호기심 많은 쌍둥이자리, 일상의 자리(6하우스)에 있었어요';
-    await fireEvent.press(await screen.findByRole('button', { name: `${strings.reason.label}, ${text}` }));
-    expect(screen.getByTestId('reason-wheel')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: `${strings.reason.label}, ${text}` })).toBeTruthy();
+    expect(reasonsExpanded()).toEqual([true, ...reading.sections.slice(1).map(() => false)]);
+    expect(screen.getAllByTestId('reason-wheel')).toHaveLength(1);
     expect(screen.getAllByTestId('reason-term')).toHaveLength(3);
     await fireEvent.press(screen.getByText(strings.reason.seeOnMap));
     expect(router.push).toHaveBeenCalledWith('/chart?selected=SUN');
+  });
+
+  it('다른 이유 줄을 누르면 그 자리에서 펼치고, 펼친 첫 이유를 누르면 접힌다(보드 12-1)', async () => {
+    await render(<ReadingScreen />);
+    const moon = '태어날 때 마음(달)이 멀리 내다보는 사수자리, 친구와 모임의 자리(11하우스)에 있었어요';
+    await fireEvent.press(await screen.findByRole('button', { name: `${strings.reason.label}, ${moon}` }));
+    expect(reasonsExpanded()).toEqual([true, true]);
+    expect(screen.getAllByTestId('reason-wheel')).toHaveLength(2);
+    await fireEvent.press(screen.getAllByRole('button', { name: new RegExp(`^${strings.reason.label}, `) })[0]);
+    expect(reasonsExpanded()).toEqual([false, true]);
+    expect(screen.getAllByTestId('reason-wheel')).toHaveLength(1);
   });
 
   it('글이 보이면 아래 탭 넷이 있고 나가 골라져 있다 — 방금 받은 글도, 기기에 받아 둔 글도(결정 046 의 4 · 055 의 2)', async () => {
@@ -242,10 +257,11 @@ describe('요약 해석 화면', () => {
     expect(screen.queryByText('연애에서 해 볼 만한 것 보기')).toBeNull();
   });
 
-  it('누를 수 있는 것은 뒤로 가기 · 머리의 공유하기 · 내 하늘 지도 보기 · 문단마다의 이유 줄뿐이다(다시 생성 · 리포트 없음, 보드 12)', async () => {
+  it('누를 수 있는 것은 뒤로 가기 · 머리의 공유하기 · 내 하늘 지도 보기 · 문단마다의 이유 줄 · 펼친 첫 이유의 물음표와 하늘 지도에서 보기뿐이다(다시 생성 · 리포트 없음, 보드 12)', async () => {
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
-    expect(screen.queryAllByRole('button')).toHaveLength(3 + reading.sections.length);
+    // 펼친 첫 이유(결정 083): 용어 줄 셋의 물음표 + 하늘 지도에서 보기
+    expect(screen.queryAllByRole('button')).toHaveLength(3 + reading.sections.length + 3 + 1);
     expect(screen.getByRole('button', { name: strings.share.open })).toBeTruthy();
     expect(screen.getByLabelText(strings.common.backLabel)).toBeTruthy();
     expect(screen.getByRole('button', { name: R.seeSkyMap })).toBeTruthy();

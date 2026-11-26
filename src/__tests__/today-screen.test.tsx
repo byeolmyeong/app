@@ -78,6 +78,14 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     expect(screen.queryByText(/재미|참고/)).toBeNull();
   });
 
+  it('이유는 하나뿐이라 처음부터 펼친 채로 — 지나가는 별이라 작은 지도 없이 용어 줄(결정 083)', async () => {
+    await render(<TodayScreen />);
+    const reason = await screen.findByTestId('day-reason');
+    expect(within(reason).getByRole('button', { name: new RegExp(`^${strings.reason.label}, 오늘 `) }).props.accessibilityState).toMatchObject({ expanded: true });
+    expect(within(reason).getAllByTestId('reason-term')).toHaveLength(3);
+    expect(within(reason).queryByTestId('reason-wheel')).toBeNull();
+  });
+
   it('공유 아이콘을 누르면 오늘의 하늘 카드 시트(제목 없음) — 열 때 받은 글의 날짜로 한 번 만든다(결정 053, 보드 11-6 · 11-7)', async () => {
     mockApi.createShare.mockResolvedValue({ ok: true, data: { shareId: 's1', card: { ...fixtures.shareCards.daySky, date: sky.date } } });
     await render(<TodayScreen />);

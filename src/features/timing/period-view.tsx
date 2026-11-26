@@ -85,7 +85,8 @@ export function PeriodView({ interval, detail, today, chart }: { interval: Timin
         </View>
         {interval.reason ? (
           <View testID="period-reason">
-            <ReasonLine reason={interval.reason} chart={chart} />
+            {/* 하나뿐인 이유라 펼친 채로 연다(결정 083) */}
+            <ReasonLine reason={interval.reason} chart={chart} defaultOpen />
           </View>
         ) : null}
       </View>

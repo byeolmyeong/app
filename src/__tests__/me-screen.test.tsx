@@ -53,6 +53,9 @@ const storeReading = (r: Reading = reading) => AsyncStorage.setItem(READING_STOR
 const storeReport = () => AsyncStorage.setItem(ME_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report }));
 const tabs = () => screen.queryAllByRole('tab').filter((t) => !t.props.testID?.startsWith('me-chip-'));
 const chip = (area: string) => screen.getByTestId(`me-chip-${area}`);
+/** 이유 줄마다 펼쳐져 있는가(보이는 차례) */
+const reasonsExpanded = () =>
+  screen.getAllByRole('button', { name: new RegExp(`^${strings.reason.label}, `) }).map((b) => b.props.accessibilityState.expanded);
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -88,6 +91,14 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     // 나 탭의 첫 화면이라 뒤로 가기가 없고, 면책 문구도 없다(결정 046 의 2 · 064)
     expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
     expect(screen.queryByText(strings.reading.disclaimer)).toBeNull();
+  });
+
+  it('내 별명 글의 첫 이유는 처음부터 펼친 채로, 나머지는 접혀 있다(결정 083)', async () => {
+    await storeReading();
+    await render(<MeScreen />);
+    expect(await screen.findByTestId('me-detail-card')).toBeTruthy();
+    expect(reasonsExpanded()).toEqual([true, ...reading.sections.slice(1).map(() => false)]);
+    expect(screen.getAllByTestId('reason-wheel')).toHaveLength(1);
   });
 
   it('"자세한 풀이 받기" 를 누르면 POST /me-report → 쓰는 중(11-8: 아래 탭 없이 별명 짓는 중과 같은 그림 · 나 탭 문구)', async () => {
@@ -375,6 +386,23 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
     for (const pr of l.practices ?? []) expect(screen.getByText(pr.title)).toBeTruthy();
     expect(screen.queryAllByTestId('me-paragraph')).toHaveLength(0);
     expect(screen.getAllByText(strings.reason.label)).toHaveLength(1);
+  });
+
+  it('칩마다 첫 이유가 펼친 채로 — 성격은 문단 01, 연애는 작은 실천 아래 이유. 접어 두고 칩을 바꿨다 돌아와도 다시 펼친 채로(결정 083)', async () => {
+    await render(<MeScreen />);
+    expect(await screen.findByText(`새벽별${M.areaOf}${M.areas.PERSONALITY}`)).toBeTruthy();
+    expect(reasonsExpanded()).toEqual([true, false, false, false]);
+    expect(screen.getAllByTestId('reason-wheel')).toHaveLength(1);
+    // 성격의 첫 이유를 접는다
+    await fireEvent.press(screen.getAllByRole('button', { name: new RegExp(`^${strings.reason.label}, `) })[0]);
+    expect(reasonsExpanded()).toEqual([false, false, false, false]);
+    await fireEvent.press(chip('LOVE'));
+    expect(reasonsExpanded()).toEqual([true]);
+    expect(screen.getAllByTestId('reason-wheel')).toHaveLength(1);
+    await fireEvent.press(chip('RELATIONSHIP'));
+    expect(reasonsExpanded()).toEqual([true, false, false, false]);
+    await fireEvent.press(chip('PERSONALITY'));
+    expect(reasonsExpanded()).toEqual([true, false, false, false]);
   });
 
   it('관계: 가까워지는 모습(처음 만날 때 · 친해지면 · 오래된 사이) + 문단', async () => {

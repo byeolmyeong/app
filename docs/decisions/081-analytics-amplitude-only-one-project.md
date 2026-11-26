@@ -53,3 +53,15 @@ superseded_by:
 - 시험 환경에서는 앰플리튜드로 아무것도 가지 않는다. 이벤트가 오는지는 운영 배포 뒤 첫날 확인한다.
 - 1.1.0 에서 GA4 를 붙일 때 040 의 1 · 6 을 다시 본다. 파이어베이스 프로젝트는 푸시와 같이 쓴다.
 - 다시 볼 때: 시험 이벤트를 출시 전에 꼭 봐야 하면 시험 프로젝트를 하나 더 만든다(키는 EAS `preview` · Vercel 스테이징에).
+
+## 덧붙임 (2026-11-26 — 운영 빌드 전 점검, expo-doctor)
+- **async-storage 한 벌**: 앰플리튜드 SDK 1.14.1(지금 최신)이 `@react-native-async-storage/async-storage` `^1.17.11` 을 dependencies 로 둬서, 1.24.0 이 SDK 아래에 한 벌 더 깔렸다. npm `overrides` 로 앱의 2.2.0 한 벌만 쓴다.
+  - SDK 가 쓰는 것은 기본 객체의 `getItem` · `setItem` · `removeItem` · `clear` 뿐이고, 2.2.0 에도 같은 모양으로 있다.
+  - `clear` 는 SDK 저장소의 `reset()` 에서만 부른다. 우리 `resetAnalytics`(SDK `client.reset()`)는 사용자 id 를 지우고 기기 id 를 새로 만들 뿐이라 로그아웃 때 앱 저장소가 지워지지 않는다.
+- **New Architecture**: React Native Directory 는 SDK 를 "New Architecture 에서 시험 안 됨" 으로 표시한다.
+  - EAS `development-simulator` 빌드(RN 0.88, New Architecture)를 iPhone 16 시뮬레이터(iOS 18.1)에서 돌려 확인했다. 가짜 키와 로컬 받기 서버를 썼고, 운영 프로젝트로는 아무것도 가지 않았다.
+  - 결과: init · identify · track 이 오류 없이 돈다. 이벤트에 네이티브 모듈이 채우는 기기 정보(`platform iOS` · `os ios 18.1.0` · 제조사 · 언어)가 실렸다. `ip` 키는 없다. 앱을 껐다 켜도 같은 기기 id · 사용자 id 가 남았다.
+  - 그래서 expo-doctor 의 Directory 검사에서 이 SDK 를 뺀다(`package.json` 의 `expo.doctor.reactNativeDirectoryCheck.exclude`). 카카오 로그인(`@react-native-seoul/kakao-login`)은 Directory 에 정보가 없다는 원래 있던 경고라 같이 뺀다.
+  - 안드로이드는 이번에 돌려 보지 않았다. 운영 안드로이드 빌드 전에 같은 방법으로 본다.
+- **웹 서버 렌더링**: 루트 레이아웃은 정적 내보내기 · 개발 서버의 Node 렌더링에서도 실행된다. `window` 가 없으면 `initAnalytics` 가 돌아선다 — 빌드 기계에서 세션 이벤트가 생기지 않게.
+- 로컬 iOS 빌드 메모: 이 맥의 Xcode 26.3 은 `expo-modules-jsi`(Swift 6 엄격 동시성)를 빌드하지 못한다. 앰플리튜드와 상관없는 툴체인 문제이고, EAS 빌드는 된다.

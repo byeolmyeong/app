@@ -79,6 +79,15 @@ describe('ReasonLine 웹(reason-reveal.web.tsx — 웹 번들에 Reanimated 를 
     expect(screen.getByTestId('reason-body', HIDDEN).props.accessibilityElementsHidden).toBe(true);
   });
 
+  it('빌드 15 의 길이(0.3초)로는 아직 펼치는 중 — 조금 느리게 펼친다(소유자 빌드 15 "너무 빠른데 조금만 느리게")', async () => {
+    await renderMeasured();
+    await press();
+    await act(async () => jest.advanceTimersByTime(300));
+    expect(now().height).toBeLessThan(240);
+    await act(async () => jest.advanceTimersByTime(Motion.openMs - 300 + 32));
+    expect(now()).toEqual({ deg: 180, height: 240, opacity: 1 });
+  });
+
   it('늦게 온 "펼침 끝" 알림은 그 뒤에 시작한 접기를 "다 펼침" 으로 덮지 않는다(누를 때 번호)', async () => {
     // 움직임이 끝났다는 알림을 붙잡아 두었다가 원하는 때에 보낸다
     const ends: ((result: { finished: boolean }) => void)[] = [];

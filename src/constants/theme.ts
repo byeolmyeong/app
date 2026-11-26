@@ -161,8 +161,11 @@ export const LegalLayout = {
   agreeFadeSolid: 0.32,
 } as const;
 
-/** 아래 시트(Sheet)와 아래 · 오른쪽에서 들어오는 화면(slide-up.ts)의 움직임: 열기 · 닫기 시간(ms)과 여는 곡선(cubic-bezier) */
-export const Motion = { openMs: 300, closeMs: 220, openCurve: [0.32, 0.72, 0, 1] } as const;
+/**
+ * 아래 시트(Sheet)와 아래 · 오른쪽에서 들어오는 화면(slide-up.ts), 이유 · 자주 묻는 질문 펼침의 움직임: 열기 · 닫기 시간(ms)과 여는 곡선(cubic-bezier).
+ * 빌드 15 의 300 · 220 은 내 하늘 지도 시트 · 이유 펼침이 너무 빠르다고 해서 조금 늘림(소유자 2026-11-26)
+ */
+export const Motion = { openMs: 420, closeMs: 280, openCurve: [0.32, 0.72, 0, 1] } as const;
 
 /** 가입 단계 화면(결정 042 시안): 진행 막대 · 큰 제목 · 내용 사이의 자리, 뒤로 가기 칸 */
 export const StepLayout = {

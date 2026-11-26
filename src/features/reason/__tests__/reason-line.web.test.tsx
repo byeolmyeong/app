@@ -3,6 +3,7 @@ import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 
 import { Motion } from '@/constants/theme';
 import { ReasonLine } from '@/features/reason/reason-line';
+import { RevealShape } from '@/features/reason/reason-reveal-shape';
 import type { Reason } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -109,6 +110,30 @@ describe('ReasonLine 웹(reason-reveal.web.tsx — 웹 번들에 Reanimated 를 
     expect(overflow()).toBe('visible');
   });
 
+  it('처음부터 펼친 상자를 닫았다 다시 열면 바탕과 함께 0 에서 잰 높이까지 늘고, 다 열리면 묶음을 풀어 제 높이로 — 접힌 동안 잰 값은 받지 않는다(소유자 빌드 14)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    jest.useFakeTimers();
+    await render(<ReasonLine reason={sun} chart={fixtures.chart} defaultOpen />);
+    await act(async () => {});
+    await fireEvent(screen.getByTestId('reason-measure'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 240 } } });
+    const body = () => StyleSheet.flatten(screen.getByTestId('reason-body', HIDDEN).props.style) as { height?: number; maxHeight?: number; opacity: number };
+    expect(body().maxHeight).toBe(RevealShape.freeMaxHeight);
+    expect(body()).not.toHaveProperty('height');
+    await press();
+    await act(async () => jest.advanceTimersByTime(Motion.closeMs + 32));
+    expect(body().maxHeight).toBe(0);
+    await fireEvent(screen.getByTestId('reason-measure', HIDDEN), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 0 } } });
+    await press();
+    await act(async () => jest.advanceTimersByTime(48));
+    const mid = body();
+    expect(mid.maxHeight).toBeGreaterThan(0);
+    expect(mid.maxHeight).toBeLessThan(240);
+    expect(overflow()).toBe('hidden');
+    await act(async () => jest.advanceTimersByTime(Motion.openMs + 32));
+    expect(body().maxHeight).toBe(RevealShape.freeMaxHeight);
+    expect(overflow()).toBe('visible');
+  });
+
   it('처음부터 펼친 상자(화면의 첫 이유, 결정 083)는 첫 그림부터 펼친 높이 — 재기 전에도 높이를 묶지 않고, 첫 누름부터 다른 상자처럼 접고 편다', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     jest.useFakeTimers();
@@ -130,18 +155,22 @@ describe('ReasonLine 웹(reason-reveal.web.tsx — 웹 번들에 Reanimated 를 
     // 첫 누름: 그때부터 높이를 진행 값에 묶어 펼친 높이(240)에서 줄어든다
     await press();
     await act(async () => jest.advanceTimersByTime(32));
+    // 흐름 안 상자라 높이 상한(maxHeight)을 묶는다(결정 088)
+    const cap = () => (StyleSheet.flatten(screen.getByTestId('reason-body', HIDDEN).props.style) as { maxHeight: number }).maxHeight;
     const closing = now();
     expect(closing.deg).toBeLessThan(180);
-    expect(closing.height / 240).toBeCloseTo(closing.deg / 180, 5);
+    expect(cap() / 240).toBeCloseTo(closing.deg / 180, 5);
     expect(overflow()).toBe('hidden');
     await act(async () => jest.advanceTimersByTime(Motion.closeMs));
-    expect(now()).toEqual({ deg: 0, height: 0, opacity: 0 });
+    expect(now()).toMatchObject({ deg: 0, opacity: 0 });
+    expect(cap()).toBe(0);
     expect(screen.getByTestId('reason-body', HIDDEN).props.accessibilityElementsHidden).toBe(true);
 
-    // 다시 누르면 다른 상자처럼 펼친다
+    // 다시 누르면 다른 상자처럼 펼치고, 다 펼치면 묶음을 푼다(결정 088)
     await press();
     await act(async () => jest.advanceTimersByTime(Motion.openMs + 32));
-    expect(now()).toEqual({ deg: 180, height: 240, opacity: 1 });
+    expect(now()).toMatchObject({ deg: 180, opacity: 1 });
+    expect(cap()).toBe(RevealShape.freeMaxHeight);
     expect(overflow()).toBe('visible');
   });
 

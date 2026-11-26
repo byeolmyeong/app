@@ -16,8 +16,8 @@ export type Reveal = {
   /** 펼친 내용의 실제 높이 — 0 에서 이 높이까지 늘인다 */
   height: SharedValue<number>;
   /**
-   * 처음부터 펼친 상자의 첫 누름 전 — 높이를 묶지 않아 내용이 제 높이를 낸다(잰 값을 기다리지 않아 첫 그림부터 펼친 높이, 결정 083).
-   * 묶지 않음 → 묶음 한 방향만 간다(Reanimated 는 스타일에서 빠진 키를 되돌리지 않는다)
+   * 흐름 안 상자(처음부터 펼친 상자, 결정 083 · 088)를 묶지 않았다 — 높이 상한이 아주 커 내용이 제 높이를 낸다.
+   * 처음과 다 펼친 뒤에 묶지 않고, 접고 펴는 동안만 진행 값 × 잰 높이로 묶는다
    */
   free: SharedValue<boolean>;
 };
@@ -43,6 +43,16 @@ export function measureReveal(reveal: Reveal, height: number) {
   reveal.height.set(height);
 }
 
+/** 다 펼친 흐름 안 상자의 묶음을 푼다 — 내용이 제 높이를 내고 바탕이 그만큼 덮는다(잰 값이 틀려도, 결정 088) */
+export function releaseReveal(reveal: Reveal) {
+  reveal.free.set(true);
+}
+
+/** 묶지 않은 채인가 — 흐름 안 상자는 이때만 잰다(접고 펴는 동안 눌린 높이를 잰 값으로 삼지 않게, 결정 088) */
+export function isRevealFree(reveal: Reveal): boolean {
+  return reveal.free.get();
+}
+
 /** 진행 값으로 도는 칸(꺾쇠) */
 export function RevealTurn({ reveal, testID, children }: { reveal: Reveal; testID?: string; children: ReactNode }) {
   const turn = useAnimatedStyle(() => ({ transform: [{ rotate: `${reveal.progress.value * RevealShape.turnDeg}deg` }] }));
@@ -53,11 +63,17 @@ export function RevealTurn({ reveal, testID, children }: { reveal: Reveal; testI
   );
 }
 
-/** 진행 값으로 높이가 늘고 내용이 나타나는 칸 */
-export function RevealBody({ reveal, style, children, ...rest }: ViewProps & { reveal: Reveal }) {
+/**
+ * 진행 값으로 높이가 늘고 내용이 나타나는 칸. 내용을 절대 위치로 재는 상자는 높이(height)를 묶는다.
+ * flow(내용이 흐름 안 — 처음부터 펼친 상자, 결정 083 · 088)면 높이 상한(maxHeight)만 묶고, 묶지 않을 때는 아주 큰 상한으로 둔다 —
+ * 스타일의 키가 늘 같아 Reanimated 가 빠진 키를 남겨 두는 일이 없다
+ */
+export function RevealBody({ reveal, flow = false, style, children, ...rest }: ViewProps & { reveal: Reveal; flow?: boolean }) {
   const grow = useAnimatedStyle(() => {
     const opacity = interpolate(reveal.progress.value, [0, RevealShape.fadeUntil], [0, 1], 'clamp');
-    return reveal.free.value ? { opacity } : { height: reveal.progress.value * reveal.height.value, opacity };
+    const bound = reveal.progress.value * reveal.height.value;
+    if (!flow) return { height: bound, opacity };
+    return { maxHeight: reveal.free.value ? RevealShape.freeMaxHeight : bound, opacity };
   });
   return (
     <Animated.View {...rest} style={[style, grow]}>

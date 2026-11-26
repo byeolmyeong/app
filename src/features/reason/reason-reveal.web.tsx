@@ -14,17 +14,19 @@ export type Reveal = {
   progress: Animated.Value;
   /** 펼친 내용의 실제 높이 — 0 에서 이 높이까지 늘인다 */
   height: Animated.Value;
-  /** 처음부터 펼친 상자의 첫 누름 전 — 높이를 묶지 않아 내용이 제 높이를 낸다(첫 그림부터 펼친 높이, 결정 083). 앱 파일의 같은 이름을 React 상태로 */
+  /** 흐름 안 상자(처음부터 펼친 상자, 결정 083 · 088)를 묶지 않았다 — 앱 파일의 같은 이름을 React 상태로 */
   free: boolean;
-  /** 높이를 진행 값에 묶는다(묶지 않음 → 묶음 한 방향) */
+  /** 높이를 진행 값에 묶는다(접고 펴는 동안) */
   bind: () => void;
+  /** 묶음을 푼다(다 펼친 뒤) */
+  release: () => void;
 };
 
 /** open: 처음부터 펼친 채로(진행 1 · 높이를 묶지 않음) */
 export function useReveal(open = false): Reveal {
   const [values] = useState(() => ({ progress: new Animated.Value(open ? 1 : 0), height: new Animated.Value(0) }));
   const [free, setFree] = useState(open);
-  return { ...values, free, bind: () => setFree(false) };
+  return { ...values, free, bind: () => setFree(false), release: () => setFree(true) };
 }
 
 /** 진행 값을 to 로 옮긴다. 끊기지 않고 끝까지 가면 done 을 부른다(새로 누르면 앞 움직임은 끊겨 부르지 않는다) */
@@ -43,6 +45,16 @@ export function measureReveal(reveal: Reveal, height: number) {
   reveal.height.setValue(height);
 }
 
+/** 다 펼친 흐름 안 상자의 묶음을 푼다(앱 파일과 같은 뜻, 결정 088) */
+export function releaseReveal(reveal: Reveal) {
+  reveal.release();
+}
+
+/** 묶지 않은 채인가 — 흐름 안 상자는 이때만 잰다(결정 088) */
+export function isRevealFree(reveal: Reveal): boolean {
+  return reveal.free;
+}
+
 /** 진행 값으로 도는 칸(꺾쇠) */
 export function RevealTurn({ reveal, testID, children }: { reveal: Reveal; testID?: string; children: ReactNode }) {
   const [rotate] = useState(() => reveal.progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${RevealShape.turnDeg}deg`] }));
@@ -53,14 +65,17 @@ export function RevealTurn({ reveal, testID, children }: { reveal: Reveal; testI
   );
 }
 
-/** 진행 값으로 높이가 늘고 내용이 나타나는 칸 */
-export function RevealBody({ reveal, style, children, ...rest }: ViewProps & { reveal: Reveal }) {
-  const [grow] = useState(() => ({
-    height: Animated.multiply(reveal.progress, reveal.height),
+/** 진행 값으로 높이가 늘고 내용이 나타나는 칸. flow(내용이 흐름 안)면 높이 상한(maxHeight)을 묶고, 묶지 않을 때는 아주 큰 상한(앱 파일과 같다) */
+export function RevealBody({ reveal, flow = false, style, children, ...rest }: ViewProps & { reveal: Reveal; flow?: boolean }) {
+  const [anim] = useState(() => ({
+    bound: Animated.multiply(reveal.progress, reveal.height),
     opacity: reveal.progress.interpolate({ inputRange: [0, RevealShape.fadeUntil], outputRange: [0, 1], extrapolate: 'clamp' }),
   }));
+  const grow = !flow
+    ? { height: anim.bound, opacity: anim.opacity }
+    : { maxHeight: reveal.free ? RevealShape.freeMaxHeight : anim.bound, opacity: anim.opacity };
   return (
-    <Animated.View {...rest} style={[style, reveal.free ? { opacity: grow.opacity } : grow]}>
+    <Animated.View {...rest} style={[style, grow]}>
       {children}
     </Animated.View>
   );

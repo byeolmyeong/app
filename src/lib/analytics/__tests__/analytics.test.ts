@@ -7,6 +7,11 @@ jest.mock('@amplitude/analytics-react-native', () => ({
   Types: { LogLevel: { None: 0, Error: 1, Warn: 2, Verbose: 3, Debug: 4 } },
 }));
 
+// jest 는 동적 import 를 돌리지 못한다 — 불러오기를 위 가짜 SDK 로 바꾼다(부를 때 바깥 가짜를 본다)
+jest.mock('@/lib/analytics/sdk', () => ({
+  loadSdk: () => Promise.resolve(jest.requireMock('@amplitude/analytics-react-native')),
+}));
+
 type Amplitude = {
   init: jest.Mock;
   track: jest.Mock;
@@ -19,15 +24,16 @@ type AnalyticsModule = typeof import('@/lib/analytics');
 function load(apiKey?: string): { analytics: AnalyticsModule; amplitude: Amplitude } {
   if (apiKey === undefined) delete process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY;
   else process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY = apiKey;
-  let loaded!: { analytics: AnalyticsModule; amplitude: Amplitude };
+  let analytics!: AnalyticsModule;
   jest.isolateModules(() => {
-    loaded = {
-      analytics: jest.requireActual<AnalyticsModule>('@/lib/analytics'),
-      amplitude: jest.requireMock<Amplitude>('@amplitude/analytics-react-native'),
-    };
+    analytics = jest.requireActual<AnalyticsModule>('@/lib/analytics');
   });
-  return loaded;
+  // SDK 는 초기화 때 동적 import 로 불러온다 — 그때는 격리 밖이라 바깥 가짜를 본다
+  return { analytics, amplitude: jest.requireMock<Amplitude>('@amplitude/analytics-react-native') };
 }
+
+/** 동적 import(SDK 불러오기)가 끝나기를 기다린다 */
+const loaded = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const ANALYTICS_ID = '0123456789abcdef0123456789abcdef';
 
@@ -59,10 +65,11 @@ describe('키가 없으면', () => {
 });
 
 describe('키가 있으면', () => {
-  it('자동 수집·광고 식별자·IP 를 끄고 세션만 켜서 한 번 초기화한다', () => {
+  it('자동 수집·광고 식별자·IP 를 끄고 세션만 켜서 한 번 초기화한다', async () => {
     const { analytics, amplitude } = load('amp-key');
     analytics.initAnalytics();
     analytics.initAnalytics();
+    await loaded();
     expect(amplitude.init).toHaveBeenCalledTimes(1);
     const [key, userId, options] = amplitude.init.mock.calls[0];
     expect(key).toBe('amp-key');
@@ -81,17 +88,19 @@ describe('키가 있으면', () => {
     expect(options.attribution).toEqual(expect.objectContaining({ disabled: true }));
   });
 
-  it('표에 있는 이벤트와 값은 그대로 보낸다', () => {
+  it('표에 있는 이벤트와 값은 그대로 보낸다', async () => {
     const { analytics, amplitude } = load('amp-key');
     analytics.initAnalytics();
+    await loaded();
     analytics.track('signup_completed', { provider: 'apple', time_known: false });
     expect(amplitude.track).toHaveBeenCalledWith('signup_completed', { provider: 'apple', time_known: false });
   });
 
-  it('값 목록 밖의 값과 표에 없는 속성은 버린다 — 자유 글자가 실려 가지 않는다', () => {
+  it('값 목록 밖의 값과 표에 없는 속성은 버린다 — 자유 글자가 실려 가지 않는다', async () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const { analytics, amplitude } = load('amp-key');
     analytics.initAnalytics();
+    await loaded();
     const loose = analytics.track as unknown as (event: string, props: Record<string, unknown>) => void;
     loose('signup_completed', { provider: 'apple', time_known: true, birthDate: '1990-03-15', name: '지우' });
     loose('login_started', { provider: '1990-03-15' });
@@ -103,32 +112,35 @@ describe('키가 있으면', () => {
     ]);
   });
 
-  it('표에 없는 이벤트는 보내지 않는다', () => {
+  it('표에 없는 이벤트는 보내지 않는다', async () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const { analytics, amplitude } = load('amp-key');
     analytics.initAnalytics();
+    await loaded();
     (analytics.track as unknown as (event: string, props: object) => void)('birth_saved', { date: '1990-03-15' });
     expect(amplitude.track).not.toHaveBeenCalled();
   });
 
-  it('identify 는 서버가 준 분석용 id(32자 16진수)만 받는다', () => {
+  it('identify 는 서버가 준 분석용 id(32자 16진수)만 받는다', async () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const { analytics, amplitude } = load('amp-key');
     analytics.initAnalytics();
+    await loaded();
     analytics.identify('someone@example.com');
     analytics.identify('3f2a9c1e-0000-4000-8000-000000000000');
     analytics.identify(ANALYTICS_ID);
     expect(amplitude.setUserId.mock.calls).toEqual([[ANALYTICS_ID]]);
   });
 
-  it('resetAnalytics 는 사용자 id 를 지우고 기기 id 를 새로 만든다', () => {
+  it('resetAnalytics 는 사용자 id 를 지우고 기기 id 를 새로 만든다', async () => {
     const { analytics, amplitude } = load('amp-key');
     analytics.initAnalytics();
+    await loaded();
     analytics.resetAnalytics();
     expect(amplitude.reset).toHaveBeenCalledTimes(1);
   });
 
-  it('SDK 가 오류를 던져도 앱으로 새지 않는다', () => {
+  it('SDK 가 오류를 던져도 앱으로 새지 않는다', async () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const { analytics, amplitude } = load('amp-key');
     amplitude.init.mockImplementation(() => {
@@ -138,7 +150,22 @@ describe('키가 있으면', () => {
       throw new Error('boom');
     });
     expect(() => analytics.initAnalytics()).not.toThrow();
+    await loaded();
     expect(() => analytics.track('login_started', { provider: 'google' })).not.toThrow();
+  });
+
+  it('SDK 를 불러오기 전의 호출은 모았다가 불러온 뒤 차례로 보낸다(웹 첫 화면 묶음에 SDK 를 넣지 않는다)', async () => {
+    const { analytics, amplitude } = load('amp-key');
+    analytics.initAnalytics();
+    analytics.track('app_opened', { entry: 'direct' });
+    analytics.identify(ANALYTICS_ID);
+    expect(amplitude.init).not.toHaveBeenCalled();
+    expect(amplitude.track).not.toHaveBeenCalled();
+    await loaded();
+    expect(amplitude.init).toHaveBeenCalledTimes(1);
+    expect(amplitude.track.mock.calls).toEqual([['app_opened', { entry: 'direct' }]]);
+    expect(amplitude.setUserId.mock.calls).toEqual([[ANALYTICS_ID]]);
+    expect(amplitude.init.mock.invocationCallOrder[0]).toBeLessThan(amplitude.track.mock.invocationCallOrder[0]);
   });
 });
 

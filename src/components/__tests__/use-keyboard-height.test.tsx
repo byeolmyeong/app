@@ -75,6 +75,18 @@ describe('useKeyboardHeight(앱, 결정 085)', () => {
     expect(configure).toHaveBeenCalledWith({ duration: 250, update: { duration: 250, type: 'keyboard' } });
   });
 
+  // 소유자 2026-11-27: "버튼 내려갈 때 지금 애니메이션 걸려 있는데 이거 없애야지"
+  it('iOS: 키패드가 내려갈 때는 움직임을 걸지 않고 바로 제자리(0)로', async () => {
+    const kb = fakeKeyboard();
+    const configure = jest.spyOn(LayoutAnimation, 'configureNext').mockImplementation(() => {});
+    await render(<Probe />);
+    await kb.emit(SHOW, iosEvent(336));
+    configure.mockClear();
+    await kb.emit(HIDE, iosEvent(0));
+    expect(shown()).toBe('0');
+    expect(configure).not.toHaveBeenCalled();
+  });
+
   it('끄면(enabled=false) 알림을 듣지 않고 늘 0', async () => {
     const kb = fakeKeyboard();
     await render(<Probe enabled={false} />);

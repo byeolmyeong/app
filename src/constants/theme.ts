@@ -728,21 +728,6 @@ const type = (fontSize: number, lineHeight: number, fontWeight: Weight) =>
   ({ fontFamily: FontFamily, fontSize, lineHeight, fontWeight, letterSpacing: tracking(fontSize) }) as const;
 
 /**
- * Pretendard 한글의 보이는 글자 윤곽이 글자 크기(em) 상자 안쪽으로 들어간 정도 — 위 · 아래(2026-11-26 웹에서 잼: 20px 위 0.054em, 13px 아래 0.073em).
- * 라틴 소문자(monkey 등)는 한글보다 위가 낮아, 한글 기준으로 맞추면 섞인 이름에서도 위 끝이 그림을 넘지 않는다
- */
-const HangulInk = { top: 0.05, bottom: 0.07 } as const;
-
-/**
- * 줄 상자의 위(아래) 끝에서 보이는 한글 글자까지의 여백 = 줄높이 여백((줄높이 - 글자 크기) / 2) + 글자 크기 × 한글 안쪽 비율.
- * 글자를 다른 것의 끝(프로필 그림의 위 · 아래)에 "보이는 글자 기준" 으로 붙일 때 그만큼 칸을 내민다(마이 카드, 결정 080 덧붙임).
- * 글자 단계의 크기 · 줄높이가 바뀌어도 따라간다. iOS · 안드로이드도 같은 식이다 — 2026-11-27 아이폰 빌드 23 실측(3배 캡처)에서
- * iOS 도 행간을 위아래 반씩 그려, 빌드 23 의 iOS 임시 보정(행간이 글자 위에 붙는다는 가정)은 글자를 1.7pt 너무 올렸다
- */
-export const inkTrim = (t: { fontSize: number; lineHeight: number }, side: 'top' | 'bottom', _os: typeof Platform.OS = Platform.OS) =>
-  (t.lineHeight - t.fontSize) / 2 + t.fontSize * HangulInk[side];
-
-/**
  * 글자 단계 v2(결정 080 — 결정 033 의 37단을 역할로 줄였다). 크기/줄높이 · 굵기. 역할 13 + 부품 전용 8.
  * 색은 역할마다 하나: 제목 · 소제목 `ink` · 읽는 글 · 본문 `body` · 작은 본문 `gray` · 보조 · 메타 `hint` · 이름표 `accentText`.
  */
@@ -949,7 +934,7 @@ export const MyLayout = {
     headlineTop: 16,
     headlineLine: 25,
     birthTop: 12,
-    /** 꺾쇠 — 홈 별명 카드와 같은 규칙: 프로필 그림 · 닉네임 줄의 오른쪽 끝, 세로 가운데(결정 084 · 080, 소유자 빌드 14). 별자리 그림은 그 둘레를 비운다 */
+    /** 꺾쇠 — 닉네임 줄의 오른쪽 끝, 그 줄의 세로 가운데(결정 084 · 080 · 099). 별자리 그림은 그 둘레를 비운다 */
     chevron: 22,
     /** 계정을 아직 모를 때 이름 자리표의 폭(components/placeholder) */
     namePlaceholder: 104,

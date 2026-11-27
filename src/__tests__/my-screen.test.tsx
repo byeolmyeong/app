@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
 import MyScreen from '@/app/my';
-import { inkTrim, MyLayout, NicknameCardLayout, Typography } from '@/constants/theme';
+import { MyLayout, NicknameCardLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
@@ -72,25 +72,18 @@ describe('마이 v2(/my) — 별명 카드 · 묶음 카드 셋(결정 056 · 09
     expect(card.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
   });
 
-  it('꺾쇠는 닉네임 글자 줄(첫 줄)의 오른쪽 끝 세로 가운데, 별자리 그림은 그 꺾쇠 둘레를 비운다(결정 080, 소유자 빌드 15)', async () => {
+  it('닉네임 줄과 별자리 · 날 수 줄은 한 묶음으로 프로필 그림의 세로 가운데, 꺾쇠는 닉네임 줄 오른쪽 끝에 같이 — 별자리 그림은 꺾쇠 둘레를 비운다(결정 099)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<MyScreen />);
     const card = within(await screen.findByTestId('my-card'));
     const row = card.getByTestId('my-card-row');
     expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
-    // 이름 칸은 위아래로 벌려, 보이는 글자가 프로필 그림의 위 · 아래 끝에 붙는다(소유자 빌드 15 "붙이라니까 · 파여 있는 느낌이잖아") —
-    // 줄 상자에서 보이는 글자까지의 여백(줄높이 여백 + 한글 안쪽 여백)만큼 칸을 위아래로 내민다
-    // 시험은 iOS(jest-expo) — iOS 도 웹과 같은 값(아이폰 빌드 23 실측, 2026-11-27): 닉네임(20/28) 위 5 · 별자리 줄(13/18) 아래 3.41
-    const top = inkTrim(Typography.section, 'top');
-    const bottom = inkTrim(Typography.caption, 'bottom');
-    expect(top).toBeCloseTo(5, 1);
-    expect(bottom).toBeCloseTo(3.41, 1);
-    expect(StyleSheet.flatten(card.getByTestId('my-card-names').props.style)).toMatchObject({
-      height: MyLayout.card.avatar + top + bottom,
-      marginTop: -top,
-      marginBottom: -bottom,
-      justifyContent: 'space-between',
-    });
+    // 소유자 2026-11-27 "그냥 마이 가운데로 다시 모이게 할까" · "꺽쇠도 같이 닉네임이랑" — 그림 끝에 글자를 맞추지 않고 묶음을 가운데로
+    const names = StyleSheet.flatten(card.getByTestId('my-card-names').props.style);
+    expect(names).toMatchObject({ justifyContent: 'center', gap: MyLayout.card.namesGap });
+    expect(names).not.toHaveProperty('height');
+    expect(names).not.toHaveProperty('marginTop');
+    expect(names).not.toHaveProperty('marginBottom');
     // 첫 줄에 닉네임과 꺾쇠가 같이 있고, 그 줄 안에서 세로 가운데 — 꺾쇠가 위쪽(닉네임 줄)에 온다
     const line = card.getByTestId('my-card-first-line');
     expect(StyleSheet.flatten(line.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });

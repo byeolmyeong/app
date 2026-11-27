@@ -66,22 +66,14 @@ describe('useKeyboardHeight(앱, 결정 085)', () => {
     expect(shown()).toBe('0');
   });
 
-  it('iOS: 높이가 바뀔 때 화면 칸이 키패드와 같은 시간 · 곡선으로 움직이게 한 번 건다', async () => {
+  // 소유자 2026-11-27: "키패드 위로 올라오는 거 애니메이션 없애"(내려갈 때도 #154 로 없앰) — 올라올 때도 · 내려갈 때도 바로
+  it('iOS: 키패드가 올라올 때도 · 높이가 바뀔 때도 · 내려갈 때도 움직임을 걸지 않고 바로 그 높이로', async () => {
     const kb = fakeKeyboard();
     const configure = jest.spyOn(LayoutAnimation, 'configureNext').mockImplementation(() => {});
     await render(<Probe />);
     await kb.emit(SHOW, iosEvent(336));
-    expect(configure).toHaveBeenCalledTimes(1);
-    expect(configure).toHaveBeenCalledWith({ duration: 250, update: { duration: 250, type: 'keyboard' } });
-  });
-
-  // 소유자 2026-11-27: "버튼 내려갈 때 지금 애니메이션 걸려 있는데 이거 없애야지"
-  it('iOS: 키패드가 내려갈 때는 움직임을 걸지 않고 바로 제자리(0)로', async () => {
-    const kb = fakeKeyboard();
-    const configure = jest.spyOn(LayoutAnimation, 'configureNext').mockImplementation(() => {});
-    await render(<Probe />);
-    await kb.emit(SHOW, iosEvent(336));
-    configure.mockClear();
+    expect(shown()).toBe('336');
+    await kb.emit(['keyboardWillChangeFrame'], iosEvent(380));
     await kb.emit(HIDE, iosEvent(0));
     expect(shown()).toBe('0');
     expect(configure).not.toHaveBeenCalled();

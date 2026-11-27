@@ -94,7 +94,27 @@ describe('app.config EXPO_PUBLIC_META_APP_ID', () => {
     const c = withMetaId(undefined);
     const media = (c.plugins ?? []).find((p) => Array.isArray(p) && p[0] === 'expo-media-library') as [string, { granularPermissions: string[] }];
     expect(media[1].granularPermissions).toEqual([]);
-    expect(c.android?.blockedPermissions).toEqual(['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED']);
+    expect(c.android?.blockedPermissions).toEqual(expect.arrayContaining(['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED']));
+  });
+
+  // 결정 098: 라이브러리 · 템플릿이 넣지만 앱이 쓰지 않는 권한을 막는다. 사진 저장(안드로이드 9 이하)의 쓰기 권한과 푸시에 필요한 것은 남긴다
+  it('쓰지 않는 안드로이드 권한(다른 앱 위에 그리기 · 소리 설정 · 생체 인증)을 막고, 쓰기 · 푸시 권한은 막지 않는다', () => {
+    const blocked = withMetaId(undefined).android?.blockedPermissions ?? [];
+    expect(blocked).toEqual(
+      expect.arrayContaining([
+        'android.permission.SYSTEM_ALERT_WINDOW',
+        'android.permission.MODIFY_AUDIO_SETTINGS',
+        'android.permission.USE_BIOMETRIC',
+        'android.permission.USE_FINGERPRINT',
+      ]),
+    );
+    for (const kept of ['WRITE_EXTERNAL_STORAGE', 'POST_NOTIFICATIONS', 'INTERNET', 'RECEIVE_BOOT_COMPLETED', 'VIBRATE', 'WAKE_LOCK'])
+      expect(blocked).not.toContain(`android.permission.${kept}`);
+  });
+
+  it('푸시 플러그인은 FCM 의 기본 채널을 앱이 만드는 default 로 둔다(결정 098)', () => {
+    const push = (withMetaId(undefined).plugins ?? []).find((p) => (Array.isArray(p) ? p[0] : p) === 'expo-notifications');
+    expect(push).toEqual(['expo-notifications', expect.objectContaining({ defaultChannel: 'default' })]);
   });
 });
 

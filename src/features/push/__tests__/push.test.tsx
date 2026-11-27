@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, render } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
-import { IosAuthorizationStatus } from 'expo-notifications';
+import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
 import { router } from 'expo-router';
 import { AppState, Linking, Platform } from 'react-native';
 
@@ -162,7 +162,8 @@ describe('휴대폰 알림 권한(결정 066)', () => {
       N.getPermissionsAsync.mockResolvedValue({ granted: false, status: 'undetermined', canAskAgain: true, expires: 'never' } as never);
       N.requestPermissionsAsync.mockResolvedValue({ granted: true, status: 'granted', canAskAgain: true, expires: 'never' } as never);
       expect(await requestPushPermission()).toBe('granted');
-      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.objectContaining({ name: '알림' }));
+      // 중요도 HIGH 라야 쓰는 중에 온 푸시가 위에서 내려온다(결정 098) — id 는 그대로 default(서버를 고치지 않는다)
+      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.objectContaining({ name: '알림', importance: AndroidImportance.HIGH }));
       expect(N.setNotificationChannelAsync.mock.invocationCallOrder[0]).toBeLessThan(N.requestPermissionsAsync.mock.invocationCallOrder[0]);
     } finally {
       Platform.OS = os;
@@ -345,6 +346,20 @@ describe('알림을 누르면(루트)', () => {
     expect(await handler.handleNotification(incoming({ type: 'ME_REPORT_DONE' }))).toEqual(shown);
     // 알아보지 못한 data 도 띄운다(서버가 보낸 알림을 삼키지 않는다)
     expect(await handler.handleNotification(incoming({ type: 'NOPE' }))).toEqual(shown);
+  });
+
+  it('안드로이드는 소리를 허용해 띄운다 — 조용하게 만든 알림은 위로 내려오지 않는다(결정 098). 보고 있는 화면의 알림은 그대로 띄우지 않는다', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      mockPathname = '/me';
+      await render(<Tap ready />);
+      const handler = N.setNotificationHandler.mock.calls[0][0]!;
+      expect(await handler.handleNotification(incoming({ type: 'INQUIRY_ANSWERED', inquiryId: 'q1' }))).toEqual({ ...shown, shouldPlaySound: true });
+      expect(await handler.handleNotification(incoming({ type: 'ME_REPORT_DONE' }))).toEqual(hidden);
+    } finally {
+      Platform.OS = os;
+    }
   });
 
   it('알림으로 처음 켜면 화면들이 준비될 때까지 기다렸다가 한 번 간다 — 같은 알림이 듣기로 또 와도 한 번', async () => {

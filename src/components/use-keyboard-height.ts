@@ -5,7 +5,8 @@ import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 /**
  * 화면 키패드가 창 바닥을 덮은 높이(결정 085). 떠 있지 않으면 0. 웹은 use-keyboard-height.web.ts.
  * iOS: 키패드가 움직이기 시작할 때(keyboardWillChangeFrame) 끝 자리로 잰다 — 창 높이 − 키패드 위 끝.
- * 화면 칸이 키패드와 같은 시간 · 곡선으로 움직이게 LayoutAnimation 을 한 번 건다.
+ * 키패드가 올라오거나 높이가 바뀔 때만 화면 칸이 키패드와 같은 시간 · 곡선으로 움직이게 LayoutAnimation 을 한 번 건다.
+ * 내려갈 때(0)는 걸지 않고 바로 제자리로 — 버튼이 천천히 내려오지 않게(소유자 2026-11-27).
  * 안드로이드: 다 올라온 뒤(keyboardDidShow)의 높이. RN 이 아래 시스템 막대를 빼고 주므로(edge-to-edge 창은 줄지 않는다)
  * 쓰는 쪽에서 아래 안전 영역을 더한다.
  * 화면이 여럿 들어도 알림은 여기 한 곳에서만 듣고, 듣는 화면이 없으면 끊는다.
@@ -20,7 +21,7 @@ const measure = (e: KeyboardMetrics) =>
 
 function update(next: number, e?: KeyboardEvent) {
   if (next === height) return;
-  if (Platform.OS === 'ios' && e?.duration) {
+  if (Platform.OS === 'ios' && e?.duration && next > 0) {
     const duration = Math.max(e.duration, 10);
     LayoutAnimation.configureNext({ duration, update: { duration, type: LayoutAnimation.Types[e.easing] ?? LayoutAnimation.Types.keyboard } });
   }

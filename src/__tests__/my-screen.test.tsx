@@ -80,11 +80,11 @@ describe('마이 v2(/my) — 별명 카드 · 묶음 카드 셋(결정 056 · 09
     expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
     // 이름 칸은 위아래로 벌려, 보이는 글자가 프로필 그림의 위 · 아래 끝에 붙는다(소유자 빌드 15 "붙이라니까 · 파여 있는 느낌이잖아") —
     // 줄 상자에서 보이는 글자까지의 여백(줄높이 여백 + 한글 안쪽 여백)만큼 칸을 위아래로 내민다
-    // 시험은 iOS(jest-expo) — iOS 임시 보정 값(웹 5 · 3.4 에서 ±(줄높이 − 기본 줄높이) / 2)
+    // 시험은 iOS(jest-expo) — iOS 도 웹과 같은 값(아이폰 빌드 23 실측, 2026-11-27): 닉네임(20/28) 위 5 · 별자리 줄(13/18) 아래 3.41
     const top = inkTrim(Typography.section, 'top');
     const bottom = inkTrim(Typography.caption, 'bottom');
-    expect(top).toBeCloseTo(7.07, 1);
-    expect(bottom).toBeCloseTo(2.17, 1);
+    expect(top).toBeCloseTo(5, 1);
+    expect(bottom).toBeCloseTo(3.41, 1);
     expect(StyleSheet.flatten(card.getByTestId('my-card-names').props.style)).toMatchObject({
       height: MyLayout.card.avatar + top + bottom,
       marginTop: -top,

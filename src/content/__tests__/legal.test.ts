@@ -37,3 +37,11 @@ describe('약관 글의 시행일과 약관 버전', () => {
     ]);
   });
 });
+
+// 2026-11-27: Google Play 계정 삭제 URL 로 넣은 랜딩 계정 삭제 안내 페이지를 처리방침 제7조에서도 알린다(랜딩 글과 같은 문장)
+describe('처리방침 — 계정 삭제 안내 페이지', () => {
+  it('제7조(권리)에 앱 없이 삭제를 요청하는 안내 주소(byeolmyeong.com/delete-account)가 있다', () => {
+    const text = privacy.sections.flatMap((s) => s.blocks).map((b) => JSON.stringify(b)).join('\n');
+    expect(text).toContain('byeolmyeong.com/delete-account');
+  });
+});

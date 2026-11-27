@@ -31,7 +31,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-notifications",
+      ["expo-notifications", { "defaultChannel": "default" }],
       [
         "expo-router",
         {

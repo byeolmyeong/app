@@ -96,6 +96,11 @@ describe('app.config EXPO_PUBLIC_META_APP_ID', () => {
     expect(media[1].granularPermissions).toEqual([]);
     expect(c.android?.blockedPermissions).toEqual(['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED']);
   });
+
+  it('푸시 플러그인은 FCM 의 기본 채널을 앱이 만드는 default 로 둔다(결정 098)', () => {
+    const push = (withMetaId(undefined).plugins ?? []).find((p) => (Array.isArray(p) ? p[0] : p) === 'expo-notifications');
+    expect(push).toEqual(['expo-notifications', expect.objectContaining({ defaultChannel: 'default' })]);
+  });
 });
 
 // iOS 카카오 로그인(빌드 8): SDK 58 은 주소 열기를 SceneDelegate 가 받는다 — 카카오 키가 있으면 카카오 플러그인 뒤에 우리 플러그인이 SceneDelegate 에 넣는다

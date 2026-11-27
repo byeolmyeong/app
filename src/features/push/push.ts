@@ -40,12 +40,15 @@ function permissionOf(s: Notifications.NotificationPermissionsStatus): PushPermi
 /** 권한을 물은 뒤 다시 읽어야 하는 화면들(usePushPermission) — 앱이 잠깐 비활성이 되지 않아도 결과가 바로 보이게 */
 const permissionListeners = new Set<() => void>();
 
-/** 안드로이드 13 이상은 채널이 하나도 없으면 권한 창이 뜨지 않고 토큰도 받지 못한다 — 묻기 · 토큰 전에 만든다 */
+/**
+ * 안드로이드 13 이상은 채널이 하나도 없으면 권한 창이 뜨지 않고 토큰도 받지 못한다 — 묻기 · 토큰 전에 만든다.
+ * 중요도 HIGH 라야 위에서 내려오는 배너로 뜬다(결정 098). 이미 만든 채널의 중요도는 안드로이드가 바꾸지 않는다 — 전에 DEFAULT 로 만든 기기는 다시 깔아야 한다
+ */
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
     name: strings.push.channel,
-    importance: AndroidImportance.DEFAULT,
+    importance: AndroidImportance.HIGH,
   });
 }
 
@@ -209,12 +212,13 @@ export function usePushTapRouting({ ready, suspended, signedOut }: PushTapState)
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    // 앱을 쓰는 중에 온 푸시도 위에 배너로(소리는 없이) — 그 알림이 가리키는 화면을 지금 보고 있으면 띄우지 않는다(결정 076)
+    // 앱을 쓰는 중에 온 푸시도 위에 배너로 — 그 알림이 가리키는 화면을 지금 보고 있으면 띄우지 않는다(결정 076).
+    // iOS 는 소리 없이. 안드로이드는 조용하게 만든 알림을 위로 띄우지 않아 소리를 허용한다(채널의 소리 · 진동을 따른다, 결정 098)
     Notifications.setNotificationHandler({
       handleNotification: async (notification) => {
         const data = parsePushData(notification.request.content.data);
         const show = !(data && isViewingTarget(data, pathRef.current));
-        return { shouldShowBanner: show, shouldShowList: show, shouldPlaySound: false, shouldSetBadge: false };
+        return { shouldShowBanner: show, shouldShowList: show, shouldPlaySound: show && Platform.OS === 'android', shouldSetBadge: false };
       },
     });
     let alive = true;

@@ -1,12 +1,12 @@
 import { useContext, useSyncExternalStore } from 'react';
-import { Dimensions, Keyboard, LayoutAnimation, Platform, type EmitterSubscription, type KeyboardEvent, type KeyboardMetrics } from 'react-native';
+import { Dimensions, Keyboard, Platform, type EmitterSubscription, type KeyboardMetrics } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
 /**
  * 화면 키패드가 창 바닥을 덮은 높이(결정 085). 떠 있지 않으면 0. 웹은 use-keyboard-height.web.ts.
  * iOS: 키패드가 움직이기 시작할 때(keyboardWillChangeFrame) 끝 자리로 잰다 — 창 높이 − 키패드 위 끝.
- * 키패드가 올라오거나 높이가 바뀔 때만 화면 칸이 키패드와 같은 시간 · 곡선으로 움직이게 LayoutAnimation 을 한 번 건다.
- * 내려갈 때(0)는 걸지 않고 바로 제자리로 — 버튼이 천천히 내려오지 않게(소유자 2026-11-27).
+ * 움직임은 걸지 않는다 — 키패드가 움직이기 시작할 때 버튼이 바로 끝 자리로 간다(소유자 2026-11-27 "내려갈 때 애니메이션 없애야지",
+ * "키패드 위로 올라오는 거 애니메이션 없애" — 키패드와 같은 곡선으로 따라가게 했을 때 늦게 붙는 일이 있었다).
  * 안드로이드: 다 올라온 뒤(keyboardDidShow)의 높이. RN 이 아래 시스템 막대를 빼고 주므로(edge-to-edge 창은 줄지 않는다)
  * 쓰는 쪽에서 아래 안전 영역을 더한다.
  * 화면이 여럿 들어도 알림은 여기 한 곳에서만 듣고, 듣는 화면이 없으면 끊는다.
@@ -19,12 +19,8 @@ let subscriptions: EmitterSubscription[] = [];
 const measure = (e: KeyboardMetrics) =>
   Platform.OS === 'ios' ? Math.max(0, Dimensions.get('window').height - e.screenY) : e.height;
 
-function update(next: number, e?: KeyboardEvent) {
+function update(next: number) {
   if (next === height) return;
-  if (Platform.OS === 'ios' && e?.duration && next > 0) {
-    const duration = Math.max(e.duration, 10);
-    LayoutAnimation.configureNext({ duration, update: { duration, type: LayoutAnimation.Types[e.easing] ?? LayoutAnimation.Types.keyboard } });
-  }
   height = next;
   for (const listener of listeners) listener();
 }
@@ -36,8 +32,8 @@ function start() {
   subscriptions =
     Platform.OS === 'ios'
       ? [
-          Keyboard.addListener('keyboardWillChangeFrame', (e) => update(measure(e.endCoordinates), e)),
-          Keyboard.addListener('keyboardWillHide', (e) => update(0, e)),
+          Keyboard.addListener('keyboardWillChangeFrame', (e) => update(measure(e.endCoordinates))),
+          Keyboard.addListener('keyboardWillHide', () => update(0)),
         ]
       : [
           Keyboard.addListener('keyboardDidShow', (e) => update(measure(e.endCoordinates))),

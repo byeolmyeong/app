@@ -4,12 +4,14 @@ import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
 import HomeScreen from '@/app/index';
+import { setSplashGoneForTest } from '@/components/splash-view';
 import { Colors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveBirth } from '@/features/chart/use-birth-profile';
 import { ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
 import { INTRO_SEEN_KEY, resetIntroSeen } from '@/features/onboarding/intro-seen';
 import { WHATS_NEW_KEY, resetWhatsNew, settleWhatsNew } from '@/features/onboarding/whats-new';
+import { useUpdateSuggestion } from '@/features/update/update-gate';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -23,6 +25,11 @@ jest.mock('expo-router', () => ({
 jest.mock('@/features/auth/use-session', () => ({
   ...jest.requireActual('@/features/auth/use-session'),
   useSession: jest.fn(() => ({ status: 'signedIn' as const, token: 't', ready: true, lastError: null })),
+}));
+// 업데이트 권유 창(결정 059)이 뜨는 방문인지 — 시험이 정한다(UpdateGate 밖의 기본은 'none')
+jest.mock('@/features/update/update-gate', () => ({
+  ...jest.requireActual('@/features/update/update-gate'),
+  useUpdateSuggestion: jest.fn(() => 'none'),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -53,6 +60,8 @@ const launch = async () => {
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
+  setSplashGoneForTest(true);
+  (useUpdateSuggestion as jest.Mock).mockReturnValue('none');
   mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
   mockApi.getNotifications.mockResolvedValue({ ok: true, data: { unread: 0, items: [] } });
   mockApi.getMonth.mockResolvedValue({ ok: true, data: fixtures.monthSky });
@@ -131,6 +140,37 @@ describe('새로워진 점 창(1.1.0 처음 켤 때 한 번 · 1.0.0 에서 업�
     await screen.findByTestId('home-menu-me');
     await act(async () => {});
     expect(screen.queryByTestId('whats-new')).toBeNull();
+  });
+
+  it('스플래시 · 이용 정지 확인이 걷히기 전에는 띄우지 않는다 — 걷히면 그때(알림 받기 권유와 같다)', async () => {
+    setSplashGoneForTest(false);
+    await AsyncStorage.setItem(INTRO_SEEN_KEY, '1');
+    await launch();
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-menu-me');
+    await act(async () => {});
+    expect(screen.queryByTestId('whats-new')).toBeNull();
+    await act(async () => setSplashGoneForTest(true));
+    expect(await screen.findByTestId('whats-new')).toBeTruthy();
+  });
+
+  it('업데이트 권유 창이 뜬 방문에서는 띄우지 않고 다음으로 미룬다 — 본 것으로 적지 않는다', async () => {
+    (useUpdateSuggestion as jest.Mock).mockReturnValue('suggesting');
+    await AsyncStorage.setItem(INTRO_SEEN_KEY, '1');
+    await launch();
+    const view = await render(<HomeScreen />);
+    await screen.findByTestId('home-menu-me');
+    await act(async () => {});
+    expect(screen.queryByTestId('whats-new')).toBeNull();
+    // 권유 창을 닫아도 이번 방문에는 그대로 — 다음 방문(홈을 다시 열 때)에
+    (useUpdateSuggestion as jest.Mock).mockReturnValue('none');
+    await view.rerender(<HomeScreen />);
+    await act(async () => {});
+    expect(screen.queryByTestId('whats-new')).toBeNull();
+    expect(await AsyncStorage.getItem(WHATS_NEW_KEY)).toBeNull();
+    await view.unmount();
+    await render(<HomeScreen />);
+    expect(await screen.findByTestId('whats-new')).toBeTruthy();
   });
 
   it('새로 깐 사람(소개 기록 없음)은 보지 않는다', async () => {

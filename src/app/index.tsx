@@ -6,6 +6,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { NavBar } from '@/components/nav-bar';
 import { OfflineBanner } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
+import { useSplashGone } from '@/components/splash-view';
 import { SkeletonGroup } from '@/components/skeleton';
 import { StateScreen } from '@/components/state-screen';
 import { Txt } from '@/components/txt';
@@ -34,9 +35,12 @@ import { prefetchMeReport } from '@/features/me/use-me-report';
 import { prefetchMonth } from '@/features/timing/use-month';
 import { TODAY_CARD_WRITING_AFTER_MS, useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { prefetchTimingReport } from '@/features/timing/use-timing-report';
+import { useUpdateSuggestion } from '@/features/update/update-gate';
 import { ME_AREAS } from '@/lib/api';
 
 const MENU = strings.home.menu;
+/** 업데이트 확인이 이만큼 지나도 끝나지 않으면 새로워진 점을 기다리게 하지 않는다(알림 받기 권유와 같다) */
+const UPDATE_WAIT_MS = 5000;
 
 /** 나 — 내 별명은 그 글(`/reading`), 나머지는 나 탭의 그 칩(결정 102 의 1-2) */
 const ME_ITEMS: HomeMenuGridItem[] = [
@@ -135,8 +139,22 @@ function Home({ onRetry }: { onRetry: () => void }) {
       alive = false;
     };
   }, [asking]);
-  // 새로워진 점(결정 109 의 6 · 113 의 1): 1.0.x 에서 올라온 기기에 한 번 — 셋째 줄을 가릴 값을 안 뒤 로그인한 홈 위에
+  // 새로워진 점(결정 109 의 6 · 113 의 1): 1.0.x 에서 올라온 기기에 한 번 — 셋째 줄을 가릴 값을 안 뒤 로그인한 홈 위에.
+  // 알림 받기 권유와 같이 스플래시 · 정지 확인이 걷힌 뒤에, 업데이트 권유 창(결정 059)이 뜬 방문에서는 다음으로 미룬다(본 것으로 적지 않는다)
   const whatsNewDue = useWhatsNewDue();
+  const splashGone = useSplashGone();
+  const update = useUpdateSuggestion();
+  const [updateVisit, setUpdateVisit] = useState(false);
+  if (update === 'suggesting' && !updateVisit) setUpdateVisit(true);
+  const [updateWaitOver, setUpdateWaitOver] = useState(false);
+  const waitingUpdate = whatsNewDue && splashGone && update === 'checking';
+  useEffect(() => {
+    if (!waitingUpdate) return;
+    // 업데이트 확인이 멈췄으면 오래 기다리지 않는다(알림 받기 권유와 같은 5초)
+    const timer = setTimeout(() => setUpdateWaitOver(true), UPDATE_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [waitingUpdate]);
+  const updateClear = !updateVisit && (update === 'none' || (update === 'checking' && updateWaitOver));
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);
   const todayLoading = asking !== null && today.state.status === 'loading';
@@ -207,7 +225,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
     );
   if (profile && chart) {
     const openToday = () => router.push('/today');
-    const whatsNew = whatsNewDue && received !== null && cardsKnown;
+    const whatsNew = whatsNewDue && received !== null && cardsKnown && splashGone && updateClear;
     return (
       <Screen nav={homeNav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>

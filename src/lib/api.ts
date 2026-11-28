@@ -1216,6 +1216,8 @@ export type ApiConfig = {
   onMaintenance?: () => void;
   /** 서버가 403 `ACCOUNT_SUSPENDED` 로 거절했을 때 부른다(이용 정지 — 결정 065 의 5, 서버 결정 044) */
   onSuspended?: () => void;
+  /** 호출마다 서버에 닿았는지 알린다 — 응답을 받았으면(상태가 무엇이든) true, 받지 못했으면 false(연결 끊김 띠, 결정 061 의 4) */
+  onReach?: (reached: boolean) => void;
   /**
    * 웹이면 true: 세션은 서버의 httpOnly 쿠키 `bm_session` 이다(결정 034). 모든 요청에 쿠키를 싣고(`credentials: 'include'`),
    * Authorization 헤더를 붙이지 않으며, 로그인 · 가입 · 개발용 로그인에 `cookie: true` 를 보내고 받은 토큰을 버린다.
@@ -1295,8 +1297,10 @@ export function createApi(config: ApiConfig) {
         ...(cookie ? { credentials: 'include' as const } : {}),
       });
     } catch {
+      config.onReach?.(false);
       return { ok: false, error: 'NETWORK' };
     }
+    config.onReach?.(true);
 
     const { status } = response;
     if (status === 401) {
@@ -1783,6 +1787,32 @@ export function setSuspendedHandler(handler: (() => void) | null) {
   suspendedHandler = handler;
 }
 
+/** 마지막 서버 호출이 서버에 닿았는가. seq 는 호출마다 하나씩 오른다(언제 닿았는지 비교하려고) */
+export type ServerReach = { reached: boolean; seq: number };
+
+let serverReach: ServerReach = { reached: false, seq: 0 };
+const reachListeners = new Set<() => void>();
+
+/**
+ * 마지막 서버 호출의 결과. 연결 끊김 띠(components/use-online)가 읽는다 — 서버가 답했다는 것은 연결돼 있다는 확실한 증거라서,
+ * 휴대폰이 "연결 없음"이라고 알린 뒤에 서버가 답했으면 띠를 치운다(1.0.1 — 앱을 뒤로 보냈다 돌아오면 띠가 남던 것).
+ */
+export function getServerReach(): ServerReach {
+  return serverReach;
+}
+
+export function subscribeServerReach(listener: () => void): () => void {
+  reachListeners.add(listener);
+  return () => {
+    reachListeners.delete(listener);
+  };
+}
+
+function reportReach(reached: boolean) {
+  serverReach = { reached, seq: serverReach.seq + 1 };
+  reachListeners.forEach((listener) => listener());
+}
+
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
 export const api = createApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
@@ -1793,5 +1823,6 @@ export const api = createApi({
   onUpdateRequired: () => updateRequiredHandler?.(),
   onMaintenance: () => maintenanceHandler?.(),
   onSuspended: () => suspendedHandler?.(),
+  onReach: reportReach,
   cookieSession: Platform.OS === 'web',
 });

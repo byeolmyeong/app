@@ -1,17 +1,32 @@
 import NetInfo from '@react-native-community/netinfo';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+
+import { getServerReach, subscribeServerReach } from '@/lib/api';
 
 /**
  * 인터넷에 연결돼 있는가(결정 061 의 4 — 연결 끊김 띠 · 볼 게 없을 때의 화면).
  * 모르면(처음 · 인터넷에 닿는지 아직 모름) 연결된 것으로 본다. 끊겼다는 알림이 왔을 때만 false.
+ * 끊겼다는 알림 뒤에 우리 서버가 답했으면 연결된 것으로 본다(다음 서버 호출이 실패하면 다시 끊김) — 휴대폰은 앱이 멈춰 있는 동안
+ * 연결이 돌아와도 알리지 않을 수 있고(iOS 는 마지막으로 알던 값을 그대로 돌려준다), 그러면 띠가 남는다(1.0.1).
  */
 export function useOnline(): boolean {
-  const [online, setOnline] = useState(true);
+  // since: 끊겼다는 알림을 받았을 때의 서버 호출 차례 — 그 뒤에 닿은 호출만 연결의 증거로 센다
+  const [net, setNet] = useState({ online: true, since: 0 });
   useEffect(
-    () => NetInfo.addEventListener((state) => setOnline(state.isConnected !== false && state.isInternetReachable !== false)),
+    () =>
+      NetInfo.addEventListener((state) => {
+        const online = state.isConnected !== false && state.isInternetReachable !== false;
+        const since = getServerReach().seq;
+        setNet((prev) => (prev.online === online ? prev : { online, since }));
+      }),
     [],
   );
-  return online;
+  const reachedSince = () => {
+    const reach = getServerReach();
+    return reach.reached && reach.seq > net.since;
+  };
+  const reached = useSyncExternalStore(subscribeServerReach, reachedSince, reachedSince);
+  return net.online || reached;
 }
 
 /**

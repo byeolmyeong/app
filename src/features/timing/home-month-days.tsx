@@ -4,6 +4,7 @@ import { Txt } from '@/components/txt';
 import { Colors, LineWidth, ScreenPaddingX, TimingLayout as L } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { formatDayOnly, weekdayOf } from '@/features/timing/dates';
+import { shownMonth } from '@/features/timing/time-known';
 import { categoryLabel } from '@/features/timing/timing-parts';
 import type { MonthSky } from '@/lib/api';
 
@@ -19,8 +20,9 @@ const Y = L.home.days;
  */
 export function HomeMonthDays({ sky, today, onDay }: { sky: MonthSky | null; today: string; onDay: (date: string) => void }) {
   if (!sky) return null;
-  // 이번 달 달력과 같은 날만 — 모르는 종류는 뺀다. 오늘 · 다가오는 날을 날짜 순서로 앞에, 지난 날은 맨 뒤에(결정 096)
-  const known = sky.days.filter((d) => categoryLabel(d.category) !== null).sort((a, b) => a.date.localeCompare(b.date));
+  // 이번 달 달력과 같은 날만 — 시각 "모름" 이면 시각이 있어야 셀 수 있는 날을 거르고(time-known, 이중 안전) 모르는 종류는 뺀다.
+  // 오늘 · 다가오는 날을 날짜 순서로 앞에, 지난 날은 맨 뒤에(결정 096)
+  const known = shownMonth(sky).days.filter((d) => categoryLabel(d.category) !== null).sort((a, b) => a.date.localeCompare(b.date));
   const days = [...known.filter((d) => d.date >= today), ...known.filter((d) => d.date < today)];
   if (days.length === 0) return null;
   // 테두리는 오늘이거나 가장 가까운 다가오는 날(맨 앞 칸) 하나 — 소유자 빌드 17 "제일 최근 게 보더"(결정 097)

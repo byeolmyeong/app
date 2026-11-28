@@ -25,6 +25,8 @@ const perm = (status: number) =>
   ({ granted: status === S.AUTHORIZED, status: status === S.NOT_DETERMINED ? 'undetermined' : 'denied', canAskAgain: true, expires: 'never', ios: { status } }) as never;
 const ok = { ok: true as const, data: { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } };
 const timeRow = (text: string) => screen.getByRole('button', { name: `${A.time} ${text}` });
+/** 옛 판의 보류 키 — 기기 머리라 로그아웃이 지우지 않아 다음 사람에게 보냈다 */
+const LEGACY_PENDING_KEY = 'byeolmyeong-device.push-ask-pending.v1';
 
 beforeEach(async () => {
   jest.clearAllMocks();
@@ -176,6 +178,42 @@ describe('알림 받기 권유(보드 11-10, 결정 066 의 2)', () => {
     expect(mockApi.updateAccount).toHaveBeenLastCalledWith({ pushConsent: true, todaySkyPush: true, todaySkyTime: '08:00' });
     expect(await AsyncStorage.getItem(PUSH_ASK_PENDING_KEY)).toBeNull();
     expect(screen.queryByText(A.title)).toBeNull();
+  });
+
+  it('옛 판(기기 머리)에 남은 것은 누구 것인지 몰라 보내지 않고 지운다', async () => {
+    await AsyncStorage.setItem(LEGACY_PENDING_KEY, JSON.stringify({ pushConsent: true, todaySkyPush: true, todaySkyTime: '08:00' }));
+    await AsyncStorage.setItem(PUSH_ASK_KEY, '1');
+    await shown();
+    expect(mockApi.updateAccount).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(LEGACY_PENDING_KEY)).toBeNull();
+  });
+
+  it.each([
+    ['400 거절', { ok: false as const, error: 'SERVER' as const, status: 400, code: 'INVALID_TIME' }],
+    ['403 정지', { ok: false as const, error: 'SERVER' as const, status: 403, code: 'ACCOUNT_SUSPENDED' }],
+    ['401 세션 없음', { ok: false as const, error: 'LOGIN_REQUIRED' as const, status: 401 }],
+    ['저장은 됐지만 답의 모양이 다름', { ok: false as const, error: 'INVALID' as const, status: 200 }],
+  ])('다시 보내도 같은 답(%s)이면 남기지 않는다 — 홈에 올 때마다 다시 보내지 않게', async (_, failure) => {
+    N.requestPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+    mockApi.updateAccount.mockResolvedValueOnce(failure);
+    await shown();
+    await fireEvent.press(screen.getByText(A.accept));
+    await act(async () => {});
+    expect(mockApi.updateAccount).toHaveBeenCalledTimes(1);
+    expect(await AsyncStorage.getItem(PUSH_ASK_PENDING_KEY)).toBeNull();
+  });
+
+  it.each([
+    ['연결 끊김', { ok: false as const, error: 'NETWORK' as const }],
+    ['429', { ok: false as const, error: 'LIMIT' as const, status: 429 }],
+    ['503', { ok: false as const, error: 'SERVER' as const, status: 503 }],
+  ])('잠깐의 실패(%s)면 남겨 다음에 다시 보낸다', async (_, failure) => {
+    N.requestPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+    mockApi.updateAccount.mockResolvedValueOnce(failure);
+    await shown();
+    await fireEvent.press(screen.getByText(A.accept));
+    await act(async () => {});
+    expect(await AsyncStorage.getItem(PUSH_ASK_PENDING_KEY)).not.toBeNull();
   });
 
   it.each([

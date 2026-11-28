@@ -6,7 +6,7 @@ import { Screen } from '@/components/screen';
 import { useSlideUp } from '@/components/slide-up';
 import { Txt } from '@/components/txt';
 import { Colors, LegalLayout, LineWidth, Radius, ScreenPaddingX, Sizes, Spacing, StepLayout } from '@/constants/theme';
-import { legalInfo, type LegalBlock, type LegalDocument } from '@/content/legal';
+import type { LegalBlock, LegalDocument } from '@/content/legal';
 import { strings } from '@/content/strings';
 
 const L = strings.legal;
@@ -44,7 +44,7 @@ function TextPageScreen({ doc, onBack, onAgree }: TextPageProps) {
         contentContainerStyle={onAgree ? styles.contentWithAgree : styles.content}>
         <View testID="legal-body" style={styles.body}>
           <Txt variant="caption" color="hint">
-            {`${L.effectiveLabel} ${legalInfo.effective}`}
+            {`${L.effectiveLabel} ${doc.effective}`}
           </Txt>
           <Txt variant="small" color="gray" keepAll style={styles.intro}>
             {doc.intro}

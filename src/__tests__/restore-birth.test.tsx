@@ -138,31 +138,65 @@ describe('출생 정보 되살리기(결정 029)', () => {
     },
   );
 
+  it('서버에 저장된 것이 없으면(404 NO_PROFILE) 입력 화면을 보여 주고 다시 부르지 않는다', async () => {
+    await render(<HomeScreen />);
+    expect(await formShown()).toBeTruthy();
+    expect(screen.queryByTestId('nickname-card')).toBeNull();
+    expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
+    expect(mockApi.createChart).not.toHaveBeenCalled();
+    expect(await loadBirth()).toBeNull();
+  });
+
+  // 있는 사람에게 입력 화면을 보이면 조금 다르게 다시 넣은 값이 PUT /profile 로 가 서버가 풀이 · 리포트를 지운다(결정 112)
   it.each([
-    ['저장된 것이 없다(404)', noProfile],
     ['네트워크', { ok: false, error: 'NETWORK' }],
     ['서버 오류', { ok: false, error: 'SERVER', status: 500 }],
+    ['한도', { ok: false, error: 'LIMIT', status: 429 }],
+    ['NO_PROFILE 이 아닌 404', { ok: false, error: 'SERVER', status: 404 }],
     ['모양이 다름', { ok: false, error: 'INVALID', status: 200 }],
     ['로그인 필요', { ok: false, error: 'LOGIN_REQUIRED', status: 401 }],
   ] as [string, ApiResult<BirthInput>][])(
-    '되살리지 못하면(%s) 입력 화면을 보여 주고 다시 부르지 않는다',
+    '있는지 알 수 없으면(%s) 입력 화면 대신 불러오지 못한 화면(19)을 보이고, 다시 보기를 누르면 다시 되살린다',
     async (_name, result) => {
-      mockApi.getProfile.mockResolvedValue(result);
+      mockApi.getProfile.mockResolvedValueOnce(result);
       await render(<HomeScreen />);
-      expect(await formShown()).toBeTruthy();
-      expect(screen.queryByTestId('nickname-card')).toBeNull();
-      expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
-      expect(mockApi.createChart).not.toHaveBeenCalled();
+      expect(await screen.findByText(strings.states.loadFail.title.home)).toBeTruthy();
+      expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
+      expect(getHomeReady()).toBe(true);
       expect(await loadBirth()).toBeNull();
+
+      mockApi.getProfile.mockResolvedValue({ ok: true, data: known });
+      await fireEvent.press(screen.getByRole('button', { name: strings.states.loadFail.retry }));
+      expect(await homeShown()).toBeTruthy();
+      expect(mockApi.getProfile).toHaveBeenCalledTimes(2);
     },
   );
 
-  it('출생 정보는 받았는데 차트를 받지 못하면 입력 화면을 보여 주고 기기에 두지 않는다', async () => {
+  it('출생 정보는 받았는데 차트를 받지 못하면 입력 화면 대신 불러오지 못한 화면(19) — 기기에 두지 않는다', async () => {
     mockApi.getProfile.mockResolvedValue({ ok: true, data: known });
     mockApi.createChart.mockResolvedValue({ ok: false, error: 'SERVER', status: 502 });
     await render(<HomeScreen />);
-    expect(await formShown()).toBeTruthy();
+    expect(await screen.findByText(strings.states.loadFail.title.home)).toBeTruthy();
+    expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
     expect(await loadBirth()).toBeNull();
+  });
+
+  it('인터넷이 끊겨 되살리지 못했으면 볼 게 없는 화면(20-1) — 다시 시도는 다시 되살린다', async () => {
+    (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
+      cb({ isConnected: false, isInternetReachable: false });
+      return () => {};
+    });
+    try {
+      mockApi.getProfile.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+      await render(<HomeScreen />);
+      expect(await screen.findByText(strings.states.offlineEmpty.title)).toBeTruthy();
+      expect(screen.queryByPlaceholderText(H.datePlaceholder)).toBeNull();
+      mockApi.getProfile.mockResolvedValue({ ok: true, data: known });
+      await fireEvent.press(screen.getByRole('button', { name: strings.states.offlineEmpty.retry }));
+      await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalledTimes(2));
+    } finally {
+      (NetInfo.addEventListener as jest.Mock).mockReset();
+    }
   });
 
   it('기기에 출생 정보가 있으면 서버에 묻지 않는다(기기의 것을 그대로 둔다)', async () => {

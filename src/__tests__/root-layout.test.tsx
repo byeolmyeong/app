@@ -112,6 +112,23 @@ describe('로그인 전 가드(결정 034)', () => {
     expect(screen.getByTestId('guard-cover')).toBeTruthy();
   });
 
+  it('로그인한 채 쌓인 화면에서 세션이 만료되면(401) 쌓인 화면을 걷어 내고 로그인으로 — 다음 사람이 뒤로 가 앞사람의 화면을 보지 않게', async () => {
+    mockSegments.mockReturnValue(['my', 'account']);
+    mockUseSession.mockReturnValue(session('signedIn'));
+    (router.canDismiss as jest.Mock).mockReturnValue(true);
+    try {
+      const view = await render(<RootLayout />);
+      expect(router.replace).not.toHaveBeenCalled();
+      mockUseSession.mockReturnValue(session('signedOut'));
+      await view.rerender(<RootLayout />);
+      expect(router.dismissAll).toHaveBeenCalledTimes(1);
+      expect(router.replace).toHaveBeenCalledWith('/login');
+      expect((router.dismissAll as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan((router.replace as jest.Mock).mock.invocationCallOrder[0]);
+    } finally {
+      (router.canDismiss as jest.Mock).mockReturnValue(false);
+    }
+  });
+
   it('확인 중에도 가리고, 확인이 끝나 로그인 상태면 가리지 않고 보내지도 않는다', async () => {
     mockSegments.mockReturnValue([]);
     mockUseSession.mockReturnValue(session('checking'));

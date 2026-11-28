@@ -4,8 +4,9 @@
  * 이메일만 묻는다(`scope: 'email'`, 결정 039) — 서버가 ID 토큰에서 읽는다.
  * Services ID(`EXPO_PUBLIC_APPLE_SERVICES_ID`)가 없거나 https 가 아니면 그리지 않는다(애플은 localhost 를 받지 않는다).
  * 웹 정적 출력은 화면을 브라우저 밖에서 미리 그린다(window 가 없다) — 그때와 하이드레이션 첫 그림은 주소를 '' 로 보고 그리지 않는다.
+ * Apple JS 는 버튼이 보일 때 미리 받는다 — 누른 뒤에 받으면 팝업(signIn)이 누름(사용자 동작) 밖에서 열려 브라우저가 막을 수 있다(사파리).
  */
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { strings } from '@/content/strings';
 import { SocialButton } from '@/features/auth/providers/social-button';
@@ -30,12 +31,18 @@ export function AppleLoginButton({ onCredential, onError, disabled, loading, rec
   const servicesId = process.env.EXPO_PUBLIC_APPLE_SERVICES_ID?.trim();
   const [busy, setBusy] = useState(false);
   const protocol = useSyncExternalStore(neverChanges, browserProtocol, noProtocol);
-  if (!servicesId || !appleWebAvailable(servicesId, protocol)) return null;
+  const available = !!servicesId && appleWebAvailable(servicesId, protocol);
+  useEffect(() => {
+    // 못 받았으면 누를 때 다시 받는다
+    if (available) loadScript(APPLE_SCRIPT).catch(() => {});
+  }, [available]);
+  if (!available) return null;
 
   async function press() {
     setBusy(true);
     try {
-      await loadScript(APPLE_SCRIPT);
+      // 미리 받아 두었으면 기다리지 않고 바로 연다(팝업이 누름 안에서 열리게)
+      if (!appleAuth()) await loadScript(APPLE_SCRIPT);
       const auth = appleAuth();
       if (!auth || !servicesId) throw new Error('apple');
       const redirectUri = webOrigin() + APPLE_RETURN_PATH;

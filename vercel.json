@@ -21,6 +21,10 @@
     {
       "source": "/synastry/:id",
       "destination": "/synastry/[id]"
+    },
+    {
+      "source": "/my/inquiries/:id",
+      "destination": "/my/inquiries/[id]"
     }
   ],
   "headers": [

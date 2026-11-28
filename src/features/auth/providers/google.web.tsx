@@ -14,3 +14,6 @@ export function GoogleLoginButton({ disabled, loading, recent }: LoginButtonProp
   const press = () => window.location.assign(googleAuthorizeUrl(clientId, webOrigin() + GOOGLE_RETURN_PATH, newGoogleRequest()));
   return <SocialButton provider="GOOGLE" label={strings.login.google} onPress={press} disabled={disabled} loading={loading} recent={recent} />;
 }
+
+/** 웹은 SDK 로그인이 없어(주소로 다녀온다) 로그아웃 · 탈퇴 때 끊을 것이 없다 — 앱의 signOutGoogle 과 짝 */
+export async function signOutGoogle(): Promise<void> {}

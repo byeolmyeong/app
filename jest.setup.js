@@ -73,6 +73,15 @@ jest.mock('react-native-share', () => {
   };
 });
 
+// 구글 로그인 SDK(@react-native-google-signin/google-signin)도 TurboModule 이라 읽어 들이는 순간 던진다. 로그아웃 · 계정 삭제가 이 기기의 구글 로그인을
+// 끊으므로(features/auth/providers/google.tsx 의 signOutGoogle) 아무것도 하지 않는 가짜를 깐다. 로그인 버튼 자체의 시험(providers/native-providers)은 그 파일에서 다시 깐다.
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: { configure: jest.fn(), hasPlayServices: jest.fn(async () => true), signIn: jest.fn(), signOut: jest.fn(async () => null) },
+  isSuccessResponse: () => false,
+  isErrorWithCode: () => false,
+  statusCodes: { SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED' },
+}));
+
 // Reanimated(화면 스레드 움직임 — 이유 상자의 펼침)는 라이브러리의 시험 설정으로 JS 에서 돈다. 움직임 중간은 가짜 시계(jest.useFakeTimers)로 넘겨 본다.
 // 짝: package.json 의 jest.resolver(react-native-reanimated/jest/resolver)가 네이티브 대신 웹 구현을 고른다.
 require('react-native-reanimated').setUpTests();

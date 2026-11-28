@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { AppState, StyleSheet, type AppStateStatus } from 'react-native';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
@@ -478,6 +478,24 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky });
   });
 
+  it('앱을 켜 둔 채 자정을 넘겨 돌아오면 눈여겨볼 날의 "오늘" 도 다음 날로 — 어제 칸에 오늘을 붙이지 않고, 오늘 칸을 누르면 /today', async () => {
+    // 앱으로 돌아옴: 화면들이 건 AppState 알림(react-native 의 가짜 — 건 것이 calls 에 남는다)을 모두 부른다
+    const comeBack = () =>
+      act(async () => (AppState.addEventListener as jest.Mock).mock.calls.forEach(([, handler]: [string, (next: AppStateStatus) => void]) => handler('active')));
+    const day = fixtures.monthSky.days[0];
+    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...day, date: '2026-11-19' }, { ...day, date: '2026-11-20' }] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-month-days');
+    expect(screen.getByText('19일 · 오늘')).toBeTruthy();
+    // 밤사이 백그라운드에 있다가 다음 날(한국 날짜 11-20) 아침에 돌아온다
+    nowSpy?.mockReturnValue(Date.parse('2026-11-20T00:30:00Z'));
+    await comeBack();
+    expect(screen.queryByText('19일 · 오늘')).toBeNull();
+    await fireEvent.press(screen.getByText('20일 · 오늘'));
+    expect(router.push).toHaveBeenLastCalledWith('/today');
+  });
+
   it('맨 위 큰 카드 — "오늘의 하늘 · 11월 19일 목요일" · 제목(제목 단계) · 짧은 이유 · 사람 · 일 · 마음 흐름 셋, 누르면 /today(결정 092)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
@@ -594,6 +612,17 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(StyleSheet.flatten(next.props.style)).toMatchObject({ borderColor: Colors.primary });
     expect(StyleSheet.flatten(later.props.style).borderColor).not.toBe(Colors.primary);
     expect(StyleSheet.flatten(past.props.style).borderColor).not.toBe(Colors.primary);
+  });
+
+  it('시각 "모름" 이면 받았더라도 상승점 · 중천 · 하우스가 근거인 날은 칸을 두지 않는다 — 시기 탭 달력과 같은 거름(time-known, 이중 안전)', async () => {
+    const day = fixtures.monthSky.days[0];
+    const asc = { ...day, date: '2026-11-23', text: '상승점이 근거인 날', reason: { when: 'DAY' as const, items: [{ kind: 'TRANSIT' as const, mover: 'MARS', target: 'ASC', type: 'SQUARE' }] } };
+    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, timeKnown: false, days: [day, asc] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-month-days');
+    expect(screen.getAllByTestId('home-month-day')).toHaveLength(1);
+    expect(screen.queryByText('상승점이 근거인 날')).toBeNull();
   });
 
   it('이번 달에 다가오는 날이 없으면(지난 날만) 테두리 칸이 없다', async () => {

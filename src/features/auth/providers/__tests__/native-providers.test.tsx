@@ -5,11 +5,11 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 
 import { strings } from '@/content/strings';
 import { AppleLoginButton } from '@/features/auth/providers/apple';
-import { GoogleLoginButton } from '@/features/auth/providers/google';
+import { GoogleLoginButton, signOutGoogle } from '@/features/auth/providers/google';
 import { KakaoLoginButton } from '@/features/auth/providers/kakao';
 
 jest.mock('@react-native-google-signin/google-signin', () => ({
-  GoogleSignin: { configure: jest.fn(), hasPlayServices: jest.fn(async () => true), signIn: jest.fn() },
+  GoogleSignin: { configure: jest.fn(), hasPlayServices: jest.fn(async () => true), signIn: jest.fn(), signOut: jest.fn(async () => null) },
   isSuccessResponse: (r: { type: string }) => r.type === 'success',
   isErrorWithCode: (e: unknown) => typeof e === 'object' && e !== null && 'code' in e,
   statusCodes: { SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED' },
@@ -72,6 +72,25 @@ describe('구글(앱)', () => {
     delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
     await render(<GoogleLoginButton {...props} />);
     expect(screen.queryByText(strings.login.google)).toBeNull();
+  });
+});
+
+describe('구글(앱) — 로그아웃 · 탈퇴 때 끊기', () => {
+  it('설정한 뒤 SDK 의 로그인을 끊는다(켠 뒤 로그인 버튼을 누르지 않았어도 — 설정이 없으면 끊지 못한다)', async () => {
+    await signOutGoogle();
+    expect(GoogleSignin.configure).toHaveBeenCalledWith({ webClientId: 'web-client', iosClientId: 'ios-client' });
+    expect(GoogleSignin.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('끊지 못해도 던지지 않는다(로그아웃 · 탈퇴를 막지 않는다)', async () => {
+    (GoogleSignin.signOut as jest.Mock).mockRejectedValueOnce(new Error('no client'));
+    await expect(signOutGoogle()).resolves.toBeUndefined();
+  });
+
+  it('클라이언트 ID 가 없으면(구글 로그인이 없는 빌드) 부르지 않는다', async () => {
+    delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    await signOutGoogle();
+    expect(GoogleSignin.signOut).not.toHaveBeenCalled();
   });
 });
 

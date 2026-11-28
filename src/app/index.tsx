@@ -241,8 +241,9 @@ function Home({ onRetry }: { onRetry: () => void }) {
           />
           <HomeMenus />
         </View>
-        {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때). 새로워진 점이 떠 있는 동안은 기다린다 */}
-        <PushAskSheet time={account?.todaySkyTime} ready={!!reading?.headline && !whatsNew} />
+        {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때). 새로워진 점을 띄울 기기면 그 창을 보고 닫을 때까지 기다린다
+            (셋째 줄을 가릴 값을 모르는 동안 권유가 먼저 열리지 않게 — 띄울 차례 whatsNewDue 로 본다) */}
+        <PushAskSheet time={account?.todaySkyTime} ready={!!reading?.headline && !whatsNewDue} />
         {whatsNew ? (
           <WhatsNewDialog
             received={received}

@@ -11,6 +11,7 @@ import { saveBirth } from '@/features/chart/use-birth-profile';
 import { ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
 import { INTRO_SEEN_KEY, resetIntroSeen } from '@/features/onboarding/intro-seen';
 import { WHATS_NEW_KEY, resetWhatsNew, settleWhatsNew } from '@/features/onboarding/whats-new';
+import { READING_STORAGE_KEY } from '@/features/reading/use-reading';
 import { useUpdateSuggestion } from '@/features/update/update-gate';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
@@ -30,6 +31,11 @@ jest.mock('@/features/auth/use-session', () => ({
 jest.mock('@/features/update/update-gate', () => ({
   ...jest.requireActual('@/features/update/update-gate'),
   useUpdateSuggestion: jest.fn(() => 'none'),
+}));
+// 알림 받기 권유가 뜰 수 있는 기기(아직 묻지 않음) — 새로워진 점과 겹치지 않는지 본다
+jest.mock('@/features/push/push', () => ({
+  ...jest.requireActual('@/features/push/push'),
+  getPushPermission: jest.fn(async () => 'undetermined'),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -171,6 +177,23 @@ describe('새로워진 점 창(1.1.0 처음 켤 때 한 번 · 1.0.0 에서 업�
     await view.unmount();
     await render(<HomeScreen />);
     expect(await screen.findByTestId('whats-new')).toBeTruthy();
+  });
+
+  it('알림 받기 권유는 새로워진 점이 정해질 때까지(셋째 줄을 가릴 값을 모르는 동안에도) 열리지 않는다', async () => {
+    await AsyncStorage.setItem(INTRO_SEEN_KEY, '1');
+    await AsyncStorage.setItem(READING_STORAGE_KEY, JSON.stringify({ key: birthKey, reading: fixtures.reading }));
+    // 나 탭 풀이 상태를 아직 모른다 — 새로워진 점 창이 뜨기 전
+    let answer: (v: Awaited<ReturnType<typeof api.getMeReport>>) => void = () => {};
+    mockApi.getMeReport.mockReturnValue(new Promise((r) => (answer = r)));
+    await launch();
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-menu-me');
+    await act(async () => {});
+    expect(screen.queryByTestId('whats-new')).toBeNull();
+    expect(screen.queryByText(strings.push.ask.title)).toBeNull();
+    await act(async () => answer({ ok: true, data: { status: 'NONE' } }));
+    expect(await screen.findByTestId('whats-new')).toBeTruthy();
+    expect(screen.queryByText(strings.push.ask.title)).toBeNull();
   });
 
   it('새로 깐 사람(소개 기록 없음)은 보지 않는다', async () => {

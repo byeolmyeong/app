@@ -9,7 +9,7 @@ import { Sheet } from '@/components/sheet';
 import { Toast, useToast } from '@/components/toast';
 import { useLoadingPhase } from '@/components/use-loading-phase';
 import { Txt } from '@/components/txt';
-import { Colors, Sizes, Spacing, StepLayout } from '@/constants/theme';
+import { Colors, ShareSheetLayout, Sizes, Spacing, StepLayout } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { saveImage, shareStory, type CardRef } from '@/features/share/share-actions';
 import { ShareCardSkeleton, ShareCardView } from '@/features/share/share-card';
@@ -181,11 +181,18 @@ function ShareBody({ target }: { target: ShareTarget }) {
         <Checkbox label={S.showNames} checked={showNames} onChange={setShowNames} />
       ) : null}
       {state.status === 'done' ? (
-        // 주 버튼은 맨 아래, 보조는 그 위(결정 061 의 5). 스토리가 없으면 "이미지 저장" 이 주 버튼이다
-        <View style={styles.actions}>
+        // 아래 버튼은 나란히 — 왼쪽 보조 "이미지 저장" · 오른쪽 주 "인스타그램 스토리"(1 : 1.4, 결정 103 의 3 — 061 의 5 의 위아래를 대체한 예외).
+        // 스토리가 없으면(웹 · 앱 ID 없음) "이미지 저장" 하나가 주 버튼으로 꽉 찬다
+        <View testID="share-actions" style={styles.actions}>
           <Toast toast={toast} onClose={closeToast} above="button" />
-          <Button variant={appId ? 'line' : 'primary'} label={S.actions.saveImage} onPress={save} />
-          {appId ? <Button label={S.actions.story} onPress={story} /> : null}
+          <View testID="share-action" style={styles.action}>
+            <Button variant={appId ? 'sheetLine' : 'primary'} label={S.actions.saveImage} onPress={save} />
+          </View>
+          {appId ? (
+            <View testID="share-action" style={styles.actionPrimary}>
+              <Button label={S.actions.story} onPress={story} />
+            </View>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -255,5 +262,7 @@ const styles = StyleSheet.create({
   cardIcon: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { gap: Spacing.lg },
   preview: { alignItems: 'center' },
-  actions: { gap: Spacing.xs },
+  actions: { flexDirection: 'row', gap: Spacing.xs },
+  action: { flex: 1 },
+  actionPrimary: { flex: ShareSheetLayout.primaryFlex },
 });

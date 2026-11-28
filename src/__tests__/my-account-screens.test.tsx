@@ -49,7 +49,7 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
   it('제목은 "내 정보", 프로필 · 닉네임 · 출생 정보 · 연결된 계정 · 로그아웃 · 계정 삭제 순서다(결정 084)', async () => {
     await saveBirth({ profile: { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } }, chart: fixtures.chart });
     await render(<AccountScreen />);
-    expect(await screen.findByText('dawn****@kakao.com')).toBeTruthy();
+    expect(await screen.findByLabelText(A.providers.KAKAO)).toBeTruthy();
     expect(screen.getByText('내 정보')).toBeTruthy();
     expect(screen.queryByText('계정')).toBeNull();
     const labels = [N.avatars[2], A.nickname, A.birth, A.linked, A.logout, A.delete];
@@ -62,7 +62,7 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
   it('닉네임 · 출생 정보 줄은 이름과 꺾쇠 › 만 — 지금 닉네임 · 출생 정보 한 줄 · "수정" 글자가 없다(결정 087)', async () => {
     await saveBirth({ profile: { date: '1999-03-08', time: '14:10', place: { id: 1, name: '서울특별시 강남구' } }, chart: fixtures.chart });
     await render(<AccountScreen />);
-    await screen.findByText('dawn****@kakao.com');
+    await screen.findByLabelText(A.providers.KAKAO);
     for (const label of [A.nickname, A.birth]) {
       const row = screen.getByRole('button', { name: label });
       // 줄 안의 글자는 이름 하나뿐, 오른쪽 끝에 꺾쇠
@@ -79,7 +79,7 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
   it('출생 정보 줄을 누르면 출생 정보 수정(/my/birth)으로 간다. 시각을 몰라도 줄 모양은 같다(값 줄 없음)', async () => {
     await saveBirth({ profile: { date: '1999-03-08', time: null, place: null }, chart: fixtures.chartTimeUnknown });
     await render(<AccountScreen />);
-    await screen.findByText('dawn****@kakao.com');
+    await screen.findByLabelText(A.providers.KAKAO);
     expect(screen.queryByText('1999년 3월 8일 · 시각 모름')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: A.birth }));
     expect(router.push).toHaveBeenLastCalledWith('/my/birth');
@@ -87,7 +87,7 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
 
   it('기기에 출생 정보가 없어도 출생 정보 줄은 이름과 꺾쇠로 남아 들어갈 수 있다', async () => {
     await render(<AccountScreen />);
-    await screen.findByText('dawn****@kakao.com');
+    await screen.findByLabelText(A.providers.KAKAO);
     const row = screen.getByRole('button', { name: A.birth });
     expect(within(row).getByTestId('list-card-chevron')).toBeTruthy();
     expect(within(row).queryByText(/년 .*월/)).toBeNull();
@@ -95,29 +95,41 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
     expect(router.push).toHaveBeenLastCalledWith('/my/birth');
   });
 
-  it('프로필 그림 · 닉네임 줄 · 연결된 계정(공급자 + 가린 이메일) / 로그아웃 / 맨 아래 계정 삭제를 보인다', async () => {
+  it('프로필 그림 · 닉네임 줄 · 연결된 계정(공급자 마크만) / 로그아웃 / 맨 아래 계정 삭제를 보인다', async () => {
     await render(<AccountScreen />);
-    expect(await screen.findByText('dawn****@kakao.com')).toBeTruthy();
+    expect(await screen.findByLabelText(A.providers.KAKAO)).toBeTruthy();
     expect(screen.getByText(A.nickname)).toBeTruthy();
     expect(screen.getByLabelText(N.avatars[2])).toBeTruthy();
     expect(screen.getByText(A.linked)).toBeTruthy();
-    expect(screen.getByText('dawn****@kakao.com')).toBeTruthy();
-    // 이메일이 길어도 이름은 한 줄 · 이메일은 한 줄에 가운데 말줄임, 화면 읽기는 전체(소유자 2026-11-21)
     expect(screen.getByText(A.linked).props.numberOfLines).toBe(1);
-    const email = screen.getByText('dawn****@kakao.com');
-    expect(email.props.numberOfLines).toBe(1);
-    expect(email.props.ellipsizeMode).toBe('middle');
-    expect(email.props.accessibilityLabel).toBe('dawn****@kakao.com');
-    expect(screen.getByTestId('provider-badge-KAKAO', { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.queryByText('dawnstar@kakao.com')).toBeNull();
     expect(screen.getByText(A.logout)).toBeTruthy();
     expect(screen.getByText(A.delete)).toBeTruthy();
   });
 
-  it('이메일이 없는(옛) 계정은 공급자 이름만 적는다', async () => {
-    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...account, email: null, provider: 'APPLE' } });
+  it('연결된 계정 줄은 공급자 마크만 — 이메일(가린 것도) · 공급자 글자 없음, 마크의 화면 읽기 이름은 "카카오"(결정 103 의 1, 시안 16-1)', async () => {
     await render(<AccountScreen />);
-    expect(await screen.findByText(A.providers.APPLE)).toBeTruthy();
+    const mark = await screen.findByRole('image', { name: A.providers.KAKAO });
+    expect(screen.getByTestId('provider-badge-KAKAO')).toBe(mark);
+    // 노란 원(지름 24) 안의 말풍선(14)
+    expect(StyleSheet.flatten(mark.props.style)).toMatchObject({ width: 24, height: 24, borderRadius: 12, backgroundColor: '#FEE500' });
+    expect(screen.queryByText(/@/)).toBeNull();
+    expect(screen.queryByText(/\*\*\*\*/)).toBeNull();
+    expect(screen.queryByText(A.providers.KAKAO)).toBeNull();
+  });
+
+  it.each(['APPLE', 'GOOGLE'] as const)('%s 계정도 마크만 — 화면 읽기는 그 공급자 이름, 이메일이 없는 옛 계정도 같다', async (provider) => {
+    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...account, email: null, provider } });
+    await render(<AccountScreen />);
+    expect(await screen.findByRole('image', { name: A.providers[provider] })).toBeTruthy();
+    expect(screen.getByTestId(`provider-badge-${provider}`)).toBeTruthy();
+    expect(screen.queryByText(A.providers[provider])).toBeNull();
+  });
+
+  it('개발용 계정은 마크가 없어 이름 글자를 그대로 둔다(결정 103 의 1)', async () => {
+    mockApi.getMyAccount.mockResolvedValue({ ok: true, data: { ...account, email: 'dev@example.com', provider: 'DEV' } });
+    await render(<AccountScreen />);
+    expect(await screen.findByText(A.providers.DEV)).toBeTruthy();
+    expect(screen.queryByText(/@/)).toBeNull();
   });
 
   it('계정을 받지 못해도(끊김) 로그아웃 · 계정 삭제는 보인다', async () => {
@@ -139,14 +151,14 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
 
   it('프로필 그림 버튼의 읽기 이름은 "프로필 수정"(소유자 2026-11-21)', async () => {
     await render(<AccountScreen />);
-    await screen.findByText('dawn****@kakao.com');
+    await screen.findByLabelText(A.providers.KAKAO);
     expect(screen.getByRole('button', { name: '프로필 수정' })).toBeTruthy();
   });
 
   it('프로필 그림을 누르면 고르기 시트(제목 없음), 다른 그림을 확인하면 PATCH 하고 바뀐 그림만 — 성공 알림은 없다(소유자 2026-11-21)', async () => {
     mockApi.updateAccount.mockResolvedValue({ ok: true, data: { ...account, avatar: 5 } });
     await render(<AccountScreen />);
-    await screen.findByText('dawn****@kakao.com');
+    await screen.findByLabelText(A.providers.KAKAO);
     await fireEvent.press(screen.getByRole('button', { name: A.editAvatar }));
     await fireEvent.press(await screen.findByRole('radio', { name: N.avatars[4] }));
     await fireEvent.press(screen.getByText(N.confirm));
@@ -157,7 +169,7 @@ describe('내 정보(/my/account, 보드 16-1 · 결정 084)', () => {
 
   it('같은 그림을 확인하면 서버를 부르지 않고, 저장에 실패하면 그림은 그대로 두고 실패 알림', async () => {
     await render(<AccountScreen />);
-    await screen.findByText('dawn****@kakao.com');
+    await screen.findByLabelText(A.providers.KAKAO);
     await fireEvent.press(screen.getByRole('button', { name: A.editAvatar }));
     await fireEvent.press(await screen.findByText(N.confirm));
     expect(mockApi.updateAccount).not.toHaveBeenCalled();

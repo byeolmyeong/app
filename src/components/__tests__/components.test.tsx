@@ -36,6 +36,8 @@ describe('테마', () => {
       muted: '#4D4F5A',
       hair: '#2A2B33',
       fill: '#1C1D24',
+      // 시트 위의 보조 버튼(결정 103 의 3)
+      sheetSecondary: '#2A2B33',
       sheetFill: '#1F2027',
       handle: '#3A3B42',
       fieldOff: '#121318',

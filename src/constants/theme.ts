@@ -40,6 +40,8 @@ export const Colors = {
   hair: '#2A2B33',
   /** 입력칸·보조 버튼·카드의 바탕 */
   fill: '#1C1D24',
+  /** 시트 위의 보조 버튼 바탕(공유 시트 "이미지 저장" — 시트 면 raised 위에서 보이게, 결정 103 의 3). 값은 hair 와 같지만 누르는 면이라 따로 둔다 */
+  sheetSecondary: '#2A2B33',
   /** 시트 위의 칸(검색 칸 · 칩 · 드럼롤의 가운데 띠)과 시트 안 목록의 구분선(결정 042 시안) */
   sheetFill: '#1F2027',
   /** 시트의 손잡이 줄 · 검색 지우기 단추 */
@@ -905,7 +907,8 @@ export const MyLayout = {
     /** 묶음 제목이 있는 카드(결정 093): 카드 위아래 안 여백 · 제목 줄 높이 · 줄 높이(줄 사이 선 없음) */
     titled: { padV: 6, title: 44, row: 48 },
   },
-  account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 18, badgeGlyph: 11, badgeGap: 6 },
+  /** 내 정보(16-1): 프로필 위 · 아래 · 계정 삭제 줄 높이 · 연결된 계정의 공급자 마크(지름 · 로고 — 결정 103 의 1, 시안 24 · 14) */
+  account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 24, badgeGlyph: 14 },
   delete: { headingTop: 8, gap: 22, notePadding: 18, noteGap: 12, dot: 4, dotTop: 10, dotGap: 10, checkGap: 10, checkPadV: 4, checkPadH: 2 },
   done: { icon: 72, iconGlyph: 32, titleTop: 24, bodyTop: 10, lift: 40 },
   /** 출생 정보 수정(16-4): 안내 칸(안 여백 · 모서리 · 아이콘 · 아이콘과 글 사이) · 묶음 사이 */
@@ -945,6 +948,9 @@ export const InquiryLayout = {
   skeleton: { rows: 3, line: 16, meta: 12, chip: 56, date: 64, bodyLines: 3 },
   sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
 } as const;
+
+/** 공유 시트 아래 버튼 둘(결정 103 의 3, 시안 12-4): 보조 "이미지 저장" 1 : 주 "인스타그램 스토리" 1.4 — 높이는 버튼 그대로(56) */
+export const ShareSheetLayout = { primaryFlex: 1.4 } as const;
 
 /**
  * 공유 카드 v2(결정 053, 보드 12-7 · 12-14 · 11-7 · 14-6)의 값 — 시안의 360×640 카드 기준이다. 미리보기 · 공유 페이지 · 저장 이미지는

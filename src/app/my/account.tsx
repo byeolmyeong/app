@@ -14,8 +14,7 @@ import { Colors, MyLayout, ScreenPaddingX, Sizes, Spacing, StateLayout } from '@
 import { strings } from '@/content/strings';
 import { AvatarSheet } from '@/features/auth/avatar-sheet';
 import { signOut } from '@/features/auth/sign-out';
-import { maskEmail } from '@/features/my/mask-email';
-import { ProviderBadge } from '@/features/my/provider-badge';
+import { ProviderBadge, hasProviderMark } from '@/features/my/provider-badge';
 import { useMyAccount } from '@/features/my/use-my-account';
 import { api } from '@/lib/api';
 
@@ -23,12 +22,12 @@ const A = strings.my.account;
 const LO = strings.my.logout;
 const L = MyLayout.account;
 
-/** 이메일이 없는(옛) 계정은 공급자 이름만 적는다. 모르는 공급자면 아무것도 적지 않는다 */
+/** 마크가 없는 공급자(개발용)의 이름 글자(결정 103 의 1). 모르는 공급자면 아무것도 적지 않는다 */
 const providerName = (provider: string) => (A.providers as Record<string, string>)[provider] ?? '';
 
 /**
  * 내 정보(결정 084 — 056 의 3 의 계정 화면, 보드 16-1): 위 가운데 프로필 그림(누르면 고르기 시트 16-6) · 닉네임(16-5) · 출생 정보(누르면
- * 출생 정보 수정 16-4) · 연결된 계정(공급자 + 가린 이메일)을 한 카드에, 로그아웃(가운데 창 16-9)은 따로 한 카드,
+ * 출생 정보 수정 16-4) · 연결된 계정(공급자 마크만 — 이메일은 보이지 않는다, 결정 103 의 1)을 한 카드에, 로그아웃(가운데 창 16-9)은 따로 한 카드,
  * 맨 아래 작은 밑줄 글자 "계정 삭제"(16-10). 화면이 스크롤되지 않으니 줄을 따로 카드로 나누지 않는다.
  * 닉네임 · 출생 정보 줄은 이름과 꺾쇠 › 만 — 지금 값은 마이 별명 카드에 있다(결정 087). 그래서 기기에 출생 정보가 없어도 줄 모양은 같다.
  * 계정을 받지 못해도(끊김) 로그아웃 · 계정 삭제는 늘 보인다. 프로필은 고르면 바로 저장하고 바뀐 모습만 보인다 — 못 바꿨을 때만 짧은 알림(결정 065 의 1, 소유자 2026-11-21).
@@ -64,7 +63,8 @@ export default function AccountScreen() {
     router.replace('/login');
   }
 
-  const linked = account ? (account.email ? maskEmail(account.email) : providerName(account.provider)) : null;
+  // 연결된 계정 줄(결정 103 의 1): 공급자 마크만 — 이메일은 보이지 않는다. 마크가 없는 개발용 계정만 이름 글자
+  const provider = account?.provider ?? null;
   return (
     <Screen scroll={false} nav={<NavBar chevron title={A.title} onBack={() => (router.canGoBack() ? router.back() : router.replace('/my'))} />}>
       <View style={styles.body}>
@@ -79,19 +79,17 @@ export default function AccountScreen() {
         <ListCard>
           <ListCardRow label={A.nickname} onPress={() => router.push('/my/nickname')} />
           <ListCardRow label={A.birth} onPress={() => router.push('/my/birth')} />
-          {linked !== null ? (
+          {provider !== null ? (
             <ListCardRow
               label={A.linked}
               trailing={
-                <View style={styles.linked}>
-                  <View style={styles.badge}>
-                    <ProviderBadge provider={account?.provider ?? ''} />
-                  </View>
-                  {/* 이메일이 길면 가운데를 줄여 앞과 도메인이 보이게(그림은 줄지 않는다). 화면 읽기는 전체를 읽는다 */}
-                  <Txt variant="small" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={linked} style={styles.linkedText}>
-                    {linked}
+                hasProviderMark(provider) ? (
+                  <ProviderBadge provider={provider} />
+                ) : (
+                  <Txt variant="small" color="gray" numberOfLines={1}>
+                    {providerName(provider)}
                   </Txt>
-                </View>
+                )
               }
             />
           ) : null}
@@ -145,9 +143,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  linked: { flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: L.badgeGap },
-  badge: { flexShrink: 0 },
-  linkedText: { flexShrink: 1 },
   /** 계정 삭제는 맨 아래 가운데 작은 밑줄 글자(아래 34) */
   footer: { alignItems: 'center', paddingHorizontal: ScreenPaddingX, paddingBottom: StateLayout.bottom },
   delete: { height: L.deleteRow, paddingHorizontal: Spacing.sm, justifyContent: 'center' },

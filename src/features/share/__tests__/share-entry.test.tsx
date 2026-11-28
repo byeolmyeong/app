@@ -107,13 +107,22 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     expect(screen.queryByText(S.open)).toBeNull();
   });
 
-  it('앱: 보조 "이미지 저장" 이 위, 주 "인스타그램 스토리 공유" 가 맨 아래다(링크 버튼 없음)', async () => {
+  it('앱: 아래 버튼 둘을 나란히 — 왼쪽 보조 "이미지 저장" · 오른쪽 주 "인스타그램 스토리"(1 : 1.4, 높이 56, 보조 바탕은 시트 위에서 보이게 sheetSecondary — 결정 103 의 3, 시안 12-4)', async () => {
     await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
     await screen.findByTestId('share-card');
     expect(actionLabels()).toEqual([S.actions.saveImage, S.actions.story]);
-    expect(fillOf(S.actions.saveImage)).toBe(Colors.fill);
+    expect(S.actions.story).toBe('인스타그램 스토리');
+    expect(fillOf(S.actions.saveImage)).toBe(Colors.sheetSecondary);
     expect(fillOf(S.actions.story)).toBe(Colors.primary);
+    const row = screen.getByTestId('share-actions');
+    expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', gap: 8 });
+    const [left, right] = screen.getAllByTestId('share-action');
+    expect(StyleSheet.flatten(left.props.style)).toMatchObject({ flex: 1 });
+    expect(StyleSheet.flatten(right.props.style)).toMatchObject({ flex: 1.4 });
+    expect(within(left).getByText(S.actions.saveImage)).toBeTruthy();
+    expect(within(right).getByText(S.actions.story)).toBeTruthy();
+    for (const label of [S.actions.saveImage, S.actions.story]) expect(StyleSheet.flatten(button(label).props.style).height).toBe(Sizes.buttonHeight);
     // 누를 수 있는 것은 여는 아이콘과 두 버튼뿐이다(링크 복사 · 기기 공유 창 버튼 없음)
     expect(screen.getAllByRole('button')).toHaveLength(3);
   });
@@ -136,6 +145,9 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     await screen.findByTestId('share-card');
     expect(actionLabels()).toEqual([S.actions.saveImage]);
     expect(fillOf(S.actions.saveImage)).toBe(Colors.primary);
+    // 하나뿐이면 꽉 차게(나란히 놓지 않는다)
+    expect(screen.getAllByTestId('share-action')).toHaveLength(1);
+    expect(StyleSheet.flatten(screen.getByTestId('share-action').props.style)).toMatchObject({ flex: 1 });
   });
 
   it('이미지 저장 → 짧은 알림 "이미지를 저장했어요"(성공 2초) — 시트 안에 결과 글을 붙이지 않는다', async () => {

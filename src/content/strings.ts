@@ -304,7 +304,8 @@ export const strings = {
     /** 새 문의(보드 16-8): 이메일 칸은 없다 */
     form: {
       title: '새 문의',
-      categoryLabel: '어떤 문의예요?',
+      /** 종류 칩 위 칸 이름 — 아래 칸 이름 "내용" 과 같은 꼴(결정 103 의 2) */
+      categoryLabel: '유형',
       bodyLabel: '내용',
       placeholder: '어느 화면에서 무슨 일이 있었는지 적어 주시면 도움이 돼요.',
       hint: '답변이 오면 알림으로 알려 드려요. 문의 내역에서 볼 수 있어요.',

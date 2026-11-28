@@ -252,6 +252,14 @@ describe('새 문의(/my/inquiries/new, 보드 16-8)', () => {
     expect(submit().props.accessibilityState.disabled).toBe(true);
   });
 
+  it('종류 칩 위 칸 이름은 "유형"(결정 103 의 2 — 아래 칸 이름 "내용" 과 같은 꼴, 옛 "어떤 문의예요?"), 칩 넷은 그대로', async () => {
+    await render(<NewInquiryScreen />);
+    expect(F.categoryLabel).toBe('유형');
+    expect(screen.getByText('유형')).toBeTruthy();
+    expect(screen.queryByText('어떤 문의예요?')).toBeNull();
+    expect(Object.values(I.categories)).toEqual(['오류', '제안', '계정', '기타']);
+  });
+
   it('10자가 안 되면 내용 칸 아래에 "10자 이상 적어 주세요." — 비었을 때와 10자를 넘기면 없다', async () => {
     await render(<NewInquiryScreen />);
     expect(screen.queryByText(F.tooShort)).toBeNull();

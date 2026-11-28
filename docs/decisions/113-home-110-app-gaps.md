@@ -50,6 +50,6 @@ superseded_by:
 - 궁합 탭에 직접 입력 줄만 두고 누르면 옛 직접 입력 화면으로: 옛 화면은 사이 넷 · 저장 안 함(104 와 다름)이다.
 
 ## 영향
-- 앱: `src/features/onboarding/intro-seen.ts`(처음 읽은 값) · `whats-new.ts` · `whats-new-dialog.tsx`, 루트 레이아웃(실행이 시작할 때 정함), 홈(`src/app/index.tsx` — 메뉴판 · 창), `src/features/home/main-tabs.tsx`(탭 다섯), `src/app/synastry/_layout.tsx`(탭 첫 화면만), `src/features/synastry/synastry-tab.tsx`(빈 하늘), `src/lib/detail-report.ts`(받아 두기가 다 쓰였는지 알려 줌).
+- 앱: `src/features/onboarding/intro-seen.ts`(처음 읽은 값) · `whats-new.ts` · `whats-new-dialog.tsx`, 루트 레이아웃(실행이 시작할 때 정함), 홈(`src/app/index.tsx` — 메뉴판 · 창), `src/features/home/main-tabs.tsx`(탭 다섯), `src/app/synastry/_layout.tsx`(탭 첫 화면만), `src/features/synastry/synastry-empty-sky.tsx`(빈 하늘 카드), `src/lib/detail-report.ts`(받아 두기가 다 쓰였는지 알려 줌).
 - A④: 궁합 탭에 별 지도 · 순위 · 두 줄을 더하고, `relation` 을 읽어 입력 화면으로 잇는다. 옛 화면을 지울 때 레이아웃을 화면 쌓기로 바꾼다.
 - A③: 셋째 줄의 기준을 `GET /entitlements` 로 바꿀지 본다.

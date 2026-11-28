@@ -1036,3 +1036,38 @@ export const PushAskLayout = {
   laterGap: 8,
 } as const;
 
+
+/**
+ * 궁합의 사이 색(결정 104 · 102 의 1): 별 지도의 테두리와 홈 나의 사람들 두 줄의 아이콘에만 쓴다(주색 하나 원칙의 예외 — 결정 102 의 1).
+ * 영역을 색으로 나누지 않는 원칙(DESIGN.md)과 달리 사이는 별 지도에서 색으로 가른다(시안 "궁합 (결정 104)" 1).
+ */
+export const RelationColors = { LOVE: '#FF9EC4', FRIEND: '#9AE8FF' } as const;
+
+/**
+ * 궁합 탭의 별 지도 카드(시안 "궁합 (결정 104)" 1-2 — 350×380 카드): 높이 · 모서리 · 가운데의 옅은 빛(색 · 가로 · 세로 · 퍼짐) ·
+ * 가운데(나)의 세로 자리(카드 높이 대비) · 둘레 원 셋(반지름 — 첫째는 실선, 둘째 · 셋째는 점선 3 · 5) ·
+ * 나(프로필 그림 지름 · 빛 · 그림 아래 "나" 까지) · 0명일 때 점선 별 넷(가운데에서 떨어진 가로 · 세로와 지름, 점선 1.5 · 색) ·
+ * 왼쪽 위 "내 궁합"(왼쪽 · 위) · 아래 "아직 내 하늘이 비어 있어요"(아래)
+ */
+export const SynastrySkyLayout = {
+  height: 380,
+  radius: 24,
+  glow: { color: '#1E2470', x: 0.5, y: 0.52, extent: 0.62 },
+  centerY: 198 / 380,
+  rings: [64, 112, 158],
+  ringDash: '3 5',
+  me: { size: 68, glow: '0 0 24px rgba(154,163,255,0.55)', labelTop: 36, labelWidth: 40 },
+  emptyStars: [
+    { dx: 49, dy: -41, size: 34 },
+    { dx: -97, dy: 56, size: 30 },
+    { dx: 148, dy: 54, size: 26 },
+    { dx: -54, dy: -148, size: 26 },
+  ],
+  emptyStarBorder: 1.5,
+  emptyStarColor: '#2F3140',
+  label: { left: 18, top: 16 },
+  emptyBottom: 18,
+  /** 머리 아래 · 카드 아래(아래 탭 위까지 굴리는 여백) */
+  padTop: 8,
+  padBottom: 24,
+} as const;

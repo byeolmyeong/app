@@ -142,7 +142,7 @@ describe('마이 v2(/my) — 별명 카드 · 묶음 카드 셋(결정 056 · 09
     expect(card.getByTestId('my-card-chevron')).toBeTruthy();
     expect(card.queryByText(/년 .*월/)).toBeNull();
     for (const label of [R.notifications, R.version, R.faq, R.inquiry, R.terms, R.privacy, R.marketing, R.privacyConsent]) expect(screen.getByText(label)).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, true]);
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, false, false, false, true]);
   });
 
   it('계정을 받지 못하면(끊김) 카드는 닉네임 · 프로필 없이 그린다', async () => {

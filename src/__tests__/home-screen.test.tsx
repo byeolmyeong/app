@@ -127,7 +127,7 @@ describe('홈', () => {
     expect(screen.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
     expect(screen.getByTestId('brand-mark')).toBeTruthy();
     expect(screen.queryByTestId('home-category')).toBeNull();
-    expect(screen.queryByText(/궁합/)).toBeNull();
+    expect(within(screen.getByTestId('home-column')).queryByText(/궁합/)).toBeNull();
     await fireEvent.press(screen.getByTestId('nickname-card'));
     expect(router.push).toHaveBeenCalledWith('/reading');
   });
@@ -227,18 +227,20 @@ describe('홈', () => {
     expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
   });
 
-  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /timing(시기 탭, 결정 049)', async () => {
+  it('아래에 탭 다섯이 있다: 홈 · 나 · 시기 · 궁합 · 마이(결정 102 의 3). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /timing(시기 탭, 결정 049), 궁합은 /synastry', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     await screen.findByTestId('nickname-card');
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
-    expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
+    expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '궁합', '마이']);
+    expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false, false]);
     await fireEvent.press(tabs[1]);
     expect(router.replace).toHaveBeenLastCalledWith('/me');
     await fireEvent.press(tabs[2]);
     expect(router.replace).toHaveBeenLastCalledWith('/timing');
     await fireEvent.press(tabs[3]);
+    expect(router.replace).toHaveBeenLastCalledWith('/synastry');
+    await fireEvent.press(tabs[4]);
     expect(router.replace).toHaveBeenLastCalledWith('/my');
     // 지금 있는 탭을 눌러도 아무 데도 가지 않는다
     (router.replace as jest.Mock).mockClear();
@@ -703,13 +705,13 @@ describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071, 보드 24)
     await render(<HomeScreen />);
     await act(async () => void (await jest.advanceTimersByTimeAsync(100)));
     expect(screen.queryByTestId('home-skeleton')).toBeNull();
-    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.getAllByRole('tab')).toHaveLength(5);
     await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
     expect(screen.getByTestId('home-skeleton').props.accessibilityLabel).toBe(strings.states.loading);
     expect(blocks()).toEqual(BLOCKS);
     // 받아 둔 풀이가 없다(기기가 비었다) — 한 줄 별명 두 줄 대신 "아직 별명을 짓지 않았어요" 한 줄 자리
     expect(screen.getByTestId('nickname-card-skeleton')).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false, false]);
     expect(screen.queryByTestId('home-bell')).toBeNull();
     expect(screen.queryByText(M.readingEmpty)).toBeNull();
   });

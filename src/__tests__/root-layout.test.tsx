@@ -194,11 +194,11 @@ describe('아래 탭의 첫 화면', () => {
     mockUseSession.mockReturnValue(session('signedIn'));
   });
 
-  it('홈 · 나 · 시기 · 마이의 첫 화면은 미끄러짐 없이 바로 바뀐다(animation none)', async () => {
+  it('홈 · 나 · 시기 · 궁합 · 마이의 첫 화면은 미끄러짐 없이 바로 바뀐다(animation none)', async () => {
     await render(<RootLayout />);
     await waitFor(() => {
       const options = Object.fromEntries(mockScreen.mock.calls.map(([p]) => [p.name, p.options]));
-      for (const name of ['index', 'me', 'timing/index', 'my/index']) expect(options[name]).toEqual({ animation: 'none' });
+      for (const name of ['index', 'me', 'timing/index', 'synastry', 'my/index']) expect(options[name]).toEqual({ animation: 'none' });
     });
   });
 

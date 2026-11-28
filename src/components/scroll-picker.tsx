@@ -31,7 +31,7 @@ export type ScrollPickerProps<V extends string | number> = {
 
 const ROW = Sizes.pickerRow;
 const PAD = ROW * Math.floor(Sizes.pickerRows / 2);
-/** 굴리다 멈춘 뒤 이만큼 지나면 가운데 줄을 고른 것으로 본다 */
+/** loop: 굴리다 멈춘 뒤 이만큼 지나면 가운데 벌로 옮긴다 */
 const SETTLE_MS = 120;
 /** 마우스를 이만큼 넘게 움직이면 누른 것이 아니라 끈 것으로 본다 */
 const DRAG_SLOP = 4;
@@ -77,6 +77,8 @@ export function ScrollPicker<V extends string | number>({
       items.findIndex((item) => item.value === value),
     );
   const [center, setCenter] = useState(selected);
+  /** 처음 자리. 굴리는 동안 값이 바뀌어도 바꾸지 않는다 — 바뀌면 iOS 가 굴리던 판을 그 자리로 옮겨 손가락 밑에서 튄다 */
+  const [startOffset] = useState(() => ({ x: 0, y: selected * ROW }));
   const clamp = (index: number) => Math.min(rows.length - 1, Math.max(0, index));
   const valueAt = (index: number) => items[index % count].value;
 
@@ -107,10 +109,9 @@ export function ScrollPicker<V extends string | number>({
     setCenter(index);
     if (settle.current) clearTimeout(settle.current);
     if (mouse.current) return; // 끄는 동안은 정하지 않는다. 놓을 때 정한다
-    settle.current = setTimeout(() => {
-      if (valueAt(index) !== value) onChange(valueAt(index));
-      recenter(index);
-    }, SETTLE_MS);
+    // 가운데 줄의 값을 바로 알린다 — 멈추기를 기다리면 빠르게 굴리고 곧바로 "확인" 을 누를 때 옛 값을 저장한다
+    if (valueAt(index) !== value) onChange(valueAt(index));
+    settle.current = setTimeout(() => recenter(index), SETTLE_MS);
   }
 
   function select(index: number) {
@@ -174,7 +175,7 @@ export function ScrollPicker<V extends string | number>({
         decelerationRate="fast"
         scrollEventThrottle={16}
         onScroll={onScroll}
-        contentOffset={{ x: 0, y: selected * ROW }}
+        contentOffset={startOffset}
         contentContainerStyle={styles.content}
         // 끄는 동안은 줄 맞춤을 꺼야 마우스를 그대로 따라온다
         style={dragging ? undefined : webSnap}>

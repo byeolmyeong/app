@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
 import BirthStep from '@/app/signup/birth';
-import { Colors } from '@/constants/theme';
+import { Colors, Sizes } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { clearDraft, setDraft } from '@/features/auth/signup-draft';
 import { useAuth } from '@/features/auth/use-session';
@@ -91,6 +91,19 @@ describe('출생 정보 단계', () => {
     const top = StyleSheet.flatten(panel.props.style).paddingTop + StyleSheet.flatten(within(panel).getByTestId('time-body').props.style).marginTop;
     expect(top).toBe(58);
     expect(StyleSheet.flatten(within(panel).getByTestId('sheet-drag').props.style).height).toBeLessThanOrEqual(top);
+  });
+
+  it('시각 드럼을 굴리고 바로 확인을 눌러도 굴린 시각이 칸에 들어간다 — 멈추기를 기다리는 사이 옛 시각으로 저장하지 않게', async () => {
+    await render(<BirthStep />);
+    await fireEvent.press(screen.getByTestId('time-field'));
+    await fireEvent.press(await screen.findByTestId('time-period-PM'));
+    await fireEvent.press(screen.getByTestId('time-hour-3'));
+    await fireEvent.press(screen.getByTestId('time-minute-20'));
+    // 시를 3 에서 7 로 빠르게 굴리고(가운데 벌의 7 = 12 + 6 번째 줄) 곧바로 확인
+    await fireEvent.scroll(screen.getByTestId('time-hour-scroll'), { nativeEvent: { contentOffset: { y: (12 + 6) * Sizes.pickerRow } } });
+    await fireEvent.press(screen.getByText(H.timeConfirm));
+    await sheetClosed();
+    expect(screen.getByText('오후 7:20')).toBeTruthy();
   });
 
   it('시 · 도 → 시 · 군 · 구 를 고르면 칸에 "서울 강남구"', async () => {

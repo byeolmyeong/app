@@ -356,6 +356,26 @@ describe('ScrollPicker', () => {
     });
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(3));
   });
+
+  it('굴리면 멈추기를 기다리지 않고 가운데 줄의 값을 바로 알린다 — 굴린 직후 확인을 눌러도 옛 값이 아니게', async () => {
+    jest.useFakeTimers();
+    try {
+      const onChange = jest.fn();
+      await render(<ScrollPicker testID="hour" items={hours} value={3} onChange={onChange} />);
+      await fireEvent.scroll(screen.getByTestId('hour-scroll'), { nativeEvent: { contentOffset: { y: 8 * Sizes.pickerRow } } });
+      // 멈춘 것으로 보는 시간(120ms)이 지나지 않았다
+      expect(onChange).toHaveBeenLastCalledWith(9);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('굴리는 동안 값이 바뀌어도 처음 자리(contentOffset)는 그대로 둔다 — 손가락 밑에서 판이 튀지 않게', async () => {
+    const view = await render(<ScrollPicker testID="hour" loop items={hours} value={3} onChange={() => {}} />);
+    const first = screen.getByTestId('hour-scroll').props.contentOffset;
+    await view.rerender(<ScrollPicker testID="hour" loop items={hours} value={9} onChange={() => {}} />);
+    expect(screen.getByTestId('hour-scroll').props.contentOffset).toEqual(first);
+  });
 });
 
 describe('Paragraph', () => {

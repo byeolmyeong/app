@@ -1,6 +1,6 @@
 {
   "name": "byeolmyeong-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "expo-router/entry",
   "dependencies": {
     "@amplitude/analytics-react-native": "^1.14.1",

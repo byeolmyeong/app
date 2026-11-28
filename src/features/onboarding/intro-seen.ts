@@ -19,15 +19,6 @@ function set(value: boolean) {
   listeners.forEach((listener) => listener());
 }
 
-/** 이 기기에서 소개를 봤는가. 저장소를 읽지 못하면 본 것으로 친다 — 같은 사람에게 두 번 보이는 것보다 낫다 */
-export async function hasSeenIntro(): Promise<boolean> {
-  try {
-    return (await AsyncStorage.getItem(INTRO_SEEN_KEY)) !== null;
-  } catch {
-    return true;
-  }
-}
-
 /** 소개가 처음 뜨는 순간 부른다. 적지 못해도 이번 실행에서는 본 것으로 둔다 */
 export async function markIntroSeen(): Promise<void> {
   set(true);

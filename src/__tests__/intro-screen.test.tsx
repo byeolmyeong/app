@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { AccessibilityInfo, Animated, ScrollView, StyleSheet } from 'react-native';
 
@@ -7,7 +7,7 @@ import IntroScreen from '@/app/intro';
 import { strings } from '@/content/strings';
 import { signOut } from '@/features/auth/sign-out';
 import { guardRedirect } from '@/features/auth/guard';
-import { INTRO_SEEN_KEY, hasSeenIntro, markIntroSeen } from '@/features/onboarding/intro-seen';
+import { INTRO_SEEN_KEY, markIntroSeen, resetIntroSeen, useIntroSeen } from '@/features/onboarding/intro-seen';
 
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -29,16 +29,24 @@ beforeEach(async () => {
 
 // 소개(세 장, 결정 104 의 12)는 앱을 처음 받아 처음 켰을 때 한 번만(결정 042, 소유자 2026-11-19)
 describe('소개를 봤는지', () => {
+  /** 루트 가드가 읽는 값(앱을 새로 켠 것처럼 이번 실행의 메모리를 비우고) */
+  const seenByGuard = async () => {
+    resetIntroSeen();
+    const { result } = await renderHook(() => useIntroSeen());
+    await waitFor(() => expect(result.current).not.toBeNull());
+    return result.current;
+  };
+
   it('처음에는 안 봤고, 적으면 봤다', async () => {
-    expect(await hasSeenIntro()).toBe(false);
+    expect(await seenByGuard()).toBe(false);
     await markIntroSeen();
-    expect(await hasSeenIntro()).toBe(true);
     expect(await AsyncStorage.getItem(INTRO_SEEN_KEY)).not.toBeNull();
+    expect(await seenByGuard()).toBe(true);
   });
 
   it('기기 저장소를 읽지 못하면 본 것으로 친다 — 소개를 건너뛰고 로그인으로', async () => {
     jest.spyOn(AsyncStorage, 'getItem').mockRejectedValueOnce(new Error('storage'));
-    const seen = await hasSeenIntro();
+    const seen = await seenByGuard();
     expect(seen).toBe(true);
     expect(guardRedirect('signedOut', undefined, seen)).toBe('/login');
   });
@@ -48,7 +56,7 @@ describe('소개를 봤는지', () => {
     await AsyncStorage.setItem('byeolmyeong.birth.v1', '{}');
     await signOut();
     expect(await AsyncStorage.getItem('byeolmyeong.birth.v1')).toBeNull();
-    const seen = await hasSeenIntro();
+    const seen = await seenByGuard();
     expect(seen).toBe(true);
     expect(guardRedirect('signedOut', undefined, seen)).toBe('/login');
   });

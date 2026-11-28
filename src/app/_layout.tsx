@@ -28,7 +28,7 @@ initAnalytics();
 
 /** 아래에서 올라오는 창으로 여는 약관 글(결정 067 의 1). 가입 약관 단계의 "보기" 와 마이가 같은 화면을 연다 */
 const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];
-/** 아래 탭의 첫 화면 넷: 탭을 바꾸면(replace) 미끄러짐 없이 바로 — iOS 탭 막대의 관례(소유자 지적) */
+/** 아래 탭의 첫 화면 다섯: 탭을 바꾸면(replace) 미끄러짐 없이 바로 — iOS 탭 막대의 관례(소유자 지적) */
 const TAB_ROOT_OPTIONS = { animation: 'none' } as const;
 /**
  * 화면 쌓기 기본: 탭 안에서 들어가는 화면 · 가입 단계도 밀려 들어오지 않고 바로 바뀐다(소유자 2026-11-21 · 빌드 15 "오른쪽에서 왼쪽으로 … 안 되게",

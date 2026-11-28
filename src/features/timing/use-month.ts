@@ -96,35 +96,6 @@ export async function prefetchMonth(input: BirthInput): Promise<void> {
 
 
 /**
- * 홈의 이번 달 눈여겨볼 날(결정 092): 이번 달만 읽는다 — 기기 · 이번 실행 메모리의 것을 첫 그림부터, 없으면 앱을 켤 때 한 번 받아 두는
- * 요청(prefetchMonth, 결정 075 의 4)이 끝난 뒤 그 값을. 앞뒤 달은 부르지 않는다(useMonth 는 달을 넘기려 앞뒤 달도 받는다).
- * 받지 못했거나 아직이면 null — 홈은 그 칸을 두지 않는다.
- */
-export function useThisMonth(input: BirthInput | null): MonthSky | null {
-  const key = input ? keyOf(input) : null;
-  const [sky, setSky] = useState<{ key: string; sky: MonthSky } | null>(() => {
-    const peeked = peekMonth(key);
-    return key !== null && peeked ? { key, sky: peeked } : null;
-  });
-  const date = input?.date;
-  const time = input?.time;
-  const placeId = input?.placeId;
-  useEffect(() => {
-    if (key === null || date === undefined || time === undefined || placeId === undefined) return;
-    let alive = true;
-    void (async () => {
-      await prefetchMonth({ date, time, placeId });
-      const stored = await readStored(key);
-      if (alive && stored) setSky({ key, sky: stored });
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [key, date, time, placeId]);
-  return sky && sky.key === key ? sky.sky : null;
-}
-
-/**
  * input 이 null 이면(출생 정보 · 세션을 아직 읽는 중) 부르지 않는다.
  * base 처음 받은 달 · shown 고른 달(처음 받기 전에는 null) · state 고른 달의 상태 · drawn 그릴 달과 상태(고른 달을 받는 중이면 이전 달 그대로) ·
  * go(±1) 달 옮기기 · retry 못 받은 달을 다시 부르기.

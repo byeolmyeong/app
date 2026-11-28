@@ -2,7 +2,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { act, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { useOnline } from '@/components/use-online';
+import { useOnReconnect, useOnline } from '@/components/use-online';
 import { api } from '@/lib/api';
 
 // 연결 끊김 띠가 연결돼 있는데도 남는 버그(계획 2026-11-27-1.1.0 의 A②-1, 1.0.1 핫픽스)를 진짜 NetInfo JS 로 재현한다.
@@ -38,13 +38,21 @@ jest.mock('@react-native-community/netinfo/lib/commonjs/internal/nativeInterface
 // 구글 확인(generate_204)과 우리 서버를 한 fetch 로 흉내 낸다.
 let googleUp = true;
 let serverUp = true;
+// 켜 두면 서버 응답을 붙잡아 두었다가 시험이 정한 순서로 끝낸다(true = 응답, false = 연결 오류)
+let holdServer = false;
+let held: ((reached: boolean) => void)[] = [];
+const serverResponse = { status: 200, ok: true, json: async () => ({}) } as unknown as Response;
 const fakeFetch = jest.fn(async (url: string) => {
   if (url.includes('generate_204')) {
     if (!googleUp) throw new TypeError('Network request failed');
     return { status: 204, ok: true, json: async () => null } as unknown as Response;
   }
+  if (holdServer)
+    return new Promise<Response>((resolve, reject) =>
+      held.push((reached) => (reached ? resolve(serverResponse) : reject(new TypeError('Network request failed')))),
+    );
   if (!serverUp) throw new TypeError('Network request failed');
-  return { status: 200, ok: true, json: async () => ({}) } as unknown as Response;
+  return serverResponse;
 });
 
 // NetInfo 의 구글 확인과 api 가 모두 전역 fetch 를 쓴다
@@ -60,6 +68,8 @@ beforeEach(async () => {
   jest.useFakeTimers();
   googleUp = true;
   serverUp = true;
+  holdServer = false;
+  held = [];
   mockNative.state = WIFI;
   // 앞 시험의 NetInfo 상태를 버리고 새로 만든다(configure 는 있던 상태를 걷고 다시 만든다).
   NetInfo.configure({});
@@ -68,8 +78,15 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-function Probe() {
-  return <Text>{useOnline() ? '연결됨' : '끊김'}</Text>;
+function Probe({ name = '' }: { name?: string }) {
+  return <Text>{`${name}${useOnline() ? '연결됨' : '끊김'}`}</Text>;
+}
+
+/** 탭 화면처럼 useOnline · useOnReconnect 를 함께 쓴다 */
+function Screen({ name, onBack }: { name: string; onBack: () => void }) {
+  const online = useOnline();
+  useOnReconnect(online, onBack);
+  return <Text>{`${name}${online ? '연결됨' : '끊김'}`}</Text>;
 }
 
 async function passes(ms: number) {
@@ -89,7 +106,8 @@ describe('앱이 뒤에 있다 돌아올 때 — 연결 끊김 띠', () => {
     expect(screen.getByText('끊김')).toBeTruthy();
 
     // 앱이 멈춰 있는 동안 와이파이가 돌아왔지만 알림은 오지 않았다(네이티브 캐시는 그대로 "연결 없음").
-    // 돌아와서: NetInfo.refresh() 는 네이티브의 캐시를 그대로 돌려받고, 업데이트 문(UpdateGate)이 /app-config 를 부른다 — 서버는 답한다.
+    // 앱은 NetInfo.refresh() 를 부르지 않는다 — 불러도 네이티브 캐시를 그대로 받아 풀리지 않는다는 것을 함께 보인다(계획의 고칠 길 ① 이 iOS 에서 듣지 않는 까닭).
+    // 돌아오면 업데이트 문(UpdateGate)이 /app-config 를 부른다 — 서버는 답한다.
     await act(async () => {
       await NetInfo.refresh();
       await api.getAppConfig();
@@ -150,5 +168,65 @@ describe('앱이 뒤에 있다 돌아올 때 — 연결 끊김 띠', () => {
       await api.getAppConfig();
     });
     expect(screen.getByText('끊김')).toBeTruthy();
+  });
+
+  it('서버가 답한 뒤에 새로 붙은 화면(탭을 바꿈)도 띠 없이 열리고, 다시 불러오기를 하지 않는다', async () => {
+    const onBackA = jest.fn();
+    const onBackB = jest.fn();
+    const view = await render(<Screen name="A" onBack={onBackA} />);
+    await passes(0);
+    await act(async () => nativeChange(NONE));
+    await act(async () => {
+      await api.getAppConfig();
+    });
+    expect(screen.getByText('A연결됨')).toBeTruthy();
+    expect(onBackA).toHaveBeenCalledTimes(1);
+
+    await view.rerender(<Screen name="B" onBack={onBackB} key="B" />);
+    await passes(0);
+    expect(screen.getByText('B연결됨')).toBeTruthy();
+    expect(onBackB).not.toHaveBeenCalled();
+  });
+
+  it('끊겼다는 알림 전에 보낸 호출이 알림 뒤에 닿아도 연결의 증거로 세지 않는다', async () => {
+    await render(<Probe />);
+    await passes(0);
+    holdServer = true;
+    let pending!: Promise<unknown>;
+    await act(async () => {
+      pending = api.getAppConfig();
+    });
+    await act(async () => nativeChange(NONE));
+    expect(screen.getByText('끊김')).toBeTruthy();
+
+    await act(async () => {
+      held[0](true);
+      await pending;
+    });
+    expect(screen.getByText('끊김')).toBeTruthy();
+  });
+
+  it('늦게 끝난 옛 호출의 실패가 더 나중에 보낸 호출의 성공을 덮지 않는다', async () => {
+    await render(<Probe />);
+    await passes(0);
+    await act(async () => nativeChange(NONE));
+    holdServer = true;
+    let older!: Promise<unknown>;
+    let newer!: Promise<unknown>;
+    await act(async () => {
+      older = api.getAppConfig();
+      newer = api.getAppConfig();
+    });
+    await act(async () => {
+      held[1](true);
+      await newer;
+    });
+    expect(screen.getByText('연결됨')).toBeTruthy();
+
+    await act(async () => {
+      held[0](false);
+      await older;
+    });
+    expect(screen.getByText('연결됨')).toBeTruthy();
   });
 });

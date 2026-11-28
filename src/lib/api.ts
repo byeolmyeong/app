@@ -1216,8 +1216,11 @@ export type ApiConfig = {
   onMaintenance?: () => void;
   /** 서버가 403 `ACCOUNT_SUSPENDED` 로 거절했을 때 부른다(이용 정지 — 결정 065 의 5, 서버 결정 044) */
   onSuspended?: () => void;
-  /** 호출마다 서버에 닿았는지 알린다 — 응답을 받았으면(상태가 무엇이든) true, 받지 못했으면 false(연결 끊김 띠, 결정 061 의 4) */
-  onReach?: (reached: boolean) => void;
+  /**
+   * 호출을 보낼 때 부르고, 돌려받은 함수를 그 호출이 서버에 닿았는지와 함께 부른다 — 응답을 받았으면(상태가 무엇이든) true,
+   * 받지 못했으면 false. 보낸 차례로 비교하려고 보낼 때 먼저 부른다(연결 끊김 띠, 결정 061 의 4)
+   */
+  onReach?: () => (reached: boolean) => void;
   /**
    * 웹이면 true: 세션은 서버의 httpOnly 쿠키 `bm_session` 이다(결정 034). 모든 요청에 쿠키를 싣고(`credentials: 'include'`),
    * Authorization 헤더를 붙이지 않으며, 로그인 · 가입 · 개발용 로그인에 `cookie: true` 를 보내고 받은 토큰을 버린다.
@@ -1289,6 +1292,7 @@ export function createApi(config: ApiConfig) {
     }
 
     let response: Response;
+    const arrived = config.onReach?.();
     try {
       response = await (config.fetchFn ?? fetch)(`${config.baseUrl}${path}`, {
         method,
@@ -1297,10 +1301,10 @@ export function createApi(config: ApiConfig) {
         ...(cookie ? { credentials: 'include' as const } : {}),
       });
     } catch {
-      config.onReach?.(false);
+      arrived?.(false);
       return { ok: false, error: 'NETWORK' };
     }
-    config.onReach?.(true);
+    arrived?.(true);
 
     const { status } = response;
     if (status === 401) {
@@ -1787,10 +1791,11 @@ export function setSuspendedHandler(handler: (() => void) | null) {
   suspendedHandler = handler;
 }
 
-/** 마지막 서버 호출이 서버에 닿았는가. seq 는 호출마다 하나씩 오른다(언제 닿았는지 비교하려고) */
-export type ServerReach = { reached: boolean; seq: number };
+/** 서버에 닿았는가. ticket 은 그 결과를 낸 호출을 보낸 차례다(보낼 때마다 하나씩 오른다) */
+export type ServerReach = { reached: boolean; ticket: number };
 
-let serverReach: ServerReach = { reached: false, seq: 0 };
+let departed = 0;
+let serverReach: ServerReach = { reached: false, ticket: 0 };
 const reachListeners = new Set<() => void>();
 
 /**
@@ -1808,9 +1813,19 @@ export function subscribeServerReach(listener: () => void): () => void {
   };
 }
 
-function reportReach(reached: boolean) {
-  serverReach = { reached, seq: serverReach.seq + 1 };
-  reachListeners.forEach((listener) => listener());
+/** 지금까지 보낸 서버 호출 수. 연결 끊김 띠가 끊겼다는 알림을 받은 때를 적어 둔다 — 그 뒤에 보낸 호출만 증거로 센다 */
+export function serverDepartures(): number {
+  return departed;
+}
+
+function departReach() {
+  const ticket = ++departed;
+  return (reached: boolean) => {
+    // 늦게 끝난 옛 호출은 더 나중에 보낸 호출의 결과를 덮지 않는다
+    if (ticket < serverReach.ticket) return;
+    serverReach = { reached, ticket };
+    reachListeners.forEach((listener) => listener());
+  };
 }
 
 /** 앱이 쓰는 인스턴스. 서버 주소와 가짜 서버 스위치는 환경 변수에서 온다(.env.example). */
@@ -1823,6 +1838,6 @@ export const api = createApi({
   onUpdateRequired: () => updateRequiredHandler?.(),
   onMaintenance: () => maintenanceHandler?.(),
   onSuspended: () => suspendedHandler?.(),
-  onReach: reportReach,
+  onReach: departReach,
   cookieSession: Platform.OS === 'web',
 });

@@ -1,5 +1,5 @@
 /**
- * 소개 2장을 이 기기에서 봤는지(결정 042 · 055). 앱을 처음 받아 처음 켰을 때 한 번만 보인다.
+ * 소개를 이 기기에서 봤는지(결정 042 · 104 의 12 — 세 장). 앱을 처음 받아 처음 켰을 때 한 번만 보인다.
  * 기기 저장소는 AsyncStorage 다 — 앱을 지우면 함께 지워져 "처음 받았을 때" 와 맞는다(키체인 `expo-secure-store` 는 앱을 지워도 남는다).
  * 개인정보가 아니고 사람이 아니라 기기에 붙는 값이라, 로그아웃 · 탈퇴가 지우는 머리(`byeolmyeong.`)를 일부러 피한 키를 쓴다.
  */
@@ -19,18 +19,12 @@ function set(value: boolean) {
   listeners.forEach((listener) => listener());
 }
 
-/** 이 기기에서 소개를 봤는가. 저장소를 읽지 못하면 본 것으로 친다 — 같은 사람에게 두 번 보이는 것보다 낫다 */
-export async function hasSeenIntro(): Promise<boolean> {
-  try {
-    return (await AsyncStorage.getItem(INTRO_SEEN_KEY)) !== null;
-  } catch {
-    return true;
-  }
-}
-
 /** 소개가 처음 뜨는 순간 부른다. 적지 못해도 이번 실행에서는 본 것으로 둔다 */
 export async function markIntroSeen(): Promise<void> {
   set(true);
+  // 적기 전에 이번 실행의 처음 값을 잡아 둔다 — 소개 화면(자식)의 effect 가 루트보다 먼저 돌아도(웹에서 /intro 로 바로) 새 사람이
+  // 1.0.x 에서 올라온 기기로 보이지 않게(결정 113 의 1, 리뷰 #165). 읽기를 마친 뒤에 적는다
+  await introSeenAtLaunch();
   try {
     await AsyncStorage.setItem(INTRO_SEEN_KEY, '1');
   } catch {
@@ -38,12 +32,34 @@ export async function markIntroSeen(): Promise<void> {
   }
 }
 
+/**
+ * 이번 실행이 처음 읽은 소개 기록 — 이 실행이 소개를 적기 전의 값이다(소개 화면은 이 값을 읽은 뒤에야 뜬다). 읽지 못했으면 null.
+ * 1.1.0 의 새로워진 점이 1.0.x 에서 올라온 기기를 가리는 데 쓴다(결정 113 의 1). 루트가 앱을 켤 때 부른다
+ */
+let launchRead: Promise<boolean | null> | null = null;
+export function introSeenAtLaunch(): Promise<boolean | null> {
+  launchRead ??= AsyncStorage.getItem(INTRO_SEEN_KEY).then(
+    (value) => value !== null,
+    () => null,
+  );
+  return launchRead;
+}
+
 function load(): Promise<boolean> {
-  reading ??= hasSeenIntro().then((value) => {
+  // 저장소를 읽지 못하면 본 것으로 친다 — 같은 사람에게 두 번 보이는 것보다 낫다
+  reading ??= introSeenAtLaunch().then((read) => {
+    const value = read ?? true;
     if (seen === null) set(value);
     return value;
   });
   return reading;
+}
+
+/** 시험용 — 앱을 새로 켠 것처럼 이번 실행의 메모리를 비운다 */
+export function resetIntroSeen(): void {
+  seen = null;
+  reading = null;
+  launchRead = null;
 }
 
 const subscribe = (listener: () => void) => {

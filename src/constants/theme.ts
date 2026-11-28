@@ -40,6 +40,8 @@ export const Colors = {
   hair: '#2A2B33',
   /** 입력칸·보조 버튼·카드의 바탕 */
   fill: '#1C1D24',
+  /** 시트 위의 보조 버튼 바탕(공유 시트 "이미지 저장" — 시트 면 raised 위에서 보이게, 결정 103 의 3). 값은 hair 와 같지만 누르는 면이라 따로 둔다 */
+  sheetSecondary: '#2A2B33',
   /** 시트 위의 칸(검색 칸 · 칩 · 드럼롤의 가운데 띠)과 시트 안 목록의 구분선(결정 042 시안) */
   sheetFill: '#1F2027',
   /** 시트의 손잡이 줄 · 검색 지우기 단추 */
@@ -199,12 +201,12 @@ export const AvatarColors = {
 
 /**
  * 브랜드 자리 바탕의 옅은 빛 모양(결정 042 시안의 radial-gradient): 사라지는 자리(가운데에서 가장 먼 모서리까지를 1) · 가운데 높이.
- * 소개는 장마다 가운데 높이가 다르다(둘째 장 — 시기 — 은 그림이 위로 올라간다).
+ * 소개는 장마다 가운데 높이가 다르다(셋째 장 — 시기 — 은 그림이 위로 올라간다).
  */
 export const BackdropShape = {
   /** 스플래시(보드 1, 결정 067 의 3) */
   splash: { extent: 0.58, centerY: 0.44 },
-  intro: { extent: 0.62, centerY: [0.5, 0.44] },
+  intro: { extent: 0.62, centerY: [0.5, 0.5, 0.44] },
   login: { extent: 0.6, centerY: 0.46 },
   making: { extent: 0.56, centerY: 0.42 },
   reveal: { extent: 0.58, centerY: 0.26 },
@@ -230,8 +232,11 @@ export const RevealLayout = {
   cellInnerGap: 2,
 } as const;
 
-/** 소개 둘째 장(시기) 그림의 자리(시안 온보딩 보드 3) */
+/** 소개 둘째 장(나의 사람들 — 시안 "온보딩 소개 2/3") · 셋째 장(시기 — 시안 온보딩 보드 4) 그림의 자리 */
 export const IntroArtLayout = {
+  /** 둘째 장: 기울어진 카드 둘(카드 · 모서리 · 별이 · 하트)과 둘을 담는 칸(폭 · 높이 · 위 · 왼쪽 카드 · 오른쪽 카드의 왼쪽) */
+  card: { width: 136, height: 172, radius: 22, art: 120, heart: 96 },
+  pair: { width: 300, height: 240, top: 30, left: 22, right: 142 },
   moonCard: { width: 148, height: 184, radius: 22, moon: 100 },
   /** 달 카드와 시기 줄 사이 · 시기 줄(선 · 점 · 글자 사이) */
   artGap: 36,
@@ -266,25 +271,13 @@ export const SkeletonLayout = { radius: 8, shimmerMs: 1400 } as const;
 /** 연결 끊김 띠(결정 061 의 4, 보드 20) */
 export const OfflineBannerLayout = { paddingV: 12, paddingH: 14, radius: 12, icon: 20, gap: 10 } as const;
 
-/** 홈 별명 카드(결정 047, 보드 11 · 11-1): 모서리 · 안 여백 · 프로필 그림 · 그림과 이름 사이 · 위와의 사이 · 빛 · 뒤의 별자리 그림 */
+/** 별명 카드의 별자리 그림(결정 047 · 084) */
 export const NicknameCardLayout = {
-  /** 홈 맨 아래 별명 한 줄 카드(결정 092): 위아래 · 좌우 안 여백 · 모서리 · 프로필 그림 · 그림과 글 사이 · 두 줄 사이 · 꺾쇠(카드 세로 가운데) */
-  padV: 14,
-  padH: 16,
-  radius: 20,
-  avatar: 40,
-  gap: 12,
-  textGap: 2,
-  chevron: 22,
   /**
-   * 오른쪽 위 해 별자리 그림: 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기,
-   * 꺾쇠 둘레를 비우는 폭(꺾쇠 바깥으로 — 홈 · 마이 카드 같은 규칙, 결정 080)
+   * 별명 카드 오른쪽 위 해 별자리 그림(마이 카드가 쓴다 — 홈의 별명 한 줄 카드는 1.1.0 에서 뺐다, 결정 102 의 2): 칸 · 자리 · 옅기, 그림 안 좌표(160×140)와 안쪽 여백 · 별 점 반지름 · 가장 밝은 별의 네 갈래 별 크기,
+   * 꺾쇠 둘레를 비우는 폭(꺾쇠 바깥으로 — 결정 080)
    */
   art: { width: 150, height: 131, right: -10, top: 6, opacity: 0.55, view: { w: 160, h: 140, pad: 14 }, dot: 2, core: 8, clear: 8 },
-  /** 처음 불러올 때 뼈대(결정 071 — 되살리는 동안의 카드: 받아 둔 풀이가 없다): "○○ 님의 별명" · "아직 별명을 짓지 않았어요." 막대 폭 */
-  skeleton: { name: 84, empty: 168 },
-  /** 계정을 아직 모를 때 "○○ 님의 별명" 자리표의 폭(components/placeholder) */
-  namePlaceholder: 96,
 } as const;
 
 /** 별명 짓는 중의 반짝임 셋의 자리(그림 칸 260 기준, 결정 042 시안 보드 9) */
@@ -536,22 +529,8 @@ export const TimingLayout = {
     todosTop: 8,
     todo: 44,
   },
-  /**
-   * 홈의 카드(결정 092): 모서리 · 안 여백 · 카드 사이 · 이름표 줄의 꺾쇠 22(소유자 2026-11-23) · 이름표 아래 제목 · 제목 아래 한 줄 · 작은 실천 줄 위.
-   * days: 이번 달 눈여겨볼 날의 가로 슬라이드 — 칸 폭(390 화면에서 두 칸 반이 보이게) · 칸 사이 · 칸 안 여백 · 모서리 · 제목 아래 · 날짜와 글 사이
-   */
-  home: {
-    radius: 20,
-    pad: 20,
-    cardGap: 12,
-    chevron: 22,
-    emptyTitleTop: 10,
-    subTop: 2,
-    /** 오늘의 작은 실천: 이름표 줄 아래 첫 번호 위(시기 카드 제목 글자 위와 같은 자리) · 줄 사이(결정 095) */
-    todosTop: 15,
-    todoGap: 14,
-    days: { width: 136, gap: 8, pad: 12, radius: 16, titleBottom: 8, textTop: 4 },
-  },
+  /** 홈 오늘의 하늘 카드의 이름표 줄 꺾쇠 22(소유자 2026-11-23) — 카드 모양은 HomeMenuLayout.today */
+  home: { chevron: 22 },
   /** 받기 전 이번 달 아래의 자세한 풀이 카드(14 받기 전) · 잠긴 칩의 카드(14 잠긴 칩) */
   detail: { radius: 24, padTop: 22, padX: 18, padBottom: 18, art: 76, artInset: 12, titleTop: 6, titleRight: 80, bodyTop: 6, buttonTop: 18, glow: { x: 0.85, y: 0.1, extent: 0.58 } },
   /** 처음 불러올 때 뼈대 · 잠긴 자리의 흐린 모양: 달 머리 · 제목 · 줄 · 작은 줄 · 달력 칸 */
@@ -562,11 +541,10 @@ export const TimingLayout = {
 } as const;
 
 /**
- * 홈의 오늘의 하늘 카드(보드 11 · 11 쓰는 중): 이름표 아래 제목 · 쓰는 중 줄(위 · 그림과 글 사이 · 글 줄 사이) · 작은 그림(칸 · 빛이 칸에서 들어간 거리 ·
- * 궤도의 점 · 별이 · 둥실 높이 · 빛이 가장 흐릴 때). 카드 모양 · 꺾쇠 · 짧은 이유 위는 홈의 시기 칸(TimingLayout.home)과 같다.
+ * 홈의 오늘의 하늘 카드가 쓰는 중일 때(보드 11 쓰는 중): 쓰는 중 줄(위 · 그림과 글 사이 · 글 줄 사이) · 작은 그림(칸 · 빛이 칸에서 들어간 거리 ·
+ * 궤도의 점 · 별이 · 둥실 높이 · 빛이 가장 흐릴 때). 카드 모양은 HomeMenuLayout.today.
  */
 export const TodayCardLayout = {
-  titleTop: 10,
   rowTop: 14,
   rowGap: 14,
   textGap: 4,
@@ -576,28 +554,6 @@ export const TodayCardLayout = {
   byeoli: 33,
   float: 8,
   glowDim: 0.55,
-  /**
-   * 홈 맨 위 큰 카드(결정 092): 모서리 · 안 여백(위 · 좌우 · 아래) · 오른쪽 위 달(크기 · 위 · 오른쪽) · 제목의 오른쪽 비움 · 이름표 아래 제목 ·
-   * 제목 아래 이유 · 흐름 줄(위 틈 · 위 선 아래 · 줄 사이 · 이름 칸 폭 · 이름과 글 사이) · 빛(가로 · 세로 · 퍼짐)
-   */
-  hero: {
-    radius: 24,
-    padTop: 22,
-    padX: 20,
-    padBottom: 20,
-    moon: 64,
-    moonTop: 46,
-    moonRight: 20,
-    titleRight: 80,
-    titleTop: 8,
-    briefTop: 6,
-    flowTop: 16,
-    flowPadTop: 14,
-    flowGap: 10,
-    flowLabel: 30,
-    flowLabelGap: 12,
-    glow: { x: 0.82, y: 0.12, extent: 0.62 },
-  },
 } as const;
 
 /**
@@ -951,7 +907,8 @@ export const MyLayout = {
     /** 묶음 제목이 있는 카드(결정 093): 카드 위아래 안 여백 · 제목 줄 높이 · 줄 높이(줄 사이 선 없음) */
     titled: { padV: 6, title: 44, row: 48 },
   },
-  account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 18, badgeGlyph: 11, badgeGap: 6 },
+  /** 내 정보(16-1): 프로필 위 · 아래 · 계정 삭제 줄 높이 · 연결된 계정의 공급자 마크(지름 · 로고 — 결정 103 의 1, 시안 24 · 14) */
+  account: { avatarTop: 8, avatarBottom: 16, deleteRow: 44, badge: 24, badgeGlyph: 14 },
   delete: { headingTop: 8, gap: 22, notePadding: 18, noteGap: 12, dot: 4, dotTop: 10, dotGap: 10, checkGap: 10, checkPadV: 4, checkPadH: 2 },
   done: { icon: 72, iconGlyph: 32, titleTop: 24, bodyTop: 10, lift: 40 },
   /** 출생 정보 수정(16-4): 안내 칸(안 여백 · 모서리 · 아이콘 · 아이콘과 글 사이) · 묶음 사이 */
@@ -991,6 +948,9 @@ export const InquiryLayout = {
   skeleton: { rows: 3, line: 16, meta: 12, chip: 56, date: 64, bodyLines: 3 },
   sent: { icon: 72, glyph: 34, titleTop: 24, bodyTop: 10, lift: 40 },
 } as const;
+
+/** 공유 시트 아래 버튼 둘(결정 103 의 3, 시안 12-4): 보조 "이미지 저장" 1 : 주 "인스타그램 스토리" 1.4 — 높이는 버튼 그대로(56) */
+export const ShareSheetLayout = { primaryFlex: 1.4 } as const;
 
 /**
  * 공유 카드 v2(결정 053, 보드 12-7 · 12-14 · 11-7 · 14-6)의 값 — 시안의 360×640 카드 기준이다. 미리보기 · 공유 페이지 · 저장 이미지는
@@ -1036,3 +996,78 @@ export const PushAskLayout = {
   laterGap: 8,
 } as const;
 
+
+/**
+ * 궁합의 사이 색(결정 104 · 102 의 1): 별 지도의 테두리와 홈 나의 사람들 두 줄의 아이콘에만 쓴다(주색 하나 원칙의 예외 — 결정 102 의 1).
+ * 영역을 색으로 나누지 않는 원칙(DESIGN.md)과 달리 사이는 별 지도에서 색으로 가른다(시안 "궁합 (결정 104)" 1).
+ */
+export const RelationColors = { LOVE: '#FF9EC4', FRIEND: '#9AE8FF' } as const;
+
+/**
+ * 궁합 탭의 별 지도 카드(시안 "궁합 (결정 104)" 1-2 — 350×380 카드): 높이 · 모서리 · 가운데의 옅은 빛(색 · 가로 · 세로 · 퍼짐) ·
+ * 가운데(나)의 세로 자리(카드 높이 대비) · 둘레 원 셋(반지름 — 첫째는 실선, 둘째 · 셋째는 점선 3 · 5) ·
+ * 나(프로필 그림 지름 · 빛 · 그림 아래 "나" 까지) · 0명일 때 점선 별 넷(가운데에서 떨어진 가로 · 세로와 지름, 점선 1.5 · 색) ·
+ * 왼쪽 위 "내 궁합"(왼쪽 · 위) · 아래 "아직 내 하늘이 비어 있어요"(아래)
+ */
+export const SynastrySkyLayout = {
+  height: 380,
+  radius: 24,
+  glow: { color: '#1E2470', x: 0.5, y: 0.52, extent: 0.62 },
+  centerY: 198 / 380,
+  rings: [64, 112, 158],
+  ringDash: '3 5',
+  me: { size: 68, glow: '0 0 24px rgba(154,163,255,0.55)', labelTop: 36, labelWidth: 40 },
+  emptyStars: [
+    { dx: 49, dy: -41, size: 34 },
+    { dx: -97, dy: 56, size: 30 },
+    { dx: 148, dy: 54, size: 26 },
+    { dx: -54, dy: -148, size: 26 },
+  ],
+  emptyStarBorder: 1.5,
+  emptyStarColor: '#2F3140',
+  label: { left: 18, top: 16 },
+  emptyBottom: 18,
+  /** 머리 아래 · 카드 아래(아래 탭 위까지 굴리는 여백) */
+  padTop: 8,
+  padBottom: 24,
+} as const;
+
+/**
+ * 홈 메뉴판(결정 102, 시안 "홈 (1.1.0)" A).
+ * - card: 세 카드(모서리 · 안 여백 위와 좌우 · 아래) · 작은 분류와 질문 제목 사이
+ * - grid: 아이콘 격자(제목 아래 · 줄 사이 · 칸 사이 · 아이콘과 이름 사이 · 아이콘 칸 · 그 모서리 · 아이콘)
+ * - list: 나의 사람들 줄(제목 아래 · 줄 사이 · 줄의 최소 높이 · 위아래 · 좌우 안 여백(바깥으로 같은 만큼 내밀어 글줄을 카드 안 여백에 맞춘다) ·
+ *   모서리 · 아이콘과 글 사이 · 아이콘 칸 · 그 모서리 · 이름과 한 줄 사이 · 꺾쇠)
+ * - today: 오늘의 하늘 한 줄 카드(모서리 · 안 여백 · 오른쪽 달(크기 · 위 · 오른쪽) · 제목 · 한 줄의 오른쪽 비움 · 이름표 아래 제목 · 제목 아래 한 줄 ·
+ *   빛(가로 · 세로 · 퍼짐))
+ */
+export const HomeMenuLayout = {
+  card: { radius: 20, padTop: 20, padX: 20, padBottom: 22, titleTop: 4 },
+  grid: { top: 18, rowGap: 18, columnGap: 8, itemGap: 8, box: 52, boxRadius: 18, icon: 26 },
+  list: { top: 14, gap: 4, row: 64, padV: 6, padH: 8, radius: 14, iconGap: 14, box: 48, boxRadius: 16, textGap: 2, chevron: 22 },
+  today: { radius: 24, pad: 20, moon: 52, moonTop: 46, moonRight: 22, textRight: 72, titleTop: 6, briefTop: 4, glow: { x: 0.84, y: 0.18, extent: 0.6 } },
+} as const;
+
+/**
+ * 1.1.0 새로워진 점 창(결정 109 의 6, 시안 "홈 (1.1.0)" R3) — 가운데 창(DialogLayout)과 같은 꼴에 줄 셋과 1 : 1.4 버튼:
+ * 화면 양옆 · 안 여백(위 · 좌우 · 아래) · 모서리 · 제목 아래 줄들 · 줄 사이 · 아이콘과 글 사이 · 아이콘 동그라미(지름 · 바탕) · 그림 ·
+ * 이름과 한 줄 사이 · 버튼 위 · 버튼 사이 · 버튼 높이 · 주 버튼의 폭 비율
+ */
+export const WhatsNewLayout = {
+  inset: 24,
+  padTop: 26,
+  padX: 20,
+  padBottom: 20,
+  radius: 20,
+  listTop: 20,
+  rowGap: 16,
+  iconGap: 12,
+  icon: 40,
+  iconFill: '#23252E',
+  glyph: 20,
+  textGap: 2,
+  actionsTop: 24,
+  actionGap: 8,
+  button: 50,
+  primaryFlex: 1.4,
+} as const;

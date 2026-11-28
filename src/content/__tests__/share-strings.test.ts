@@ -5,9 +5,9 @@ describe('공유 v2 문구', () => {
   const S = strings.share;
   const C = S.cards;
 
-  it('시트의 버튼은 "이미지 저장" · "인스타그램 스토리 공유" 다(링크 버튼 없음)', () => {
+  it('시트의 버튼은 "이미지 저장" · "인스타그램 스토리" 다(링크 버튼 없음, 결정 103 의 3 — 나란히 놓여 "공유" 를 뺐다)', () => {
     expect(S.actions.saveImage).toBe('이미지 저장');
-    expect(S.actions.story).toBe('인스타그램 스토리 공유');
+    expect(S.actions.story).toBe('인스타그램 스토리');
   });
 
   it('짧은 알림(결정 065 의 1): 저장했어요 · 저장하지 못했어요 · 사진 접근 · 스토리를 열지 못했어요', () => {

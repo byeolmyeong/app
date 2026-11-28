@@ -267,33 +267,43 @@ async function request<R>(run: Run<R>): Promise<void> {
   }
 }
 
-/** 이번 실행에 받아 두기를 한 것(보관 키 · 세대 · 출생 정보) */
-const prefetched = new Set<string>();
+/** 이번 실행에 받아 두기를 한 것(보관 키 · 세대 · 출생 정보)과 그 답(다 쓴 풀이를 알았는지) */
+const prefetched = new Map<string, Promise<boolean>>();
 
 /**
  * 앱을 켤 때(홈의 첫 데이터) 상태를 한 번 받아 둔다 — 그 탭을 열면 기다리지 않고 받기 · 쓰는 중 · 풀이를 곧바로 그린다(결정 075 의 4).
  * 기기에 둔 것이 있으면 묻지 않는다(그 화면이 열 때 뒤에서 확인한다). 못 물었으면 아무것도 두지 않는다.
+ * 다 쓴 풀이를 아는지(기기에 둔 풀이 · 서버의 DONE) 돌려준다 — 새로워진 점의 셋째 줄(결정 113 의 2). 모르면 false.
  */
-export async function prefetchDetailReport<R>(config: DetailReportConfig<R>, input: BirthInput): Promise<void> {
+export async function prefetchDetailReport<R>(config: DetailReportConfig<R>, input: BirthInput): Promise<boolean> {
   const key = keyOf(input);
-  if (await loadStored(config, key)) return;
+  const kept = await loadStored(config, key);
+  if (kept) return kept.report !== undefined;
   const genKey = generationKeyOf(config as DetailReportConfig<unknown>);
   const gen = await storageGeneration(genKey).catch(() => null);
   // 이번 실행에 한 번 — 탭을 바꿀 때마다 홈이 다시 붙어도 못 받은 것(끊김 · 404)을 거듭 묻지 않는다. 기기를 지우면(세대) 다시(리뷰 #87 의 5)
   const once = `${genKey}|${gen}|${key}`;
-  if (gen === null || prefetched.has(once)) return;
-  prefetched.add(once);
-  const r = await withTimeout(config.get());
-  if (!r.ok) return;
-  // 쓰기 직전에 다시 본다: 그 사이 기기를 지웠거나(세대) 화면이 먼저 기억 · 보관했으면(늦은 받기 전이 쓰는 중을 덮지 않게) 두지 않는다(리뷰 #87)
-  if (!(await isSameGeneration(genKey, gen)) || (await loadStored(config, key))) return;
-  try {
-    if (r.data.status === 'DONE') await setStored(config.storageKey, JSON.stringify({ key, report: r.data.report }));
-    else if (config.rememberStatus)
-      await setStored(config.storageKey, JSON.stringify({ key, status: r.data.status === 'WRITING' ? 'WRITING' : 'NONE' }));
-  } catch {
-    // 두지 못하면 그 화면이 열 때 처음 확인부터 한다
-  }
+  if (gen === null) return false;
+  // 받아 두는 중에 또 불렸으면(홈이 다시 붙음) 묻지 않고 그 답을 같이 받는다
+  const running = prefetched.get(once);
+  if (running) return running;
+  const run = (async () => {
+    const r = await withTimeout(config.get());
+    if (!r.ok) return false;
+    const done = r.data.status === 'DONE';
+    // 쓰기 직전에 다시 본다: 그 사이 기기를 지웠거나(세대) 화면이 먼저 기억 · 보관했으면(늦은 받기 전이 쓰는 중을 덮지 않게) 두지 않는다(리뷰 #87)
+    if (!(await isSameGeneration(genKey, gen)) || (await loadStored(config, key))) return done;
+    try {
+      if (r.data.status === 'DONE') await setStored(config.storageKey, JSON.stringify({ key, report: r.data.report }));
+      else if (config.rememberStatus)
+        await setStored(config.storageKey, JSON.stringify({ key, status: r.data.status === 'WRITING' ? 'WRITING' : 'NONE' }));
+    } catch {
+      // 두지 못하면 그 화면이 열 때 처음 확인부터 한다
+    }
+    return done;
+  })();
+  prefetched.set(once, run);
+  return run;
 }
 
 /**

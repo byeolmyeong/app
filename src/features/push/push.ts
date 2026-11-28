@@ -45,7 +45,7 @@ const permissionListeners = new Set<() => void>();
 /**
  * 안드로이드 13 이상은 채널이 하나도 없으면 권한 창이 뜨지 않고 토큰도 받지 못한다 — 묻기 · 토큰 전에 만든다.
  * 중요도 HIGH 라야 위에서 내려오는 배너로 뜬다(결정 098). 이미 만든 채널의 중요도는 안드로이드가 바꾸지 않는다 — 전에 DEFAULT 로 만든 기기는 다시 깔아야 한다.
- * 조용한 채널(quiet)은 알림 칸에 보이되 소리 · 진동이 없다 — 중요도 DEFAULT(위에서 내려오지 않음)에 소리 없음 · 진동 끔(계획 A1-5)
+ * 조용한 채널(quiet)은 알림 칸에 보이되 소리 · 진동이 없다 — 중요도 DEFAULT(위에서 내려오지 않음)에 소리 없음 · 진동 끔(계획 A1-5 · 결정 114)
  */
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;

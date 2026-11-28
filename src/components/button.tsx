@@ -9,7 +9,7 @@ export type ButtonProps = {
   label: string;
   onPress: () => void;
   /**
-   * primary 주색(푸른 보라) 바탕(한 화면에 하나) · line 채운 면(fill) 바탕의 보조 · sheetLine 시트 위의 보조(시트 바탕 raised 위에서 보이게 hair — 공유 시트, 결정 103 의 3) ·
+   * primary 주색(푸른 보라) 바탕(한 화면에 하나) · line 채운 면(fill) 바탕의 보조 · sheetLine 시트 위의 보조(시트 바탕 raised 위에서 보이게 sheetSecondary — 공유 시트, 결정 103 의 3) ·
    * danger 되돌릴 수 없는 일(계정 삭제 — 결정 065 의 6)
    */
   variant?: ButtonVariant;
@@ -44,9 +44,9 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: Colors.primary },
   line: { backgroundColor: Colors.fill },
-  sheetLine: { backgroundColor: Colors.hair },
+  sheetLine: { backgroundColor: Colors.sheetSecondary },
   /** 붉은 바탕을 쓰지 않는다: 검은 바탕 + 붉은 글자(결정 065 의 6) */
   danger: { backgroundColor: Colors.fill },
-  /** 누를 수 없을 때: 채운 면에 흐린 글씨(결정 042 시안) */
+  /** 누를 수 없을 때: 채운 면에 흐린 글씨(결정 042 시안) — 어느 모양이든 같다. 시트 위의 보조(sheetLine)도 바탕이 시트에 가까워지고 글자가 흐려져 누를 수 없음이 보인다 */
   disabled: { backgroundColor: Colors.fill },
 });

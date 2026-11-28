@@ -107,13 +107,13 @@ describe('공유 시트 v2(결정 053 · 061 의 6 · 065 의 1, 보드 12-4 · 
     expect(screen.queryByText(S.open)).toBeNull();
   });
 
-  it('앱: 아래 버튼 둘을 나란히 — 왼쪽 보조 "이미지 저장" · 오른쪽 주 "인스타그램 스토리"(1 : 1.4, 높이 56, 보조 바탕은 시트 위에서 보이게 hair — 결정 103 의 3, 시안 12-4)', async () => {
+  it('앱: 아래 버튼 둘을 나란히 — 왼쪽 보조 "이미지 저장" · 오른쪽 주 "인스타그램 스토리"(1 : 1.4, 높이 56, 보조 바탕은 시트 위에서 보이게 sheetSecondary — 결정 103 의 3, 시안 12-4)', async () => {
     await render(<ShareEntry target={{ kind: 'NICKNAME' }} />);
     await open();
     await screen.findByTestId('share-card');
     expect(actionLabels()).toEqual([S.actions.saveImage, S.actions.story]);
     expect(S.actions.story).toBe('인스타그램 스토리');
-    expect(fillOf(S.actions.saveImage)).toBe(Colors.hair);
+    expect(fillOf(S.actions.saveImage)).toBe(Colors.sheetSecondary);
     expect(fillOf(S.actions.story)).toBe(Colors.primary);
     const row = screen.getByTestId('share-actions');
     expect(StyleSheet.flatten(row.props.style)).toMatchObject({ flexDirection: 'row', gap: 8 });

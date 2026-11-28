@@ -47,6 +47,15 @@ describe('새로워진 점을 띄울 기기', () => {
     expect(whatsNewDue()).toBe(false);
   });
 
+  it('소개 화면이 루트보다 먼저 기록을 적어도(웹에서 /intro 로 바로 들어옴 — 자식 effect 가 먼저) 처음 값은 "안 봄" 이라 새 사람이 업데이트한 사람이 되지 않는다(리뷰 #165)', async () => {
+    // 루트가 소개 기록을 읽기 전에 소개 화면이 적는다
+    await markIntroSeen();
+    expect(await AsyncStorage.getItem(INTRO_SEEN_KEY)).not.toBeNull();
+    expect(await introSeenAtLaunch()).toBe(false);
+    await settleWhatsNew();
+    expect(whatsNewDue()).toBe(false);
+  });
+
   it('본 것을 적으면 다시 띄우지 않는다(다음 실행에도)', async () => {
     await AsyncStorage.setItem(INTRO_SEEN_KEY, '1');
     await settleWhatsNew();

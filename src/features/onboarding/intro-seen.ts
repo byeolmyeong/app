@@ -31,6 +31,9 @@ export async function hasSeenIntro(): Promise<boolean> {
 /** 소개가 처음 뜨는 순간 부른다. 적지 못해도 이번 실행에서는 본 것으로 둔다 */
 export async function markIntroSeen(): Promise<void> {
   set(true);
+  // 적기 전에 이번 실행의 처음 값을 잡아 둔다 — 소개 화면(자식)의 effect 가 루트보다 먼저 돌아도(웹에서 /intro 로 바로) 새 사람이
+  // 1.0.x 에서 올라온 기기로 보이지 않게(결정 113 의 1, 리뷰 #165). 읽기를 마친 뒤에 적는다
+  await introSeenAtLaunch();
   try {
     await AsyncStorage.setItem(INTRO_SEEN_KEY, '1');
   } catch {

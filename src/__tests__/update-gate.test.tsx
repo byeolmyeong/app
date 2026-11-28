@@ -49,6 +49,7 @@ jest.mock('expo-router', () => {
 jest.mock('@/features/auth/use-session', () => ({ useSession: jest.fn(() => ({ status: 'signedOut' as const, token: null, ready: true, lastError: null })) }));
 // 소개는 이미 본 기기로 둔다(결정 042 — 로그인 전이면 로그인 화면으로)
 jest.mock('@/features/onboarding/intro-seen', () => ({ useIntroSeen: () => true }));
+jest.mock('@/features/onboarding/whats-new', () => ({ settleWhatsNew: async () => {} }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 const mockSetHandler = setUpdateRequiredHandler as jest.Mock;

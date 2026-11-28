@@ -38,12 +38,34 @@ export async function markIntroSeen(): Promise<void> {
   }
 }
 
+/**
+ * 이번 실행이 처음 읽은 소개 기록 — 이 실행이 소개를 적기 전의 값이다(소개 화면은 이 값을 읽은 뒤에야 뜬다). 읽지 못했으면 null.
+ * 1.1.0 의 새로워진 점이 1.0.x 에서 올라온 기기를 가리는 데 쓴다(결정 113 의 1). 루트가 앱을 켤 때 부른다
+ */
+let launchRead: Promise<boolean | null> | null = null;
+export function introSeenAtLaunch(): Promise<boolean | null> {
+  launchRead ??= AsyncStorage.getItem(INTRO_SEEN_KEY).then(
+    (value) => value !== null,
+    () => null,
+  );
+  return launchRead;
+}
+
 function load(): Promise<boolean> {
-  reading ??= hasSeenIntro().then((value) => {
+  // 저장소를 읽지 못하면 본 것으로 친다 — 같은 사람에게 두 번 보이는 것보다 낫다
+  reading ??= introSeenAtLaunch().then((read) => {
+    const value = read ?? true;
     if (seen === null) set(value);
     return value;
   });
   return reading;
+}
+
+/** 시험용 — 앱을 새로 켠 것처럼 이번 실행의 메모리를 비운다 */
+export function resetIntroSeen(): void {
+  seen = null;
+  reading = null;
+  launchRead = null;
 }
 
 const subscribe = (listener: () => void) => {

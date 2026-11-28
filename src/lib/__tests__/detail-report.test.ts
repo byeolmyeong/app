@@ -282,6 +282,35 @@ describe('prefetchDetailReport — 앱을 켤 때 상태를 받아 둔다(결정
     await prefetchDetailReport(REMEMBER, input);
     expect(await stored()).toBeNull();
   });
+
+  it('다 쓴 풀이를 아는지 알려 준다 — 기기에 둔 풀이 · 서버의 DONE 이면 true, 받기 전 · 쓰는 중 · 못 물음이면 false(새로워진 점의 셋째 줄, 결정 113 의 2)', async () => {
+    const DONE_CFG: DetailReportConfig<Fake> = { ...CONFIG, storageKey: 'test.prefetchDone.v1', rememberStatus: true };
+    await AsyncStorage.setItem(DONE_CFG.storageKey, JSON.stringify({ key, report }));
+    expect(await prefetchDetailReport(DONE_CFG, input)).toBe(true);
+    await AsyncStorage.setItem(DONE_CFG.storageKey, JSON.stringify({ key, status: 'WRITING' }));
+    expect(await prefetchDetailReport(DONE_CFG, input)).toBe(false);
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce(done);
+    expect(await prefetchDetailReport(DONE_CFG, input)).toBe(true);
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce(got('NONE'));
+    expect(await prefetchDetailReport(DONE_CFG, input)).toBe(false);
+    await AsyncStorage.clear();
+    get.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
+    expect(await prefetchDetailReport(DONE_CFG, input)).toBe(false);
+  });
+
+  it('받아 두는 중에 또 부르면(홈이 다시 붙음) 묻기는 한 번이고 둘 다 그 답을 받는다', async () => {
+    const DONE_CFG: DetailReportConfig<Fake> = { ...CONFIG, storageKey: 'test.prefetchTwice.v1', rememberStatus: true };
+    let answer: (v: ApiResult<DetailReportState<Fake>>) => void = () => {};
+    get.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const first = prefetchDetailReport(DONE_CFG, input);
+    const second = prefetchDetailReport(DONE_CFG, input);
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
+    answer(done);
+    expect(await Promise.all([first, second])).toEqual([true, true]);
+    expect(get).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('겹친 확인 · 늦은 답 · 지운 기기(리뷰 #87)', () => {

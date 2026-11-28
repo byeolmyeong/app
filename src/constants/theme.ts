@@ -1041,3 +1041,27 @@ export const HomeMenuLayout = {
   list: { top: 14, gap: 4, row: 64, padV: 6, padH: 8, radius: 14, iconGap: 14, box: 48, boxRadius: 16, textGap: 2, chevron: 22 },
   today: { radius: 24, pad: 20, moon: 52, moonTop: 46, moonRight: 22, textRight: 72, titleTop: 6, briefTop: 4, glow: { x: 0.84, y: 0.18, extent: 0.6 } },
 } as const;
+
+/**
+ * 1.1.0 새로워진 점 창(결정 109 의 6, 시안 "홈 (1.1.0)" R3) — 가운데 창(DialogLayout)과 같은 꼴에 줄 셋과 1 : 1.4 버튼:
+ * 화면 양옆 · 안 여백(위 · 좌우 · 아래) · 모서리 · 제목 아래 줄들 · 줄 사이 · 아이콘과 글 사이 · 아이콘 동그라미(지름 · 바탕) · 그림 ·
+ * 이름과 한 줄 사이 · 버튼 위 · 버튼 사이 · 버튼 높이 · 주 버튼의 폭 비율
+ */
+export const WhatsNewLayout = {
+  inset: 24,
+  padTop: 26,
+  padX: 20,
+  padBottom: 20,
+  radius: 20,
+  listTop: 20,
+  rowGap: 16,
+  iconGap: 12,
+  icon: 40,
+  iconFill: '#23252E',
+  glyph: 20,
+  textGap: 2,
+  actionsTop: 24,
+  actionGap: 8,
+  button: 50,
+  primaryFlex: 1.4,
+} as const;

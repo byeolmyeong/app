@@ -25,6 +25,8 @@ import { useAccount } from '@/features/home/use-account';
 import { HomeBell } from '@/features/notifications/home-bell';
 import { hasUnread } from '@/features/notifications/notification-rows';
 import { useNotifications } from '@/features/notifications/use-notifications';
+import { markWhatsNewSeen, useWhatsNewDue } from '@/features/onboarding/whats-new';
+import { WhatsNewDialog } from '@/features/onboarding/whats-new-dialog';
 import { useStoredHeadline } from '@/features/reading/use-reading';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
 import { HomeTodayCard, HomeTodaySkeleton } from '@/features/timing/home-today-card';
@@ -118,13 +120,23 @@ function Home({ onRetry }: { onRetry: () => void }) {
   const phase = useLoadingPhase(!firstData);
   // 로그인이 확인된 뒤에만 서버에 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41)
   const asking = session.ready && session.status === 'signedIn' ? input : null;
-  // 앱을 켤 때 나 탭 · 시기 풀이의 상태와 이번 달을 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4 · 113 의 4). 스플래시는 이것을 기다리지 않는다
+  // 앱을 켤 때 나 탭 · 시기 풀이의 상태와 이번 달을 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4 · 113 의 4). 스플래시는 이것을 기다리지 않는다.
+  // 둘 중 하나라도 다 쓴 풀이가 있으면 새로워진 점의 셋째 줄 "받았던 자세한 풀이는 그대로"(결정 113 의 2 — 1.1.0 첫 실행에는 아직 결제할 길이 없다)
+  const [received, setReceived] = useState<boolean | null>(null);
   useEffect(() => {
     if (!asking) return;
-    void prefetchMeReport(asking);
-    void prefetchTimingReport(asking);
+    let alive = true;
+    void Promise.all([prefetchMeReport(asking), prefetchTimingReport(asking)]).then(
+      ([me, timing]) => alive && setReceived(me || timing),
+      () => alive && setReceived(false),
+    );
     void prefetchMonth(asking);
+    return () => {
+      alive = false;
+    };
   }, [asking]);
+  // 새로워진 점(결정 109 의 6 · 113 의 1): 1.0.x 에서 올라온 기기에 한 번 — 셋째 줄을 가릴 값을 안 뒤 로그인한 홈 위에
+  const whatsNewDue = useWhatsNewDue();
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);
   const todayLoading = asking !== null && today.state.status === 'loading';
@@ -195,6 +207,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
     );
   if (profile && chart) {
     const openToday = () => router.push('/today');
+    const whatsNew = whatsNewDue && received !== null && cardsKnown;
     return (
       <Screen nav={homeNav} footer={<MainTabs active="home" />}>
         <View testID="home-column" style={styles.column}>
@@ -210,8 +223,18 @@ function Home({ onRetry }: { onRetry: () => void }) {
           />
           <HomeMenus />
         </View>
-        {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때) */}
-        <PushAskSheet time={account?.todaySkyTime} ready={!!reading?.headline} />
+        {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때). 새로워진 점이 떠 있는 동안은 기다린다 */}
+        <PushAskSheet time={account?.todaySkyTime} ready={!!reading?.headline && !whatsNew} />
+        {whatsNew ? (
+          <WhatsNewDialog
+            received={received}
+            onClose={() => void markWhatsNewSeen()}
+            onSynastry={() => {
+              void markWhatsNewSeen();
+              openTab('synastry');
+            }}
+          />
+        ) : null}
       </Screen>
     );
   }

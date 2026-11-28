@@ -614,6 +614,17 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     expect(StyleSheet.flatten(past.props.style).borderColor).not.toBe(Colors.primary);
   });
 
+  it('시각 "모름" 이면 받았더라도 상승점 · 중천 · 하우스가 근거인 날은 칸을 두지 않는다 — 시기 탭 달력과 같은 거름(time-known, 이중 안전)', async () => {
+    const day = fixtures.monthSky.days[0];
+    const asc = { ...day, date: '2026-11-23', text: '상승점이 근거인 날', reason: { when: 'DAY' as const, items: [{ kind: 'TRANSIT' as const, mover: 'MARS', target: 'ASC', type: 'SQUARE' }] } };
+    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, timeKnown: false, days: [day, asc] } });
+    await saveBirth({ profile, chart: fixtures.chart });
+    await render(<HomeScreen />);
+    await screen.findByTestId('home-month-days');
+    expect(screen.getAllByTestId('home-month-day')).toHaveLength(1);
+    expect(screen.queryByText('상승점이 근거인 날')).toBeNull();
+  });
+
   it('이번 달에 다가오는 날이 없으면(지난 날만) 테두리 칸이 없다', async () => {
     const day = fixtures.monthSky.days[0];
     mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...day, date: '2026-11-03' }, { ...day, date: '2026-11-10' }] } });

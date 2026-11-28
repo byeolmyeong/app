@@ -54,7 +54,7 @@ export default function RootLayout() {
   const segments: string[] = useSegments();
   const [first, second] = segments;
   const session = useSession(first !== 's');
-  // 소개 2장은 이 기기에서 처음 한 번만(결정 042 · 055). 기기 저장소에서 읽는다.
+  // 소개 세 장은 이 기기에서 처음 한 번만(결정 042 · 104 의 12). 기기 저장소에서 읽는다.
   const introSeen = useIntroSeen(first !== 's');
   // 로그인 전 가드(결정 034): 로그인 · 가입 · 공유 페이지 말고는 로그인해야 들어온다. 보내는 동안과 확인 중에는 화면을 가린다.
   // 가입 중이면 하던 단계로(결정 068 — 가입 중간에 나갔다 돌아온 사람)

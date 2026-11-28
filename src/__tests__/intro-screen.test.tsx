@@ -20,14 +20,14 @@ const WIDTH = 390;
 const pager = () => screen.getByTestId('intro-pager');
 const layoutPager = () => fireEvent(pager(), 'layout', { nativeEvent: { layout: { width: WIDTH, height: 600, x: 0, y: 0 } } });
 const scrollTo = (x: number) => fireEvent.scroll(pager(), { nativeEvent: { contentOffset: { x, y: 0 } } });
-const label = (n: number) => `${n}${strings.steps.separator}2`;
+const label = (n: number) => `${n}${strings.steps.separator}3`;
 
 beforeEach(async () => {
   jest.clearAllMocks();
   await AsyncStorage.clear();
 });
 
-// 소개(두 장, 결정 055 의 5)는 앱을 처음 받아 처음 켰을 때 한 번만(결정 042, 소유자 2026-11-19)
+// 소개(세 장, 결정 104 의 12)는 앱을 처음 받아 처음 켰을 때 한 번만(결정 042, 소유자 2026-11-19)
 describe('소개를 봤는지', () => {
   it('처음에는 안 봤고, 적으면 봤다', async () => {
     expect(await hasSeenIntro()).toBe(false);
@@ -55,15 +55,26 @@ describe('소개를 봤는지', () => {
 });
 
 describe('소개 화면', () => {
-  it('소개는 두 장 — 나 → 시기, 궁합 장은 없다(결정 055 의 5, 보드 1 · 3)', async () => {
-    expect(S.slides.map((slide) => slide.title)).toEqual(['별이 지어 주는 나의 별명', '지금 나는 어떤 시기일까']);
+  it('소개는 세 장 — 나 → 나의 사람들 → 시기(결정 104 의 12 — 055 의 5 두 장을 대체)', async () => {
+    expect(S.slides.map((slide) => slide.title)).toEqual(['별이 지어 주는 나의 별명', '나의 사람들과 얼마나 잘 맞을까', '지금 나는 어떤 시기일까']);
     await render(<IntroScreen />);
-    expect(screen.queryByText(/궁합/)).toBeNull();
-    expect(screen.queryByTestId('intro-heart', { includeHiddenElements: true })).toBeNull();
+    for (const slide of S.slides) expect(screen.getByText(slide.title)).toBeTruthy();
+  });
+
+  it('가운데 장은 시안 "온보딩 소개 2/3" 그대로 — 연애 · 친구 궁합(옛 "연인 · 친구 · 동료 · 가족" 이 아니다), 그림은 별이 · 하트 카드 둘', async () => {
+    expect(S.slides[1].body).toBe('연애 · 친구 궁합으로 닮은 점과 부딪히는 점을 알아봐요.');
+    await render(<IntroScreen />);
+    expect(screen.queryByText(/동료|가족/)).toBeNull();
+    const heart = screen.getByTestId('intro-heart', { includeHiddenElements: true });
+    expect(heart.props.width).toBe(96);
+    const cards = screen.getAllByTestId('intro-card', { includeHiddenElements: true });
+    expect(cards).toHaveLength(2);
+    expect(StyleSheet.flatten(cards[0].props.style)).toMatchObject({ width: 136, height: 172, borderRadius: 22, left: 22, top: 30, transform: [{ rotate: '-9deg' }] });
+    expect(StyleSheet.flatten(cards[1].props.style)).toMatchObject({ width: 136, height: 172, borderRadius: 22, left: 142, top: 30, transform: [{ rotate: '8deg' }] });
   });
 
   it('제목은 피그마 보드처럼 한 줄 — 줄을 억지로 나누지 않는다(비교 B1)', () => {
-    expect(S.slides.map((slide) => slide.title.includes('\n'))).toEqual([false, false]);
+    expect(S.slides.map((slide) => slide.title.includes('\n'))).toEqual([false, false, false]);
   });
 
   it('달은 보드의 그림(0~100 칸) 비율대로 — 카드 안에서 100 칸을 꽉 채운다(비교 B2)', async () => {
@@ -92,14 +103,18 @@ describe('소개 화면', () => {
     expect(router.replace).toHaveBeenCalledWith('/login');
   });
 
-  it('다음으로 둘째 장까지 넘기고 시작하기를 누르면 로그인 화면으로(점 1/2 · 2/2)', async () => {
+  it('다음으로 셋째 장까지 넘기고 시작하기를 누르면 로그인 화면으로(점 1/3 · 2/3 · 3/3)', async () => {
     await render(<IntroScreen />);
     await layoutPager();
-    expect(screen.getByLabelText(`1${strings.steps.separator}2`)).toBeTruthy();
+    expect(screen.getByLabelText(label(1))).toBeTruthy();
+    expect(screen.getAllByTestId(/^intro-dot-/, { includeHiddenElements: true })).toHaveLength(3);
     await fireEvent.press(screen.getByText(S.next));
     // 장 번호는 스크롤이 그 장에 닿은 뒤에 바뀐다
     await scrollTo(WIDTH);
-    expect(screen.getByLabelText(`2${strings.steps.separator}2`)).toBeTruthy();
+    expect(screen.getByLabelText(label(2))).toBeTruthy();
+    await fireEvent.press(screen.getByText(S.next));
+    await scrollTo(WIDTH * 2);
+    expect(screen.getByLabelText(label(3))).toBeTruthy();
     expect(screen.queryByText(S.next)).toBeNull();
     await fireEvent.press(screen.getByText(S.start));
     expect(router.replace).toHaveBeenCalledWith('/login');
@@ -132,7 +147,7 @@ describe('소개 화면: 다음으로 넘길 때', () => {
     expect(screen.getByLabelText(label(1))).toBeTruthy();
     await scrollTo(WIDTH);
     expect(screen.getByLabelText(label(2))).toBeTruthy();
-    expect(screen.getByText(S.start)).toBeTruthy();
+    expect(screen.getByText(S.next)).toBeTruthy();
   });
 
   it('막대는 스크롤 위치를 네이티브 드라이버로 따라간다(폭이 아니라 transform 으로)', async () => {

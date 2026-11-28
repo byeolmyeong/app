@@ -199,12 +199,12 @@ export const AvatarColors = {
 
 /**
  * 브랜드 자리 바탕의 옅은 빛 모양(결정 042 시안의 radial-gradient): 사라지는 자리(가운데에서 가장 먼 모서리까지를 1) · 가운데 높이.
- * 소개는 장마다 가운데 높이가 다르다(둘째 장 — 시기 — 은 그림이 위로 올라간다).
+ * 소개는 장마다 가운데 높이가 다르다(셋째 장 — 시기 — 은 그림이 위로 올라간다).
  */
 export const BackdropShape = {
   /** 스플래시(보드 1, 결정 067 의 3) */
   splash: { extent: 0.58, centerY: 0.44 },
-  intro: { extent: 0.62, centerY: [0.5, 0.44] },
+  intro: { extent: 0.62, centerY: [0.5, 0.5, 0.44] },
   login: { extent: 0.6, centerY: 0.46 },
   making: { extent: 0.56, centerY: 0.42 },
   reveal: { extent: 0.58, centerY: 0.26 },
@@ -230,8 +230,11 @@ export const RevealLayout = {
   cellInnerGap: 2,
 } as const;
 
-/** 소개 둘째 장(시기) 그림의 자리(시안 온보딩 보드 3) */
+/** 소개 둘째 장(나의 사람들 — 시안 "온보딩 소개 2/3") · 셋째 장(시기 — 시안 온보딩 보드 4) 그림의 자리 */
 export const IntroArtLayout = {
+  /** 둘째 장: 기울어진 카드 둘(카드 · 모서리 · 별이 · 하트)과 둘을 담는 칸(폭 · 높이 · 위 · 왼쪽 카드 · 오른쪽 카드의 왼쪽) */
+  card: { width: 136, height: 172, radius: 22, art: 120, heart: 96 },
+  pair: { width: 300, height: 240, top: 30, left: 22, right: 142 },
   moonCard: { width: 148, height: 184, radius: 22, moon: 100 },
   /** 달 카드와 시기 줄 사이 · 시기 줄(선 · 점 · 글자 사이) */
   artGap: 36,

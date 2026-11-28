@@ -32,7 +32,7 @@ jest.mock('expo-router', () => {
     Stack: () => <T>앱의 화면들</T>,
     useSegments: () => [],
     usePathname: () => '/',
-    router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => false) },
+    router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => false), canDismiss: jest.fn(() => false), dismissAll: jest.fn() },
     useLocalSearchParams: jest.fn(() => ({ shareId: 'AbCdEfGhIjKlMnOpQrStUv' })),
   };
 });

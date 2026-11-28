@@ -61,7 +61,10 @@ export default function RootLayout() {
   const target = guardRedirect(session.status, first, introSeen, second, resumeStep());
   const covered = guardCovers(session.status, first, introSeen, second);
   useEffect(() => {
-    if (target) router.replace(target);
+    if (!target) return;
+    // 쌓인 화면을 걷어 내고 보낸다 — 세션이 만료(401)돼 로그인으로 갈 때 아래에 앞사람의 화면이 남아 다음 사람이 뒤로 가 보지 않게(로그아웃 · 탈퇴와 같다)
+    if (router.canDismiss()) router.dismissAll();
+    router.replace(target);
   }, [target]);
   const slideUp = useSlideUpScreenOptions();
   // 글꼴: 앱은 빌드 때 넣어 기다리지 않고(결정 086), 웹은 공식 부분 글꼴 woff2 의 핵심 묶음 셋을 기다린다(성능 계획 1 — components/use-app-fonts)

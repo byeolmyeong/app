@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook } from '@testing-library/react-native';
 
 import { clearDeviceData, deleteAccount } from '@/features/auth/delete-account';
+import { signOutGoogle } from '@/features/auth/providers/google';
 import { clearResume } from '@/features/auth/signup-resume';
 import { clearSession } from '@/features/auth/use-session';
 import { setAccountLocal, useStoredAccount } from '@/lib/account-store';
@@ -17,6 +18,7 @@ jest.mock('@/lib/api', () => ({
 }));
 jest.mock('@/features/auth/use-session', () => ({ clearSession: jest.fn(async () => {}) }));
 jest.mock('@/features/auth/signup-resume', () => ({ clearResume: jest.fn(async () => {}) }));
+jest.mock('@/features/auth/providers/google', () => ({ signOutGoogle: jest.fn(async () => {}) }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 
@@ -39,6 +41,8 @@ describe('계정 삭제', () => {
     expect(await AsyncStorage.getAllKeys()).toEqual(['other-app.key']);
     // 세션을 바로 비우면 루트 가드가 지웠어요 화면을 로그인으로 바꿔 버린다
     expect(clearSession).not.toHaveBeenCalled();
+    // 이 기기의 구글 로그인도 끊는다(다음 구글 로그인이 지운 계정으로 바로 들어가지 않게)
+    expect(signOutGoogle).toHaveBeenCalledTimes(1);
   });
 
   it('서버가 지우지 못하면 기기의 것은 그대로 두고 실패를 돌려준다', async () => {
@@ -46,6 +50,7 @@ describe('계정 삭제', () => {
     expect(await deleteAccount()).toEqual({ ok: false, error: 'NETWORK' });
     expect((await AsyncStorage.getAllKeys()).length).toBe(3);
     expect(clearSession).not.toHaveBeenCalled();
+    expect(signOutGoogle).not.toHaveBeenCalled();
   });
 });
 

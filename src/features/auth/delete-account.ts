@@ -6,6 +6,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { signOutGoogle } from '@/features/auth/providers/google';
 import { clearResume } from '@/features/auth/signup-resume';
 import { forgetAccount } from '@/lib/account-store';
 import { forgetMemory } from '@/lib/device-memory';
@@ -36,6 +37,8 @@ export async function clearDeviceData(): Promise<void> {
 export async function deleteAccount(): Promise<ApiResult<null>> {
   const r = await api.deleteAccount();
   if (!r.ok) return r;
+  // 이 기기의 구글 로그인도 끊는다 — 다음 구글 로그인이 지운 계정으로 계정 고르기 없이 들어가지 않게
+  await signOutGoogle();
   await clearDeviceData();
   return r;
 }

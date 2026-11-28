@@ -63,6 +63,28 @@ describe('api: 오류를 구분한 결과', () => {
   });
 });
 
+// 연결 끊김 띠(1.0.1): 서버가 답했다는 것은 연결돼 있다는 증거 — 상태가 실패여도 응답을 받았으면 닿은 것이다
+describe('api: 서버에 닿았는지 알림(onReach)', () => {
+  it('보낼 때 먼저 알리고, 응답을 받으면 상태가 무엇이든 true · 받지 못하면 false', async () => {
+    const order: string[] = [];
+    const onReach = () => {
+      order.push('보냄');
+      return (reached: boolean) => order.push(reached ? '닿음' : '못 닿음');
+    };
+    const ok = jest.fn(async () => {
+      order.push('fetch');
+      return { ok: true, status: 200, json: async () => ({ timeKnown: true }) };
+    }) as unknown as jest.MockedFunction<typeof fetch>;
+    await createApi({ baseUrl: BASE, fetchFn: ok, getToken: () => null, onReach }).createChart(input);
+    await createApi({ baseUrl: BASE, fetchFn: fakeFetch(500), getToken: () => null, onReach }).createChart(input);
+    const fetchFn = jest.fn(async () => {
+      throw new TypeError('Network request failed');
+    }) as unknown as jest.MockedFunction<typeof fetch>;
+    await createApi({ baseUrl: BASE, fetchFn, getToken: () => null, onReach }).createChart(input);
+    expect(order).toEqual(['보냄', 'fetch', '닿음', '보냄', '닿음', '보냄', '못 닿음']);
+  });
+});
+
 describe('api: 세션 토큰', () => {
   it('토큰이 있으면 Authorization 헤더에 붙인다', async () => {
     const fetchFn = fakeFetch(200, fixtures.chart);

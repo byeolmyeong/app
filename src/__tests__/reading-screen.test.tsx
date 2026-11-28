@@ -85,12 +85,12 @@ describe('요약 해석 화면', () => {
     expect(screen.queryByText(R.generating)).toBeNull();
     // 0.3초 전 빈 단계에도 뼈대와 같은 머리 · 아래 탭(결정 071 의 6)
     expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
-    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.getAllByRole('tab')).toHaveLength(5);
     await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
     expect(screen.getByTestId('reading-skeleton')).toBeTruthy();
     expect(screen.getByLabelText(ST.loading)).toBeTruthy();
     expect(screen.getByRole('button', { name: strings.common.backLabel })).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false, false]);
     expect(screen.queryByText(R.generating)).toBeNull();
     // 10초가 넘도록 오지 않으면 서버가 새로 짓는 중이다(옛 요약 해석만 있던 계정 — 나 탭과 같다, 리뷰 #49)
     await act(async () => void (await jest.advanceTimersByTimeAsync(10_000)));
@@ -98,7 +98,7 @@ describe('요약 해석 화면', () => {
     expect(screen.queryByTestId('reading-skeleton')).toBeNull();
     // 짓는 중에는 머리가 없다(소유자, 빌드 13) — 아래 탭은 그대로라 그동안 다른 탭으로 갈 수 있다(나 탭과 같다, 결정 061 · 065 의 2)
     expect(screen.queryByTestId('nav-bar')).toBeNull();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false, false]);
     await act(async () => resolve({ ok: true, data: reading }));
     expect(screen.getByText(reading.headline)).toBeTruthy();
     jest.useRealTimers();
@@ -237,12 +237,12 @@ describe('요약 해석 화면', () => {
     expect(screen.getAllByTestId('reason-wheel')).toHaveLength(1);
   });
 
-  it('글이 보이면 아래 탭 넷이 있고 나가 골라져 있다 — 방금 받은 글도, 기기에 받아 둔 글도(결정 046 의 4 · 055 의 2)', async () => {
+  it('글이 보이면 아래 탭 다섯이 있고 나가 골라져 있다 — 방금 받은 글도, 기기에 받아 둔 글도(결정 046 의 4 · 102 의 3)', async () => {
     const view = await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
     const tabs = () => screen.getAllByRole('tab');
-    expect(tabs().map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
-    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(tabs().map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '궁합', '마이']);
+    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false, false]);
     await view.unmount();
     // 웹 화면 비교에서 찾음: 받아 둔 글을 그리는 갈래에는 탭이 없었다
     await AsyncStorage.setItem(
@@ -251,14 +251,14 @@ describe('요약 해석 화면', () => {
     );
     await render(<ReadingScreen />);
     expect(await screen.findByText(reading.headline)).toBeTruthy();
-    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false, false]);
   });
 
   it('글을 받지 못한 화면에도 아래 탭이 있다(리뷰 PR #41)', async () => {
     mockApi.createReading.mockResolvedValue({ ok: false, error: 'SERVER', status: 502 });
     await render(<ReadingScreen />);
     expect(await screen.findByText(ST.loadFail.retry)).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false, false]);
   });
 
   it('"내 하늘 지도 보기" 는 /chart 로 간다', async () => {

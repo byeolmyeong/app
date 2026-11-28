@@ -2,11 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { AppState, StyleSheet, type AppStateStatus } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import BirthScreen from '@/app/birth';
 import HomeScreen from '@/app/index';
-import { Colors, ScreenPaddingX, TimingLayout } from '@/constants/theme';
+import { Colors, HomeMenuLayout, RelationColors } from '@/constants/theme';
 import { strings } from '@/content/strings';
 import { useSession } from '@/features/auth/use-session';
 import { saveBirth } from '@/features/chart/use-birth-profile';
@@ -16,7 +16,7 @@ import { TIMING_REPORT_STORAGE_KEY } from '@/features/timing/use-timing-report';
 import { DAY_SKY_STORAGE_KEY } from '@/features/timing/use-today-sky';
 import { MONTH_SKY_STORAGE_KEY } from '@/features/timing/use-month';
 import { ME_REPORT_STORAGE_KEY } from '@/features/me/use-me-report';
-import { ACCOUNT_STORAGE_KEY, refreshAccount } from '@/lib/account-store';
+import { refreshAccount } from '@/lib/account-store';
 import { api } from '@/lib/api';
 import { fixtures } from '@/lib/fixtures';
 
@@ -61,14 +61,14 @@ jest.mock('@/lib/api', () => ({
     createReading: jest.fn(),
     // 기기가 비어 있으면 서버의 출생 정보로 되살려 본다(결정 029) — 이 테스트들에서는 저장된 것이 없다
     getProfile: jest.fn(async () => ({ ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' })),
-    // 홈의 시기 칸(결정 047 의 1-4)은 시기 풀이 상태만 묻는다 — 만들기(POST)는 시기 탭에서 사람이 누를 때만
+    // 앱을 켤 때 시기 풀이의 상태도 받아 둔다(결정 075 의 4 · 113 의 4) — 만들기(POST)는 시기 탭에서 사람이 누를 때만
     getTimingReport: jest.fn(),
   },
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 const profile = { date: '2000-06-15', time: '21:00', place: { id: 1841277, name: '서울특별시 마포구' } };
-const M = strings.main;
+const H = strings.home.menu;
 type Profile = { date: string; time: string | null; place: { id: number; name: string } | null };
 /** 그 출생 정보로 받아 둔 풀이를 기기에 넣는다(use-reading 의 열쇠: 날짜 · 시각 · 곳) */
 const storeReading = (reading: object, p: Profile = profile) =>
@@ -93,11 +93,14 @@ afterEach(() => {
   nowSpy = null;
 });
 
+/** 홈이 다 그려졌다 — 메뉴판의 첫 카드 */
+const homeShown = () => screen.findByTestId('home-menu-me');
+
 describe('홈', () => {
   it('출생 정보가 없으면 입력부터 받는다', async () => {
     await render(<HomeScreen />);
     expect(await screen.findByPlaceholderText(strings.home.datePlaceholder)).toBeTruthy();
-    expect(screen.queryByTestId('nickname-card')).toBeNull();
+    expect(screen.queryByTestId('home-menu-me')).toBeNull();
   });
 
   it('로그인 전 · 가입 중이면(루트 가드가 소개 · 로그인으로 보내는 동안 가림막 아래) 출생 정보 입력을 그리지 않고 곳 목록도 받지 않는다(성능 계획 4)', async () => {
@@ -113,132 +116,20 @@ describe('홈', () => {
     (useSession as jest.Mock).mockReturnValue({ status: 'signedIn', token: 't', ready: true, lastError: null });
   });
 
-  it('출생 정보가 있으면 머리의 로고, 맨 아래 별명 한 줄 카드 — 프로필 그림 · "새벽별 님의 별명" · 한 줄 별명(결정 092). 해 별자리 · 받은 날 · 별자리 장식 · 카테고리 · 궁합 칸은 없다', async () => {
-    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-11-20T01:00:00Z').getTime());
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading({ ...fixtures.reading, createdAt: '2026-11-09T01:00:00Z' });
-    await render(<HomeScreen />);
-    const card = within(await screen.findByTestId('nickname-card'));
-    expect(await card.findByText('새벽별 님의 별명')).toBeTruthy();
-    expect(card.getByText(fixtures.reading.headline)).toBeTruthy();
-    expect(screen.queryByText(/별명을 받은 지/)).toBeNull();
-    expect(screen.queryByText('쌍둥이자리')).toBeNull();
-    expect(screen.queryByTestId(/^card-constellation/, { includeHiddenElements: true })).toBeNull();
-    expect(screen.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
-    expect(screen.getByTestId('brand-mark')).toBeTruthy();
-    expect(screen.queryByTestId('home-category')).toBeNull();
-    expect(screen.queryByText(/궁합/)).toBeNull();
-    await fireEvent.press(screen.getByTestId('nickname-card'));
-    expect(router.push).toHaveBeenCalledWith('/reading');
-  });
-
-  it('별명 한 줄 카드는 "풀이 읽기" 글자 없이 꺾쇠만(카드 세로 가운데) — 다른 카드의 꺾쇠와 같은 크기 · 색, 카드 전체가 눌린다(결정 092 · 080)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
-    await render(<HomeScreen />);
-    const card = await screen.findByTestId('nickname-card');
-    await within(card).findByText(fixtures.reading.headline);
-    expect(within(card).queryByText(strings.home.card.read)).toBeNull();
-    expect(StyleSheet.flatten(card.props.style)).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
-    const chevron = within(card).getByTestId('nickname-card-chevron');
-    expect(chevron.props.width).toBe(22);
-    expect(within(card).getByTestId('nickname-card-chevron-path').props.stroke).toEqual({ type: 0, payload: parseInt(`ff${Colors.hint.slice(1)}`, 16) });
-    // 화면 읽기는 보이는 글 차례대로 + "풀이 읽기"(나 탭 카드와 같은 규칙, 결정 078 의 1)
-    expect(screen.getByRole('button', { name: ['새벽별 님의 별명', fixtures.reading.headline, strings.home.card.read].join(', ') })).toBe(card);
-    await fireEvent.press(card);
-    expect(router.push).toHaveBeenCalledWith('/reading');
-  });
-
-  it('시각 "모름" 이어도 같은 카드다(결정 047 의 4)', async () => {
-    const unknown = { date: '2000-06-15', time: null, place: null };
-    await saveBirth({ profile: unknown, chart: fixtures.chartTimeUnknown });
-    await storeReading(fixtures.reading, unknown);
-    await render(<HomeScreen />);
-    expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
-    expect(within(screen.getByTestId('nickname-card')).getByText('새벽별 님의 별명')).toBeTruthy();
-  });
-
-  it('계정을 받지 못했거나 옛 계정(닉네임 · 프로필 null)이면 "내 별명" · 그림 없이 그린다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
-    for (const result of [{ ok: false, error: 'NETWORK' } as const, { ok: true, data: { nickname: null, avatar: null, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } } as const]) {
-      mockApi.getMyAccount.mockResolvedValueOnce(result);
-      const view = await render(<HomeScreen />);
-      expect(await screen.findByText(fixtures.reading.headline)).toBeTruthy();
-      expect(screen.queryByText(/ 님의 별명$/)).toBeNull();
-      expect(screen.queryByRole('image')).toBeNull();
-      expect(within(screen.getByTestId('nickname-card')).getByText(strings.home.card.fallback)).toBeTruthy();
-      await view.unmount();
-    }
-  });
-
-  it('모르는 프로필 번호면 그림만 빼고 이름은 그린다(리뷰 PR #41)', async () => {
-    mockApi.getMyAccount.mockResolvedValueOnce({ ok: true, data: { nickname: '새벽별', avatar: 9, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false } });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
-    await render(<HomeScreen />);
-    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
-    expect(screen.queryByRole('image')).toBeNull();
-  });
-
-  it('받아 둔 풀이가 없으면 "아직 별명을 짓지 않았어요" 와 오른쪽 위 꺾쇠 — 화면 읽기는 "내 별명 읽기", 누르면 /reading(풀이를 부르지 않는다)', async () => {
+  it('아래에 탭 다섯이 있다: 홈 · 나 · 시기 · 궁합 · 마이(결정 102 의 3). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /timing(시기 탭, 결정 049), 궁합은 /synastry', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    const card = await screen.findByTestId('nickname-card');
-    expect(within(card).getByText(M.readingEmpty)).toBeTruthy();
-    expect(within(card).queryByText(M.readingCta)).toBeNull();
-    expect(within(card).getByTestId('nickname-card-chevron')).toBeTruthy();
-    expect(card.props.accessibilityLabel.endsWith(`${M.readingEmpty}, ${M.readingCta}`)).toBe(true);
-    await fireEvent.press(card);
-    expect(router.push).toHaveBeenCalledWith('/reading');
-    expect(screen.queryByText(fixtures.reading.headline)).toBeNull();
-  });
-
-  it('업데이트 직후: 기기에 옛 모양(근거 구조 없음 · 보완점 3)으로 받아 둔 풀이도 한 줄 별명은 홈에 보인다 — 서버를 부르지 않는다(PR #49 리뷰)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    const old = {
-      headline: '궁금한 것이 많고, 멀리 보는 사람',
-      sections: [{ title: '생각이 먼저 움직입니다', body: '본문', basis: ['태양', '쌍둥이', '6하우스'] }],
-      strengths: ['하나', '둘', '셋'],
-      cautions: ['하나', '둘', '셋'],
-    };
-    await storeReading(old);
-    await render(<HomeScreen />);
-    const card = await screen.findByTestId('nickname-card');
-    expect(await within(card).findByText(old.headline)).toBeTruthy();
-    expect(within(card).queryByText(M.readingEmpty)).toBeNull();
-    expect(card.props.accessibilityLabel.endsWith(`${old.headline}, ${strings.home.card.read}`)).toBe(true);
-    // 만든 때가 없는 옛 글이라 "받은 지 N일" 은 없다
-    expect(within(card).queryByText(/별명을 받은 지/)).toBeNull();
-    expect(mockApi.createReading).not.toHaveBeenCalled();
-  });
-
-  it('기기에 둔 것이 풀이 모양이 아니면(한 줄 별명이 없음) 받아 둔 것이 없는 것과 같다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading({ headline: '', sections: [] });
-    await render(<HomeScreen />);
-    expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
-  });
-
-  it('다른 출생 정보로 받은 풀이는 보여 주지 않는다', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading, { date: '1990-01-01', time: null, place: { id: 1, name: 'x' } });
-    await render(<HomeScreen />);
-    expect(within(await screen.findByTestId('nickname-card')).getByText(M.readingEmpty)).toBeTruthy();
-  });
-
-  it('아래에 탭 넷이 있다: 홈 · 나 · 시기 · 마이(결정 055 의 2). 누르면 그 화면으로 바꾼다 — 나는 /me(결정 048 의 1), 시기는 /timing(시기 탭, 결정 049)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
+    await homeShown();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '마이']);
-    expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
+    expect(tabs.map((t) => t.props.accessibilityLabel)).toEqual(['홈', '나', '시기', '궁합', '마이']);
+    expect(tabs.map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false, false]);
     await fireEvent.press(tabs[1]);
     expect(router.replace).toHaveBeenLastCalledWith('/me');
     await fireEvent.press(tabs[2]);
     expect(router.replace).toHaveBeenLastCalledWith('/timing');
     await fireEvent.press(tabs[3]);
+    expect(router.replace).toHaveBeenLastCalledWith('/synastry');
+    await fireEvent.press(tabs[4]);
     expect(router.replace).toHaveBeenLastCalledWith('/my');
     // 지금 있는 탭을 눌러도 아무 데도 가지 않는다
     (router.replace as jest.Mock).mockClear();
@@ -246,19 +137,19 @@ describe('홈', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('머리는 높이 56, 첫 카드는 그 아래 12 · 카드 사이 12(보드 11 · 11-1)', async () => {
+  it('머리는 높이 56 · 왼쪽 로고, 첫 카드는 그 아래 12 · 카드 사이 12(시안 "홈 (1.1.0)" A)', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    const card = await screen.findByTestId('nickname-card');
+    await homeShown();
     expect(StyleSheet.flatten(screen.getByTestId('nav-bar').props.style).height).toBe(56);
-    expect(card).toBeTruthy();
+    expect(screen.getByTestId('brand-mark')).toBeTruthy();
     expect(StyleSheet.flatten(screen.getByTestId('home-column').props.style)).toMatchObject({ paddingTop: 12, gap: 12 });
   });
 
   it('탭 이름은 시안 11 의 11/15 — 고른 탭은 600 · 본문색, 나머지는 500 · 안내색', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
+    await homeShown();
     const style = (label: string) => StyleSheet.flatten(within(screen.getByLabelText(label)).getByText(label).props.style);
     expect(style('홈')).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '600', color: Colors.ink });
     expect(style('나')).toMatchObject({ fontSize: 11, lineHeight: 15, fontWeight: '500', color: Colors.hint });
@@ -272,17 +163,17 @@ describe('홈', () => {
     });
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
+    await homeShown();
     expect(screen.queryByTestId('offline-banner')).toBeNull();
     await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
     const column = within(screen.getByTestId('home-column'));
     expect(column.getByTestId('offline-banner')).toBeTruthy();
-    expect(column.getByTestId('nickname-card')).toBeTruthy();
+    expect(column.getByTestId('home-menu-me')).toBeTruthy();
     await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
     expect(screen.queryByTestId('offline-banner')).toBeNull();
   });
 
-  it('끊긴 채 열어 계정을 못 받았으면, 연결이 돌아올 때 다시 받는다(띠의 "연결되면 새로 불러올게요", 리뷰 PR #44)', async () => {
+  it('끊긴 채 열어 계정을 못 받았으면, 연결이 돌아올 때 다시 받는다(알림 받기 권유의 받는 시간, 리뷰 PR #44)', async () => {
     let listener: ((s: { isConnected: boolean; isInternetReachable: boolean }) => void) | null = null;
     (NetInfo.addEventListener as jest.Mock).mockImplementation((cb) => {
       listener = cb;
@@ -290,13 +181,10 @@ describe('홈', () => {
     });
     mockApi.getMyAccount.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
     await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
-    expect(screen.queryByText('새벽별 님의 별명')).toBeNull();
+    await homeShown();
     await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
     await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
-    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(2);
   });
 
@@ -307,104 +195,114 @@ describe('홈', () => {
   });
 });
 
-describe('홈 · 시기 칸(결정 047 의 1-4 · 1-5, 보드 11 · 11-1 · 11-2)', () => {
-  const T = strings.timing;
-  const report = fixtures.timingReport;
-  const main = report.intervals.find((i) => i.id === report.current.mainId)!;
-  const birthKey = JSON.stringify([profile.date, profile.time, profile.place.id]);
+/** 시안 "홈 (1.1.0)" A — 오늘의 하늘 한 줄 + 메뉴판(결정 102) */
+describe('홈 메뉴판(결정 102 의 1, 시안 "홈 (1.1.0)" A)', () => {
   beforeEach(async () => {
     await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
   });
 
-  it('시기 풀이가 다 됐으면 "지금 나의 시기" 한 줄 카드 — 대표 구간 이름 · "2027년 1월까지 · 다음 큰 변화 2028년". 줄 그림 · 시기의 작은 실천은 홈에 없다(결정 092), 누르면 시기 탭', async () => {
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
+  it('차례: 오늘의 하늘 한 줄 → 나 → 나의 시기 → 나의 사람들. 1.0.0 홈의 칸(작은 실천 · 지금 나의 시기 · 이번 달 눈여겨볼 날 · 별명 한 줄)은 없다(결정 102 의 2)', async () => {
     await render(<HomeScreen />);
-    const card = await screen.findByTestId('home-timing-card');
-    expect(within(card).getByText(T.now)).toBeTruthy();
-    // 카드 머리의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
-    expect(within(card).getByTestId('home-card-chevron').props.width).toBe(22);
-    expect(within(card).getByText(main.title)).toBeTruthy();
-    expect(within(card).getByText('2027년 1월까지 · 다음 큰 변화 2028년')).toBeTruthy();
-    expect(within(card).queryByText('지나온 시기')).toBeNull();
-    expect(screen.queryByTestId('home-timing-practices')).toBeNull();
-    expect(screen.queryByText(main.practices![0].title)).toBeNull();
-    await fireEvent.press(card);
-    expect(router.replace).toHaveBeenLastCalledWith('/timing');
+    await screen.findByTestId('home-today-card');
+    const order = ['home-today-card', 'home-menu-me', 'home-menu-timing', 'home-menu-people'];
+    const seen = screen
+      .getAllByTestId(/./)
+      .map((e) => String(e.props.testID))
+      .filter((id) => order.includes(id));
+    expect(seen).toEqual(order);
+    for (const gone of ['home-today-practices', 'home-timing-card', 'home-timing-empty', 'home-month-days', 'nickname-card']) expect(screen.queryByTestId(gone)).toBeNull();
+    // 홈은 시기 풀이를 그리지 않는다 — 시기 칸이 없다
+    expect(screen.queryByText('지금 나는 어떤 시기일까')).toBeNull();
   });
 
-  it('받아 둔 시기 풀이는 기기에서 먼저 그린다(결정 047 의 2)', async () => {
-    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report }));
-    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+  it('세 카드는 같은 뼈대: 작은 분류 · 질문 제목 · 메뉴(시안 그대로의 글)', async () => {
     await render(<HomeScreen />);
-    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
+    for (const [id, section] of [
+      ['home-menu-me', H.me],
+      ['home-menu-timing', H.timing],
+      ['home-menu-people', H.people],
+    ] as const) {
+      const card = within(await screen.findByTestId(id));
+      expect(card.getByText(section.eyebrow)).toBeTruthy();
+      expect(card.getByText(section.title)).toBeTruthy();
+    }
+    expect([H.me.eyebrow, H.me.title, H.timing.eyebrow, H.timing.title, H.people.eyebrow, H.people.title]).toEqual([
+      '나',
+      '나는 어떤 사람일까?',
+      '나의 시기',
+      '지금 나는 어디쯤일까?',
+      '나의 사람들',
+      '우리는 어떻게 될까?',
+    ]);
+    const card = StyleSheet.flatten(screen.getByTestId('home-menu-me').props.style);
+    expect(card).toMatchObject({ borderRadius: 20, borderColor: Colors.hair, backgroundColor: Colors.raised, paddingTop: 20, paddingHorizontal: 20, paddingBottom: 22 });
   });
 
-  it('처음 묻는 중이 0.3초를 넘으면 다 그려질 시기 칸의 뼈대(결정 071, 보드 24)', async () => {
-    jest.useFakeTimers();
-    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+  it('나 — 3×2 아이콘 격자: 내 별명 · 성격 · 연애 · 관계 · 일 · 감정. 내 별명은 /reading 으로, 나머지는 나 탭의 그 칩으로(쌓지 않고 탭을 바꾼다)', async () => {
     await render(<HomeScreen />);
-    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
-    expect(screen.getByTestId('sk-home-timing-card')).toBeTruthy();
-    expect(screen.queryByTestId('sk-home-timing-practices')).toBeNull();
-    jest.useRealTimers();
+    const items = within(await screen.findByTestId('home-menu-me')).getAllByTestId('home-menu-item');
+    expect(items.map((i) => i.props.accessibilityLabel)).toEqual(['내 별명', '성격', '연애', '관계', '일', '감정']);
+    expect(StyleSheet.flatten(within(screen.getByTestId('home-menu-me')).getByTestId('home-menu-grid').props.style)).toMatchObject({
+      marginTop: HomeMenuLayout.grid.top,
+      rowGap: HomeMenuLayout.grid.rowGap,
+      columnGap: HomeMenuLayout.grid.columnGap,
+    });
+    await fireEvent.press(items[0]);
+    expect(router.push).toHaveBeenLastCalledWith('/reading');
+    const areas = ['PERSONALITY', 'LOVE', 'RELATIONSHIP', 'WORK', 'EMOTION'];
+    for (const [i, area] of areas.entries()) {
+      await fireEvent.press(items[i + 1]);
+      expect(router.replace).toHaveBeenLastCalledWith({ pathname: '/me', params: { area } });
+    }
   });
 
-  it('시기 풀이가 없으면 "지금 나는 어떤 시기일까" 카드 — 글자 단추 없이 이름표 줄 오른쪽 위 꺾쇠, 카드 전체를 누르면 시기 탭(결정 080, 여기서 만들기를 시작하지 않는다)', async () => {
+  it('나의 시기 — 아이콘 셋: 이번 달 · 올해 · 인생, 시기 탭의 그 칩으로', async () => {
     await render(<HomeScreen />);
-    const empty = await screen.findByTestId('home-timing-empty');
-    expect(within(empty).getByText(T.home.emptyTitle)).toBeTruthy();
-    expect(within(empty).queryByText(T.home.request)).toBeNull();
-    // 꺾쇠는 다른 홈 카드의 머리와 같은 부품 · 22
-    expect(within(empty).getByTestId('home-card-chevron').props.width).toBe(22);
-    // 화면 읽기는 보이는 글 차례대로 + "자세한 풀이 받기"
-    await fireEvent.press(screen.getByRole('button', { name: [T.now, T.home.emptyTitle, T.home.emptyBody, T.home.request].join(', ') }));
-    expect(router.replace).toHaveBeenLastCalledWith('/timing');
-    expect(screen.queryByTestId('home-timing-card')).toBeNull();
+    const items = within(await screen.findByTestId('home-menu-timing')).getAllByTestId('home-menu-item');
+    expect(items.map((i) => i.props.accessibilityLabel)).toEqual(['이번 달', '올해', '인생']);
+    for (const [i, tab] of ['month', 'year', 'life'].entries()) {
+      await fireEvent.press(items[i]);
+      expect(router.replace).toHaveBeenLastCalledWith({ pathname: '/timing', params: { tab } });
+    }
   });
 
-  it('쓰는 중이면 그 자리에 "만들고 있어요" 카드(뼈대 없이, 결정 075 — 047 의 1-5 대체) — 홈은 5초마다 묻지 않고, 끝남 푸시가 오면 다시 물어 같은 자리에서 완료 카드', async () => {
-    jest.useFakeTimers();
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'WRITING' } });
+  it('나의 사람들 — 한 줄에 하나씩 연애 궁합 "설레는 사람과 나" · 친구 궁합 "가까운 친구와 나", 아이콘은 사이 색. 누르면 궁합 탭에 사이를 싣는다(입력 화면은 A④, 결정 113 의 3)', async () => {
     await render(<HomeScreen />);
-    await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
-    await screen.findByTestId('nickname-card');
-    expect(screen.getByTestId('home-timing-writing')).toBeTruthy();
-    expect(screen.getByText(T.home.writing.title)).toBeTruthy();
-    await act(async () => void (await jest.advanceTimersByTimeAsync(20_000)));
-    expect(screen.queryAllByTestId(/^sk-home-timing/)).toHaveLength(0);
-    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
-    await act(async () => mockPushListeners.forEach((l) => l({ type: 'TIMING_REPORT_DONE' })));
-    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
-    expect(screen.queryByTestId('home-timing-writing')).toBeNull();
-    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(2);
-    jest.useRealTimers();
+    const card = within(await screen.findByTestId('home-menu-people'));
+    const rows = card.getAllByTestId('home-menu-row');
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]).getByText('연애 궁합')).toBeTruthy();
+    expect(within(rows[0]).getByText('설레는 사람과 나')).toBeTruthy();
+    expect(within(rows[1]).getByText('친구 궁합')).toBeTruthy();
+    expect(within(rows[1]).getByText('가까운 친구와 나')).toBeTruthy();
+    expect(within(rows[0]).getByTestId('home-menu-icon-synastryLove', { includeHiddenElements: true }).props.stroke).toBe(RelationColors.LOVE);
+    expect(within(rows[1]).getByTestId('home-menu-icon-synastryFriend', { includeHiddenElements: true }).props.stroke).toBe(RelationColors.FRIEND);
+    // 링크 보내기 줄은 홈에 두지 않는다(결정 102 의 1-4)
+    expect(card.queryByText('내 궁합 링크 보내기')).toBeNull();
+    await fireEvent.press(rows[0]);
+    expect(router.replace).toHaveBeenLastCalledWith({ pathname: '/synastry', params: { relation: 'LOVE' } });
+    await fireEvent.press(rows[1]);
+    expect(router.replace).toHaveBeenLastCalledWith({ pathname: '/synastry', params: { relation: 'FRIEND' } });
   });
 
-  it('앱을 껐다 켜도(기기에 쓰는 중을 기억) 첫 그림부터 쓰는 중 카드 — 서버가 다 썼다고 하면 같은 자리에서 완료 카드', async () => {
-    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, status: 'WRITING' }));
-    let answer: (v: Awaited<ReturnType<typeof api.getTimingReport>>) => void = () => {};
-    mockApi.getTimingReport.mockReturnValue(new Promise((r) => (answer = r)));
+  it('메뉴 아이콘은 주색 계열 한 색(궁합 두 줄만 사이 색)', async () => {
     await render(<HomeScreen />);
-    expect(await screen.findByTestId('home-timing-writing')).toBeTruthy();
-    await act(async () => answer({ ok: true, data: { status: 'DONE', report } }));
-    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
+    await homeShown();
+    const icons = screen.getAllByTestId(/^home-menu-icon-/, { includeHiddenElements: true });
+    const colors = new Set(icons.filter((i) => !String(i.props.testID).includes('synastry')).map((i) => i.props.stroke));
+    expect([...colors]).toEqual([Colors.accentText]);
   });
 
-  it('상태를 못 물었으면 그 자리에 안내(19-1) · 다시 보기, 서버에 경로가 없으면(404) 칸을 숨긴다', async () => {
-    mockApi.getTimingReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 500 });
-    const view = await render(<HomeScreen />);
-    expect(await screen.findByTestId('card-fail')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: strings.states.loadFail.retry }));
-    expect(await screen.findByTestId('home-timing-empty')).toBeTruthy();
-    await view.unmount();
-    mockApi.getTimingReport.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404 });
+  it('메뉴는 서버를 기다리지 않는다 — 오늘의 하늘을 아직 받지 못해도 처음부터 보인다(결정 102 의 5)', async () => {
+    // 받는 중인 오늘의 하늘은 시험이 끝날 때 끝낸다(모듈이 같은 날의 요청을 하나로 묶는다 — 다음 시험에 남지 않게)
+    let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
+    mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
     await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
-    await act(async () => {});
-    expect(screen.queryByTestId('card-fail')).toBeNull();
-    expect(screen.queryByTestId('home-timing-empty')).toBeNull();
+    expect(await screen.findByTestId('home-menu-me')).toBeTruthy();
+    expect(screen.getByTestId('home-menu-timing')).toBeTruthy();
+    expect(screen.getByTestId('home-menu-people')).toBeTruthy();
+    expect(screen.queryByTestId('home-today-card')).toBeNull();
+    await act(async () => finish({ ok: true, data: fixtures.daySky }));
   });
 });
 
@@ -418,6 +316,7 @@ describe('출생 정보 바꾸기(/birth)', () => {
     expect(screen.getByText('서울 마포구')).toBeTruthy();
   });
 });
+
 
 describe('홈 머리의 종(결정 052 의 4, 보드 11)', () => {
   const unreadItem = { id: 'n1', kind: 'ME_REPORT_DONE', createdAt: '2026-11-20T00:12:00Z', read: false };
@@ -453,19 +352,19 @@ describe('홈 머리의 종(결정 052 의 4, 보드 11)', () => {
     await saveBirth({ profile, chart: fixtures.chart });
     mockApi.getNotifications.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     const view = await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
+    await screen.findByTestId('home-menu-me');
     expect(screen.getByTestId('home-bell')).toBeTruthy();
     expect(screen.queryByTestId('home-bell-dot')).toBeNull();
     await view.unmount();
     mockApi.getNotifications.mockResolvedValueOnce({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
     await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
+    await screen.findByTestId('home-menu-me');
     await act(async () => {});
     expect(screen.queryByTestId('home-bell')).toBeNull();
   });
 });
 
-describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)', () => {
+describe('홈의 오늘의 하늘 한 줄 카드(결정 102 의 1-1 · 051, 시안 "홈 (1.1.0)" A)', () => {
   /** 보드 11 의 글 — 한국 날짜 2026-11-19 */
   const sky = {
     ...fixtures.daySky,
@@ -478,160 +377,22 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky });
   });
 
-  it('앱을 켜 둔 채 자정을 넘겨 돌아오면 눈여겨볼 날의 "오늘" 도 다음 날로 — 어제 칸에 오늘을 붙이지 않고, 오늘 칸을 누르면 /today', async () => {
-    // 앱으로 돌아옴: 화면들이 건 AppState 알림(react-native 의 가짜 — 건 것이 calls 에 남는다)을 모두 부른다
-    const comeBack = () =>
-      act(async () => (AppState.addEventListener as jest.Mock).mock.calls.forEach(([, handler]: [string, (next: AppStateStatus) => void]) => handler('active')));
-    const day = fixtures.monthSky.days[0];
-    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...day, date: '2026-11-19' }, { ...day, date: '2026-11-20' }] } });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findByTestId('home-month-days');
-    expect(screen.getByText('19일 · 오늘')).toBeTruthy();
-    // 밤사이 백그라운드에 있다가 다음 날(한국 날짜 11-20) 아침에 돌아온다
-    nowSpy?.mockReturnValue(Date.parse('2026-11-20T00:30:00Z'));
-    await comeBack();
-    expect(screen.queryByText('19일 · 오늘')).toBeNull();
-    await fireEvent.press(screen.getByText('20일 · 오늘'));
-    expect(router.push).toHaveBeenLastCalledWith('/today');
-  });
-
-  it('맨 위 큰 카드 — "오늘의 하늘 · 11월 19일 목요일" · 제목(제목 단계) · 짧은 이유 · 사람 · 일 · 마음 흐름 셋, 누르면 /today(결정 092)', async () => {
+  it('"오늘의 하늘 · 11월 19일 목요일" 과 꺾쇠 · 제목 · 짧은 한 줄 · 오른쪽 달. 흐름 셋 · 작은 실천은 홈에 없다(오늘의 하늘 화면에 그대로), 누르면 /today', async () => {
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
     const card = await screen.findByTestId('home-today-card');
-    // 카드 머리의 꺾쇠는 22(소유자 2026-11-23, 빌드 13)
     expect(within(card).getByTestId('home-card-chevron').props.width).toBe(22);
     expect(within(card).getByText('오늘의 하늘 · 11월 19일 목요일')).toBeTruthy();
-    expect(StyleSheet.flatten(within(card).getByText(sky.title).props.style)).toMatchObject({ fontSize: 24, lineHeight: 34 });
+    expect(within(card).getByText(sky.title)).toBeTruthy();
     expect(within(card).getByText('오늘은 달이 내 금성 자리를 지나요')).toBeTruthy();
-    const flows = within(card).getAllByTestId('home-today-flow');
-    expect(flows).toHaveLength(3);
-    for (const [i, key] of (['people', 'work', 'mind'] as const).entries()) {
-      expect(within(flows[i]).getByText(strings.timing.day.flowRows[key])).toBeTruthy();
-      expect(within(flows[i]).getByText(sky.flow[key])).toBeTruthy();
-    }
+    expect(within(card).getByTestId('home-today-moon', { includeHiddenElements: true })).toBeTruthy();
+    expect(within(card).queryAllByTestId('home-today-flow')).toHaveLength(0);
+    expect(screen.queryByText(sky.flow.people)).toBeNull();
+    expect(screen.queryByText(sky.practices[0].title)).toBeNull();
+    expect(StyleSheet.flatten(card.props.style)).toMatchObject({ borderRadius: 24, padding: 20 });
     expect(mockApi.postDaySky).toHaveBeenCalledWith();
     await fireEvent.press(card);
     expect(router.push).toHaveBeenCalledWith('/today');
-  });
-
-  it('그 아래 "오늘의 작은 실천" — 같은 응답의 실천 셋, 이름표 아래 간격은 시기 카드와 같게, 누르면 /today. 오늘의 하늘을 받기 전에는 칸이 없다(결정 092 · 095)', async () => {
-    let resolve: (v: unknown) => void = () => {};
-    mockApi.postDaySky.mockReturnValueOnce(new Promise((r) => (resolve = r)) as never);
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
-    expect(screen.queryByTestId('home-today-practices')).toBeNull();
-    await act(async () => resolve({ ok: true, data: sky }));
-    const card = await screen.findByTestId('home-today-practices');
-    expect(within(card).getByText(strings.today.practices)).toBeTruthy();
-    expect(within(card).getAllByTestId('timing-todo')).toHaveLength(3);
-    expect(within(card).getByText(sky.practices[0].title)).toBeTruthy();
-    // 이름표 줄 아래 15 에 첫 번호 위 — "지금 나의 시기" 제목 글자 위와 같은 자리, 줄 사이 14(결정 095)
-    expect(StyleSheet.flatten(within(card).getByTestId('home-today-todos').props.style)).toMatchObject({ marginTop: 15 });
-    expect(StyleSheet.flatten(within(card).getByTestId('timing-todos').props.style)).toMatchObject({ gap: 14 });
-    await fireEvent.press(card);
-    expect(router.push).toHaveBeenCalledWith('/today');
-  });
-
-  it('홈의 차례: 오늘의 하늘 → 오늘의 작은 실천 → 지금 나의 시기 → 이번 달 눈여겨볼 날 → 별명 한 줄(결정 092)', async () => {
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report: fixtures.timingReport } });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
-    await render(<HomeScreen />);
-    await screen.findByTestId('home-month-days');
-    await screen.findByTestId('home-today-practices');
-    await screen.findByTestId('home-timing-card');
-    const order = ['home-today-card', 'home-today-practices', 'home-timing-card', 'home-month-days', 'nickname-card'];
-    const seen = screen
-      .getAllByTestId(/./)
-      .map((e) => String(e.props.testID))
-      .filter((id) => order.includes(id));
-    expect(seen).toEqual(order);
-  });
-
-  it('이번 달 눈여겨볼 날은 칸 폭이 정해진 가로 슬라이드 — "21일 · 토" · 그날 한 줄, 누르면 그날의 하늘(소유자 "많으면 슬라이드", 결정 092)', async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    const strip = await screen.findByTestId('home-month-days');
-    expect(within(strip).getByText(strings.home.monthDays.title)).toBeTruthy();
-    expect(within(strip).getByTestId('home-month-days-scroll').props.horizontal).toBe(true);
-    // 왼쪽은 홈 여백에서 잘리고 오른쪽만 화면 끝까지 밀린다(소유자 빌드 15 "왼쪽에 넘치지 않게")
-    const scrollStyle = StyleSheet.flatten(within(strip).getByTestId('home-month-days-scroll').props.style);
-    expect(scrollStyle).toMatchObject({ marginRight: -ScreenPaddingX });
-    expect(scrollStyle).not.toHaveProperty('marginLeft');
-    expect(scrollStyle).not.toHaveProperty('marginHorizontal');
-    const days = within(strip).getAllByTestId('home-month-day');
-    expect(days).toHaveLength(fixtures.monthSky.days.length);
-    expect(StyleSheet.flatten(days[0].props.style)).toMatchObject({ width: TimingLayout.home.days.width });
-    expect(within(days[0]).getByText('21일 · 토')).toBeTruthy();
-    expect(within(days[0]).getByText(fixtures.monthSky.days[0].text)).toBeTruthy();
-    await fireEvent.press(days[0]);
-    expect(router.push).toHaveBeenCalledWith('/timing/day?date=2026-11-21');
-  });
-
-  it('눈여겨볼 날은 오늘 · 다가오는 날을 날짜 순서로 앞에, 지난 날은 맨 뒤에(날짜 순서) — 소유자 빌드 15 "지난 건 맨 뒤에", 결정 096', async () => {
-    const day = fixtures.monthSky.days[0];
-    const at = (date: string, text: string) => ({ ...day, date, text });
-    mockApi.getMonth.mockResolvedValue({
-      ok: true,
-      data: {
-        ...fixtures.monthSky,
-        days: [at('2026-11-03', '지난 날 하나'), at('2026-11-10', '지난 날 둘'), at('2026-11-19', '오늘'), at('2026-11-21', '다가오는 날 하나'), at('2026-11-28', '다가오는 날 둘')],
-      },
-    });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findByTestId('home-month-days');
-    const order = screen.getAllByTestId('home-month-day').map((d) => within(d).getAllByText(/./)[1].props.children);
-    expect(order).toEqual(['오늘', '다가오는 날 하나', '다가오는 날 둘', '지난 날 하나', '지난 날 둘']);
-  });
-
-  it('오늘인 날은 "19일 · 오늘"(주색 글자 · 주색 테두리) — 누르면 오늘의 하늘(/today)', async () => {
-    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...fixtures.monthSky.days[0], date: '2026-11-19' }] } });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    const day = await screen.findByTestId('home-month-day');
-    expect(within(day).getByText('19일 · 오늘')).toBeTruthy();
-    expect(StyleSheet.flatten(day.props.style)).toMatchObject({ borderColor: Colors.primary });
-    await fireEvent.press(day);
-    expect(router.push).toHaveBeenCalledWith('/today');
-  });
-
-  // 소유자 빌드 17 "오늘만 보더가 아니라 제일 최근 게 보더 입혀지는 거 맞지?"(결정 097)
-  it('오늘이 눈여겨볼 날이 아니면 가장 가까운 다가오는 날이 맨 앞 칸에서 주색 테두리 · 주색 글자 — "21일 · 토"(오늘 글자는 오늘만), 지난 날은 테두리 없음', async () => {
-    const day = fixtures.monthSky.days[0];
-    const at = (date: string, text: string) => ({ ...day, date, text });
-    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [at('2026-11-10', '지난 날'), at('2026-11-21', '다가오는 날 하나'), at('2026-11-28', '다가오는 날 둘')] } });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findByTestId('home-month-days');
-    const [next, later, past] = screen.getAllByTestId('home-month-day');
-    expect(within(next).getByText('21일 · 토')).toBeTruthy();
-    expect(StyleSheet.flatten(next.props.style)).toMatchObject({ borderColor: Colors.primary });
-    expect(StyleSheet.flatten(later.props.style).borderColor).not.toBe(Colors.primary);
-    expect(StyleSheet.flatten(past.props.style).borderColor).not.toBe(Colors.primary);
-  });
-
-  it('시각 "모름" 이면 받았더라도 상승점 · 중천 · 하우스가 근거인 날은 칸을 두지 않는다 — 시기 탭 달력과 같은 거름(time-known, 이중 안전)', async () => {
-    const day = fixtures.monthSky.days[0];
-    const asc = { ...day, date: '2026-11-23', text: '상승점이 근거인 날', reason: { when: 'DAY' as const, items: [{ kind: 'TRANSIT' as const, mover: 'MARS', target: 'ASC', type: 'SQUARE' }] } };
-    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, timeKnown: false, days: [day, asc] } });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findByTestId('home-month-days');
-    expect(screen.getAllByTestId('home-month-day')).toHaveLength(1);
-    expect(screen.queryByText('상승점이 근거인 날')).toBeNull();
-  });
-
-  it('이번 달에 다가오는 날이 없으면(지난 날만) 테두리 칸이 없다', async () => {
-    const day = fixtures.monthSky.days[0];
-    mockApi.getMonth.mockResolvedValue({ ok: true, data: { ...fixtures.monthSky, days: [{ ...day, date: '2026-11-03' }, { ...day, date: '2026-11-10' }] } });
-    await saveBirth({ profile, chart: fixtures.chart });
-    await render(<HomeScreen />);
-    await screen.findByTestId('home-month-days');
-    for (const d of screen.getAllByTestId('home-month-day')) expect(StyleSheet.flatten(d.props.style).borderColor).not.toBe(Colors.primary);
   });
 
   it('못 썼으면 그 자리에 작은 안내와 다시 쓰기(19-1) — 누르면 다시 부른다', async () => {
@@ -661,75 +422,65 @@ describe('홈의 오늘의 하늘 카드(결정 047 의 1-3 · 051, 보드 11)',
     mockApi.postDaySky.mockClear();
     mockApi.postDaySky.mockResolvedValueOnce({ ok: false, error: 'NETWORK' });
     await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
+    await homeShown();
     await act(async () => listener?.({ isConnected: false, isInternetReachable: false }));
     await act(async () => listener?.({ isConnected: true, isInternetReachable: true }));
     expect(await screen.findByTestId('home-today-card')).toBeTruthy();
     expect(mockApi.postDaySky).toHaveBeenCalledTimes(2);
   });
 
-  it('서버에 그 경로가 없으면(404 — S④ 전) 칸을 숨긴다', async () => {
+  it('서버에 그 경로가 없으면(404 — S④ 전) 칸을 숨긴다 — 메뉴는 그대로', async () => {
     mockApi.postDaySky.mockResolvedValue({ ok: false, error: 'SERVER', status: 404, code: 'NOT_FOUND' });
     mockApi.saveProfile.mockResolvedValue({ ok: false, error: 'SERVER', status: 500 });
     await saveBirth({ profile, chart: fixtures.chart });
     await render(<HomeScreen />);
-    await screen.findByTestId('nickname-card');
+    await homeShown();
     await act(async () => {});
     expect(screen.queryByTestId('home-today-card')).toBeNull();
     expect(screen.queryByTestId('card-fail')).toBeNull();
+    expect(screen.getByTestId('home-menu-people')).toBeTruthy();
   });
 });
 
 /**
- * 홈 뼈대(결정 071, 보드 24). 처음 열 때는 스플래시가 홈의 첫 데이터까지 가려(결정 068 의 2) 보이지 않고,
- * 스플래시가 이미 걷힌 뒤 기기가 비어 서버에서 되살릴 때(다른 기기 · 웹에서 로그인 · 로그아웃 뒤 다시 로그인 · 19 의 다시 보기) 보인다.
- * 그때의 홈은 받아 둔 풀이가 없는 별명 카드 · 오늘의 하늘 · 시기 · 작은 실천 — 뼈대는 그 배치 그대로, 각 칸은 그 카드의 뼈대를 쓴다.
+ * 홈 뼈대(결정 071 · 102 의 5). 처음 열 때는 스플래시가 홈의 첫 데이터까지 가려(결정 068 의 2) 보이지 않고,
+ * 스플래시가 이미 걷힌 뒤 기기가 비어 서버에서 되살릴 때 보인다. 뼈대는 오늘의 하늘 카드 자리만 — 메뉴는 처음부터 보인다.
  */
-describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071, 보드 24)', () => {
-  const report = fixtures.timingReport;
+describe('홈 뼈대 — 서버에서 되살리는 동안(결정 071 · 102 의 5)', () => {
   const restored = { date: profile.date, time: profile.time, placeId: profile.place.id };
-  /** 칸 이름(뼈대는 sk- 를 앞에, -skeleton 을 뒤에 붙인다) */
-  const BLOCKS = ['home-today-card', 'home-timing-card', 'nickname-card'];
-  const blocks = () =>
-    screen
-      .queryAllByTestId(/./, { includeHiddenElements: true })
-      .map((e) => String(e.props.testID).replace(/^sk-/, '').replace(/-skeleton$/, ''))
-      .filter((id) => BLOCKS.includes(id));
   afterEach(() => jest.useRealTimers());
 
-  it('0.3초 전에는 머리(로고) · 아래 탭만, 넘으면 오늘의 하늘 큰 카드 · 시기 한 줄 · 별명 한 줄(받아 둔 풀이가 없는 꼴)의 뼈대 — 종은 없다(리뷰 #66, 결정 092)', async () => {
+  it('0.3초 전에는 머리(로고) · 아래 탭만, 넘으면 오늘의 하늘 한 줄 카드의 뼈대와 메뉴 셋 — 종은 없다(리뷰 #66)', async () => {
     jest.useFakeTimers();
     mockApi.getProfile.mockReturnValue(new Promise(() => {}));
     await render(<HomeScreen />);
     await act(async () => void (await jest.advanceTimersByTimeAsync(100)));
     expect(screen.queryByTestId('home-skeleton')).toBeNull();
-    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.queryByTestId('home-menu-me')).toBeNull();
+    expect(screen.getAllByRole('tab')).toHaveLength(5);
     await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
     expect(screen.getByTestId('home-skeleton').props.accessibilityLabel).toBe(strings.states.loading);
-    expect(blocks()).toEqual(BLOCKS);
-    // 받아 둔 풀이가 없다(기기가 비었다) — 한 줄 별명 두 줄 대신 "아직 별명을 짓지 않았어요" 한 줄 자리
-    expect(screen.getByTestId('nickname-card-skeleton')).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false]);
+    expect(screen.getByTestId('sk-home-today-card', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByTestId('home-menu-me')).toBeTruthy();
+    expect(screen.getByTestId('home-menu-timing')).toBeTruthy();
+    expect(screen.getByTestId('home-menu-people')).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.props.accessibilityState.selected)).toEqual([true, false, false, false, false]);
     expect(screen.queryByTestId('home-bell')).toBeNull();
-    expect(screen.queryByText(M.readingEmpty)).toBeNull();
   });
 
-  it('뼈대의 칸 = 되살린 뒤 다 그려진 홈의 칸(같은 순서 · 같은 수)', async () => {
+  it('되살린 뒤에는 뼈대 자리에 오늘의 하늘 카드, 메뉴는 같은 자리 그대로', async () => {
     mockApi.getProfile.mockResolvedValue({ ok: true, data: restored });
     mockApi.createChart.mockResolvedValue({ ok: true, data: fixtures.chart });
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
     await render(<HomeScreen />);
-    expect(await screen.findByTestId('home-timing-card')).toBeTruthy();
     expect(await screen.findByTestId('home-today-card')).toBeTruthy();
-    expect(screen.getByText(M.readingEmpty)).toBeTruthy();
-    expect(blocks()).toEqual(BLOCKS);
+    expect(screen.queryByTestId('home-skeleton')).toBeNull();
+    expect(screen.getByTestId('home-menu-me')).toBeTruthy();
   });
 });
 
 describe('홈은 접속하자마자 — 받아 둔 것 먼저 · 첫 상태까지 스플래시(소유자 "뼈대 없이 바로 보였으면")', () => {
   /** 한국 날짜 2026-11-19 오전 */
   const NOW = Date.parse('2026-11-19T01:00:00Z');
-  const report = fixtures.timingReport;
   const birthKey = JSON.stringify([profile.date, profile.time, profile.place.id]);
   const sky = {
     ...fixtures.daySky,
@@ -737,7 +488,7 @@ describe('홈은 접속하자마자 — 받아 둔 것 먼저 · 첫 상태까�
     title: '마음이 가는 사람에게 먼저 안부를 건네 보기 좋은 날',
     reason: { when: 'DAY', items: [{ kind: 'TRANSIT', mover: 'MOON', target: 'VENUS', type: 'CONJUNCTION' }] },
   };
-  const skeletons = () => screen.queryAllByTestId(/^sk-home-/);
+  const skeletons = () => screen.queryAllByTestId(/^sk-home-/, { includeHiddenElements: true });
   beforeEach(async () => {
     homeReady.resetHomeReady();
     jest.useFakeTimers({ now: NOW });
@@ -746,107 +497,66 @@ describe('홈은 접속하자마자 — 받아 둔 것 먼저 · 첫 상태까�
   });
   afterEach(() => jest.useRealTimers());
 
-  it('받아 둔 시기 풀이 · 오늘의 하늘이 있으면 스플래시를 걷는 첫 그림부터 카드 — 뼈대 없이, 뒤에서 서버를 한 번씩', async () => {
-    await AsyncStorage.setItem(TIMING_REPORT_STORAGE_KEY, JSON.stringify({ key: birthKey, report }));
+  it('받아 둔 오늘의 하늘이 있으면 스플래시를 걷는 첫 그림부터 카드 — 뼈대 없이, 뒤에서 서버를 한 번', async () => {
     await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key: birthKey, sky }));
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'DONE', report } });
     mockApi.postDaySky.mockResolvedValue({ ok: true, data: sky });
     await render(<HomeScreen />);
     await act(async () => {});
     expect(homeReady.getHomeReady()).toBe(true);
     expect(screen.getByTestId('home-today-card')).toBeTruthy();
-    expect(screen.getByTestId('home-timing-card')).toBeTruthy();
     await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
     expect(skeletons()).toHaveLength(0);
-    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
     expect(mockApi.postDaySky).toHaveBeenCalledTimes(1);
   });
 
-  it('앱을 켤 때 이번 달 달력과 나 탭 풀이의 상태를 한 번 받아 둔다 — 시기 · 나 탭을 열면 곧바로(결정 075 의 4)', async () => {
+  it('앱을 켤 때 이번 달 달력 · 나 탭 풀이 · 시기 풀이의 상태를 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4 · 113 의 4)', async () => {
     mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
     await render(<HomeScreen />);
     await act(async () => {});
     expect(mockApi.getMonth).toHaveBeenCalledTimes(1);
     expect(mockApi.getMeReport).toHaveBeenCalledTimes(1);
+    expect(mockApi.getTimingReport).toHaveBeenCalledTimes(1);
     expect(JSON.parse((await AsyncStorage.getItem(ME_REPORT_STORAGE_KEY))!)).toEqual({ key: birthKey, status: 'NONE' });
+    expect(JSON.parse((await AsyncStorage.getItem(TIMING_REPORT_STORAGE_KEY))!)).toEqual({ key: birthKey, status: 'NONE' });
     expect(JSON.parse((await AsyncStorage.getItem(MONTH_SKY_STORAGE_KEY))!).sky.month).toBe(fixtures.monthSky.month);
   });
 
-  it('시기 풀이를 받기 전이면 "자세한 풀이 받기" 카드가 바로 — 뼈대 없이', async () => {
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
+  it('스플래시는 시기 풀이의 상태를 기다리지 않는다 — 홈에 시기 칸이 없다(결정 113 의 4)', async () => {
+    await AsyncStorage.setItem(DAY_SKY_STORAGE_KEY, JSON.stringify({ key: birthKey, sky }));
+    mockApi.getTimingReport.mockReturnValue(new Promise(() => {}));
+    mockApi.getMeReport.mockReturnValue(new Promise(() => {}));
     await render(<HomeScreen />);
     await act(async () => {});
-    expect(screen.getByTestId('home-timing-empty')).toBeTruthy();
-    await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
-    expect(skeletons()).toHaveLength(0);
-  });
-
-  it('처음 들어올 때는 홈 카드의 첫 상태(시기 풀이 상태 응답)까지 스플래시를 걷지 않는다(markHomeReady 를 부르지 않음)', async () => {
-    let answer: (v: Awaited<ReturnType<typeof api.getTimingReport>>) => void = () => {};
-    mockApi.getTimingReport.mockReturnValue(new Promise((r) => (answer = r)));
-    await render(<HomeScreen />);
-    await act(async () => {});
-    expect(screen.getByTestId('nickname-card')).toBeTruthy();
-    expect(homeReady.getHomeReady()).toBe(false);
-    await act(async () => answer({ ok: true, data: { status: 'NONE' } }));
     expect(homeReady.getHomeReady()).toBe(true);
-    expect(screen.getByTestId('home-timing-empty')).toBeTruthy();
   });
 
-  it('오늘의 하늘을 그날 처음 쓰는 중이면 생성을 기다리지 않는다 — 1초 안에 못 받으면 쓰는 중 카드로 스플래시를 걷고, 뼈대는 없다', async () => {
+  it('오늘의 하늘을 그날 처음 쓰는 중이면 생성을 기다리지 않는다 — 1초 안에 못 받으면 쓰는 중 카드(흐름 줄 없이)로 스플래시를 걷고, 뼈대는 없다', async () => {
     let finish: (v: Awaited<ReturnType<typeof api.postDaySky>>) => void = () => {};
     mockApi.postDaySky.mockReturnValue(new Promise((r) => (finish = r)));
-    mockApi.getTimingReport.mockResolvedValue({ ok: true, data: { status: 'NONE' } });
     await render(<HomeScreen />);
     await act(async () => void (await jest.advanceTimersByTimeAsync(400)));
     expect(homeReady.getHomeReady()).toBe(false);
     expect(skeletons()).toHaveLength(0);
     await act(async () => void (await jest.advanceTimersByTimeAsync(600)));
     expect(homeReady.getHomeReady()).toBe(true);
-    expect(screen.getByTestId('home-today-making')).toBeTruthy();
+    const making = screen.getByTestId('home-today-making');
     // 걸리는 시간을 약속하지 않는다(소유자 빌드 15 — "몇 초면 돼요" 는 10초 넘게 걸려 약속처럼 들렸다)
-    expect(within(screen.getByTestId('home-today-making')).getByText('금방 보여 드릴게요')).toBeTruthy();
-    expect(screen.queryByText('몇 초면 돼요')).toBeNull();
+    expect(within(making).getByText('금방 보여 드릴게요')).toBeTruthy();
+    expect(within(making).queryAllByTestId('home-today-flow')).toHaveLength(0);
     expect(skeletons()).toHaveLength(0);
     await act(async () => finish({ ok: true, data: sky }));
     expect(screen.getByTestId('home-today-card')).toBeTruthy();
   });
 });
 
-describe('계정은 기기 · 메모리에서 첫 그림부터(소유자 "이름이랑 프로필이 늦게 와")', () => {
-  const me = { nickname: '새벽별', avatar: 3, email: null, provider: 'KAKAO', marketingConsent: false, suspended: false };
-  beforeEach(async () => {
-    await saveBirth({ profile, chart: fixtures.chart });
-    await storeReading(fixtures.reading);
-  });
-
-  it('기기에 둔 계정이 있으면 /account 답 전에 이름 · 프로필 그림 — 자리표 없이', async () => {
-    await AsyncStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify({ account: me }));
-    mockApi.getMyAccount.mockReturnValue(new Promise(() => {}));
-    await render(<HomeScreen />);
-    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
-    expect(screen.getByLabelText(strings.nickname.avatars[2])).toBeTruthy();
-    expect(screen.queryByTestId('avatar-placeholder', { includeHiddenElements: true })).toBeNull();
-  });
-
-  it('처음(기기에도 없음)이면 그림 · 이름 자리에 같은 크기의 흐린 자리표, 답이 오면 그 자리에 그림 · 이름', async () => {
-    let answer: (v: Awaited<ReturnType<typeof api.getMyAccount>>) => void = () => {};
-    mockApi.getMyAccount.mockReturnValue(new Promise((r) => (answer = r)));
-    await render(<HomeScreen />);
-    // 자리표는 화면 읽기에서 숨긴다
-    const hidden = { includeHiddenElements: true };
-    expect(await screen.findByTestId('avatar-placeholder', hidden)).toBeTruthy();
-    expect(screen.getByTestId('nickname-placeholder', hidden)).toBeTruthy();
-    await act(async () => answer({ ok: true, data: me }));
-    expect(screen.getByText('새벽별 님의 별명')).toBeTruthy();
-    expect(screen.queryByTestId('avatar-placeholder', hidden)).toBeNull();
-  });
-
+describe('계정(알림 받기 권유의 받는 시간)은 기기 · 메모리에서', () => {
   it('정지 문이 로그인 때 받은 계정을 홈이 같이 쓴다 — /account 를 한 번 더 부르지 않는다', async () => {
+    await saveBirth({ profile, chart: fixtures.chart });
     await refreshAccount();
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
     await render(<HomeScreen />);
-    expect(await screen.findByText('새벽별 님의 별명')).toBeTruthy();
+    await homeShown();
+    await act(async () => {});
     expect(mockApi.getMyAccount).toHaveBeenCalledTimes(1);
   });
 });
@@ -864,7 +574,7 @@ describe('홈을 다시 붙여도 종 점 · 카드가 첫 그림부터(이번 �
     getItem.mockImplementation(() => new Promise(() => {}));
     try {
       await render(<HomeScreen />);
-      expect(screen.getByTestId('nickname-card')).toBeTruthy();
+      expect(screen.getByTestId('home-menu-me')).toBeTruthy();
       expect(screen.getByTestId('home-bell-dot')).toBeTruthy();
     } finally {
       getItem.mockImplementation(original);

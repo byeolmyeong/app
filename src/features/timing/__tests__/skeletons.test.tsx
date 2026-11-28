@@ -2,7 +2,6 @@ import { render } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 
 import { DaySkeleton, DayView } from '@/features/timing/day-view';
-import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timing-card';
 import { LifeSkeleton, LifeView } from '@/features/timing/life-view';
 import { MonthSkeleton, MonthView } from '@/features/timing/month-view';
 import { PeriodSkeleton, PeriodView } from '@/features/timing/period-view';
@@ -94,15 +93,6 @@ describe('뼈대 = 다 그려진 화면의 배치(결정 071)', () => {
       'day-reason',
       'timing-todo',
     ]);
-    expect(l.skeleton).toEqual(l.real);
-  });
-
-  it('홈 시기 칸: 지금 나의 시기 카드 · 작은 실천 카드(셋)', async () => {
-    const l = await layouts(
-      <HomeTimingCards state={{ status: 'done', report }} skeleton={false} online onOpen={noop} onRetry={noop} />,
-      <HomeTimingSkeleton />,
-      ['home-timing-card', 'home-timing-practices', 'timing-todo'],
-    );
     expect(l.skeleton).toEqual(l.real);
   });
 });

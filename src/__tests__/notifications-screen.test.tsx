@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import NotificationsScreen from '@/app/notifications';
@@ -51,7 +51,8 @@ describe('알림함(결정 052 · 058, 보드 11-3)', () => {
     expect(await screen.findByText(N.kinds.INQUIRY_ANSWERED.title)).toBeTruthy();
     expect(screen.getAllByTestId('notification-group').map((g) => g.props.children)).toEqual(['오늘', '최근 7일', '최근 30일']);
     expect(screen.getAllByTestId('notification-row')).toHaveLength(4);
-    expect(screen.queryByText(/궁합/)).toBeNull();
+    // 아래 탭의 "궁합"(결정 102 의 3) 말고 알림 줄에는 궁합이 없다
+    for (const row of screen.getAllByTestId('notification-row')) expect(within(row).queryByText(/궁합/)).toBeNull();
     // 안 읽음 점은 안 읽은 보이는 줄에만(문의 · 시기 · 나 탭)
     expect(screen.getAllByTestId('notification-unread')).toHaveLength(3);
     expect(screen.getByText('오후 2:10')).toBeTruthy();
@@ -110,6 +111,6 @@ describe('알림함(결정 052 · 058, 보드 11-3)', () => {
     expect(screen.getAllByTestId('notification-skeleton-row')).toHaveLength(3);
     // 머리 · 아래 탭은 진짜로 보인다
     expect(screen.getByText(N.title)).toBeTruthy();
-    expect(screen.getAllByRole('tab').length).toBe(4);
+    expect(screen.getAllByRole('tab').length).toBe(5);
   });
 });

@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
 
-import { HomeTimingCards } from '@/features/timing/home-timing-card';
 import { LifeView } from '@/features/timing/life-view';
 import { MonthView } from '@/features/timing/month-view';
 import { shownMonth, shownTiming } from '@/features/timing/time-known';
@@ -56,12 +55,6 @@ describe('시각 "모름" — 화면 어디에도 돈 · 운명적 만남이 없
 
   it('인생: 대표 구간이 돈이면 작은 실천이 없다', async () => {
     await render(<LifeView report={leaky} />);
-    expect(screen.queryByText('돈 하기')).toBeNull();
-  });
-
-  it('홈 시기 칸: 대표 구간이 돈이면 칸을 그리지 않는다', async () => {
-    await render(<HomeTimingCards state={{ status: 'done', report: leaky }} skeleton={false} online onOpen={noop} onRetry={noop} />);
-    expect(screen.queryByText('돈 구간 이름')).toBeNull();
     expect(screen.queryByText('돈 하기')).toBeNull();
   });
 

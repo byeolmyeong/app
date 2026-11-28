@@ -81,7 +81,7 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     expect(screen.getByText(T.detail.title)).toBeTruthy();
     // 받기 전에는 작은 실천이 없다(대표 구간이 없다)
     expect(screen.queryByText(T.practices)).toBeNull();
-    expect(bottomTabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false]);
+    expect(bottomTabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false, false]);
     // 탭의 첫 화면이라 뒤로 가기가 없고, 면책 문구도 없다(결정 046 의 2 · 064)
     expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
   });
@@ -183,7 +183,7 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     await render(<TimingScreen />);
     await tick(0);
     expect(screen.getByText(T.making.title)).toBeTruthy();
-    expect(bottomTabs()).toHaveLength(4);
+    expect(bottomTabs()).toHaveLength(5);
     expect(screen.queryByTestId('timing-skeleton')).toBeNull();
   });
 
@@ -208,7 +208,7 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     mockApi.getTimingReport.mockResolvedValue(got('WRITING'));
     await render(<TimingScreen />);
     expect(await screen.findByText(T.making.title)).toBeTruthy();
-    expect(bottomTabs()).toHaveLength(4);
+    expect(bottomTabs()).toHaveLength(5);
     expect(screen.queryByTestId('nav-bar')).toBeNull();
     expect(mockApi.requestTimingReport).not.toHaveBeenCalled();
   });
@@ -239,7 +239,7 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     await fireEvent.press(await screen.findByRole('button', { name: T.detail.request }));
     await tick();
     expect(screen.getByText(T.loadFail.report)).toBeTruthy();
-    expect(bottomTabs()).toHaveLength(4);
+    expect(bottomTabs()).toHaveLength(5);
     mockApi.getTimingReport.mockResolvedValueOnce(got('WRITING'));
     const before = mockApi.getTimingReport.mock.calls.length;
     await fireEvent.press(screen.getByRole('button', { name: ST.loadFail.retry }));
@@ -257,7 +257,7 @@ describe('시기 탭 · 시기 풀이 받기 전(결정 049 의 1 · 2, 캔버�
     await fireEvent.press(await screen.findByRole('button', { name: T.detail.request }));
     await tick(TIMING_REPORT_MAX_WRITING_MS + TIMING_REPORT_POLL_MS);
     expect(screen.getByText(T.loadFail.report)).toBeTruthy();
-    expect(bottomTabs()).toHaveLength(4);
+    expect(bottomTabs()).toHaveLength(5);
     expect(mockApi.requestTimingReport).toHaveBeenCalledTimes(1);
   });
 
@@ -477,10 +477,10 @@ describe('시기 탭 · 불러오기(결정 061 · 065)', () => {
     expect(screen.getByTestId('sk-month-calendar')).toBeTruthy();
     expect(screen.getAllByTestId('sk-month-day')).toHaveLength(3);
     expect(screen.getByTestId('sk-timing-detail-card')).toBeTruthy();
-    expect(bottomTabs()).toHaveLength(4);
+    expect(bottomTabs()).toHaveLength(5);
     await tick(10_000);
     expect(screen.getByText(T.loadFail.title)).toBeTruthy();
-    expect(bottomTabs()).toHaveLength(4);
+    expect(bottomTabs()).toHaveLength(5);
     mockApi.getMonth.mockResolvedValue({ ok: true, data: month });
     mockApi.getTimingReport.mockResolvedValue(got('NONE'));
     await fireEvent.press(screen.getByRole('button', { name: ST.loadFail.retry }));
@@ -523,7 +523,7 @@ describe('시기 탭 · 불러오기(결정 061 · 065)', () => {
     await act(async () => {});
     expect(mockApi.getMonth).not.toHaveBeenCalled();
     expect(mockApi.getTimingReport).not.toHaveBeenCalled();
-    expect(bottomTabs()).toHaveLength(4);
+    expect(bottomTabs()).toHaveLength(5);
   });
 });
 

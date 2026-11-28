@@ -1,6 +1,6 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { NavBar } from '@/components/nav-bar';
@@ -19,28 +19,73 @@ import { birthInputOf } from '@/features/chart/birth-input';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { useBirthRestore } from '@/features/chart/use-birth-restore';
 import { markHomeReady } from '@/features/home/home-ready';
-import { MainTabs } from '@/features/home/main-tabs';
-import { NicknameCard, NicknameCardSkeleton } from '@/features/home/nickname-card';
+import { HomeMenuCard, HomeMenuGrid, HomeMenuList, type HomeMenuGridItem, type HomeMenuRowItem } from '@/features/home/home-menu';
+import { MainTabs, openTab } from '@/features/home/main-tabs';
 import { useAccount } from '@/features/home/use-account';
 import { HomeBell } from '@/features/notifications/home-bell';
 import { hasUnread } from '@/features/notifications/notification-rows';
 import { useNotifications } from '@/features/notifications/use-notifications';
 import { useStoredHeadline } from '@/features/reading/use-reading';
-import { onPushReceived } from '@/features/push/push';
 import { PushAskSheet } from '@/features/push/push-ask-sheet';
-import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timing-card';
-import { HomeMonthDays } from '@/features/timing/home-month-days';
-import { HomeTodayCard, HomeTodayPractices, HomeTodaySkeleton } from '@/features/timing/home-today-card';
+import { HomeTodayCard, HomeTodaySkeleton } from '@/features/timing/home-today-card';
 import { prefetchMeReport } from '@/features/me/use-me-report';
-import { useKoreaToday } from '@/features/timing/use-korea-today';
-import { useThisMonth } from '@/features/timing/use-month';
+import { prefetchMonth } from '@/features/timing/use-month';
 import { TODAY_CARD_WRITING_AFTER_MS, useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
-import { useTimingReport } from '@/features/timing/use-timing-report';
+import { prefetchTimingReport } from '@/features/timing/use-timing-report';
+import { ME_AREAS } from '@/lib/api';
+
+const MENU = strings.home.menu;
+
+/** 나 — 내 별명은 그 글(`/reading`), 나머지는 나 탭의 그 칩(결정 102 의 1-2) */
+const ME_ITEMS: HomeMenuGridItem[] = [
+  { key: 'nickname', label: MENU.me.items.nickname, icon: 'nickname', onPress: () => router.push('/reading') },
+  ...ME_AREAS.map((area) => ({
+    key: area,
+    label: MENU.me.items[area],
+    icon: ({ PERSONALITY: 'personality', LOVE: 'love', RELATIONSHIP: 'relationship', WORK: 'work', EMOTION: 'emotion' } as const)[area],
+    onPress: () => openTab('me', { area }),
+  })),
+];
+/** 나의 시기 — 시기 탭의 그 칩(결정 102 의 1-3) */
+const TIMING_ITEMS: HomeMenuGridItem[] = (['month', 'year', 'life'] as const).map((tab) => ({
+  key: tab,
+  label: MENU.timing.items[tab],
+  icon: tab,
+  onPress: () => openTab('timing', { tab }),
+}));
+/**
+ * 나의 사람들 — 연애 · 친구 궁합(결정 102 의 1-4). 사이가 켜진 입력 화면은 A④ 몫이라 지금은 궁합 탭으로 옮기고 사이를 주소에 싣는다(결정 113 의 3).
+ * 홈의 다른 메뉴처럼 시트 없이 화면을 옮긴다
+ */
+const PEOPLE_ITEMS: HomeMenuRowItem[] = (['LOVE', 'FRIEND'] as const).map((relation) => ({
+  key: relation,
+  title: MENU.people.items[relation].title,
+  body: MENU.people.items[relation].body,
+  icon: relation === 'LOVE' ? 'synastryLove' : 'synastryFriend',
+  onPress: () => openTab('synastry', { relation }),
+}));
+
+/** 메뉴판 세 카드 — 앱에 고정한 글이라 서버를 기다리지 않고 처음부터 보인다(결정 102 의 1 · 5) */
+function HomeMenus() {
+  return (
+    <>
+      <HomeMenuCard testID="home-menu-me" eyebrow={MENU.me.eyebrow} title={MENU.me.title}>
+        <HomeMenuGrid items={ME_ITEMS} />
+      </HomeMenuCard>
+      <HomeMenuCard testID="home-menu-timing" eyebrow={MENU.timing.eyebrow} title={MENU.timing.title}>
+        <HomeMenuGrid items={TIMING_ITEMS} />
+      </HomeMenuCard>
+      <HomeMenuCard testID="home-menu-people" eyebrow={MENU.people.eyebrow} title={MENU.people.title}>
+        <HomeMenuList items={PEOPLE_ITEMS} />
+      </HomeMenuCard>
+    </>
+  );
+}
 
 /**
- * 홈 "오늘을 크게"(결정 092 — 047 의 1 대체, 결정 055). 출생 정보가 있으면 머리(로고 · 알림 종) 아래로 오늘의 하늘 큰 카드 · 오늘의 작은 실천 ·
- * 지금 나의 시기 한 줄 · 이번 달 눈여겨볼 날(가로 슬라이드) · 별명 한 줄 · 아래 탭 넷, 없으면 출생 정보 입력부터 받는다.
- * 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
+ * 홈 메뉴판(결정 102 — 092 의 홈 칸을 대체, 시안 "홈 (1.1.0)" A). 출생 정보가 있으면 머리(로고 · 알림 종) 아래로 오늘의 하늘 한 줄 카드 ·
+ * 나(3×2) · 나의 시기(셋) · 나의 사람들(두 줄) · 아래 탭 다섯, 없으면 출생 정보 입력부터 받는다.
+ * 앱을 켤 때 나 탭 · 시기 풀이의 상태와 이번 달을 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4 · 113 의 4). 홈에는 그리지 않는다.
  * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
  * 기기에 출생 정보가 없고 세션이 있으면 서버에 저장된 것으로 한 번 되살려 본다(결정 029). 그동안 0.3초가 넘으면 되살린 뒤의 홈을 본뜬 뼈대를
  * 보여 주고(결정 071), 서버에 없으면(404 NO_PROFILE) 입력부터 받고, 있는지 알 수 없으면 불러오지 못한 화면(19 · 끊김 20-1)의 다시 보기(결정 112). 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts) —
@@ -59,9 +104,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
   const canRestore = empty && session.status === 'signedIn';
   const restore = useBirthRestore(canRestore, save);
   const restoreSettled = restore !== 'pending';
-  // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
-  // 옛 모양으로 받아 둔 풀이도 한 줄 별명은 그대로(업데이트 직후 — 홈은 풀이를 부르지 않는다)
+  // 받아 둔 풀이의 한 줄 별명 — 알림 받기 권유는 별명 공개를 본 뒤에(결정 066, 서버를 부르지 않는다)
   const { stored: reading } = useStoredHeadline(input);
   // 연결 끊김(결정 061 의 4): 받아 둔 것은 그대로 보이고 머리 아래에 띠(보드 20)
   const online = useOnline();
@@ -72,57 +116,22 @@ function Home({ onRetry }: { onRetry: () => void }) {
   // 10초가 넘으면 스플래시를 걷고 불러오지 못한 화면(19, 결정 065)
   const firstData = loaded && !(empty && (!session.ready || (canRestore && !restoreSettled)));
   const phase = useLoadingPhase(!firstData);
-  // 시기 칸(결정 047 의 1-4 · 1-5): 로그인이 확인된 뒤에만 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41)
+  // 로그인이 확인된 뒤에만 서버에 묻는다(세션 확인 전의 401 이 보관 토큰을 지우지 않게 — 리뷰 PR #41)
   const asking = session.ready && session.status === 'signedIn' ? input : null;
-  // 홈은 상태만 본다 — 쓰는 중이어도 5초마다 묻지 않는다(홈을 열 때마다 새로 묻는다, 리뷰 #63)
-  const timing = useTimingReport(asking, { poll: false });
-  const timingPhase = useLoadingPhase(asking !== null && timing.state.status === 'checking');
-  useOnReconnect(online, () => {
-    if (timing.state.status === 'done') timing.refresh();
-    else if (timing.state.status === 'unknown') timing.recheck();
-  });
-  // 쓰는 중 카드(결정 075 — 047 의 1-5 대체): 홈은 5초마다 묻지 않는다. 끝났는지는 시기 풀이 완성 푸시가 오거나(앱), 홈이 다시 보이거나
-  // 앱으로 돌아올 때(웹 · 푸시를 끈 사람) 한 번 다시 물어 같은 자리에서 완료 카드로 바꾼다 — 화면이 떠 있는 동안 서버를 거듭 부르지 않게
-  const timingWriting = useRef(false);
-  const timingIsWriting = timing.state.status === 'writing';
-  useEffect(() => {
-    timingWriting.current = timingIsWriting;
-  }, [timingIsWriting]);
-  const { recheck: recheckTiming } = timing;
-  useEffect(
-    () =>
-      onPushReceived((push) => {
-        if (push.type === 'TIMING_REPORT_DONE') recheckTiming();
-      }),
-    [recheckTiming],
-  );
-  useFocusEffect(
-    useCallback(() => {
-      if (timingWriting.current) recheckTiming();
-    }, [recheckTiming]),
-  );
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active' && timingWriting.current) recheckTiming();
-    });
-    return () => sub.remove();
-  }, [recheckTiming]);
-  // 앱을 켤 때 나 탭 풀이의 상태를 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4). 스플래시는 이것을 기다리지 않는다
+  // 앱을 켤 때 나 탭 · 시기 풀이의 상태와 이번 달을 한 번 받아 둔다 — 그 탭을 열면 곧바로(결정 075 의 4 · 113 의 4). 스플래시는 이것을 기다리지 않는다
   useEffect(() => {
     if (!asking) return;
     void prefetchMeReport(asking);
+    void prefetchTimingReport(asking);
+    void prefetchMonth(asking);
   }, [asking]);
-  // 이번 달(결정 092): 앱을 켤 때 한 번 받아 두고(시기 탭을 열면 곧바로, 결정 075 의 4) 홈의 눈여겨볼 날 칸이 읽는다. 스플래시는 기다리지 않는다
-  const month = useThisMonth(asking);
-  // 눈여겨볼 날의 "오늘" — 화면이 뜬 때의 한국 날짜, 앱으로 돌아오면 다시 읽는다(자정을 넘겼을 수 있다)
-  const todayDate = useKoreaToday();
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);
   const todayLoading = asking !== null && today.state.status === 'loading';
   const todayWriting = useWritingAfter(todayLoading, TODAY_CARD_WRITING_AFTER_MS);
-  // 처음 들어올 때 스플래시는 홈 카드의 첫 상태까지 가린다 — 받아 둔 것(기기) 또는 서버의 상태 응답, 오늘의 하늘은 글이나 쓰는 중(1초)까지.
+  // 처음 들어올 때 스플래시는 오늘의 하늘 카드의 첫 상태까지 가린다 — 받아 둔 것(기기) 또는 글이나 쓰는 중(1초)까지. 메뉴는 기다릴 것이 없다(결정 113 의 4).
   // 그래야 스플래시를 걷는 첫 그림부터 카드이고 뼈대가 보이지 않는다(소유자 "접속하자마자 바로"). 카드가 10초 넘게 모르면 그대로 걷는다
-  const cardsKnown = asking === null || (timing.state.status !== 'checking' && (!todayLoading || todayWriting));
+  const cardsKnown = asking === null || !todayLoading || todayWriting;
   const cardsPhase = useLoadingPhase(firstData && !cardsKnown);
   useEffect(() => {
     if ((firstData && (cardsKnown || cardsPhase === 'timeout')) || phase === 'timeout') markHomeReady();
@@ -169,19 +178,18 @@ function Home({ onRetry }: { onRetry: () => void }) {
         primary={{ label: strings.states.offlineEmpty.retry, onPress: () => void recheckSession() }}
       />
     );
-  // 되살리는 동안(결정 029): 되살린 뒤의 홈(받아 둔 풀이가 없는 별명 카드 · 오늘의 하늘 · 시기 · 작은 실천)을 본뜬 뼈대와 아래 탭(결정 071).
+  // 되살리는 동안(결정 029): 오늘의 하늘 카드 자리만 뼈대이고 메뉴는 그대로 보인다(결정 071 · 102 의 5) · 아래 탭.
   // 종은 출생 정보가 있는 홈에만(리뷰 #66). 0.3초 전 빈 단계도 같은 머리 · 탭
   if (empty && (!session.ready || (canRestore && !restoreSettled)))
     return (
       <Screen nav={nav} footer={<MainTabs active="home" />}>
         {phase === 'skeleton' ? (
-          <SkeletonGroup testID="home-skeleton">
-            <View style={styles.column}>
+          <View style={styles.column}>
+            <SkeletonGroup testID="home-skeleton">
               <HomeTodaySkeleton />
-              <HomeTimingSkeleton />
-              <NicknameCardSkeleton />
-            </View>
-          </SkeletonGroup>
+            </SkeletonGroup>
+            <HomeMenus />
+          </View>
         ) : null}
       </Screen>
     );
@@ -200,25 +208,7 @@ function Home({ onRetry }: { onRetry: () => void }) {
             onOpen={openToday}
             onRetry={today.retry}
           />
-          <HomeTodayPractices state={today.state} onOpen={openToday} />
-          {/* 누르면 시기 탭 — 탭을 바꾸는 것과 같이 쌓지 않는다(결정 046 의 2) */}
-          <HomeTimingCards
-            state={timing.state}
-            skeleton={timingPhase === 'skeleton' || timingPhase === 'timeout'}
-            online={online} onOpen={() => router.replace('/timing')} onRetry={timing.recheck} />
-          {/* 그날을 누르면 그날의 하늘(오늘이면 오늘의 하늘) — 시기 탭의 달력과 같다 */}
-          <HomeMonthDays
-            sky={month}
-            today={todayDate}
-            onDay={(date) => router.push(date === todayDate ? '/today' : `/timing/day?date=${date}`)}
-          />
-          <NicknameCard
-            nickname={account?.nickname ?? null}
-            avatar={account?.avatar ?? null}
-            accountPending={account === undefined}
-            headline={reading?.headline ?? null}
-            onOpen={() => router.push('/reading')}
-          />
+          <HomeMenus />
         </View>
         {/* 알림 받기 권유(11-10, 결정 066 — 처음 한 번, 휴대폰 권한을 아직 묻지 않았을 때) */}
         <PushAskSheet time={account?.todaySkyTime} ready={!!reading?.headline} />

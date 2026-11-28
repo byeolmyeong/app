@@ -1071,3 +1071,19 @@ export const SynastrySkyLayout = {
   padTop: 8,
   padBottom: 24,
 } as const;
+
+/**
+ * 홈 메뉴판(결정 102, 시안 "홈 (1.1.0)" A).
+ * - card: 세 카드(모서리 · 안 여백 위와 좌우 · 아래) · 작은 분류와 질문 제목 사이
+ * - grid: 아이콘 격자(제목 아래 · 줄 사이 · 칸 사이 · 아이콘과 이름 사이 · 아이콘 칸 · 그 모서리 · 아이콘)
+ * - list: 나의 사람들 줄(제목 아래 · 줄 사이 · 줄의 최소 높이 · 위아래 · 좌우 안 여백(바깥으로 같은 만큼 내밀어 글줄을 카드 안 여백에 맞춘다) ·
+ *   모서리 · 아이콘과 글 사이 · 아이콘 칸 · 그 모서리 · 이름과 한 줄 사이 · 꺾쇠)
+ * - today: 오늘의 하늘 한 줄 카드(모서리 · 안 여백 · 오른쪽 달(크기 · 위 · 오른쪽) · 제목 · 한 줄의 오른쪽 비움 · 이름표 아래 제목 · 제목 아래 한 줄 ·
+ *   빛(가로 · 세로 · 퍼짐))
+ */
+export const HomeMenuLayout = {
+  card: { radius: 20, padTop: 20, padX: 20, padBottom: 22, titleTop: 4 },
+  grid: { top: 18, rowGap: 18, columnGap: 8, itemGap: 8, box: 52, boxRadius: 18, icon: 26 },
+  list: { top: 14, gap: 4, row: 64, padV: 6, padH: 8, radius: 14, iconGap: 14, box: 48, boxRadius: 16, textGap: 2, chevron: 22 },
+  today: { radius: 24, pad: 20, moon: 52, moonTop: 46, moonRight: 22, textRight: 72, titleTop: 6, briefTop: 4, glow: { x: 0.84, y: 0.18, extent: 0.6 } },
+} as const;

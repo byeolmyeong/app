@@ -421,6 +421,23 @@ export const strings = {
     },
     /** 이번 달 눈여겨볼 날(결정 092): 가로 슬라이드 칸 — "21일 · 오늘" · "25일 · 수" */
     monthDays: { title: '이번 달 눈여겨볼 날', today: '오늘', separator: ' · ' },
+    /**
+     * 홈 메뉴판(결정 102 의 1, 시안 "홈 (1.1.0)" A): 세 카드는 같은 뼈대 — 작은 분류 · 질문 제목 · 메뉴. 메뉴 글은 앱에 고정한다(서버를 기다리지 않는다).
+     * 나의 사람들 두 줄은 사이(연애 · 친구)마다 이름 · 한 줄
+     */
+    menu: {
+      me: {
+        eyebrow: '나',
+        title: '나는 어떤 사람일까?',
+        items: { nickname: '내 별명', PERSONALITY: '성격', LOVE: '연애', RELATIONSHIP: '관계', WORK: '일', EMOTION: '감정' },
+      },
+      timing: { eyebrow: '나의 시기', title: '지금 나는 어디쯤일까?', items: { month: '이번 달', year: '올해', life: '인생' } },
+      people: {
+        eyebrow: '나의 사람들',
+        title: '우리는 어떻게 될까?',
+        items: { LOVE: { title: '연애 궁합', body: '설레는 사람과 나' }, FRIEND: { title: '친구 궁합', body: '가까운 친구와 나' } },
+      },
+    },
     dateLabel: '생년월일',
     datePlaceholder: '2000-06-15',
     timeLabel: '태어난 시각',

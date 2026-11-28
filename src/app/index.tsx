@@ -43,7 +43,7 @@ import { useTimingReport } from '@/features/timing/use-timing-report';
  * 시기 칸은 시기 풀이의 상태만 묻는다(기기에 받아 둔 것을 먼저).
  * 기기 저장소를 읽기 전에는 아무것도 그리지 않는다(입력 화면이 잠깐 비쳤다가 바뀌지 않게).
  * 기기에 출생 정보가 없고 세션이 있으면 서버에 저장된 것으로 한 번 되살려 본다(결정 029). 그동안 0.3초가 넘으면 되살린 뒤의 홈을 본뜬 뼈대를
- * 보여 주고(결정 071), 되살리지 못하면 입력부터 받는다. 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts) —
+ * 보여 주고(결정 071), 서버에 없으면(404 NO_PROFILE) 입력부터 받고, 있는지 알 수 없으면 불러오지 못한 화면(19 · 끊김 20-1)의 다시 보기(결정 112). 처음 열 때는 이 사이를 스플래시가 가린다(결정 068 의 2, home-ready.ts) —
  * 뼈대가 보이는 때는 스플래시가 이미 걷힌 뒤(로그인하고 오기 · 19 의 다시 보기 · 앱 스플래시가 5초를 넘김)다.
  */
 export default function HomeScreen() {
@@ -57,7 +57,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
   const session = useSession();
   const empty = loaded && !profile;
   const canRestore = empty && session.status === 'signedIn';
-  const restoreSettled = useBirthRestore(canRestore, save);
+  const restore = useBirthRestore(canRestore, save);
+  const restoreSettled = restore !== 'pending';
   // 받아 둔 풀이가 있으면 한 줄 총평을 홈에 올린다(서버를 부르지 않는다).
   const input = useMemo(() => (profile ? birthInputOf(profile) : null), [profile]);
   // 옛 모양으로 받아 둔 풀이도 한 줄 별명은 그대로(업데이트 직후 — 홈은 풀이를 부르지 않는다)
@@ -227,6 +228,26 @@ function Home({ onRetry }: { onRetry: () => void }) {
   // 로그인 전 · 가입 중이면 루트 가드가 소개 · 로그인 · 가입 단계로 보낸다 — 그 가림막 아래에서 출생 정보 입력을 그리지 않는다
   // (입력이 곳 목록 GET /places 를 받는다 — 처음 온 사람이 쓰지 않는 요청, 성능 계획 4)
   if (session.status !== 'signedIn') return <Screen nav={nav}>{null}</Screen>;
+  // 서버에 출생 정보가 있는지 알 수 없다(끊김 · 서버 오류 · 차트를 받지 못함): 입력 화면을 보이지 않는다 — 있는 사람이 조금 다르게
+  // 다시 넣으면 PUT /profile 이 풀이 · 리포트를 지운다(결정 112). 다시 보기는 처음부터(기기 읽기 · 되살리기) 다시 한다
+  if (restore === 'failed')
+    return online ? (
+      <StateScreen
+        nav={nav}
+        tabs={<MainTabs active="home" />}
+        title={strings.states.loadFail.title.home}
+        body={strings.states.loadFail.body}
+        primary={{ label: strings.states.loadFail.retry, onPress: onRetry }}
+      />
+    ) : (
+      <StateScreen
+        nav={nav}
+        tabs={<MainTabs active="home" />}
+        title={strings.states.offlineEmpty.title}
+        body={strings.states.offlineEmpty.body}
+        primary={{ label: strings.states.offlineEmpty.retry, onPress: onRetry }}
+      />
+    );
   return (
     <Screen nav={nav} scroll={false} avoidKeyboard>
       <BirthForm

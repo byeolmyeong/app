@@ -19,8 +19,13 @@ const A = strings.push.ask;
 const BYEOLI = require('@/assets/images/share/byeoli-default.png');
 /** 이 기기에서 한 번 물었는가 — 기기에 붙는 값(로그아웃 정리가 지우지 않는다, 결정 042). "나중에" 면 다시 묻지 않는다(066 의 2) */
 export const PUSH_ASK_KEY = 'byeolmyeong-device.push-ask.v1';
-/** 고른 것을 서버에 아직 저장하지 못했다 — 다음에 홈에 올 때 시트 없이 다시 보낸다(#67 리뷰) */
-export const PUSH_ASK_PENDING_KEY = 'byeolmyeong-device.push-ask-pending.v1';
+/**
+ * 고른 것을 서버에 아직 저장하지 못했다 — 다음에 홈에 올 때 시트 없이 다시 보낸다(#67 리뷰).
+ * 고른 사람의 것이라 사람의 머리(`byeolmyeong.`)에 둔다 — 로그아웃 · 탈퇴 · 새 로그인 · 만료가 지워 같은 기기의 다음 사람에게 보내지 않는다
+ */
+export const PUSH_ASK_PENDING_KEY = 'byeolmyeong.pushAskPending.v1';
+/** 옛 판의 자리(기기 머리라 로그아웃이 지우지 않았다). 누구 것인지 몰라 보내지 않고 지운다 */
+const LEGACY_PENDING_KEY = 'byeolmyeong-device.push-ask-pending.v1';
 /** 받는 시간의 기본(결정 057 의 4) · 간격(서버 S10-2) */
 const DEFAULT_TIME = '08:00';
 const TIME_STEP = 5;
@@ -28,11 +33,14 @@ const FALLBACK: WheelTime = { period: 'AM', hour: 8, minute: 0 };
 /** 업데이트 확인이 이만큼 지나도 끝나지 않으면 기다리지 않는다(요청이 멈춘 경우, #70 리뷰) */
 const UPDATE_WAIT_MS = 5000;
 
-/** 저장을 보낸다. 못 하면 기기에 남겨 다음에 다시 보낸다 */
+/** 다시 보내면 될 수 있는 실패(연결 · 한도 · 서버 5xx). 4xx · 세션 없음 · 저장은 됐지만 답의 모양이 다른 것은 다시 보내도 같다 */
+const retryable = (r: { error: string; status?: number }) => r.error === 'NETWORK' || r.error === 'LIMIT' || (r.error === 'SERVER' && (r.status ?? 500) >= 500);
+
+/** 저장을 보낸다. 잠깐의 실패면 기기에 남겨 다음에 다시 보내고, 다시 보내도 같은 답이면 남기지 않는다 */
 async function save(patch: AccountPatch): Promise<void> {
   try {
     const res = await api.updateAccount(patch);
-    if (res.ok) {
+    if (res.ok || !retryable(res)) {
       await AsyncStorage.removeItem(PUSH_ASK_PENDING_KEY);
       return;
     }
@@ -77,7 +85,8 @@ export function PushAskSheet({ time: savedTime, ready = true }: { time?: string;
     let alive = true;
     void (async () => {
       try {
-        // 못 보낸 고른 것이 있으면 시트 없이 다시 보낸다
+        // 못 보낸 고른 것이 있으면 시트 없이 다시 보낸다(옛 판의 자리는 누구 것인지 몰라 지우기만)
+        await AsyncStorage.removeItem(LEGACY_PENDING_KEY);
         const pending = await AsyncStorage.getItem(PUSH_ASK_PENDING_KEY);
         if (pending) await save(JSON.parse(pending) as AccountPatch);
         if (await AsyncStorage.getItem(PUSH_ASK_KEY)) return;

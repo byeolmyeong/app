@@ -3,7 +3,7 @@ type: decision
 tags: [실패 화면, 쓰는 중, 불러오기 실패, 연결 끊김, 주 버튼, 시트, 컴퓨터 웹, 디자인 규칙]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 103-my-account-mark-and-inquiry-type.md (1.1.0 부터 — 5 중 공유 시트만: 보조 "이미지 저장" 위 · 주 아래 → 보조 왼쪽 · 주 오른쪽 나란히 1 : 1.4)
 ---
 # 061. 실패 · 쓰는 중 · 불러오기 실패 · 연결 끊김은 한 틀로 그리고, 주 버튼은 늘 맨 아래 같은 자리에 둔다
 

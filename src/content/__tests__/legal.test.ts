@@ -21,6 +21,12 @@ describe('약관 글의 시행일과 약관 버전', () => {
     for (const doc of [privacy, privacyConsent]) expect(doc.closing).toContain(legalInfo.privacyEffective);
   });
 
+  it('네 글마다 머리에 적을 시행일(effective)을 갖고, 맺음말의 시행일과 같다', () => {
+    expect([terms, marketing].map((d) => d.effective)).toEqual([legalInfo.effective, legalInfo.effective]);
+    expect([privacy, privacyConsent].map((d) => d.effective)).toEqual([legalInfo.privacyEffective, legalInfo.privacyEffective]);
+    for (const doc of [terms, privacy, marketing, privacyConsent]) expect(doc.closing).toContain(`${doc.effective}부터 시행합니다`);
+  });
+
   // 랜딩이 약관에서 궁합(1.1.0)을 뺀 판(랜딩 main 4eaca8e, 시행일 2026-11-20)과 같은 글이다 — 궁합을 다시 넣으면 랜딩 · 앱 글과 버전을 함께 올린다
   it('네 글 어디에도 궁합이 없다', () => {
     for (const doc of [terms, privacy, marketing, privacyConsent]) expect(JSON.stringify(doc)).not.toContain('궁합');

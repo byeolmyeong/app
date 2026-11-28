@@ -34,6 +34,18 @@ describe('약관 글 화면의 모양(보드 6-2)', () => {
     expect(flat(date)).toMatchObject({ fontSize: 13, lineHeight: 18, color: '#868894' });
   });
 
+  // 처리방침 · 수집 · 이용 동의는 시행일이 따로다(결정 081) — 머리의 시행일이 맺음말의 시행일과 같아야 한다
+  it.each([
+    ['이용약관', TermsScreen, '2026년 11월 20일'],
+    ['개인정보 처리방침', PrivacyScreen, '2026년 11월 26일'],
+    ['마케팅 정보 수신 동의 약관', MarketingScreen, '2026년 11월 20일'],
+    ['개인정보 수집 · 이용 동의', PrivacyConsentScreen, '2026년 11월 26일'],
+  ] as const)('%s: 머리의 시행일은 그 글의 시행일 — 맺음말과 같은 날', async (_name, Component, date) => {
+    await render(<Component />);
+    expect(screen.getByText(`${L.effectiveLabel} ${date}`)).toBeTruthy();
+    expect(screen.getByText(new RegExp(`${date}부터 시행합니다`))).toBeTruthy();
+  });
+
   it('조항 제목 15/22 · 600, 문단 · 목록 · 표는 작은 본문 14/21(결정 080), 조항 사이 24, 좌우 20', async () => {
     await render(<PrivacyScreen />);
     const first = privacy.sections[0];

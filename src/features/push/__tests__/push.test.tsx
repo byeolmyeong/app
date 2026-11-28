@@ -5,6 +5,7 @@ import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
 import { router } from 'expo-router';
 import { AppState, Linking, Platform } from 'react-native';
 
+import { strings } from '@/content/strings';
 import { isViewingTarget, parsePushData, pushTarget } from '@/features/push/push-data';
 import {
   getPushPermission,
@@ -169,6 +170,40 @@ describe('휴대폰 알림 권한(결정 066)', () => {
       Platform.OS = os;
     }
   });
+
+  it('안드로이드는 조용한 채널 quiet 도 만든다 — 소리 · 진동 없이 알림만(서버가 밤 9시 ~ 아침 8시에 channelId "quiet" 를 싣는다, 계획 A1-5 · 서버 S4-4). HIGH 채널은 그대로', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      N.getPermissionsAsync.mockResolvedValue({ granted: false, status: 'undetermined', canAskAgain: true, expires: 'never' } as never);
+      N.requestPermissionsAsync.mockResolvedValue({ granted: true, status: 'granted', canAskAgain: true, expires: 'never' } as never);
+      await requestPushPermission();
+      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith(
+        'quiet',
+        expect.objectContaining({ name: strings.push.quietChannel, importance: AndroidImportance.DEFAULT, sound: null, enableVibrate: false }),
+      );
+      expect(strings.push.quietChannel).toBe('조용한 알림');
+      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.objectContaining({ name: '알림', importance: AndroidImportance.HIGH }));
+      // 채널이 있어야 묻는다 — 둘 다 묻기 전에
+      const order = N.setNotificationChannelAsync.mock.invocationCallOrder;
+      expect(Math.max(...order)).toBeLessThan(N.requestPermissionsAsync.mock.invocationCallOrder[0]);
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it('iOS 는 채널을 만들지 않는다', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'ios';
+    try {
+      N.getPermissionsAsync.mockResolvedValue(perm(S.NOT_DETERMINED));
+      N.requestPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+      await requestPushPermission();
+      expect(N.setNotificationChannelAsync).not.toHaveBeenCalled();
+    } finally {
+      Platform.OS = os;
+    }
+  });
 });
 
 describe('이 기기 등록 · 해제(서버 S10-2)', () => {
@@ -195,6 +230,37 @@ describe('이 기기 등록 · 해제(서버 S10-2)', () => {
     expect(await AsyncStorage.getItem(PUSH_TOKEN_KEY)).toBeNull();
     await unregisterPushDevice();
     expect(mockApi.deletePushDevice).toHaveBeenCalledTimes(1);
+  });
+
+  // 1.0.x 에서 권한을 받아 둔 기기는 업데이트 뒤 권한 창이 뜨지 않는다 — 조용한 채널은 이 등록 길에서만 만들어진다(계획 A1-5)
+  it('안드로이드 · 권한 있음: 등록하기 전에 보통 · 조용한(quiet) 채널을 만든다', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      N.getPermissionsAsync.mockResolvedValue({ granted: true, status: 'granted', canAskAgain: true, expires: 'never' } as never);
+      await registerPushDevice();
+      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.objectContaining({ importance: AndroidImportance.HIGH }));
+      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith('quiet', expect.objectContaining({ name: strings.push.quietChannel }));
+      const quiet = N.setNotificationChannelAsync.mock.calls.findIndex(([id]) => id === 'quiet');
+      expect(N.setNotificationChannelAsync.mock.invocationCallOrder[quiet]).toBeLessThan(mockApi.registerPushDevice.mock.invocationCallOrder[0]);
+      expect(mockApi.registerPushDevice).toHaveBeenCalledWith({ expoToken: 'ExponentPushToken[abc]', platform: 'ANDROID' });
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it('안드로이드에서 채널을 만들지 못하면 등록하지 않는다 — 조용한 채널이 없는 기기로 밤 알림이 가면 보이지 않는다', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      N.getPermissionsAsync.mockResolvedValue({ granted: true, status: 'granted', canAskAgain: true, expires: 'never' } as never);
+      N.setNotificationChannelAsync.mockRejectedValueOnce(new Error('channel'));
+      await expect(registerPushDevice()).resolves.toBeUndefined();
+      expect(mockApi.registerPushDevice).not.toHaveBeenCalled();
+      expect(await AsyncStorage.getItem(PUSH_TOKEN_KEY)).toBeNull();
+    } finally {
+      Platform.OS = os;
+    }
   });
 
   it('겹쳐 부르면 한 번만 보낸다(권한 창 뒤 등록과 루트의 등록)', async () => {

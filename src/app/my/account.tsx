@@ -14,8 +14,7 @@ import { Colors, MyLayout, ScreenPaddingX, Sizes, Spacing, StateLayout } from '@
 import { strings } from '@/content/strings';
 import { AvatarSheet } from '@/features/auth/avatar-sheet';
 import { signOut } from '@/features/auth/sign-out';
-import { maskEmail } from '@/features/my/mask-email';
-import { ProviderBadge } from '@/features/my/provider-badge';
+import { ProviderBadge, hasProviderMark } from '@/features/my/provider-badge';
 import { useMyAccount } from '@/features/my/use-my-account';
 import { api } from '@/lib/api';
 
@@ -64,7 +63,8 @@ export default function AccountScreen() {
     router.replace('/login');
   }
 
-  const linked = account ? (account.email ? maskEmail(account.email) : providerName(account.provider)) : null;
+  // 연결된 계정 줄(결정 103 의 1): 공급자 마크만 — 이메일은 보이지 않는다. 마크가 없는 개발용 계정만 이름 글자
+  const provider = account?.provider ?? null;
   return (
     <Screen scroll={false} nav={<NavBar chevron title={A.title} onBack={() => (router.canGoBack() ? router.back() : router.replace('/my'))} />}>
       <View style={styles.body}>
@@ -79,19 +79,17 @@ export default function AccountScreen() {
         <ListCard>
           <ListCardRow label={A.nickname} onPress={() => router.push('/my/nickname')} />
           <ListCardRow label={A.birth} onPress={() => router.push('/my/birth')} />
-          {linked !== null ? (
+          {provider !== null ? (
             <ListCardRow
               label={A.linked}
               trailing={
-                <View style={styles.linked}>
-                  <View style={styles.badge}>
-                    <ProviderBadge provider={account?.provider ?? ''} />
-                  </View>
-                  {/* 이메일이 길면 가운데를 줄여 앞과 도메인이 보이게(그림은 줄지 않는다). 화면 읽기는 전체를 읽는다 */}
-                  <Txt variant="small" color="gray" numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={linked} style={styles.linkedText}>
-                    {linked}
+                hasProviderMark(provider) ? (
+                  <ProviderBadge provider={provider} />
+                ) : (
+                  <Txt variant="small" color="gray" numberOfLines={1}>
+                    {providerName(provider)}
                   </Txt>
-                </View>
+                )
               }
             />
           ) : null}
@@ -145,9 +143,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  linked: { flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: L.badgeGap },
-  badge: { flexShrink: 0 },
-  linkedText: { flexShrink: 1 },
   /** 계정 삭제는 맨 아래 가운데 작은 밑줄 글자(아래 34) */
   footer: { alignItems: 'center', paddingHorizontal: ScreenPaddingX, paddingBottom: StateLayout.bottom },
   delete: { height: L.deleteRow, paddingHorizontal: Spacing.sm, justifyContent: 'center' },

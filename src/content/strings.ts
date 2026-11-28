@@ -186,7 +186,7 @@ export const strings = {
       nickname: '닉네임',
       birth: '출생 정보',
       linked: '연결된 계정',
-      /** 이메일이 없는(옛) 계정은 연결된 계정 줄에 공급자 이름만 적는다 */
+      /** 연결된 계정 줄 공급자 마크의 화면 읽기 이름(결정 103 의 1) — 마크가 없는 개발용 계정만 글자로 보인다 */
       providers: { GOOGLE: 'Google', APPLE: 'Apple', KAKAO: '카카오', DEV: '개발용' },
       logout: '로그아웃',
       delete: '계정 삭제',

@@ -2,13 +2,17 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { MyLayout, SocialButtonStyle as B } from '@/constants/theme';
+import { strings } from '@/content/strings';
 
 const L = MyLayout.account;
 
+/** 마크가 있는 공급자 — 그 밖(개발용 등)은 줄에 이름 글자를 둔다(결정 103 의 1) */
+export const hasProviderMark = (provider: string) => provider === 'KAKAO' || provider === 'APPLE' || provider === 'GOOGLE';
+
 /**
- * 연결된 계정 줄의 작은 공급자 표시(보드 16-1): 지름 18 동그라미에 공급자 로고. 바탕 · 로고 색은 로그인 버튼과 같은 공급자 가이드 값이다.
- * 로고 모양은 로그인 버튼(`features/auth/providers/social-button.tsx`)의 것과 같다 — 기능끼리 import 하지 않아 이 파일에 둔다.
- * 모르는 공급자(개발용 등)는 그리지 않는다. 장식이라 화면 읽기에서 숨긴다(줄의 글이 공급자를 말한다).
+ * 연결된 계정 줄의 공급자 마크(결정 103 의 1, 시안 16-1): 지름 24 동그라미에 공급자 로고 — 글자 · 이메일 없이 이것만 보인다.
+ * 바탕 · 로고 색은 로그인 버튼과 같은 공급자 가이드 값이다. 로고 모양은 로그인 버튼(`features/auth/providers/social-button.tsx`)의 것과 같다 —
+ * 기능끼리 import 하지 않아 이 파일에 둔다. 화면 읽기는 공급자 이름(`strings.my.account.providers`). 모르는 공급자(개발용 등)는 그리지 않는다.
  */
 export function ProviderBadge({ provider }: { provider: string }) {
   const g = L.badgeGlyph;
@@ -54,7 +58,12 @@ export function ProviderBadge({ provider }: { provider: string }) {
       return null;
   }
   return (
-    <View testID={`provider-badge-${provider}`} aria-hidden importantForAccessibility="no-hide-descendants" style={[styles.badge, { backgroundColor: background }]}>
+    <View
+      testID={`provider-badge-${provider}`}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={(strings.my.account.providers as Record<string, string>)[provider]}
+      style={[styles.badge, { backgroundColor: background }]}>
       {logo}
     </View>
   );

@@ -3,7 +3,7 @@ type: decision
 tags: [출생 정보, 복원, 새 기기, 재설치, GET /profile, 홈]
 status: active
 last_reviewed: 2026-11-12
-superseded_by:
+superseded_by: 112-restore-birth-failure-retry.md (되살리지 못한 때 — 404 NO_PROFILE 만 입력 화면, 그 밖은 19 · 20-1 다시 보기)
 ---
 # 029. 기기에 출생 정보가 없으면 서버에 저장된 것으로 되살린다(기기의 것이 있으면 건드리지 않는다)
 

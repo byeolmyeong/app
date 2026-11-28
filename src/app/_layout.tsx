@@ -16,6 +16,7 @@ import { recheckSession, useSession } from '@/features/auth/use-session';
 import { useHomeReady } from '@/features/home/home-ready';
 import { TAB_ROOT_SCREENS } from '@/features/home/main-tabs';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
+import { settleWhatsNew } from '@/features/onboarding/whats-new';
 import { usePushDeviceSync, usePushTapRouting } from '@/features/push/push';
 import { ChunkErrorBoundary } from '@/features/update/chunk-reload';
 import { UpdateGate } from '@/features/update/update-gate';
@@ -27,7 +28,7 @@ initAnalytics();
 
 /** 아래에서 올라오는 창으로 여는 약관 글(결정 067 의 1). 가입 약관 단계의 "보기" 와 마이가 같은 화면을 연다 */
 const SLIDE_UP_ROUTES = ['settings/terms', 'settings/privacy', 'settings/privacy-consent', 'settings/marketing'];
-/** 아래 탭의 첫 화면 넷: 탭을 바꾸면(replace) 미끄러짐 없이 바로 — iOS 탭 막대의 관례(소유자 지적) */
+/** 아래 탭의 첫 화면 다섯: 탭을 바꾸면(replace) 미끄러짐 없이 바로 — iOS 탭 막대의 관례(소유자 지적) */
 const TAB_ROOT_OPTIONS = { animation: 'none' } as const;
 /**
  * 화면 쌓기 기본: 탭 안에서 들어가는 화면 · 가입 단계도 밀려 들어오지 않고 바로 바뀐다(소유자 2026-11-21 · 빌드 15 "오른쪽에서 왼쪽으로 … 안 되게",
@@ -54,8 +55,12 @@ export default function RootLayout() {
   const segments: string[] = useSegments();
   const [first, second] = segments;
   const session = useSession(first !== 's');
-  // 소개 2장은 이 기기에서 처음 한 번만(결정 042 · 055). 기기 저장소에서 읽는다.
+  // 소개 세 장은 이 기기에서 처음 한 번만(결정 042 · 104 의 12). 기기 저장소에서 읽는다.
   const introSeen = useIntroSeen(first !== 's');
+  // 1.1.0 새로워진 점(결정 109 의 6 · 113 의 1): 이번 실행이 시작할 때(소개 화면이 기록을 적기 전에) 1.0.x 에서 올라온 기기인지 정해 둔다
+  useEffect(() => {
+    if (first !== 's') void settleWhatsNew();
+  }, [first]);
   // 로그인 전 가드(결정 034): 로그인 · 가입 · 공유 페이지 말고는 로그인해야 들어온다. 보내는 동안과 확인 중에는 화면을 가린다.
   // 가입 중이면 하던 단계로(결정 068 — 가입 중간에 나갔다 돌아온 사람)
   const target = guardRedirect(session.status, first, introSeen, second, resumeStep());

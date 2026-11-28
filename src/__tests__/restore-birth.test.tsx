@@ -68,7 +68,7 @@ const unknown: BirthInput = { date: '2000-06-15', time: null, placeId: null };
 const noProfile: ApiResult<BirthInput> = { ok: false, error: 'SERVER', status: 404, code: 'NO_PROFILE' };
 
 const formShown = () => screen.findByPlaceholderText(H.datePlaceholder);
-const homeShown = () => screen.findByTestId('nickname-card');
+const homeShown = () => screen.findByTestId('home-column');
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -141,7 +141,7 @@ describe('출생 정보 되살리기(결정 029)', () => {
   it('서버에 저장된 것이 없으면(404 NO_PROFILE) 입력 화면을 보여 주고 다시 부르지 않는다', async () => {
     await render(<HomeScreen />);
     expect(await formShown()).toBeTruthy();
-    expect(screen.queryByTestId('nickname-card')).toBeNull();
+    expect(screen.queryByTestId('home-column')).toBeNull();
     expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
     expect(mockApi.createChart).not.toHaveBeenCalled();
     expect(await loadBirth()).toBeNull();

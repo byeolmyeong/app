@@ -85,7 +85,7 @@ describe('시기 자세히 /timing/period(결정 049 의 5, 캔버스 14-3)', ()
     expect(within(sections[0]).getByText(main.detail!.changes)).toBeTruthy();
     expect(within(sections[2]).getByText(main.detail!.after)).toBeTruthy();
     expect(screen.getAllByTestId('timing-practice')).toHaveLength(3);
-    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false]);
+    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, false, true, false, false]);
     await fireEvent.press(screen.getByRole('button', { name: strings.common.backLabel }));
     expect(router.back).toHaveBeenCalled();
   });
@@ -156,7 +156,7 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     expect(screen.getByTestId('sk-day-hero')).toBeTruthy();
     expect(screen.getAllByTestId('sk-day-flow')).toHaveLength(3);
     expect(screen.queryByText(T.day.making.title)).toBeNull();
-    expect(tabs()).toHaveLength(4);
+    expect(tabs()).toHaveLength(5);
     await tick(3000);
     expect(screen.getByText(T.day.making.title)).toBeTruthy();
     // 만드는 중에는 위 머리(제목 · 뒤로 가기)가 없다 — 뒤로는 기기의 뒤로 · 밀어서 돌아가기로
@@ -172,7 +172,7 @@ describe('그날의 하늘 /timing/day(결정 049 의 6 · 061 의 2, 캔버스 
     expect(screen.getByText(day.flow.work)).toBeTruthy();
     expect(screen.getByText(/그날 말을 맡은 별\(수성\)이 내 나의 중심\(해\)과 잘 어울리는 자리를 지나요/)).toBeTruthy();
     expect(screen.getAllByTestId('timing-todo')).toHaveLength(3);
-    expect(tabs()).toHaveLength(4);
+    expect(tabs()).toHaveLength(5);
     // 머리 오른쪽의 공유 아이콘(그날의 하늘 카드, 결정 053 — 보드 14-4) — 여는 것만으로는 공유를 만들지 않는다
     expect(screen.getByRole('button', { name: strings.share.open })).toBeTruthy();
     expect(mockApi.createShare).not.toHaveBeenCalled();

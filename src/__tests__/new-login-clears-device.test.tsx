@@ -130,7 +130,7 @@ describe('새 로그인은 앞사람이 기기에 남긴 것을 비운다', () =
 
     // 홈은 기기가 비었으니 서버에서 B 의 출생 정보를 되살린다(결정 029)
     await render(<HomeScreen />);
-    expect(await screen.findByTestId('nickname-card')).toBeTruthy();
+    expect(await screen.findByTestId('home-column')).toBeTruthy();
     expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
     expect((await loadBirth())?.profile.date).toBe(birthB.date);
   });

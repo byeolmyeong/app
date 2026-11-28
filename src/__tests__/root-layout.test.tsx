@@ -11,6 +11,7 @@ import { strings } from '@/content/strings';
 import { recheckSession, useSession } from '@/features/auth/use-session';
 import { markHomeReady, resetHomeReady } from '@/features/home/home-ready';
 import { useIntroSeen } from '@/features/onboarding/intro-seen';
+import { settleWhatsNew } from '@/features/onboarding/whats-new';
 import { api } from '@/lib/api';
 
 // Stack.Screen 은 받은 화면 옵션을 mockScreen 에 남긴다(약관 글이 아래에서 올라오는지 본다). Stack 은 화면 쌓기 기본 옵션을 mockStack 에
@@ -68,6 +69,8 @@ jest.mock('@/lib/api', () => {
   };
 });
 jest.mock('@/features/onboarding/intro-seen', () => ({ useIntroSeen: jest.fn(() => true) }));
+// 1.1.0 새로워진 점을 정하는 것(결정 113 의 1) — 루트가 부르는지만 본다
+jest.mock('@/features/onboarding/whats-new', () => ({ settleWhatsNew: jest.fn(async () => {}) }));
 
 const mockSegments = useSegments as jest.Mock;
 const mockGetMyAccount = api.getMyAccount as jest.Mock;
@@ -84,6 +87,17 @@ describe('루트 레이아웃의 세션', () => {
     mockSegments.mockReturnValue(['s', '[shareId]']);
     await render(<RootLayout />);
     expect(useSession).toHaveBeenLastCalledWith(false);
+  });
+
+  it('켜질 때 1.1.0 새로워진 점을 띄울 기기인지 정한다 — 공유 페이지(/s/…)에서는 하지 않는다(결정 113 의 1)', async () => {
+    (settleWhatsNew as jest.Mock).mockClear();
+    mockSegments.mockReturnValue(['s', '[shareId]']);
+    const share = await render(<RootLayout />);
+    expect(settleWhatsNew).not.toHaveBeenCalled();
+    await share.unmount();
+    mockSegments.mockReturnValue([]);
+    await render(<RootLayout />);
+    expect(settleWhatsNew).toHaveBeenCalled();
   });
 
   it('그 밖의 화면에서는 켜질 때 세션을 시작한다', async () => {
@@ -194,11 +208,11 @@ describe('아래 탭의 첫 화면', () => {
     mockUseSession.mockReturnValue(session('signedIn'));
   });
 
-  it('홈 · 나 · 시기 · 마이의 첫 화면은 미끄러짐 없이 바로 바뀐다(animation none)', async () => {
+  it('홈 · 나 · 시기 · 궁합 · 마이의 첫 화면은 미끄러짐 없이 바로 바뀐다(animation none)', async () => {
     await render(<RootLayout />);
     await waitFor(() => {
       const options = Object.fromEntries(mockScreen.mock.calls.map(([p]) => [p.name, p.options]));
-      for (const name of ['index', 'me', 'timing/index', 'my/index']) expect(options[name]).toEqual({ animation: 'none' });
+      for (const name of ['index', 'me', 'timing/index', 'synastry', 'my/index']) expect(options[name]).toEqual({ animation: 'none' });
     });
   });
 

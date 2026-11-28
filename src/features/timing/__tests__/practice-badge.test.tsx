@@ -25,12 +25,6 @@ describe('작은 실천의 번호(결정 095, 소유자 B안)', () => {
     });
   });
 
-  it('홈 카드의 번호 줄: 줄 최소 높이는 번호 높이(32), 줄 사이 14', async () => {
-    await render(<TodoList items={items} spaced />);
-    expect(flat(screen.getByTestId('timing-todos'))).toMatchObject({ gap: 14 });
-    for (const row of screen.getAllByTestId('timing-todo')) expect(flat(row)).toMatchObject({ alignItems: 'center', minHeight: 32 });
-  });
-
   it('시기 화면 "이 시기의 작은 실천" 카드도 같은 번호(32 · 15)', async () => {
     await render(<PracticeCards practices={items} />);
     screen.getAllByTestId('timing-practice').forEach((card, i) => expectBadge(within(card).getByTestId('timing-badge'), i + 1));

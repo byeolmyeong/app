@@ -87,7 +87,7 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     for (const item of [...reading.strengths, ...reading.cautions]) expect(screen.getByText(item)).toBeTruthy();
     expect(screen.getByText(M.detail.title)).toBeTruthy();
     for (const area of Object.values(M.areas)) expect(screen.getByText(area)).toBeTruthy();
-    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false, false]);
     // 나 탭의 첫 화면이라 뒤로 가기가 없고, 면책 문구도 없다(결정 046 의 2 · 064)
     expect(screen.queryByRole('button', { name: strings.common.backLabel })).toBeNull();
     expect(screen.queryByText(strings.reading.disclaimer)).toBeNull();
@@ -219,12 +219,12 @@ describe('나 탭 · 받기 전(보드 12 받기 전, 결정 048 의 1)', () => 
     expect(screen.queryByTestId('me-skeleton')).toBeNull();
     // 0.3초 전 빈 단계에도 뼈대와 같은 머리(받기 전 "내 별명") · 아래 탭 — 중간에 바뀌지 않게(결정 071 의 6)
     expect(screen.getByText(strings.reading.title)).toBeTruthy();
-    expect(tabs()).toHaveLength(4);
+    expect(tabs()).toHaveLength(5);
     await act(async () => void (await jest.advanceTimersByTimeAsync(300)));
     expect(screen.getByTestId('me-skeleton')).toBeTruthy();
     expect(screen.getByText(strings.reading.title)).toBeTruthy();
     expect(screen.getAllByLabelText(strings.states.loading).length).toBeGreaterThan(0);
-    expect(tabs()).toHaveLength(4);
+    expect(tabs()).toHaveLength(5);
   });
 });
 
@@ -256,7 +256,7 @@ describe('나 탭 · 옛 보관본(업데이트 직후, 리뷰 #49)', () => {
     await act(async () => void (await jest.advanceTimersByTimeAsync(10_500)));
     expect(screen.getByTestId('making-art', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByTestId('nav-bar')).toBeNull();
-    expect(tabs()).toHaveLength(4);
+    expect(tabs()).toHaveLength(5);
     expect(useSoundtrack).toHaveBeenLastCalledWith('waiting', true);
   });
 });
@@ -301,7 +301,7 @@ describe('나 탭 · 쓰는 중 · 실패(11-8 · 11-9, 결정 061)', () => {
     await act(async () => netListener?.({ isConnected: false, isInternetReachable: false }));
     await act(async () => void (await jest.advanceTimersByTimeAsync(ME_REPORT_POLL_MS)));
     expect(screen.getByText(ST.offlineEmpty.title)).toBeTruthy();
-    expect(tabs()).toHaveLength(4);
+    expect(tabs()).toHaveLength(5);
     mockApi.getMeReport.mockResolvedValueOnce(done);
     await act(async () => netListener?.({ isConnected: true, isInternetReachable: true }));
     await act(async () => void (await jest.advanceTimersByTimeAsync(0)));
@@ -326,7 +326,7 @@ describe('나 탭 · 받은 뒤(보드 12-8~12-12, 결정 048 의 3)', () => {
       Object.values(M.areas),
     );
     expect(chip('PERSONALITY').props.accessibilityState).toMatchObject({ selected: true });
-    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false]);
+    expect(tabs().map((t) => t.props.accessibilityState.selected)).toEqual([false, true, false, false, false]);
     await fireEvent.press(screen.getByTestId('me-nickname-card'));
     expect(router.push).toHaveBeenCalledWith('/reading');
   });

@@ -74,7 +74,7 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     // 머리 오른쪽의 공유 아이콘(결정 053) — 여는 것만으로는 공유를 만들지 않는다
     expect(screen.getByRole('button', { name: strings.share.open })).toBeTruthy();
     expect(mockApi.createShare).not.toHaveBeenCalled();
-    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.getAllByRole('tab')).toHaveLength(5);
     expect(screen.queryByText(/재미|참고/)).toBeNull();
   });
 
@@ -169,7 +169,7 @@ describe('오늘의 하늘 /today(결정 051, 보드 11-4 · 11-5)', () => {
     // 머리 카드: 날짜 한 줄 + 제목 세 줄(보드 11-4) — 다 그려진 카드와 같은 높이
     expect(within(screen.getByTestId('sk-day-hero')).getAllByTestId('skeleton-line')).toHaveLength(4);
     expect(screen.getAllByTestId('sk-day-flow')).toHaveLength(3);
-    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.getAllByRole('tab')).toHaveLength(5);
     await act(async () => jest.advanceTimersByTime(3000));
     expect(screen.getByText(T.making.title)).toBeTruthy();
     expect(screen.queryAllByRole('tab')).toHaveLength(0);

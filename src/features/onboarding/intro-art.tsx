@@ -1,7 +1,7 @@
 /**
- * 소개 2장의 그림(시안 온보딩 보드 1 · 3, 결정 055 의 5): 별이 · 달 카드와 시기 줄.
- * 브랜드 자리라 빛나는 그림을 쓴다(결정 035). 별이의 얼굴은 그림(PNG)에만 있어 공유 카드의 그림을 그대로 쓰고,
- * 달은 보드의 그림(0~100 칸, 빛 · 번짐 · 흰 심 세 겹)을 그대로 그린다. 장식이라 화면 읽기에서 숨긴다(시기 줄의 글자만 읽힌다).
+ * 소개 3장의 그림(결정 104 의 12 — 시안 온보딩 보드 2 · "온보딩 소개 2/3" · 4): 별이 · 별이와 하트 카드 · 달 카드와 시기 줄.
+ * 브랜드 자리라 빛나는 그림을 쓴다(결정 035). 별이의 기본 · 반가운 얼굴은 그림(PNG)에만 있어 공유 카드의 그림을 그대로 쓰고,
+ * 하트 · 달은 보드의 그림(0~100 칸, 빛 · 번짐 · 흰 심 세 겹)을 그대로 그린다. 장식이라 화면 읽기에서 숨긴다(시기 줄의 글자만 읽힌다).
  */
 import { useId } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
@@ -13,20 +13,25 @@ import { strings } from '@/content/strings';
 
 const ART = {
   byeoli: require('@/assets/images/share/byeoli-default.png'),
+  byeoliHappy: require('@/assets/images/share/byeoli-happy.png'),
 };
 
-const { moonCard: MOON_CARD, timeline: TIMELINE } = IntroArtLayout;
+const { card: CARD, pair: PAIR, moonCard: MOON_CARD, timeline: TIMELINE } = IntroArtLayout;
 const cardShadow = `0 0 48px ${BrandColors.cardShadow}`;
 
-/** 보드의 달(0~100 칸). 빛(번짐 큰 것) · 번짐 작은 것은 같은 모양, 흰 심은 조금 안쪽 모양이다 */
+/** 보드의 하트 · 달(0~100 칸). 빛(번짐 큰 것) · 번짐 작은 것은 같은 모양, 흰 심은 조금 안쪽 모양이다 */
 const SHAPES = {
+  heart: {
+    glow: 'M50 84 C22 64 12 48 12 35 C12 23 21 15 32 15 C40 15 46 20 50 27 C54 20 60 15 68 15 C79 15 88 23 88 35 C88 48 78 64 50 84 Z',
+    core: 'M50 80 C25 62 16 47 16 35.5 C16 25 24 18.5 33 18.5 C40.5 18.5 46 23 50 30 C54 23 59.5 18.5 67 18.5 C76 18.5 84 25 84 35.5 C84 47 75 62 50 80 Z',
+  },
   moon: {
     glow: 'M58 14 A36 36 0 1 0 86 68 A28 28 0 1 1 58 14 Z',
     core: 'M56 18 A32 32 0 1 0 82 66 A26 26 0 1 1 56 18 Z',
   },
 } as const;
 
-/** 카드 안의 빛나는 달(보드 그대로: 번짐 8 · 2.4 위에 흰 심) */
+/** 카드 안의 빛나는 하트 · 달(보드 그대로: 번짐 8 · 2.4 위에 흰 심) */
 function CardShape({ shape, size }: { shape: keyof typeof SHAPES; size: number }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const d = SHAPES[shape];
@@ -52,6 +57,17 @@ export function IntroArt({ index }: { index: number }) {
     return (
       <View aria-hidden importantForAccessibility="no-hide-descendants">
         <Image source={ART.byeoli} accessible={false} style={styles.byeoli} />
+      </View>
+    );
+  if (index === 1)
+    return (
+      <View aria-hidden importantForAccessibility="no-hide-descendants" style={styles.pair}>
+        <View testID="intro-card" style={[styles.card, styles.cardLeft]}>
+          <Image source={ART.byeoliHappy} accessible={false} style={styles.cardArt} />
+        </View>
+        <View testID="intro-card" style={[styles.card, styles.cardRight]}>
+          <CardShape shape="heart" size={CARD.heart} />
+        </View>
       </View>
     );
   const T = strings.intro.timeline;
@@ -92,6 +108,23 @@ export function IntroArt({ index }: { index: number }) {
 
 const styles = StyleSheet.create({
   byeoli: { width: Sizes.introArt, height: Sizes.introArt },
+  pair: { width: PAIR.width, height: PAIR.height },
+  card: {
+    position: 'absolute',
+    top: PAIR.top,
+    width: CARD.width,
+    height: CARD.height,
+    borderRadius: CARD.radius,
+    backgroundColor: BrandColors.card,
+    borderWidth: LineWidth,
+    borderColor: Colors.hair,
+    boxShadow: cardShadow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardLeft: { left: PAIR.left, transform: [{ rotate: '-9deg' }] },
+  cardRight: { left: PAIR.right, transform: [{ rotate: '8deg' }] },
+  cardArt: { width: CARD.art, height: CARD.art },
   moonCard: {
     width: MOON_CARD.width,
     height: MOON_CARD.height,

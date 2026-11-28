@@ -3,7 +3,7 @@ type: decision
 tags: [홈, 오늘의 하늘, 작은 실천, 지금 나의 시기, 이번 달 눈여겨볼 날, 별명 카드]
 status: active
 last_reviewed: 2026-11-26
-superseded_by:
+superseded_by: 102-home-menu-board.md (1.1.0 부터 — 1 의 홈 칸과 순서 · 3 의 홈 뼈대 → 오늘의 하늘 한 줄 + 메뉴판(나 · 나의 시기 · 나의 사람들). "오늘 먼저"는 102 가 이어 간다)
 ---
 # 092. 홈은 "오늘을 크게" — 오늘의 하늘을 맨 위 큰 카드로, 별명은 맨 아래 한 줄로
 

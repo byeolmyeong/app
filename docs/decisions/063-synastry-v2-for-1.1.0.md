@@ -1,9 +1,9 @@
 ---
 type: decision
 tags: [궁합, 1.1.0, 별 지도, 전체 순위, 내 궁합 링크, 카카오톡 공유, 딥 링크, 웹, 공유 카드]
-status: proposed
+status: superseded
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 104-synastry-for-1.1.0.md (전체 — 063 의 제안을 확정 · 고쳐 대체) · 100-scope-1.1.0.md (4 의 "없으면 웹" 진입만 — 앱이 없으면 랜딩의 앱 받기 페이지. 나머지는 제안 그대로)
 ---
 # 063. (1.1.0) 궁합은 별 지도 + 전체 순위 한 화면이고, 궁합 하나는 한 번에 다 만들며, 초대는 "내 궁합 링크" 하나다
 

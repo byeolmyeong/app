@@ -3,7 +3,7 @@ type: decision
 tags: [친구, 채팅, 친구 추가, 같이 보는 방, 1.1.0]
 status: active
 last_reviewed: 2026-11-11
-superseded_by:
+superseded_by: 100-scope-1.1.0.md (시기만: 1.1.0 → 1.2.0 이후. 나머지는 유효)
 ---
 # 007. 1.1.0 에 친구창(친구 추가·채팅·같이 보는 방)을 넣는다
 

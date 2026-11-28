@@ -3,6 +3,7 @@ type: decision
 tags: [홈, 이번 달 눈여겨볼 날, 테두리]
 status: active
 last_reviewed: 2026-11-26
+superseded_by: 102-home-menu-board.md (1.1.0 부터 홈에 이번 달 눈여겨볼 날이 없다)
 ---
 # 097. 이번 달 눈여겨볼 날은 맨 앞 칸(오늘, 없으면 가장 가까운 다가오는 날)에 주색 테두리를 둔다
 

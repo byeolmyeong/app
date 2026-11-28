@@ -3,7 +3,7 @@ type: decision
 tags: [자세한 풀이, 나 탭 풀이, 시기 풀이, 가입, 이번 달, 유료화, 1.1.0]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 101-one-detail-product.md ("따로 · 묶음으로 판다" 와 4 · 5 의 결제 계획 몫 — 상품 하나 · 정가 4,990원. 풀이 둘 · 따로 받기는 유효)
 ---
 # 050. 자세한 풀이는 나 탭 풀이와 시기 풀이 둘이고 따로 받는다. 가입 때는 별명과 이번 달만 만들고, 1.1.0 부터 두 풀이를 유료로 판다
 

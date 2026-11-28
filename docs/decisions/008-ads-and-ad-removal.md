@@ -1,9 +1,9 @@
 ---
 type: decision
 tags: [광고, 광고 제거, 인앱결제, 비소모성 상품, 방향성 제시 VIP, 1.1.0]
-status: active
-last_reviewed: 2026-11-11
-superseded_by:
+status: superseded
+last_reviewed: 2026-11-27
+superseded_by: 100-scope-1.1.0.md (1.1.0 에 광고 · 990원 광고 제거 · 방향성 VIP 없음)
 ---
 # 008. 1.1.0 에 광고와 990원 광고 제거 상품, 방향성 제시 VIP 를 넣는다
 

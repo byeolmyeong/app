@@ -3,6 +3,7 @@ type: decision
 tags: [홈, 이번 달 눈여겨볼 날]
 status: active
 last_reviewed: 2026-11-26
+superseded_by: 102-home-menu-board.md (1.1.0 부터 홈에 이번 달 눈여겨볼 날이 없다)
 ---
 # 096. 홈 이번 달 눈여겨볼 날은 오늘 · 다가오는 날이 앞, 지난 날은 맨 뒤
 

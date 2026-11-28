@@ -1,9 +1,9 @@
 ---
 type: decision
 tags: [광고, 15초 광고, 결과 전 광고, 1.1.0, 개인정보]
-status: active
-last_reviewed: 2026-11-11
-superseded_by:
+status: superseded
+last_reviewed: 2026-11-27
+superseded_by: 100-scope-1.1.0.md (1.1.0 에 광고 없음)
 ---
 # 015. 1.1.0 부터 결과를 보기 전에 15초 광고를 보여 주고, 같은 결과를 다시 열 때는 보여 주지 않는다
 

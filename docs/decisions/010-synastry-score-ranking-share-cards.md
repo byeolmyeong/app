@@ -3,7 +3,7 @@ type: decision
 tags: [궁합, 궁합 점수, 랭킹, 공유 카드, 인스타 스토리]
 status: active
 last_reviewed: 2026-11-11
-superseded_by: 020-family-relation-and-place-optional.md (관계 유형에 가족을 더한 부분만. 나머지는 유효) · 053-share-v2.md (공유 카드의 링크 공유만)
+superseded_by: 020-family-relation-and-place-optional.md (관계 유형에 가족을 더한 부분만. 나머지는 유효) · 053-share-v2.md (공유 카드의 링크 공유만) · 104-synastry-for-1.1.0.md (1.1.0 — 관계 유형 → 연애 · 친구 둘, 랭킹 카드 "TOP 3" → "내 하늘" 카드 모두 + 공유 시트에서 빼기, 직접 입력한 상대 출생 정보 → 저장(궁합 · 계정을 지우면 같이 지움). 나 기준 점수 · 서버 계산 · 상대 수 제한 없음은 유효)
 ---
 # 010. 궁합에 나 기준 점수와 랭킹을 보여 주고, 공유 카드를 넓힌다
 

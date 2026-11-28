@@ -3,7 +3,7 @@ type: decision
 tags: [인앱결제, 건당 결제, RevenueCat, 수익 모델]
 status: active
 last_reviewed: 2026-11-10
-superseded_by:
+superseded_by: 101-one-detail-product.md (리포트 건당 · 소모성만 — 1.1.0 은 비소모성 상품 하나. 인앱결제만 · RevenueCat · 웹 결제 없음은 유효)
 ---
 # 002. 결제는 스토어 인앱결제만, 리포트 건당으로 판다
 

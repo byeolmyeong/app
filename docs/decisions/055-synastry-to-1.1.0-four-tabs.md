@@ -3,7 +3,7 @@ type: decision
 tags: [궁합, 1.1.0, 제품 범위, 아래 탭, 홈, 알림함, 온보딩 소개, 공유]
 status: active
 last_reviewed: 2026-11-20
-superseded_by:
+superseded_by: 102-home-menu-board.md (1.1.0 부터 — 2 의 아래 탭 넷 → 다섯: 홈 · 나 · 시기 · 궁합 · 마이, 3 의 홈 칸 → 메뉴판) · 104-synastry-for-1.1.0.md (1.1.0 부터 — 5 의 온보딩 소개 두 장 → 세 장: 나 → 나의 사람들 → 시기)
 ---
 # 055. 궁합은 1.0.0 에서 빼고 1.1.0 에 결제와 함께 넣는다 — 아래 탭은 홈 · 나 · 시기 · 마이 넷이다
 

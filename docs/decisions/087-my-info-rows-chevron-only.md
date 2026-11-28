@@ -3,7 +3,7 @@ type: decision
 tags: [마이, 내 정보, 닉네임, 출생 정보 수정, 목록 카드, 꺾쇠, 화면 읽기]
 status: active
 last_reviewed: 2026-11-26
-superseded_by:
+superseded_by: 103-my-account-mark-and-inquiry-type.md (1.1.0 부터 — 연결된 계정 줄의 "공급자 표시 + 가린 이메일" → 공급자 마크만)
 ---
 # 087. 내 정보의 닉네임 · 출생 정보 줄은 이름과 꺾쇠 › 만 둔다 — 지금 닉네임 · 출생 정보 한 줄 · "수정" 글자를 뺀다
 

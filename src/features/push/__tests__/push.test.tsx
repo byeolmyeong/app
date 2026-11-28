@@ -5,6 +5,7 @@ import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
 import { router } from 'expo-router';
 import { AppState, Linking, Platform } from 'react-native';
 
+import { strings } from '@/content/strings';
 import { isViewingTarget, parsePushData, pushTarget } from '@/features/push/push-data';
 import {
   getPushPermission,
@@ -165,6 +166,40 @@ describe('휴대폰 알림 권한(결정 066)', () => {
       // 중요도 HIGH 라야 쓰는 중에 온 푸시가 위에서 내려온다(결정 098) — id 는 그대로 default(서버를 고치지 않는다)
       expect(N.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.objectContaining({ name: '알림', importance: AndroidImportance.HIGH }));
       expect(N.setNotificationChannelAsync.mock.invocationCallOrder[0]).toBeLessThan(N.requestPermissionsAsync.mock.invocationCallOrder[0]);
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it('안드로이드는 조용한 채널 quiet 도 만든다 — 소리 · 진동 없이 알림만(서버가 밤 9시 ~ 아침 8시에 channelId "quiet" 를 싣는다, 계획 A1-5 · 서버 S4-4). HIGH 채널은 그대로', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'android';
+    try {
+      N.getPermissionsAsync.mockResolvedValue({ granted: false, status: 'undetermined', canAskAgain: true, expires: 'never' } as never);
+      N.requestPermissionsAsync.mockResolvedValue({ granted: true, status: 'granted', canAskAgain: true, expires: 'never' } as never);
+      await requestPushPermission();
+      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith(
+        'quiet',
+        expect.objectContaining({ name: strings.push.quietChannel, importance: AndroidImportance.DEFAULT, sound: null, enableVibrate: false }),
+      );
+      expect(strings.push.quietChannel).toBe('조용한 알림');
+      expect(N.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.objectContaining({ name: '알림', importance: AndroidImportance.HIGH }));
+      // 채널이 있어야 묻는다 — 둘 다 묻기 전에
+      const order = N.setNotificationChannelAsync.mock.invocationCallOrder;
+      expect(Math.max(...order)).toBeLessThan(N.requestPermissionsAsync.mock.invocationCallOrder[0]);
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it('iOS 는 채널을 만들지 않는다', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'ios';
+    try {
+      N.getPermissionsAsync.mockResolvedValue(perm(S.NOT_DETERMINED));
+      N.requestPermissionsAsync.mockResolvedValue(perm(S.AUTHORIZED));
+      await requestPushPermission();
+      expect(N.setNotificationChannelAsync).not.toHaveBeenCalled();
     } finally {
       Platform.OS = os;
     }

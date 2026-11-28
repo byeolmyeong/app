@@ -19,8 +19,10 @@ export type PushPermission = 'granted' | 'denied' | 'undetermined' | 'unsupporte
 
 /** 이 기기를 서버에 등록한 Expo 푸시 토큰 — 로그아웃 때 서버에서 지우려고 둔다. 기기에 붙는 값이라 로그아웃 정리가 지우지 않는다(결정 042) */
 export const PUSH_TOKEN_KEY = 'byeolmyeong-device.push-token.v1';
-/** 안드로이드 알림 채널 하나(이름은 휴대폰 설정에 보인다) */
+/** 안드로이드 알림 채널(이름은 휴대폰 설정에 보인다): 보통 알림 */
 const CHANNEL_ID = 'default';
+/** 조용한 채널 — 서버가 밤 9시 ~ 아침 8시에 1.1.0 이상 안드로이드로 가는 알림에 이 id 를 싣는다(서버 S4-4). 채널이 없는 기기에는 그 알림이 보이지 않는다 */
+const QUIET_CHANNEL_ID = 'quiet';
 
 function permissionOf(s: Notifications.NotificationPermissionsStatus): PushPermission {
   // iOS 는 바탕의 status 보다 ios.status 를 본다(임시 허용 · 잠깐 허용도 받는 것이다 — Expo 문서)
@@ -42,13 +44,20 @@ const permissionListeners = new Set<() => void>();
 
 /**
  * 안드로이드 13 이상은 채널이 하나도 없으면 권한 창이 뜨지 않고 토큰도 받지 못한다 — 묻기 · 토큰 전에 만든다.
- * 중요도 HIGH 라야 위에서 내려오는 배너로 뜬다(결정 098). 이미 만든 채널의 중요도는 안드로이드가 바꾸지 않는다 — 전에 DEFAULT 로 만든 기기는 다시 깔아야 한다
+ * 중요도 HIGH 라야 위에서 내려오는 배너로 뜬다(결정 098). 이미 만든 채널의 중요도는 안드로이드가 바꾸지 않는다 — 전에 DEFAULT 로 만든 기기는 다시 깔아야 한다.
+ * 조용한 채널(quiet)은 알림 칸에 보이되 소리 · 진동이 없다 — 중요도 DEFAULT(위에서 내려오지 않음)에 소리 없음 · 진동 끔(계획 A1-5)
  */
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
     name: strings.push.channel,
     importance: AndroidImportance.HIGH,
+  });
+  await Notifications.setNotificationChannelAsync(QUIET_CHANNEL_ID, {
+    name: strings.push.quietChannel,
+    importance: AndroidImportance.DEFAULT,
+    sound: null,
+    enableVibrate: false,
   });
 }
 

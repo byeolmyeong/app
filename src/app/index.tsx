@@ -32,7 +32,7 @@ import { HomeTimingCards, HomeTimingSkeleton } from '@/features/timing/home-timi
 import { HomeMonthDays } from '@/features/timing/home-month-days';
 import { HomeTodayCard, HomeTodayPractices, HomeTodaySkeleton } from '@/features/timing/home-today-card';
 import { prefetchMeReport } from '@/features/me/use-me-report';
-import { koreaToday } from '@/features/timing/dates';
+import { useKoreaToday } from '@/features/timing/use-korea-today';
 import { useThisMonth } from '@/features/timing/use-month';
 import { TODAY_CARD_WRITING_AFTER_MS, useTodaySky, useWritingAfter } from '@/features/timing/use-today-sky';
 import { useTimingReport } from '@/features/timing/use-timing-report';
@@ -114,8 +114,8 @@ function Home({ onRetry }: { onRetry: () => void }) {
   }, [asking]);
   // 이번 달(결정 092): 앱을 켤 때 한 번 받아 두고(시기 탭을 열면 곧바로, 결정 075 의 4) 홈의 눈여겨볼 날 칸이 읽는다. 스플래시는 기다리지 않는다
   const month = useThisMonth(asking);
-  // 눈여겨볼 날의 "오늘" — 화면이 뜬 때의 한국 날짜로 한 번 정한다
-  const [todayDate] = useState(koreaToday);
+  // 눈여겨볼 날의 "오늘" — 화면이 뜬 때의 한국 날짜, 앱으로 돌아오면 다시 읽는다(자정을 넘겼을 수 있다)
+  const todayDate = useKoreaToday();
   // 오늘의 하늘 칸(결정 047 의 1-3 · 051): 기기에 둔 오늘 것을 먼저, 없으면 날짜 없이 POST /day-sky(그날 처음이면 서버가 그때 쓴다)
   const today = useTodaySky(asking);
   const todayLoading = asking !== null && today.state.status === 'loading';

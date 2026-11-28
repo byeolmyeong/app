@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { AppState, StyleSheet, type AppStateStatus } from 'react-native';
 
 import TimingScreen from '@/app/timing';
 import { strings } from '@/content/strings';
@@ -376,6 +376,28 @@ describe('시기 탭 · 시기 풀이 받은 뒤(캔버스 14 · 14-1 · 14-2)',
     await fireEvent.press(chip('life'));
     expect(screen.getByText(T.life.title)).toBeTruthy();
     nowSpy.mockRestore();
+  });
+
+  it('앱을 켜 둔 채 자정을 넘겨 돌아오면 달력의 "오늘" 도 다음 날로 — 그날을 누르면 오늘의 하늘 /today', async () => {
+    // 앱으로 돌아옴: 화면들이 건 AppState 알림(react-native 의 가짜 — 건 것이 calls 에 남는다)을 모두 부른다
+    const comeBack = () =>
+      act(async () => (AppState.addEventListener as jest.Mock).mock.calls.forEach(([, handler]: [string, (next: AppStateStatus) => void]) => handler('active')));
+    // 한국 날짜 2026-11-20 밤 11시
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T14:00:00Z'));
+    try {
+      mockParams.mockReturnValue({ tab: 'month' });
+      await storeReport();
+      mockApi.getTimingReport.mockResolvedValue(done);
+      await render(<TimingScreen />);
+      expect(await screen.findByText(`${T.month.thisMonth}${T.month.daysSuffix}`)).toBeTruthy();
+      // 밤사이 백그라운드에 있다가 다음 날(11-21) 아침에 돌아온다
+      nowSpy.mockReturnValue(Date.parse('2026-11-20T23:00:00Z'));
+      await comeBack();
+      await fireEvent.press(screen.getAllByTestId('month-day')[0]);
+      expect(router.push).toHaveBeenCalledWith('/today');
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   it('달력에서 오늘을 누르면 오늘의 하늘 /today(결정 051 의 3, 계획 A④)', async () => {

@@ -14,9 +14,10 @@ import { birthInputOf } from '@/features/chart/birth-input';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { ShareEntry } from '@/features/share/share-entry';
-import { formatMonthDay, koreaToday } from '@/features/timing/dates';
+import { formatMonthDay } from '@/features/timing/dates';
 import { DaySkeleton, DayView } from '@/features/timing/day-view';
 import { useDaySky } from '@/features/timing/use-day-sky';
+import { useKoreaToday } from '@/features/timing/use-korea-today';
 
 const T = strings.timing;
 const ST = strings.states;
@@ -47,7 +48,7 @@ export default function TimingDayScreen() {
   const birth = useMemo(() => (ready && profile ? birthInputOf(profile) : null), [ready, profile]);
   const { state, retry, made } = useDaySky(date, birth);
   const online = useOnline();
-  const [today] = useState(() => koreaToday());
+  const today = useKoreaToday();
   const loading = date !== null && state.status === 'loading';
   const phase = useLoadingPhase(loading);
   const [making, setMaking] = useState(false);

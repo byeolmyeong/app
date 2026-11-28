@@ -19,7 +19,6 @@ import { ChartEmpty } from '@/features/chart/chart-empty';
 import { useBirthProfile } from '@/features/chart/use-birth-profile';
 import { MainTabs } from '@/features/home/main-tabs';
 import { ShareEntry } from '@/features/share/share-entry';
-import { koreaToday } from '@/features/timing/dates';
 import { LifeSkeleton, LifeView } from '@/features/timing/life-view';
 import { MonthSkeleton, MonthView } from '@/features/timing/month-view';
 import {
@@ -34,6 +33,7 @@ import {
   TIMING_CHIPS,
   type TimingChip,
 } from '@/features/timing/timing-parts';
+import { useKoreaToday } from '@/features/timing/use-korea-today';
 import { useMonth } from '@/features/timing/use-month';
 import { shownTiming } from '@/features/timing/time-known';
 import { useTimingReport } from '@/features/timing/use-timing-report';
@@ -61,8 +61,8 @@ export default function TimingScreen() {
   const timing = useTimingReport(birth);
   const month = useMonth(birth);
   const online = useOnline();
-  // 달력의 "오늘" — 화면이 뜬 때로 한 번 정한다(그리는 동안 시계를 읽지 않는다)
-  const [today] = useState(() => koreaToday());
+  // 달력의 "오늘" — 화면이 뜬 때로 정하고 앱으로 돌아오면 다시 읽는다(그리는 동안 시계를 읽지 않는다)
+  const today = useKoreaToday();
   const [picked, setPicked] = useState<TimingChip | null>(null);
   /** 이 화면에서 받기를 눌렀나 — 누른 직후의 쓰는 중만 머리 · 아래 탭 없이(14-7), 열었을 때 이미 쓰는 중이면 탭이 있는 틀 안에 */
   const [requested, setRequested] = useState(false);
